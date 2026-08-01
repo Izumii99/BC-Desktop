@@ -45,15 +45,21 @@ public partial class MainWindow : Window
     {
         if (WebView.CoreWebView2 is not { } core) return;
 
-        if (WindowState == WindowState.Minimized)
+        try
         {
-            core.MemoryUsageTargetLevel = CoreWebView2MemoryUsageTargetLevel.Low;
-            await core.TrySuspendAsync();
+            if (WindowState == WindowState.Minimized)
+            {
+                core.MemoryUsageTargetLevel = CoreWebView2MemoryUsageTargetLevel.Low;
+                await core.TrySuspendAsync();
+            }
+            else
+            {
+                core.Resume();
+                core.MemoryUsageTargetLevel = CoreWebView2MemoryUsageTargetLevel.Normal;
+            }
         }
-        else
+        catch
         {
-            core.Resume();
-            core.MemoryUsageTargetLevel = CoreWebView2MemoryUsageTargetLevel.Normal;
         }
     }
 
