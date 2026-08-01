@@ -1,0 +1,98 @@
+<Window x:Class="BondageClub.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:wv2="clr-namespace:Microsoft.Web.WebView2.Wpf;assembly=Microsoft.Web.WebView2.Wpf"
+        Title="Bondage Club"
+        Height="900" Width="1600"
+        MinHeight="600" MinWidth="900"
+        WindowStyle="None"
+        AllowsTransparency="False"
+        Background="#0d0d0d"
+        Icon="app_logo.png"
+        UseLayoutRounding="True"
+        WindowStartupLocation="CenterScreen">
+
+    <Window.Resources>
+        <!-- Title-bar button style -->
+        <Style x:Key="TitleBtn" TargetType="Button">
+            <Setter Property="Width" Value="46"/>
+            <Setter Property="Height" Value="32"/>
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Foreground" Value="#cccccc"/>
+            <Setter Property="FontFamily" Value="Segoe MDL2 Assets"/>
+            <Setter Property="FontSize" Value="11"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="bd" Background="{TemplateBinding Background}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="bd" Property="Background" Value="#1affffff"/>
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="bd" Property="Background" Value="#33ffffff"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="CloseTitleBtn" TargetType="Button" BasedOn="{StaticResource TitleBtn}">
+            <Style.Triggers>
+                <Trigger Property="IsMouseOver" Value="True">
+                    <Setter Property="Background" Value="#c42b1c"/>
+                    <Setter Property="Foreground" Value="White"/>
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+    </Window.Resources>
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="32"/>   <!-- title bar -->
+            <RowDefinition Height="*"/>    <!-- webview -->
+        </Grid.RowDefinitions>
+
+        <!-- ── Title bar ── -->
+        <Grid Grid.Row="0" Background="#1a1a1a"
+              MouseLeftButtonDown="TitleBar_MouseLeftButtonDown">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+
+            <!-- App name + favicon area -->
+            <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center" Margin="10,0,0,0">
+                <Image Source="app_logo.png" Width="18" Height="18" Margin="0,0,8,0"
+                       RenderOptions.BitmapScalingMode="HighQuality"/>
+                <TextBlock x:Name="TitleLabel"
+                           Text="Bondage Club"
+                           Foreground="#dddddd"
+                           FontSize="12"
+                           FontFamily="Segoe UI"
+                           VerticalAlignment="Center"/>
+            </StackPanel>
+
+            <!-- Window controls -->
+            <StackPanel Grid.Column="1" Orientation="Horizontal">
+                <Button Style="{StaticResource TitleBtn}" Click="MinimizeBtn_Click"
+                        ToolTip="Minimize" Content="&#xE921;"/>
+                <Button Style="{StaticResource TitleBtn}" Click="MaxRestoreBtn_Click"
+                        x:Name="MaxRestoreBtn"
+                        ToolTip="Maximize" Content="&#xE922;"/>
+                <Button Style="{StaticResource CloseTitleBtn}" Click="CloseBtn_Click"
+                        ToolTip="Close" Content="&#xE8BB;"/>
+            </StackPanel>
+        </Grid>
+
+        <!-- ── WebView2 ── -->
+        <wv2:WebView2 x:Name="WebView"
+                      Grid.Row="1"
+                      CoreWebView2InitializationCompleted="WebView_Initialized"/>
+    </Grid>
+</Window>

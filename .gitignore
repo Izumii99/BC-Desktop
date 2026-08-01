@@ -1,0 +1,24 @@
+## .NET build artifacts
+bin/
+obj/
+publish/
+
+## User secrets / local config
+*.user
+*.suo
+
+## VS / Rider IDE
+.vs/
+.idea/
+*.rsuser
+
+## WebView2 user profile (stored in %LOCALAPPDATA%, never in repo)
+WebView2Data/
+
+## Converted icon scratch file — we keep the sources (app.ico, app_logo.png)
+# nothing extra to exclude here
+
+## OS junk
+Thumbs.db
+.DS_Store
+desktop.ini

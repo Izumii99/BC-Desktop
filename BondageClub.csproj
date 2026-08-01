@@ -1,0 +1,30 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <UseWPF>true</UseWPF>
+    <AssemblyName>BondageClub</AssemblyName>
+    <RootNamespace>BondageClub</RootNamespace>
+    <!-- Exe icon (taskbar + file explorer) -->
+    <ApplicationIcon>app.ico</ApplicationIcon>
+    <!-- OS-level product name (shows in Task Manager / Alt+Tab) -->
+    <Product>Bondage Club</Product>
+    <AssemblyTitle>Bondage Club</AssemblyTitle>
+    <Company>BC Client</Company>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <AllowUnsafeBlocks>false</AllowUnsafeBlocks>
+    <Optimize>true</Optimize>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Web.WebView2" Version="1.0.2739.15" />
+  </ItemGroup>
+
+  <!-- Embed BC logo PNG as WPF resource for the window icon -->
+  <ItemGroup>
+    <Resource Include="app_logo.png" />
+  </ItemGroup>
+
+</Project>
