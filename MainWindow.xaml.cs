@@ -152,8 +152,6 @@ public partial class MainWindow : Window
             WindowState = WindowState.Normal;
             Left = screenPos.X - Width / 2;
             Top  = screenPos.Y - 16;
-            if (Left < 0) Left = 0;
-            if (Top  < 0) Top  = 0;
         }
 
         DragMove();
@@ -228,10 +226,10 @@ public partial class MainWindow : Window
                 int fy = GetSystemMetrics(SM_CYFRAME) + GetSystemMetrics(SM_CXPADDEDBORDER);
 
                 var mmi = Marshal.PtrToStructure<MINMAXINFO>(lParam);
-                mmi.ptMaxPosition.X = mi.rcWork.Left   - fx;
-                mmi.ptMaxPosition.Y = mi.rcWork.Top    - fy;
-                mmi.ptMaxSize.X     = mi.rcWork.Right  - mi.rcWork.Left + fx * 2;
-                mmi.ptMaxSize.Y     = mi.rcWork.Bottom - mi.rcWork.Top  + fy * 2;
+                mmi.ptMaxPosition.X = (mi.rcWork.Left - mi.rcMonitor.Left) - fx;
+                mmi.ptMaxPosition.Y = (mi.rcWork.Top  - mi.rcMonitor.Top)  - fy;
+                mmi.ptMaxSize.X     = (mi.rcWork.Right - mi.rcWork.Left) + fx * 2;
+                mmi.ptMaxSize.Y     = (mi.rcWork.Bottom - mi.rcWork.Top) + fy * 2;
                 Marshal.StructureToPtr(mmi, lParam, true);
                 handled = true;
             }
