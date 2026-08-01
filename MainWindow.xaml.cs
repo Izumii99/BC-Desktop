@@ -7,7 +7,7 @@ using System.Windows.Input;
 using System.Windows.Interop;
 using Microsoft.Web.WebView2.Core;
 
-namespace BondageClub;
+namespace BCDesktop;
 
 public partial class MainWindow : Window
 {

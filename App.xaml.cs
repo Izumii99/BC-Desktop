@@ -1,7 +1,7 @@
 using System.Runtime.InteropServices;
 using System.Windows;
 
-namespace BondageClub;
+namespace BCDesktop;
 
 public partial class App : Application
 {
@@ -10,7 +10,7 @@ public partial class App : Application
 
     protected override void OnStartup(StartupEventArgs e)
     {
-        SetCurrentProcessExplicitAppUserModelID("BondageClub.Client");
+        SetCurrentProcessExplicitAppUserModelID("BCDesktop.Client");
         base.OnStartup(e);
     }
 }
