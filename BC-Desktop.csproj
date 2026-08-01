@@ -4,13 +4,13 @@
     <OutputType>WinExe</OutputType>
     <TargetFramework>net8.0-windows</TargetFramework>
     <UseWPF>true</UseWPF>
-    <AssemblyName>BondageClub</AssemblyName>
-    <RootNamespace>BondageClub</RootNamespace>
+    <AssemblyName>BC-Desktop</AssemblyName>
+    <RootNamespace>BCDesktop</RootNamespace>
     <!-- Exe icon (taskbar + file explorer) -->
     <ApplicationIcon>app.ico</ApplicationIcon>
     <!-- OS-level product name (shows in Task Manager / Alt+Tab) -->
-    <Product>Bondage Club</Product>
-    <AssemblyTitle>Bondage Club</AssemblyTitle>
+    <Product>BC Desktop</Product>
+    <AssemblyTitle>BC Desktop</AssemblyTitle>
     <Company>BC Client</Company>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>

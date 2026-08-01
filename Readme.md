@@ -30,7 +30,7 @@ dotnet publish -c Release -r win-x64 --self-contained false -p:PublishSingleFile
 ## Project structure
 
 ```
-BondageClub.csproj   — project file
+BC-Desktop.csproj   — project file
 App.xaml / .cs       — entry point
 MainWindow.xaml      — borderless window layout
 MainWindow.xaml.cs   — WebView2 init, version detection, addon injection
