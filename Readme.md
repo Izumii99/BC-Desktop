@@ -11,7 +11,7 @@ Lightweight WPF + WebView2 wrapper for BC.
 
 ## Requirements
 - Windows 10/11
-- [.NET 8 Desktop Runtime](https://dotnet.microsoft.com/en-us/download/dotnet/8.0)
+- [.NET 8 Desktop Runtime](https://dotnet.microsoft.com/en-us/download/dotnet/8.0) *(Only required if using the Lightweight version)*
 - WebView2 Runtime (already installed on most modern Windows 10/11)
 
 ## Build from source
@@ -21,10 +21,16 @@ dotnet restore
 dotnet build -c Release
 ```
 
-## Publish as single .exe
+## Publish (Lightweight vs Standalone)
 
+**Option 1: Lightweight (~3MB, requires .NET 8 Runtime installed)**
 ```powershell
-dotnet publish -c Release -r win-x64 --self-contained false -p:PublishSingleFile=true -o .\publish
+dotnet publish -c Release -r win-x64 --self-contained false -p:PublishSingleFile=true -o .\publish\Lightweight
+```
+
+**Option 2: Standalone (~162MB, no installation required)**
+```powershell
+dotnet publish -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -o .\publish\Standalone
 ```
 
 ## Project structure
