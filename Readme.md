@@ -1,11 +1,11 @@
-# Bondage Club Desktop Client
+# BC Desktop Client
 
-Lightweight WPF + WebView2 wrapper for [Bondage Club](https://www.bondage-asia.com/club/).
+Lightweight WPF + WebView2 wrapper for BC.
 
 ## Features
-- **Auto-detects latest version** — fetches the current R-number from the server on every launch, no need to update the URL manually
-- **FUSAM addon loader** injected automatically (no Tampermonkey needed)
-- **Memory-optimized** Chromium flags: V8 heap cap 512 MB, low-end device mode, single renderer process, 50 MB disk cache
+- **Auto-detects latest version** — fetches the current version from the server on every launch
+- **Addon loader** injected automatically
+- **Memory-optimized** Chromium flags (Sleeping Tabs, low RAM footprint)
 - **Borderless window** with custom title bar (drag, minimize, maximize, close)
 - Persistent session cookies (login saved between runs)
 
@@ -33,7 +33,7 @@ dotnet publish -c Release -r win-x64 --self-contained false -p:PublishSingleFile
 BondageClub.csproj   — project file
 App.xaml / .cs       — entry point
 MainWindow.xaml      — borderless window layout
-MainWindow.xaml.cs   — WebView2 init, version detection, FUSAM injection
+MainWindow.xaml.cs   — WebView2 init, version detection, addon injection
 app.ico              — exe/taskbar icon
-app_logo.png         — window icon (BC official logo)
+app_logo.png         — window icon
 ```
