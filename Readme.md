@@ -26,24 +26,24 @@ A minimal native desktop wrapper for BC, built with **WPF** and **.NET 8**. Uses
 
 ## Why not Electron?
 
-| | Electron Apps | BC Desktop (WPF) |
-|---|---|---|
-| **Bundled Browser** | Chromium (~150 MB) | OS native (WebView2) |
-| **RAM (Idle/Background)**| ~200–400 MB | ~5–30 MB |
-| **Installer Size** | ~100–200 MB | ~3 MB (Lightweight) |
+|                           | Electron Apps      | BC Desktop (WPF)     |
+| ------------------------- | ------------------ | -------------------- |
+| **Bundled Browser**       | Chromium (~150 MB) | OS native (WebView2) |
+| **RAM (Idle/Background)** | ~200–400 MB        | ~5–30 MB             |
+| **Installer Size**        | ~100–200 MB        | ~3 MB (Lightweight)  |
 
 ## Requirements
 
 - **Windows 10/11**
 - **WebView2 Runtime** (already pre-installed on most modern Windows systems)
-- **[.NET 8 Desktop Runtime](https://dotnet.microsoft.com/en-us/download/dotnet/8.0)** *(Only required if using the Lightweight build)*
+- **[.NET 8 Desktop Runtime](https://dotnet.microsoft.com/en-us/download/dotnet/8.0)** _(Only required if using the Lightweight build)_
 
 ## Building from Source
 
 Prerequisites: [.NET 8 SDK](https://dotnet.microsoft.com/en-us/download/dotnet/8.0)
 
 ```powershell
-git clone https://github.com/Hafidh99/BC-Desktop.git
+git clone https://github.com/Izumii99/BC-Desktop.git
 cd BC-Desktop
 dotnet restore
 dotnet build -c Release
@@ -52,11 +52,13 @@ dotnet build -c Release
 ## Publishing (Lightweight vs Standalone)
 
 **Option 1: Lightweight (~3MB, requires .NET 8 Runtime installed)**
+
 ```powershell
 dotnet publish -c Release -r win-x64 --self-contained false -p:PublishSingleFile=true -o .\publish\Lightweight
 ```
 
 **Option 2: Standalone (~162MB, fully self-contained)**
+
 ```powershell
 dotnet publish -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -o .\publish\Standalone
 ```
