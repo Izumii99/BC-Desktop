@@ -26,13 +26,14 @@ A minimal native desktop wrapper for BC, built with **WPF** and **.NET 8**. Uses
 
 ## Why not Electron?
 
-|                           | Electron Apps      | BC Desktop (WPF)                         |
-| ------------------------- | ------------------ | ---------------------------------------- |
-| **Bundled Browser**       | Chromium (~150 MB) | OS native (WebView2)                     |
-| **RAM (Active Playing)**  | ~700 MB – 1.2 GB   | ~500 MB – 650 MB                         |
-| **RAM (Idle/Background)** | ~200–400 MB        | ~5–30 MB (Sleeping Tabs)                 |
-| **App Size (Lightweight)**| ~100–200 MB        | ~3 MB                                    |
-| **App Size (Standalone)** | ~100–200 MB        | ~160 MB (Contains .NET, no Browser)      |
+|                            | Electron / Web Browser | BC Desktop (WPF)                    |
+| -------------------------- | ---------------------- | ----------------------------------- |
+| **Bundled Browser**        | Chromium (~150 MB)     | OS native (WebView2)                |
+| **CPU (Active Playing)**   | ~3% – 15%              | ~1% – 3%                            |
+| **RAM (Active Playing)**   | ~700 MB – 1.2 GB       | ~500 MB – 650 MB                    |
+| **RAM (Idle/Background)**  | ~300 MB – 500 MB       | ~50 MB – 150 MB (Sleeping Tabs)     |
+| **App Size (Lightweight)** | ~100–200 MB            | ~3 MB                               |
+| **App Size (Standalone)**  | ~100–200 MB            | ~160 MB (Contains .NET, no Browser) |
 
 ## Requirements
 
