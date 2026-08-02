@@ -6,9 +6,7 @@
     <UseWPF>true</UseWPF>
     <AssemblyName>BC-Desktop</AssemblyName>
     <RootNamespace>BCDesktop</RootNamespace>
-    <!-- Exe icon (taskbar + file explorer) -->
     <ApplicationIcon>app.ico</ApplicationIcon>
-    <!-- OS-level product name (shows in Task Manager / Alt+Tab) -->
     <Product>BC Desktop</Product>
     <AssemblyTitle>BC Desktop</AssemblyTitle>
     <Company>BC Client</Company>
@@ -22,7 +20,6 @@
     <PackageReference Include="Microsoft.Web.WebView2" Version="1.0.2739.15" />
   </ItemGroup>
 
-  <!-- Embed BC logo PNG as WPF resource for the window icon -->
   <ItemGroup>
     <Resource Include="app_logo.png" />
   </ItemGroup>
