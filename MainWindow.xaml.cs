@@ -14,25 +14,6 @@ public partial class MainWindow : Window
     private const string FallbackUrl    = "https://www.bondage-asia.com/club/R130/";
     private const string VersionApiBase = "https://www.bondage-asia.com/";
 
-    private const string FusamScript = """
-        (function () {
-            'use strict';
-            if (window !== window.top) return;
-            function inject() {
-                if (window.FUSAM === undefined) {
-                    let n = document.createElement("script");
-                    n.type = "module";
-                    n.setAttribute("src", "https://sidiousious.gitlab.io/bc-addon-loader/fusam.js?_=" + Date.now());
-                    document.head.appendChild(n);
-                }
-            }
-            if (document.readyState === "loading") {
-                document.addEventListener("DOMContentLoaded", inject);
-            } else {
-                inject();
-            }
-        })();
-        """;
 
     public MainWindow()
     {
@@ -133,12 +114,17 @@ public partial class MainWindow : Window
         core.Settings.IsStatusBarEnabled            = false;
         core.Settings.IsZoomControlEnabled          = false;
 
-        core.DocumentTitleChanged += (_, _) =>
-            TitleLabel.Text = string.IsNullOrWhiteSpace(core.DocumentTitle)
-                ? "Bondage Club"
-                : core.DocumentTitle;
 
-        await core.AddScriptToExecuteOnDocumentCreatedAsync(FusamScript);
+
+        string scriptsDir = Path.Combine(AppContext.BaseDirectory, "Scripts");
+        if (Directory.Exists(scriptsDir))
+        {
+            foreach (var file in Directory.GetFiles(scriptsDir, "*.js"))
+            {
+                string script = await File.ReadAllTextAsync(file);
+                await core.AddScriptToExecuteOnDocumentCreatedAsync(script);
+            }
+        }
 
         WebView.DefaultBackgroundColor = System.Drawing.Color.FromArgb(255, 13, 13, 13);
 

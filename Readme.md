@@ -73,6 +73,6 @@ BC-Desktop.csproj   — Build configuration
 App.xaml / .cs      — Entry point & global settings
 MainWindow.xaml     — Borderless window layout
 MainWindow.xaml.cs  — WebView2 init, version detection, memory management
-app.ico             — Taskbar / Exe icon
-app_logo.png        — Window titlebar icon
+Assets/             — Contains app_logo.png and app.ico
+Scripts/            — Mod/addon scripts directory
 ```
