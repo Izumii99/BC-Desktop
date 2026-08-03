@@ -1,5 +1,5 @@
 <div align="center">
-  <img src="app_logo.png" width="80" alt="BC Desktop" />
+  <img src="Assets/app_logo.png" width="80" alt="BC Desktop" />
   <h1>BC Desktop</h1>
   <p>Lightweight, native desktop client for BC</p>
 
