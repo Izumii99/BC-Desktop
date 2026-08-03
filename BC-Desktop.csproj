@@ -4,9 +4,9 @@
     <OutputType>WinExe</OutputType>
     <TargetFramework>net8.0-windows</TargetFramework>
     <UseWPF>true</UseWPF>
-    <AssemblyName>BC-Desktop</AssemblyName>
+    <AssemblyName>Bondage Club</AssemblyName>
     <RootNamespace>BCDesktop</RootNamespace>
-    <ApplicationIcon>app.ico</ApplicationIcon>
+    <ApplicationIcon>Assets\app.ico</ApplicationIcon>
     <Product>BC Desktop</Product>
     <AssemblyTitle>BC Desktop</AssemblyTitle>
     <Company>BC Client</Company>
@@ -14,6 +14,12 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <AllowUnsafeBlocks>false</AllowUnsafeBlocks>
     <Optimize>true</Optimize>
+    <PublishSingleFile>true</PublishSingleFile>
+    <IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
+    <DebugType>none</DebugType>
+    <DebugSymbols>false</DebugSymbols>
+    <PublishDocumentationFiles>false</PublishDocumentationFiles>
+    <PublishReferencesDocumentationFiles>false</PublishReferencesDocumentationFiles>
   </PropertyGroup>
 
   <ItemGroup>
@@ -21,7 +27,9 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Resource Include="app_logo.png" />
+    <None Include="Scripts\**\*" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
+
+
 
 </Project>

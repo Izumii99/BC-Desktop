@@ -2,13 +2,12 @@
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:wv2="clr-namespace:Microsoft.Web.WebView2.Wpf;assembly=Microsoft.Web.WebView2.Wpf"
-        Title="Bondage Club"
+        Title="BC"
         Height="648" Width="1152"
         MinHeight="600" MinWidth="900"
         WindowStyle="None"
         AllowsTransparency="False"
         Background="#0d0d0d"
-        Icon="app_logo.png"
         UseLayoutRounding="True"
         WindowStartupLocation="CenterScreen">
 
@@ -65,8 +64,7 @@
             </Grid.ColumnDefinitions>
 
             <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center" Margin="10,0,0,0">
-                <Image Source="app_logo.png" Width="18" Height="18" Margin="0,0,8,0"
-                       RenderOptions.BitmapScalingMode="HighQuality"/>
+                <Image Source="Assets/app_logo.png" Width="16" Height="16" Margin="0,0,8,0" RenderOptions.BitmapScalingMode="HighQuality"/>
                 <TextBlock x:Name="TitleLabel"
                            Text="Bondage Club"
                            Foreground="#dddddd"
