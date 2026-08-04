@@ -56,7 +56,7 @@ public partial class MainWindow : Window
 
             var html    = await http.GetStringAsync(VersionApiBase);
             var matches = Regex.Matches(html, @"/club/(R(\d+))/",
-                RegexOptions.IgnoreCase | RegexOptions.Compiled);
+                RegexOptions.IgnoreCase);
 
             if (matches.Count > 0)
             {
@@ -78,20 +78,9 @@ public partial class MainWindow : Window
             Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
             "BCClient", "WebView2Data");
 
-        var options = new CoreWebView2EnvironmentOptions(
-            additionalBrowserArguments:
-                "--js-flags=\"--max-old-space-size=512\" " +
-                "--renderer-process-limit=1 " +
-                "--disable-background-networking " +
-                "--disk-cache-size=52428800 " +
-                "--disable-gpu-shader-disk-cache " +
-                "--disable-speech-api " +
-                "--disable-pdf-extension");
-
         var env = await CoreWebView2Environment.CreateAsync(
             browserExecutableFolder: null,
-            userDataFolder: userDataFolder,
-            options: options);
+            userDataFolder: userDataFolder);
 
         await WebView.EnsureCoreWebView2Async(env);
         _resolvedUrl = await urlTask;
