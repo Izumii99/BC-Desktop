@@ -5,6 +5,9 @@ using System.Text.RegularExpressions;
 using System.Windows;
 using System.Windows.Input;
 using System.Windows.Interop;
+using System.Windows.Media;
+using System.Windows.Media.Imaging;
+using System.Windows.Shell;
 using Microsoft.Web.WebView2.Core;
 
 namespace BCDesktop;
@@ -15,9 +18,12 @@ public partial class MainWindow : Window
     private const string VersionApiBase = "https://www.bondage-asia.com/";
 
 
+    private string _originalTitleLabel;
+
     public MainWindow()
     {
         InitializeComponent();
+        _originalTitleLabel = TitleLabel.Text;
         StateChanged += OnWindowStateChanged;
         InitWebViewAsync();
     }
@@ -103,6 +109,8 @@ public partial class MainWindow : Window
         core.Settings.IsStatusBarEnabled            = false;
         core.Settings.IsZoomControlEnabled          = false;
 
+        core.DocumentTitleChanged += Core_DocumentTitleChanged;
+
 
 
         string scriptsDir = Path.Combine(AppContext.BaseDirectory, "Scripts");
@@ -120,6 +128,8 @@ public partial class MainWindow : Window
         core.Navigate(_resolvedUrl);
     }
 
+    private Point? _dragStart;
+
     private void TitleBar_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
     {
         if (e.ClickCount == 2)
@@ -130,13 +140,41 @@ public partial class MainWindow : Window
 
         if (WindowState == WindowState.Maximized)
         {
-            var screenPos = PointToScreen(e.GetPosition(this));
-            WindowState = WindowState.Normal;
-            Left = screenPos.X - Width / 2;
-            Top  = screenPos.Y - 16;
+            _dragStart = e.GetPosition(this);
         }
+        else
+        {
+            DragMove();
+        }
+    }
 
-        DragMove();
+    private void TitleBar_MouseMove(object sender, MouseEventArgs e)
+    {
+        if (e.LeftButton == MouseButtonState.Pressed && _dragStart.HasValue)
+        {
+            Point currentPos = e.GetPosition(this);
+            Vector diff = currentPos - _dragStart.Value;
+
+            if (Math.Abs(diff.X) > SystemParameters.MinimumHorizontalDragDistance ||
+                Math.Abs(diff.Y) > SystemParameters.MinimumVerticalDragDistance)
+            {
+                var screenPos = PointToScreen(currentPos);
+                double percentHorizontal = currentPos.X / ActualWidth;
+                
+                _dragStart = null;
+                WindowState = WindowState.Normal;
+                
+                Left = screenPos.X - (Width * percentHorizontal);
+                Top = screenPos.Y - currentPos.Y;
+                
+                DragMove();
+            }
+        }
+    }
+
+    private void TitleBar_MouseLeftButtonUp(object sender, MouseButtonEventArgs e)
+    {
+        _dragStart = null;
     }
 
 
@@ -270,4 +308,113 @@ public partial class MainWindow : Window
 
     [StructLayout(LayoutKind.Sequential)]
     private struct POINT { public int X, Y; }
+
+    private void Core_DocumentTitleChanged(object? sender, object e)
+    {
+        if (WebView.CoreWebView2 is not { } core) return;
+        
+        string title = core.DocumentTitle;
+        
+        // Only update UI title if it's not hidden mode (where _originalTitleLabel is empty)
+        if (!string.IsNullOrEmpty(_originalTitleLabel))
+        {
+            TitleLabel.Text = title;
+            Title = title;
+        }
+
+        // Check if there is a notification badge like "(1)"
+        var match = Regex.Match(title, @"^\((\d+)\)");
+        
+        if (TaskbarItemInfo == null)
+            TaskbarItemInfo = new TaskbarItemInfo();
+
+        if (match.Success)
+        {
+            string badgeText = match.Groups[1].Value;
+            if (_lastBadgeText != badgeText || _lastBadgeImage == null)
+            {
+                _lastBadgeText = badgeText;
+                _lastBadgeImage = CreateBadge(badgeText);
+            }
+            TaskbarItemInfo.Overlay = _lastBadgeImage;
+
+            if (!IsActive)
+            {
+                var info = new FLASHWINFO
+                {
+                    cbSize = (uint)Marshal.SizeOf<FLASHWINFO>(),
+                    hwnd = new WindowInteropHelper(this).Handle,
+                    dwFlags = FLASHW_TRAY | FLASHW_TIMERNOFG,
+                    uCount = 3,
+                    dwTimeout = 0
+                };
+                FlashWindowEx(ref info);
+            }
+        }
+        else
+        {
+            if (TaskbarItemInfo.Overlay != null)
+                TaskbarItemInfo.Overlay = null;
+
+            var info = new FLASHWINFO
+            {
+                cbSize = (uint)Marshal.SizeOf<FLASHWINFO>(),
+                hwnd = new WindowInteropHelper(this).Handle,
+                dwFlags = FLASHW_STOP,
+                uCount = 0,
+                dwTimeout = 0
+            };
+            FlashWindowEx(ref info);
+        }
+    }
+
+    private string? _lastBadgeText;
+    private ImageSource? _lastBadgeImage;
+
+    private ImageSource CreateBadge(string text)
+    {
+        var visual = new DrawingVisual();
+        using (var context = visual.RenderOpen())
+        {
+            var brush = new SolidColorBrush(Color.FromRgb(230, 39, 39)); // Red
+            var pen = new Pen(Brushes.White, 1.5); // White border
+            
+            context.DrawEllipse(brush, pen, new Point(16, 16), 14, 14);
+            
+            var typeface = new Typeface(new FontFamily("Segoe UI"), FontStyles.Normal, FontWeights.Bold, FontStretches.Normal);
+            double pixelsPerDip = VisualTreeHelper.GetDpi(this).PixelsPerDip;
+            var formattedText = new FormattedText(
+                text,
+                System.Globalization.CultureInfo.InvariantCulture,
+                FlowDirection.LeftToRight,
+                typeface,
+                14,
+                Brushes.White,
+                pixelsPerDip);
+
+            context.DrawText(formattedText, new Point(16 - formattedText.Width / 2, 16 - formattedText.Height / 2));
+        }
+        
+        var bitmap = new RenderTargetBitmap(32, 32, 96, 96, PixelFormats.Pbgra32);
+        bitmap.Render(visual);
+        return bitmap;
+    }
+
+    [DllImport("user32.dll")]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static extern bool FlashWindowEx(ref FLASHWINFO pwfi);
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct FLASHWINFO
+    {
+        public uint cbSize;
+        public IntPtr hwnd;
+        public uint dwFlags;
+        public uint uCount;
+        public uint dwTimeout;
+    }
+
+    private const uint FLASHW_STOP = 0;
+    private const uint FLASHW_TRAY = 2;
+    private const uint FLASHW_TIMERNOFG = 12;
 }
