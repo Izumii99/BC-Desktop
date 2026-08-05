@@ -9,7 +9,8 @@
         AllowsTransparency="False"
         Background="#0d0d0d"
         UseLayoutRounding="True"
-        WindowStartupLocation="CenterScreen">
+        WindowStartupLocation="CenterScreen"
+        Icon="Assets/app.ico">
 
     <Window.Resources>
         <Style x:Key="TitleBtn" TargetType="Button">
@@ -57,7 +58,9 @@
         </Grid.RowDefinitions>
 
         <Grid Grid.Row="0" Background="#1a1a1a"
-              MouseLeftButtonDown="TitleBar_MouseLeftButtonDown">
+              MouseLeftButtonDown="TitleBar_MouseLeftButtonDown"
+              MouseMove="TitleBar_MouseMove"
+              MouseLeftButtonUp="TitleBar_MouseLeftButtonUp">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*"/>
                 <ColumnDefinition Width="Auto"/>
@@ -89,3 +92,5 @@
                       CoreWebView2InitializationCompleted="WebView_Initialized"/>
     </Grid>
 </Window>
+
+

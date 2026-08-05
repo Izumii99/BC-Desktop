@@ -27,9 +27,16 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Resource Include="Assets\**\*.png" />
+    <Resource Include="Assets\**\*.ico" />
+  </ItemGroup>
+
+  <ItemGroup>
     <None Include="Scripts\**\*" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
 
 
 </Project>
+
+
