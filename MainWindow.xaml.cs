@@ -25,7 +25,18 @@ public partial class MainWindow : Window
         InitializeComponent();
         _originalTitleLabel = TitleLabel.Text;
         StateChanged += OnWindowStateChanged;
+        Activated += MainWindow_Activated;
         InitWebViewAsync();
+    }
+
+    private async void MainWindow_Activated(object? sender, EventArgs e)
+    {
+        await Task.Delay(100);
+        WebView.Focus();
+        if (WebView.CoreWebView2 != null)
+        {
+            WebView.CoreWebView2.ExecuteScriptAsync("if (document.getElementById('InputChat')) document.getElementById('InputChat').focus();");
+        }
     }
 
     private async void OnWindowStateChanged(object? sender, EventArgs e)
@@ -45,6 +56,9 @@ public partial class MainWindow : Window
             {
                 core.Resume();
                 core.MemoryUsageTargetLevel = CoreWebView2MemoryUsageTargetLevel.Normal;
+                await Task.Delay(100);
+                WebView.Focus();
+                core.ExecuteScriptAsync("if (document.getElementById('InputChat')) document.getElementById('InputChat').focus();");
             }
         }
         catch
