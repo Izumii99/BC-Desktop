@@ -41,8 +41,6 @@ public partial class MainWindow : Window
 
     private async void OnWindowStateChanged(object? sender, EventArgs e)
     {
-        UpdatePadding();
-
         if (WebView.CoreWebView2 is not { } core) return;
 
         try
@@ -244,27 +242,6 @@ public partial class MainWindow : Window
         WindowState = WindowState.Maximized;
         MaxRestoreBtn.Content = "\uE923";
         MaxRestoreBtn.ToolTip = "Restore";
-        
-        UpdatePadding();
-    }
-
-    private void UpdatePadding()
-    {
-        if (WindowState == WindowState.Maximized)
-        {
-            int fx = GetSystemMetrics(SM_CXFRAME) + GetSystemMetrics(SM_CXPADDEDBORDER);
-            int fy = GetSystemMetrics(SM_CYFRAME) + GetSystemMetrics(SM_CXPADDEDBORDER);
-
-            var source = PresentationSource.FromVisual(this);
-            double dpiX = source?.CompositionTarget?.TransformToDevice.M11 ?? 1.0;
-            double dpiY = source?.CompositionTarget?.TransformToDevice.M22 ?? 1.0;
-
-            this.Padding = new Thickness(fx / dpiX, fy / dpiY, fx / dpiX, fy / dpiY);
-        }
-        else
-        {
-            this.Padding = new Thickness(0);
-        }
     }
 
     private const int WM_GETMINMAXINFO    = 0x0024;
