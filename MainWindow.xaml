@@ -3,11 +3,11 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:wv2="clr-namespace:Microsoft.Web.WebView2.Wpf;assembly=Microsoft.Web.WebView2.Wpf"
         Title="BC"
-        Height="648" Width="1152"
-        MinHeight="600" MinWidth="900"
+        Height="608" Width="1152"
+        MinHeight="482" MinWidth="900"
         WindowStyle="None"
-        AllowsTransparency="False"
-        Background="#0d0d0d"
+        AllowsTransparency="True"
+        Background="Transparent"
         UseLayoutRounding="True"
         WindowStartupLocation="CenterScreen"
         Icon="Assets/app.ico">
@@ -51,16 +51,17 @@
         </Style>
     </Window.Resources>
 
-    <Grid>
-        <Grid.RowDefinitions>
-            <RowDefinition Height="32"/>
-            <RowDefinition Height="*"/>
-        </Grid.RowDefinitions>
+    <Border Background="#0d0d0d">
+        <Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="32"/>
+                <RowDefinition Height="*"/>
+            </Grid.RowDefinitions>
 
-        <Grid Grid.Row="0" Background="#1a1a1a"
-              MouseLeftButtonDown="TitleBar_MouseLeftButtonDown"
-              MouseMove="TitleBar_MouseMove"
-              MouseLeftButtonUp="TitleBar_MouseLeftButtonUp">
+            <Grid Grid.Row="0" Background="#1a1a1a"
+                  MouseLeftButtonDown="TitleBar_MouseLeftButtonDown"
+                  MouseMove="TitleBar_MouseMove"
+                  MouseLeftButtonUp="TitleBar_MouseLeftButtonUp">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*"/>
                 <ColumnDefinition Width="Auto"/>
@@ -90,7 +91,8 @@
         <wv2:WebView2 x:Name="WebView"
                       Grid.Row="1"
                       CoreWebView2InitializationCompleted="WebView_Initialized"/>
-    </Grid>
+        </Grid>
+    </Border>
 </Window>
 
 
