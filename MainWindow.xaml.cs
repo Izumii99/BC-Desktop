@@ -66,26 +66,27 @@ public partial class MainWindow : Window
 
     private static async Task<string> DetectLatestUrlAsync()
     {
+        int version = 130;
         try
         {
-            using var http = new HttpClient { Timeout = TimeSpan.FromSeconds(6) };
+            using var http = new HttpClient { Timeout = TimeSpan.FromSeconds(3) };
             http.DefaultRequestHeaders.UserAgent.ParseAdd(
                 "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36");
 
-            var html    = await http.GetStringAsync(VersionApiBase);
-            var matches = Regex.Matches(html, @"/club/(R(\d+))/",
-                RegexOptions.IgnoreCase);
-
-            if (matches.Count > 0)
+            while (true)
             {
-                var best = matches.MaxBy(m => int.Parse(m.Groups[2].Value))!;
-                return $"https://www.bondage-asia.com{best.Groups[0].Value}";
+                var request = new HttpRequestMessage(HttpMethod.Head, $"https://www.bondage-asia.com/club/R{version + 1}/");
+                var response = await http.SendAsync(request);
+                
+                if (response.IsSuccessStatusCode)
+                    version++;
+                else
+                    break;
             }
         }
-        catch
-        {
-        }
-        return FallbackUrl;
+        catch { }
+
+        return $"https://www.bondage-asia.com/club/R{version}/";
     }
 
     private async void InitWebViewAsync()
@@ -122,6 +123,61 @@ public partial class MainWindow : Window
         core.Settings.IsZoomControlEnabled          = false;
 
         core.DocumentTitleChanged += Core_DocumentTitleChanged;
+        core.PermissionRequested += (s, args) =>
+        {
+            if (args.PermissionKind == CoreWebView2PermissionKind.ClipboardRead)
+            {
+                args.State = CoreWebView2PermissionState.Allow;
+            }
+        };
+
+        core.WebMessageReceived += (s, args) =>
+        {
+            try
+            {
+                string msg = args.TryGetWebMessageAsString();
+                if (msg != null && msg.StartsWith("COPY_TEXT:"))
+                {
+                    string textToCopy = msg.Substring(10);
+                    // Use Dispatcher and a retry loop to ensure STA thread and avoid CLIPBRD_E_CANT_OPEN
+                    Application.Current.Dispatcher.Invoke(async () =>
+                    {
+                        for (int i = 0; i < 5; i++)
+                        {
+                            try
+                            {
+                                Clipboard.SetDataObject(textToCopy, true);
+                                break;
+                            }
+                            catch
+                            {
+                                await Task.Delay(50);
+                            }
+                        }
+                    });
+                }
+            }
+            catch { }
+        };
+
+        string copyScript = @"
+            document.addEventListener('keydown', (e) => {
+                if (e.ctrlKey && (e.key === 'c' || e.key === 'C')) {
+                    let text = '';
+                    let activeEl = document.activeElement;
+                    if (activeEl && (activeEl.tagName === 'INPUT' || activeEl.tagName === 'TEXTAREA')) {
+                        text = activeEl.value.substring(activeEl.selectionStart, activeEl.selectionEnd);
+                    } else {
+                        text = window.getSelection().toString();
+                    }
+                    if (text) {
+                        window.chrome.webview.postMessage('COPY_TEXT:' + text);
+                        e.preventDefault();
+                    }
+                }
+            }, true);
+        ";
+        await core.AddScriptToExecuteOnDocumentCreatedAsync(copyScript);
 
 
 
