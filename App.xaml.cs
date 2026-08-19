@@ -10,6 +10,16 @@ public partial class App : Application
 
     protected override void OnStartup(StartupEventArgs e)
     {
+        // ponytail: kill old instances so a new launch guarantees the latest version check
+        var current = System.Diagnostics.Process.GetCurrentProcess();
+        foreach (var process in System.Diagnostics.Process.GetProcessesByName(current.ProcessName))
+        {
+            if (process.Id != current.Id)
+            {
+                try { process.Kill(); } catch { }
+            }
+        }
+
         SetCurrentProcessExplicitAppUserModelID("BCDesktop.Client");
         base.OnStartup(e);
     }
