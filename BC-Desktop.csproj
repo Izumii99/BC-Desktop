@@ -4,11 +4,11 @@
     <OutputType>WinExe</OutputType>
     <TargetFramework>net8.0-windows</TargetFramework>
     <UseWPF>true</UseWPF>
-    <AssemblyName>Bondage Club</AssemblyName>
+    <AssemblyName>ㅤ</AssemblyName>
     <RootNamespace>BCDesktop</RootNamespace>
-    <ApplicationIcon>Assets\app.ico</ApplicationIcon>
-    <Product>BC Desktop</Product>
-    <AssemblyTitle>BC Desktop</AssemblyTitle>
+    <ApplicationIcon>Assets\transparent.ico</ApplicationIcon>
+    <Product>ㅤ</Product>
+    <AssemblyTitle>ㅤ</AssemblyTitle>
     <Company>BC Client</Company>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
