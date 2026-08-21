@@ -10,7 +10,7 @@
         Background="Transparent"
         UseLayoutRounding="True"
         WindowStartupLocation="CenterScreen"
-        Icon="Assets/transparent.ico">
+        Icon="Assets/app.ico">
 
     <Window.Resources>
         <Style x:Key="TitleBtn" TargetType="Button">
@@ -68,9 +68,9 @@
             </Grid.ColumnDefinitions>
 
             <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center" Margin="10,0,0,0">
-                <Image Source="Assets/transparent.png" Width="16" Height="16" Margin="0,0,8,0" RenderOptions.BitmapScalingMode="HighQuality"/>
+                <Image Source="Assets/app_logo.png" Width="16" Height="16" Margin="0,0,8,0" RenderOptions.BitmapScalingMode="HighQuality"/>
                 <TextBlock x:Name="TitleLabel"
-                           Text=""
+                           Text="Bondage Club"
                            Foreground="#dddddd"
                            FontSize="12"
                            FontFamily="Segoe UI"
