@@ -35,7 +35,36 @@ public partial class MainWindow : Window
         WebView.Focus();
         if (WebView.CoreWebView2 != null)
         {
-            WebView.CoreWebView2.ExecuteScriptAsync("if (document.getElementById('InputChat')) document.getElementById('InputChat').focus();");
+            string smartFocusScript = @"
+                (function() {
+                    function getHighestZ(el) {
+                        let max = 0;
+                        while (el && el !== document.documentElement) {
+                            let z = parseInt(window.getComputedStyle(el).zIndex, 10);
+                            if (!isNaN(z) && z > max) max = z;
+                            el = el.parentElement;
+                        }
+                        return max;
+                    }
+
+                    let inputs = document.querySelectorAll('input, textarea');
+                    let bestInput = null;
+                    let maxScore = -999999;
+                    for (let i = 0; i < inputs.length; i++) {
+                        let el = inputs[i];
+                        if (el.offsetParent === null || el.getBoundingClientRect().width === 0) continue;
+                        
+                        let score = getHighestZ(el);
+                        if (el.id !== 'InputChat') score += 10000; 
+                        if (el.tagName === 'TEXTAREA') score += 1000;
+                        if (el.id && el.id.toLowerCase().indexOf('search') !== -1) score -= 2000;
+                        
+                        if (score > maxScore) { maxScore = score; bestInput = el; }
+                    }
+                    if (bestInput) bestInput.focus();
+                })();
+            ";
+            WebView.CoreWebView2.ExecuteScriptAsync(smartFocusScript);
         }
     }
 
@@ -56,7 +85,36 @@ public partial class MainWindow : Window
                 core.MemoryUsageTargetLevel = CoreWebView2MemoryUsageTargetLevel.Normal;
                 await Task.Delay(100);
                 WebView.Focus();
-                core.ExecuteScriptAsync("if (document.getElementById('InputChat')) document.getElementById('InputChat').focus();");
+                string smartFocusScript = @"
+                    (function() {
+                        function getHighestZ(el) {
+                            let max = 0;
+                            while (el && el !== document.documentElement) {
+                                let z = parseInt(window.getComputedStyle(el).zIndex, 10);
+                                if (!isNaN(z) && z > max) max = z;
+                                el = el.parentElement;
+                            }
+                            return max;
+                        }
+
+                        let inputs = document.querySelectorAll('input, textarea');
+                        let bestInput = null;
+                        let maxScore = -999999;
+                        for (let i = 0; i < inputs.length; i++) {
+                            let el = inputs[i];
+                            if (el.offsetParent === null || el.getBoundingClientRect().width === 0) continue;
+                            
+                            let score = getHighestZ(el);
+                            if (el.id !== 'InputChat') score += 10000; 
+                            if (el.tagName === 'TEXTAREA') score += 1000;
+                            if (el.id && el.id.toLowerCase().indexOf('search') !== -1) score -= 2000;
+                            
+                            if (score > maxScore) { maxScore = score; bestInput = el; }
+                        }
+                        if (bestInput) bestInput.focus();
+                    })();
+                ";
+                core.ExecuteScriptAsync(smartFocusScript);
             }
         }
         catch
