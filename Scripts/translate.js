@@ -89,7 +89,7 @@
 
         const sourceLang = document.createElement("select");
         sourceLang.innerHTML =
-            '<option value="auto">Otomatis</option><option value="en" selected>Inggris</option><option value="id">Indonesia</option><option value="ja">Jepang</option><option value="zh-CN">China</option><option value="min">Minang</option><option value="jv">Jawa</option>';
+            '<option value="auto">Otomatis</option><option value="en" selected>Inggris</option><option value="id">Indonesia</option><option value="ja">Jepang</option><option value="zh-CN">China</option><option value="ms">Melayu</option>';
         sourceLang.style.flex = "1";
         sourceLang.style.padding = "5px";
         sourceLang.style.borderRadius = "4px";
@@ -97,7 +97,7 @@
 
         const targetLang = document.createElement("select");
         targetLang.innerHTML =
-            '<option value="id">Indonesia</option><option value="en">Inggris</option><option value="ja">Jepang</option><option value="zh-CN">China</option><option value="min">Minang</option><option value="jv">Jawa</option>';
+            '<option value="id">Indonesia</option><option value="en">Inggris</option><option value="ja">Jepang</option><option value="zh-CN">China</option><option value="ms">Melayu</option>';
         targetLang.style.flex = "1";
         targetLang.style.padding = "5px";
         targetLang.style.borderRadius = "4px";
