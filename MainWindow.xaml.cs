@@ -69,16 +69,29 @@ public partial class MainWindow : Window
         int version = 130;
         try
         {
-            using var http = new HttpClient { Timeout = TimeSpan.FromSeconds(3) };
+            using var http = new HttpClient { Timeout = TimeSpan.FromSeconds(10) };
             http.DefaultRequestHeaders.UserAgent.ParseAdd(
                 "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36");
 
             while (true)
             {
-                var request = new HttpRequestMessage(HttpMethod.Head, $"https://www.bondage-asia.com/club/R{version + 1}/");
-                var response = await http.SendAsync(request);
+                string nextUrl = $"https://www.bondage-asia.com/club/R{version + 1}/";
+                HttpResponseMessage? response = null;
                 
-                if (response.IsSuccessStatusCode)
+                try
+                {
+                    response = await http.SendAsync(new HttpRequestMessage(HttpMethod.Head, nextUrl));
+                }
+                catch
+                {
+                    if (version == 130) // Retry once on cold start
+                    {
+                        await Task.Delay(500);
+                        response = await http.SendAsync(new HttpRequestMessage(HttpMethod.Head, nextUrl));
+                    }
+                }
+                
+                if (response != null && response.IsSuccessStatusCode)
                     version++;
                 else
                     break;
@@ -131,7 +144,7 @@ public partial class MainWindow : Window
             }
         };
 
-        core.WebMessageReceived += (s, args) =>
+        core.WebMessageReceived += async (s, args) =>
         {
             try
             {
@@ -139,20 +152,43 @@ public partial class MainWindow : Window
                 if (msg != null && msg.StartsWith("COPY_TEXT:"))
                 {
                     string textToCopy = msg.Substring(10);
-                    // Use Dispatcher and a retry loop to ensure STA thread and avoid CLIPBRD_E_CANT_OPEN
-                    Application.Current.Dispatcher.Invoke(async () =>
+                    Application.Current.Dispatcher.Invoke(() =>
                     {
-                        for (int i = 0; i < 5; i++)
+                        for (int i = 0; i < 10; i++)
                         {
                             try
                             {
-                                Clipboard.SetDataObject(textToCopy, true);
-                                break;
+                                if (OpenClipboard(new WindowInteropHelper(this).Handle))
+                                {
+                                    EmptyClipboard();
+                                    IntPtr hGlobal = IntPtr.Zero;
+                                    try
+                                    {
+                                        int bytes = (textToCopy.Length + 1) * 2;
+                                        hGlobal = GlobalAlloc(0x0042, (UIntPtr)bytes); // GMEM_MOVEABLE | GMEM_ZEROINIT
+                                        if (hGlobal != IntPtr.Zero)
+                                        {
+                                            IntPtr target = GlobalLock(hGlobal);
+                                            if (target != IntPtr.Zero)
+                                            {
+                                                Marshal.Copy(textToCopy.ToCharArray(), 0, target, textToCopy.Length);
+                                                GlobalUnlock(hGlobal);
+                                                SetClipboardData(13, hGlobal); // CF_UNICODETEXT
+                                                hGlobal = IntPtr.Zero; // Clipboard owns it now
+                                            }
+                                        }
+                                    }
+                                    finally
+                                    {
+                                        if (hGlobal != IntPtr.Zero) GlobalFree(hGlobal);
+                                        CloseClipboard();
+                                    }
+                                    break;
+                                }
                             }
-                            catch
-                            {
-                                await Task.Delay(50);
-                            }
+                            catch { }
+                            
+                            System.Threading.Thread.Sleep(50);
                         }
                     });
                 }
@@ -177,9 +213,7 @@ public partial class MainWindow : Window
                 }
             }, true);
         ";
-        await core.AddScriptToExecuteOnDocumentCreatedAsync(copyScript);
-
-
+        _ = core.AddScriptToExecuteOnDocumentCreatedAsync(copyScript);
 
         string scriptsDir = Path.Combine(AppContext.BaseDirectory, "Scripts");
         if (Directory.Exists(scriptsDir))
@@ -300,39 +334,73 @@ public partial class MainWindow : Window
         MaxRestoreBtn.ToolTip = "Restore";
     }
 
-    private const int WM_GETMINMAXINFO    = 0x0024;
-    private const uint MONITOR_DEFAULTTONEAREST = 0x00000002;
-
-    [DllImport("user32.dll")] private static extern IntPtr MonitorFromWindow(IntPtr hwnd, uint flags);
-    [DllImport("user32.dll")] private static extern bool   GetMonitorInfo(IntPtr hMon, ref MONITORINFO mi);
-
-    private static IntPtr WndProc(IntPtr hwnd, int msg, IntPtr wParam, IntPtr lParam, ref bool handled)
+    private IntPtr WndProc(IntPtr hwnd, int msg, IntPtr wParam, IntPtr lParam, ref bool handled)
     {
         if (msg == WM_GETMINMAXINFO)
         {
             var monitor = MonitorFromWindow(hwnd, MONITOR_DEFAULTTONEAREST);
-            var mi      = new MONITORINFO { cbSize = Marshal.SizeOf<MONITORINFO>() };
+            var mi = new MONITORINFO { cbSize = Marshal.SizeOf<MONITORINFO>() };
             if (GetMonitorInfo(monitor, ref mi))
             {
-                int fx = GetSystemMetrics(SM_CXFRAME) + GetSystemMetrics(SM_CXPADDEDBORDER);
-                int fy = GetSystemMetrics(SM_CYFRAME) + GetSystemMetrics(SM_CXPADDEDBORDER);
-
                 var mmi = Marshal.PtrToStructure<MINMAXINFO>(lParam);
-                mmi.ptMaxPosition.X = (mi.rcWork.Left - mi.rcMonitor.Left) - fx;
-                mmi.ptMaxPosition.Y = (mi.rcWork.Top  - mi.rcMonitor.Top)  - fy;
-                mmi.ptMaxSize.X     = (mi.rcWork.Right - mi.rcWork.Left) + fx * 2;
-                mmi.ptMaxSize.Y     = (mi.rcWork.Bottom - mi.rcWork.Top) + fy * 2;
+                
+                // AllowsTransparency="True" removes DWM borders. No need to subtract SM_CXFRAME.
+                mmi.ptMaxPosition.X = (mi.rcWork.Left - mi.rcMonitor.Left);
+                mmi.ptMaxPosition.Y = (mi.rcWork.Top - mi.rcMonitor.Top);
+                mmi.ptMaxSize.X = (mi.rcWork.Right - mi.rcWork.Left);
+                mmi.ptMaxSize.Y = (mi.rcWork.Bottom - mi.rcWork.Top);
+                
                 Marshal.StructureToPtr(mmi, lParam, true);
                 handled = true;
+            }
+        }
+        else if (msg == WM_WINDOWPOSCHANGING)
+        {
+            var wp = Marshal.PtrToStructure<WINDOWPOS>(lParam);
+            if ((wp.flags & 0x0001) == 0) // SWP_NOSIZE = 0x0001
+            {
+                var monitor = MonitorFromWindow(hwnd, MONITOR_DEFAULTTONEAREST);
+                var mi = new MONITORINFO { cbSize = Marshal.SizeOf<MONITORINFO>() };
+                GetMonitorInfo(monitor, ref mi);
+
+                bool isMaximized = (wp.cx >= (mi.rcWork.Right - mi.rcWork.Left)) && (wp.cy >= (mi.rcWork.Bottom - mi.rcWork.Top));
+
+                if (!isMaximized)
+                {
+                    double dpi = VisualTreeHelper.GetDpi(this).DpiScaleY;
+                    int titleBarHeight = (int)(32 * dpi);
+                    
+                    wp.cy = (wp.cx / 2) + titleBarHeight;
+                    Marshal.StructureToPtr(wp, lParam, true);
+                }
             }
         }
         return IntPtr.Zero;
     }
 
-    private const int SM_CXFRAME       = 32;
-    private const int SM_CYFRAME       = 33;
-    private const int SM_CXPADDEDBORDER = 92;
-    [DllImport("user32.dll")] private static extern int GetSystemMetrics(int nIndex);
+    private const int WM_GETMINMAXINFO       = 0x0024;
+    private const int WM_WINDOWPOSCHANGING   = 0x0046;
+    private const uint MONITOR_DEFAULTTONEAREST = 0x00000002;
+
+    [DllImport("user32.dll")] private static extern IntPtr MonitorFromWindow(IntPtr hwnd, uint flags);
+    [DllImport("user32.dll")] private static extern bool   GetMonitorInfo(IntPtr hMon, ref MONITORINFO mi);
+
+    [DllImport("user32.dll", SetLastError = true)]
+    private static extern bool OpenClipboard(IntPtr hWndNewOwner);
+    [DllImport("user32.dll")]
+    private static extern bool EmptyClipboard();
+    [DllImport("user32.dll")]
+    private static extern IntPtr SetClipboardData(uint uFormat, IntPtr hMem);
+    [DllImport("user32.dll")]
+    private static extern bool CloseClipboard();
+    [DllImport("kernel32.dll")]
+    private static extern IntPtr GlobalAlloc(uint uFlags, UIntPtr dwBytes);
+    [DllImport("kernel32.dll")]
+    private static extern IntPtr GlobalLock(IntPtr hMem);
+    [DllImport("kernel32.dll")]
+    private static extern bool GlobalUnlock(IntPtr hMem);
+    [DllImport("kernel32.dll")]
+    private static extern IntPtr GlobalFree(IntPtr hMem);
 
 
     [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Auto)]
@@ -355,6 +423,15 @@ public partial class MainWindow : Window
 
     [StructLayout(LayoutKind.Sequential)]
     private struct POINT { public int X, Y; }
+    
+    [StructLayout(LayoutKind.Sequential)]
+    private struct WINDOWPOS
+    {
+        public IntPtr hwnd;
+        public IntPtr hwndInsertAfter;
+        public int x, y, cx, cy;
+        public uint flags;
+    }
 
     private void Core_DocumentTitleChanged(object? sender, object e)
     {
@@ -441,7 +518,9 @@ public partial class MainWindow : Window
 
             context.DrawText(formattedText, new Point(16 - formattedText.Width / 2, 16 - formattedText.Height / 2));
         }
-        
+
+
+
         var bitmap = new RenderTargetBitmap(32, 32, 96, 96, PixelFormats.Pbgra32);
         bitmap.Render(visual);
         return bitmap;
