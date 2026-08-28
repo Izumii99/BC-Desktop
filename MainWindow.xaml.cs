@@ -35,35 +35,18 @@ public partial class MainWindow : Window
         WebView.Focus();
         if (WebView.CoreWebView2 != null)
         {
-            string smartFocusScript = @"
-                (function() {
-                    function getHighestZ(el) {
-                        let max = 0;
-                        while (el && el !== document.documentElement) {
-                            let z = parseInt(window.getComputedStyle(el).zIndex, 10);
-                            if (!isNaN(z) && z > max) max = z;
-                            el = el.parentElement;
+                string smartFocusScript = @"
+                    (function() {
+                        if (window.bcLogDebug) window.bcLogDebug('ACTIVATED');
+                        if (window.bcRunFocusCrawler) {
+                            let bestInput = window.bcRunFocusCrawler();
+                            if (bestInput) {
+                                if (window.bcLogDebug) window.bcLogDebug('=> Hybrid focus: ' + bestInput.tagName + '#' + bestInput.id);
+                                bestInput.focus();
+                            }
                         }
-                        return max;
-                    }
-
-                    let inputs = document.querySelectorAll('input, textarea');
-                    let bestInput = null;
-                    let maxScore = -999999;
-                    for (let i = 0; i < inputs.length; i++) {
-                        let el = inputs[i];
-                        if (el.offsetParent === null || el.getBoundingClientRect().width === 0) continue;
-                        
-                        let score = getHighestZ(el);
-                        if (el.id !== 'InputChat') score += 10000; 
-                        if (el.tagName === 'TEXTAREA') score += 1000;
-                        if (el.id && el.id.toLowerCase().indexOf('search') !== -1) score -= 2000;
-                        
-                        if (score > maxScore) { maxScore = score; bestInput = el; }
-                    }
-                    if (bestInput) bestInput.focus();
-                })();
-            ";
+                    })();
+                ";
             WebView.CoreWebView2.ExecuteScriptAsync(smartFocusScript);
         }
     }
@@ -87,31 +70,14 @@ public partial class MainWindow : Window
                 WebView.Focus();
                 string smartFocusScript = @"
                     (function() {
-                        function getHighestZ(el) {
-                            let max = 0;
-                            while (el && el !== document.documentElement) {
-                                let z = parseInt(window.getComputedStyle(el).zIndex, 10);
-                                if (!isNaN(z) && z > max) max = z;
-                                el = el.parentElement;
+                        if (window.bcLogDebug) window.bcLogDebug('ACTIVATED');
+                        if (window.bcRunFocusCrawler) {
+                            let bestInput = window.bcRunFocusCrawler();
+                            if (bestInput) {
+                                if (window.bcLogDebug) window.bcLogDebug('=> Hybrid focus: ' + bestInput.tagName + '#' + bestInput.id);
+                                bestInput.focus();
                             }
-                            return max;
                         }
-
-                        let inputs = document.querySelectorAll('input, textarea');
-                        let bestInput = null;
-                        let maxScore = -999999;
-                        for (let i = 0; i < inputs.length; i++) {
-                            let el = inputs[i];
-                            if (el.offsetParent === null || el.getBoundingClientRect().width === 0) continue;
-                            
-                            let score = getHighestZ(el);
-                            if (el.id !== 'InputChat') score += 10000; 
-                            if (el.tagName === 'TEXTAREA') score += 1000;
-                            if (el.id && el.id.toLowerCase().indexOf('search') !== -1) score -= 2000;
-                            
-                            if (score > maxScore) { maxScore = score; bestInput = el; }
-                        }
-                        if (bestInput) bestInput.focus();
                     })();
                 ";
                 core.ExecuteScriptAsync(smartFocusScript);
@@ -270,6 +236,162 @@ public partial class MainWindow : Window
                     }
                 }
             }, true);
+
+            function isEditable(el) {
+                if (!el) return false;
+                if (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA') return true;
+                if (el.isContentEditable) return true;
+                return false;
+            }
+
+            document.addEventListener('focusin', (e) => {
+                if (isEditable(e.target)) {
+                    window.bcFocusMemory = e.target;
+                }
+            }, true);
+            
+            document.addEventListener('mousedown', (e) => {
+                window.bcLastMousedown = e.target;
+                window.bcLastMousedownTime = Date.now();
+                if (!isEditable(e.target)) {
+                    window.bcFocusMemory = null;
+                }
+                
+                let ic = document.getElementById('InputChat');
+                if (ic) window.bcInputChatLastValue = ic.value;
+            }, true);
+
+            let origFocus = HTMLElement.prototype.focus;
+            
+            window.bcFocusAndTeleport = function(best) {
+                let ic = document.getElementById('InputChat');
+                let timeSinceMousedown = Date.now() - (window.bcLastMousedownTime || 0);
+                if (ic && timeSinceMousedown < 1500) {
+                    let lastVal = window.bcInputChatLastValue || '';
+                    if (ic.value.startsWith(lastVal) && ic.value.length > lastVal.length) {
+                        let leaked = ic.value.substring(lastVal.length);
+                        if (best.tagName === 'INPUT' || best.tagName === 'TEXTAREA') {
+                            best.value = (best.value || '') + leaked;
+                            try { best.selectionStart = best.value.length; best.selectionEnd = best.value.length; } catch(e) {}
+                        } else if (best.isContentEditable) {
+                            best.innerText = (best.innerText || '') + leaked;
+                        }
+                        ic.value = lastVal;
+                    }
+                }
+                origFocus.call(best);
+            };
+
+            window.bcRunFocusCrawler = function() {
+                function getHighestZ(el) {
+                    let max = 0;
+                    while (el && el !== document.documentElement) {
+                        let z = parseInt(window.getComputedStyle(el).zIndex, 10);
+                        if (!isNaN(z) && z > max) max = z;
+                        el = el.parentElement;
+                    }
+                    return max;
+                }
+
+                let inputs = document.querySelectorAll('input, textarea, [contenteditable=""true""]');
+                let bestInput = null;
+                let maxScore = -999999999;
+                
+                for (let i = 0; i < inputs.length; i++) {
+                    let el = inputs[i];
+                    if (el.disabled) continue;
+                    if (el.offsetParent === null) continue;
+                    let rect = el.getBoundingClientRect();
+                    if (rect.width === 0 || rect.height === 0) continue;
+                    
+                    let style = window.getComputedStyle(el);
+                    if (style.visibility === 'hidden' || style.opacity === '0' || style.display === 'none') continue;
+                    
+                    let z = getHighestZ(el);
+                    let score = z * 1000;
+                    
+                    if (el.id === 'InputChat' || el.id === 'TextAreaChatLog') score -= 500000;
+                    
+                    if (el.tagName === 'TEXTAREA') score += 1000;
+                    if (el.id && el.id.toLowerCase().indexOf('search') !== -1) score -= 2000;
+                    if (el.className && el.className.toLowerCase().indexOf('search') !== -1) score -= 2000;
+                    
+                    if (window.bcFocusMemory === el) score += 1000000000;
+                    
+                    if (score > maxScore) { maxScore = score; bestInput = el; }
+                }
+                return bestInput;
+            };
+
+            HTMLElement.prototype.focus = function() {
+                try {
+                    if (this.id === 'InputChat') {
+                        let best = window.bcRunFocusCrawler ? window.bcRunFocusCrawler() : null;
+                        if (best && best !== this) {
+                            if (window.bcFocusAndTeleport) {
+                                window.bcFocusAndTeleport(best);
+                                return;
+                            }
+                        }
+                    }
+                } catch(e) {}
+                origFocus.call(this);
+            };
+
+            let focusObserver = new MutationObserver((mutations) => {
+                let shouldCheck = false;
+                for (let m of mutations) {
+                    if (m.type === 'childList' && m.addedNodes.length > 0) shouldCheck = true;
+                    if (m.type === 'attributes') shouldCheck = true;
+                    if (shouldCheck) break;
+                }
+                
+                if (shouldCheck) {
+                    if (window.bcFocusTimeout) clearTimeout(window.bcFocusTimeout);
+                    window.bcFocusTimeout = setTimeout(() => {
+                        let best = window.bcRunFocusCrawler ? window.bcRunFocusCrawler() : null;
+                        if (best && best.id !== 'InputChat' && document.activeElement !== best) {
+                            if (window.bcFocusAndTeleport) window.bcFocusAndTeleport(best);
+                        }
+                    }, 50);
+                }
+            });
+            focusObserver.observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ['style', 'class'] });
+
+            let origClipboard = navigator.clipboard;
+            let mockClipboard = {
+                writeText: function(text) {
+                    window.chrome.webview.postMessage('COPY_TEXT:' + text);
+                    return Promise.resolve();
+                },
+                readText: function() {
+                    if (origClipboard && origClipboard.readText) {
+                        return origClipboard.readText();
+                    }
+                    return Promise.resolve('');
+                }
+            };
+            Object.defineProperty(navigator, 'clipboard', {
+                value: mockClipboard,
+                configurable: true
+            });
+
+            const originalExecCommand = document.execCommand;
+            document.execCommand = function(commandId, showUI, value) {
+                if (commandId && commandId.toLowerCase() === 'copy') {
+                    let text = '';
+                    let activeEl = document.activeElement;
+                    if (activeEl && (activeEl.tagName === 'INPUT' || activeEl.tagName === 'TEXTAREA')) {
+                        text = activeEl.value.substring(activeEl.selectionStart, activeEl.selectionEnd);
+                    } else {
+                        text = window.getSelection().toString();
+                    }
+                    if (text) {
+                        window.chrome.webview.postMessage('COPY_TEXT:' + text);
+                    }
+                }
+                return originalExecCommand.apply(this, arguments);
+            };
         ";
         _ = core.AddScriptToExecuteOnDocumentCreatedAsync(copyScript);
 
