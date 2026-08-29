@@ -269,6 +269,33 @@ public partial class MainWindow : Window
                 if (ic) window.bcInputChatLastValue = ic.value;
             }, true);
 
+            document.addEventListener('mouseup', (e) => {
+                setTimeout(() => {
+                    let active = document.activeElement;
+                    if (active && (active.tagName === 'INPUT' || active.tagName === 'TEXTAREA' || active.isContentEditable) && active.id !== 'InputChat') return;
+                    if (window.getSelection().toString().length > 0) return;
+                    
+                    let best = window.bcRunFocusCrawler ? window.bcRunFocusCrawler() : null;
+                    if (best && document.activeElement !== best) {
+                        if (window.bcFocusAndTeleport) window.bcFocusAndTeleport(best);
+                    }
+                }, 50);
+            });
+
+            document.addEventListener('selectionchange', () => {
+                if (window.bcSelectionTimeout) clearTimeout(window.bcSelectionTimeout);
+                window.bcSelectionTimeout = setTimeout(() => {
+                    let active = document.activeElement;
+                    if (active && (active.tagName === 'INPUT' || active.tagName === 'TEXTAREA' || active.isContentEditable) && active.id !== 'InputChat') return;
+                    if (window.getSelection().toString().length > 0) return;
+                    
+                    let best = window.bcRunFocusCrawler ? window.bcRunFocusCrawler() : null;
+                    if (best && document.activeElement !== best) {
+                        if (window.bcFocusAndTeleport) window.bcFocusAndTeleport(best);
+                    }
+                }, 200);
+            });
+
             let origFocus = HTMLElement.prototype.focus;
             
             window.bcFocusAndTeleport = function(best) {
@@ -334,6 +361,14 @@ public partial class MainWindow : Window
             HTMLElement.prototype.focus = function() {
                 try {
                     if (this.id === 'InputChat') {
+                        let active = document.activeElement;
+                        if (active && (active.tagName === 'INPUT' || active.tagName === 'TEXTAREA' || active.isContentEditable) && active.id !== 'InputChat') {
+                            return;
+                        }
+                        if (window.getSelection().toString().length > 0) {
+                            return;
+                        }
+
                         let best = window.bcRunFocusCrawler ? window.bcRunFocusCrawler() : null;
                         if (best && best !== this) {
                             if (window.bcFocusAndTeleport) {
@@ -357,6 +392,14 @@ public partial class MainWindow : Window
                 if (shouldCheck) {
                     if (window.bcFocusTimeout) clearTimeout(window.bcFocusTimeout);
                     window.bcFocusTimeout = setTimeout(() => {
+                        let active = document.activeElement;
+                        if (active && (active.tagName === 'INPUT' || active.tagName === 'TEXTAREA' || active.isContentEditable) && active.id !== 'InputChat') {
+                            return;
+                        }
+                        if (window.getSelection().toString().length > 0) {
+                            return;
+                        }
+
                         let best = window.bcRunFocusCrawler ? window.bcRunFocusCrawler() : null;
                         if (best && best.id !== 'InputChat' && document.activeElement !== best) {
                             if (window.bcFocusAndTeleport) window.bcFocusAndTeleport(best);
