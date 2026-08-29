@@ -24,6 +24,7 @@ Thumbs.db
 desktop.ini
 agent.md
 Scripts/neko-devtools*.js
+Scripts/*debug*.js
 
 ## Addons og
 # Tempat ai agent bisa tracking code original hasil fork jika dibutuhkan

@@ -172,17 +172,25 @@ public partial class MainWindow : Window
         {
             try
             {
-                string msg = args.TryGetWebMessageAsString();
+                string rawJson = args.WebMessageAsJson;
+
+                string msg = null;
+                if (rawJson != null && rawJson.StartsWith("\"") && rawJson.EndsWith("\""))
+                {
+                    msg = System.Text.Json.JsonSerializer.Deserialize<string>(rawJson);
+                }
+
                 if (msg != null && msg.StartsWith("COPY_TEXT:"))
                 {
                     string textToCopy = msg.Substring(10);
-                    Application.Current.Dispatcher.Invoke(() =>
+                    Application.Current.Dispatcher.InvokeAsync(async () =>
                     {
+                        IntPtr hwnd = new WindowInteropHelper(this).Handle;
                         for (int i = 0; i < 10; i++)
                         {
                             try
                             {
-                                if (OpenClipboard(new WindowInteropHelper(this).Handle))
+                                if (OpenClipboard(hwnd))
                                 {
                                     EmptyClipboard();
                                     IntPtr hGlobal = IntPtr.Zero;
@@ -212,7 +220,7 @@ public partial class MainWindow : Window
                             }
                             catch { }
                             
-                            System.Threading.Thread.Sleep(50);
+                            await Task.Delay(50);
                         }
                     });
                 }
@@ -371,10 +379,12 @@ public partial class MainWindow : Window
                     return Promise.resolve('');
                 }
             };
-            Object.defineProperty(navigator, 'clipboard', {
-                value: mockClipboard,
-                configurable: true
-            });
+            try {
+                Object.defineProperty(navigator, 'clipboard', {
+                    value: mockClipboard,
+                    configurable: true
+                });
+            } catch(e) {}
 
             const originalExecCommand = document.execCommand;
             document.execCommand = function(commandId, showUI, value) {
@@ -393,7 +403,14 @@ public partial class MainWindow : Window
                 return originalExecCommand.apply(this, arguments);
             };
         ";
-        _ = core.AddScriptToExecuteOnDocumentCreatedAsync(copyScript);
+        
+        core.NavigationCompleted += async (sender, args) =>
+        {
+            if (args.IsSuccess)
+            {
+                await core.ExecuteScriptAsync(copyScript);
+            }
+        };
 
         string scriptsDir = Path.Combine(AppContext.BaseDirectory, "Scripts");
         if (Directory.Exists(scriptsDir))
