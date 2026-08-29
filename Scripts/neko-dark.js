@@ -4,25 +4,27 @@
 
     // -- Kawaii Midnight Purple Palette --------------------------------------
     const P = {
-        base:       "#1a1520",
-        panel:      "#1e1829",
-        soft:       "#271f38",
-        ownMsg:     "#241a36",
-        border:     "#3e3252",
-        borderAcc:  "#6b5090",
-        text:       "#d4c8e8",
-        muted:      "#7a6d94",
-        icon:       "#a898c0",
-        emoteTxt:   "#c0a8e8",
-        whisperBg:  "#271638",
+        base: "#1a1520",
+        panel: "#1e1829",
+        soft: "#271f38",
+        ownMsg: "#241a36",
+        border: "#3e3252",
+        borderAcc: "#6b5090",
+        text: "#d4c8e8",
+        muted: "#7a6d94",
+        icon: "#a898c0",
+        emoteTxt: "#c0a8e8",
+        whisperBg: "#271638",
         whisperBdr: "#9858cc",
         whisperTxt: "#e8c8ff",
-        beepBg:     "#131b2e",
-        beepBdr:    "#2e4a7a",
-        beepTxt:    "#7eb8f0",
+        beepBg: "#131b2e",
+        beepBdr: "#2e4a7a",
+        beepTxt: "#7eb8f0",
     };
 
     function injectDarkTheme() {
+        if (!document.head) return;
+
         const existing = document.getElementById("neko-enhancer-dark-theme");
         if (existing) existing.remove();
 
@@ -242,19 +244,24 @@
         document.head.appendChild(style);
     }
 
+    injectDarkTheme();
     setInterval(() => {
-        if (document.head && !document.getElementById("neko-enhancer-dark-theme")) {
-            injectDarkTheme();
-        }
-    }, 1000);    // -- MutationObserver: tag bubbles based on text content -------------------
+        if (document.head && !document.getElementById("neko-enhancer-dark-theme")) injectDarkTheme();
+    }, 1000);
+
+    // -- MutationObserver: tag bubbles based on text content -------------------
+
     const PATTERNS = [
-        { cls: "nk-voice",      re: /\[voice\]/i },
-        { cls: "nk-online",     re: /\bnow online:/i },
-        { cls: "nk-offline",    re: /\bnow offline:/i },
-        { cls: "nk-disconnect", re: /\b(disconnected|has left|left the room|left)\b/i },
-        { cls: "nk-enter",      re: /\b(entered|has entered|joined the room)\b/i },
+        { cls: "nk-voice", re: /\[voice\]/i },
+        { cls: "nk-online", re: /\bnow online:/i },
+        { cls: "nk-offline", re: /\bnow offline:/i },
+        {
+            cls: "nk-disconnect",
+            re: /\b(disconnected|has left|left the room|left)\b/i,
+        },
+        { cls: "nk-enter", re: /\b(entered|has entered|joined the room)\b/i },
     ];
-    
+
     // Emote: text starting with * (fallback if class is missing)
     const EMOTE_RE = /^\s*\*[^*]+\*/;
 
@@ -266,7 +273,10 @@
         let node;
         while ((node = walker.nextNode())) {
             if (node.nodeValue && node.nodeValue.includes("*undefined")) {
-                node.nodeValue = node.nodeValue.replace(/\*undefined/g, `*${name}`);
+                node.nodeValue = node.nodeValue.replace(
+                    /\*undefined/g,
+                    `*${name}`,
+                );
             }
         }
     }
@@ -276,14 +286,18 @@
         el._nkTagged = true;
         const text = el.textContent || "";
 
-        if (el.classList.contains("ChatMessageWhisper") && text.includes("*undefined")) {
+        if (
+            el.classList.contains("ChatMessageWhisper") &&
+            text.includes("*undefined")
+        ) {
             fixUndefinedName(el);
         }
 
         // Transparent: all BC action/emote types
-        const isActivity = el.classList.contains("ChatMessageActivity")
-            || el.classList.contains("ChatMessageEmote")
-            || el.classList.contains("ChatMessageAction");
+        const isActivity =
+            el.classList.contains("ChatMessageActivity") ||
+            el.classList.contains("ChatMessageEmote") ||
+            el.classList.contains("ChatMessageAction");
         const isEmote = !isActivity && EMOTE_RE.test(text);
         if (isActivity || isEmote) {
             el.classList.add("nk-emote");
@@ -294,7 +308,10 @@
         }
 
         for (const { cls, re } of PATTERNS) {
-            if (re.test(text)) { el.classList.add(cls); return; }
+            if (re.test(text)) {
+                el.classList.add(cls);
+                return;
+            }
         }
     }
 
@@ -305,7 +322,11 @@
         const obs = new MutationObserver((mutations) => {
             for (const m of mutations) {
                 for (const node of m.addedNodes) {
-                    if (node.nodeType === 1 && node.classList.contains("ChatMessage")) tagMessage(node);
+                    if (
+                        node.nodeType === 1 &&
+                        node.classList.contains("ChatMessage")
+                    )
+                        tagMessage(node);
                 }
             }
         });
@@ -320,7 +341,8 @@
     }, 800);
 
     // -- Load Neko Enhancer Runtime -------------------------------------------
-    const RUNTIME_URL = "https://cdn.jsdelivr.net/gh/QAQMOON/meow-@main/dist/bondage-club-neko.runtime.full.js?v=2.13.1";
+    const RUNTIME_URL =
+        "https://cdn.jsdelivr.net/gh/QAQMOON/meow-@main/dist/bondage-club-neko.runtime.full.js?v=2.13.1";
 
     function requestText(url) {
         const nextUrl = `${url}${url.includes("?") ? "&" : "?"}t=${Date.now()}`;
@@ -334,7 +356,10 @@
         if (!code || !code.trim()) return;
 
         // Replace hardcoded white rgba canvas with dark purple base
-        code = code.replace(/rgba\(\s*255\s*,\s*255\s*,\s*255\s*,/g, "rgba(30, 24, 41,");
+        code = code.replace(
+            /rgba\(\s*255\s*,\s*255\s*,\s*255\s*,/g,
+            "rgba(30, 24, 41,",
+        );
 
         // Replace hardcoded dark text with soothing lavender-white
         code = code.replace(/"#2f2f2f"/g, `"${P.text}"`);
@@ -346,9 +371,12 @@
         code = code.replace(/"#cccccc"/g, `"${P.borderAcc}"`);
 
         // Dynamically replace addon's built-in theme definitions
-        code = code.replace(/text:\s*"#[0-9a-fA-F]{6}"/gi,  `text:"${P.text}"`);
-        code = code.replace(/soft:\s*"#[0-9a-fA-F]{6}"/gi,  `soft:"${P.soft}"`);
-        code = code.replace(/panel:\s*"#[0-9a-fA-F]{6}"/gi, `panel:"${P.panel}"`);
+        code = code.replace(/text:\s*"#[0-9a-fA-F]{6}"/gi, `text:"${P.text}"`);
+        code = code.replace(/soft:\s*"#[0-9a-fA-F]{6}"/gi, `soft:"${P.soft}"`);
+        code = code.replace(
+            /panel:\s*"#[0-9a-fA-F]{6}"/gi,
+            `panel:"${P.panel}"`,
+        );
 
         // Patch send button blue color to purple palette
         code = code.replace(/"#00a8ff"/gi, `"${P.borderAcc}"`);
@@ -357,7 +385,7 @@
         code = code.replace(/"#1e90ff"/gi, `"${P.borderAcc}"`);
         code = code.replace(/"#3b82f6"/gi, `"${P.borderAcc}"`);
         code = code.replace(/"#2563eb"/gi, `"${P.borderAcc}"`);
-        
+
         // Hardcoded teal/cyan from runtime
         code = code.replace(/"#00bcd4"/gi, `"${P.borderAcc}"`);
         code = code.replace(/"#00acc1"/gi, `"${P.borderAcc}"`);
@@ -365,11 +393,13 @@
         // Fix: do not color all base game inputs, only chat input
         code = code.replace(
             /body\.bcn-enabled input,\s*body\.bcn-enabled textarea,\s*body\.bcn-enabled select/g,
-            "body.bcn-enabled #InputChat"
+            "body.bcn-enabled #InputChat",
         );
 
         new Function(code)();
     }
 
-    requestText(RUNTIME_URL).then(runRuntime).catch(() => {});
+    requestText(RUNTIME_URL)
+        .then(runRuntime)
+        .catch(() => {});
 })();
