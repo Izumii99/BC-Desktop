@@ -87,8 +87,8 @@
                 color: ${P.text} !important;
                 text-shadow: 0 1px 3px rgba(0,0,0,0.6) !important;
             }
-            html body #TextAreaChatLog .ChatMessageWhisper * { color: ${P.whisperTxt} !important; }
-            html body #TextAreaChatLog .ChatMessageBeep * { color: ${P.beepTxt} !important; }
+            html body #TextAreaChatLog .ChatMessageWhisper *:not(.ChatMessageName) { color: ${P.whisperTxt} !important; }
+            html body #TextAreaChatLog .ChatMessageBeep *:not(.ChatMessageName) { color: ${P.beepTxt} !important; }
 
             /* -- Room header / sep header (class from debug inspector) ----- */
             html body .chat-room-sep-header,
@@ -137,6 +137,41 @@
                 box-shadow: 0 4px 6px rgba(0,0,0,0.5) !important;
             }
 
+            /* -- Reply Indicator (Above Chat Input) ------------------------ */
+            html body button#chat-room-reply-indicator-text,
+            html body button#chat-room-reply-indicator-close,
+            html body div#chat-room-reply-indicator {
+                background: ${P.panel} !important;
+                color: ${P.text} !important;
+                border: 2px solid ${P.borderAcc} !important;
+            }
+
+            /* -- Chat Input Bottom Container ------------------------------- */
+            html body div#chat-room-bottom,
+            html body div[id^="chat-room-bot"] {
+                background: ${P.base} !important;
+                border-color: ${P.borderAcc} !important;
+            }
+
+            /* -- Chat Input Buttons (Send, Collapse, Menubar) -------------- */
+            html body #chat-room-buttons,
+            html body #chat-room-buttons button,
+            html body button#chat-room-buttons-collapse {
+                background: ${P.panel} !important;
+                color: ${P.text} !important;
+                border: 2px solid ${P.borderAcc} !important;
+            }
+
+            /* -- Floating New Message Indicator & Toasts ------------------- */
+            html body [id*="scroll-to-bottom"],
+            html body [id*="chat-room-scroll"],
+            html body [class*="new-message"] {
+                background: ${P.panel} !important;
+                color: ${P.text} !important;
+                border: 1px solid ${P.borderAcc} !important;
+                box-shadow: 0 4px 6px rgba(0,0,0,0.5) !important;
+            }
+
             /* -- Activity/Emote: transparent like original addon ----------- */
             /* Background/border removed via JS inline style, CSS is just a dummy marker */
 
@@ -180,27 +215,52 @@
                 filter: invert(0.75) sepia(0.2) hue-rotate(240deg) !important;
             }
 
+            /* -- Reset ALL floating inputs to readable text (white bg) ----- */
+            /* This catches all base game and mod inputs without needing 1-by-1 IDs */
+            html body textarea:not(#InputChat),
+            html body input:not(#InputChat):not([type="radio"]):not([type="checkbox"]):not([type="color"]):not([type="range"]),
+            html body select:not(#chat-garble):not(.wce-chat-room-select) {
+                color: #333333 !important;
+                background: rgba(255, 255, 255, 0.95) !important;
+            }
+
+
+
+
+
             /* ----------------------------------------------------------------
                -- Special bubble types (tagged by MutationObserver) --------
                ---------------------------------------------------------------- */
 
-            /* Now online (periwinkle/blue-lavender) */
+            /* Now online (Soft Vibrant Blue) */
             html body #TextAreaChatLog .nk-online {
-                background: #181e30 !important;
-                border: 1px solid #3a4a82 !important;
-                color: #a0b4f0 !important;
-                opacity: 0.85 !important;
+                background: #132032 !important;
+                border: 1px solid #3b82f6 !important;
+                color: #93c5fd !important;
+                opacity: 0.95 !important;
+                box-shadow: 0 0 5px rgba(59, 130, 246, 0.25) !important;
             }
-            html body #TextAreaChatLog .nk-online * { color: #a0b4f0 !important; text-shadow: none !important; }
+            html body #TextAreaChatLog .nk-online * { color: #93c5fd !important; text-shadow: none !important; }
 
-            /* Now offline (dark dusty rose) */
+            /* Now offline (Soft Vibrant Rose) */
             html body #TextAreaChatLog .nk-offline {
-                background: #27151e !important;
-                border: 1px solid #6b2e3a !important;
-                color: #d4899a !important;
-                opacity: 0.75 !important;
+                background: #2e101a !important;
+                border: 1px solid #e11d48 !important;
+                color: #fda4af !important;
+                opacity: 0.95 !important;
+                box-shadow: 0 0 5px rgba(225, 29, 72, 0.25) !important;
             }
-            html body #TextAreaChatLog .nk-offline * { color: #d4899a !important; text-shadow: none !important; }
+            html body #TextAreaChatLog .nk-offline * { color: #fda4af !important; text-shadow: none !important; }
+
+            /* Whisper (Soft Vibrant Fuchsia/Magenta) */
+            html body #TextAreaChatLog .ChatMessageWhisper {
+                background: #2d142c !important;
+                border: 1px solid #d946ef !important;
+                color: #f0abfc !important;
+                opacity: 0.95 !important;
+                box-shadow: 0 0 5px rgba(217, 70, 239, 0.25) !important;
+            }
+            html body #TextAreaChatLog .ChatMessageWhisper * { color: #f0abfc !important; text-shadow: none !important; }
 
             /* Voice (dark amber/gold) */
             html body #TextAreaChatLog .nk-voice {
@@ -246,20 +306,24 @@
 
     injectDarkTheme();
     setInterval(() => {
-        if (document.head && !document.getElementById("neko-enhancer-dark-theme")) injectDarkTheme();
+        if (
+            document.head &&
+            !document.getElementById("neko-enhancer-dark-theme")
+        )
+            injectDarkTheme();
     }, 1000);
 
     // -- MutationObserver: tag bubbles based on text content -------------------
 
     const PATTERNS = [
         { cls: "nk-voice", re: /\[voice\]/i },
-        { cls: "nk-online", re: /\bnow online:/i },
-        { cls: "nk-offline", re: /\bnow offline:/i },
+        { cls: "nk-online", re: /now online:/i },
+        { cls: "nk-offline", re: /now offline:/i },
         {
             cls: "nk-disconnect",
-            re: /\b(disconnected|has left|left the room|left)\b/i,
+            re: /(disconnected|has left|left the room|left)/i,
         },
-        { cls: "nk-enter", re: /\b(entered|has entered|joined the room)\b/i },
+        { cls: "nk-enter", re: /(entered|has entered|joined the room)/i },
     ];
 
     // Emote: text starting with * (fallback if class is missing)
@@ -283,8 +347,10 @@
 
     function tagMessage(el) {
         if (el._nkTagged) return;
-        el._nkTagged = true;
         const text = el.textContent || "";
+        if (!text.trim()) return;
+
+        el._nkTagged = true;
 
         if (
             el.classList.contains("ChatMessageWhisper") &&
