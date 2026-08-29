@@ -22,5 +22,5 @@ WebView2Data/
 Thumbs.db
 .DS_Store
 desktop.ini
-agent.md  
- 
+agent.md
+Scripts/neko-debug.js
