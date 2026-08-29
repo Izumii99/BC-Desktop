@@ -259,6 +259,7 @@ public partial class MainWindow : Window
             }, true);
             
             document.addEventListener('mousedown', (e) => {
+                window.bcIsMouseDown = true;
                 window.bcLastMousedown = e.target;
                 window.bcLastMousedownTime = Date.now();
                 if (!isEditable(e.target)) {
@@ -270,7 +271,9 @@ public partial class MainWindow : Window
             }, true);
 
             document.addEventListener('mouseup', (e) => {
+                window.bcIsMouseDown = false;
                 setTimeout(() => {
+                    if (window.bcIsMouseDown) return;
                     let active = document.activeElement;
                     if (active && (active.tagName === 'INPUT' || active.tagName === 'TEXTAREA' || active.isContentEditable) && active.id !== 'InputChat') return;
                     if (window.getSelection().toString().length > 0) return;
@@ -361,6 +364,8 @@ public partial class MainWindow : Window
             HTMLElement.prototype.focus = function() {
                 try {
                     if (this.id === 'InputChat') {
+                        if (window.bcIsMouseDown) return;
+                        
                         let active = document.activeElement;
                         if (active && (active.tagName === 'INPUT' || active.tagName === 'TEXTAREA' || active.isContentEditable) && active.id !== 'InputChat') {
                             return;
@@ -392,6 +397,8 @@ public partial class MainWindow : Window
                 if (shouldCheck) {
                     if (window.bcFocusTimeout) clearTimeout(window.bcFocusTimeout);
                     window.bcFocusTimeout = setTimeout(() => {
+                        if (window.bcIsMouseDown) return;
+                        
                         let active = document.activeElement;
                         if (active && (active.tagName === 'INPUT' || active.tagName === 'TEXTAREA' || active.isContentEditable) && active.id !== 'InputChat') {
                             return;
