@@ -24,6 +24,49 @@ A minimal native desktop wrapper for BC, built with **WPF** and **.NET 8**. Uses
 - **Multi-monitor support** with proper DPI scaling bounds
 - **Discreet / Stealth** design for Task Manager and Taskbar
 
+## Included Scripts / Addons
+
+This repository also hosts standalone scripts in the `Scripts/` folder. You can use them directly via Tampermonkey or Bookmarklets even without the Desktop App:
+
+### 1. Neko Dark Mode (`neko-dark.js`)
+A custom dark mode theme designed specifically for **Neko Chat Enhancer**. 
+
+<img src="Assets/neko_dark_preview.png" width="700" alt="Neko Dark Mode Preview" />
+
+**Design Highlights:**
+- **Deep Purple Aesthetic:** Replaces the default harsh black/white with a sleek, unified dark purple palette that feels premium and is much easier on the eyes.
+- **Refined Background Overlay:** The floating heart (love) particles in the background are tweaked with custom opacity and blend modes, giving a subtle and beautiful half-screen ambiance without distracting from the chat.
+- **Improved Readability:** Action texts, whispers, and chat borders have been re-colored to stand out elegantly against the dark background.
+
+**Prerequisite:** 
+Because this is a theme for **Neko Chat Enhancer**, you must have the original addon by *QAQMOON* installed and enabled first.
+
+<img src="Assets/neko_chat_enhancer.png" width="700" alt="Neko Chat Enhancer Required" />
+
+**How to Install (Tampermonkey / Violentmonkey):**
+Create a new script and paste the following loader:
+```javascript
+// ==UserScript==
+// @name         Neko Addons (Auto-Loader)
+// @namespace    http://tampermonkey.net/
+// @version      1.0
+// @description  Neko Chat Enhancer dark mode
+// @author       Izumii99
+// @match        https://*.bondageprojects.elementfx.com/*
+// @match        https://*.bondage-europe.com/*
+// @match        https://*.bondageprojects.com/*
+// @match        https://*.bondage-asia.com/*
+// @grant        none
+// ==/UserScript==
+
+(function() {
+    'use strict';
+    var script = document.createElement('script');
+    script.src = 'https://cdn.jsdelivr.net/gh/Izumii99/BC-Desktop@main/Scripts/neko-dark.js?v=' + Date.now();
+    document.head.appendChild(script);
+})();
+```
+
 ## Why not Electron?
 
 |                            | Electron / Web Browser | BC Desktop (WPF)                    |
