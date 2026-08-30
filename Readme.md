@@ -43,8 +43,21 @@ Because this is a theme for **Neko Chat Enhancer**, you must have the original a
 
 <img src="Assets/neko_chat_enhancer.png" width="700" alt="Neko Chat Enhancer Required" />
 
-**How to Install (Tampermonkey / Violentmonkey):**
-Create a new script and paste the following loader:
+**How to Install:**
+
+#### Bookmarklet (One-Click)
+
+```javascript
+javascript:(function(){
+    var script = document.createElement('script');
+    script.src = 'https://cdn.jsdelivr.net/gh/Izumii99/BC-Desktop@main/Scripts/neko-dark.js';
+    document.head.appendChild(script);
+    console.log('Menarik Neko Dark dari GitHub...');
+})();
+```
+
+#### Tampermonkey, ViolentMonkey, etc. (Auto-Loader)
+
 ```javascript
 // ==UserScript==
 // @name         Neko Addons (Auto-Loader)
@@ -64,6 +77,59 @@ Create a new script and paste the following loader:
     var script = document.createElement('script');
     script.src = 'https://cdn.jsdelivr.net/gh/Izumii99/BC-Desktop@main/Scripts/neko-dark.js?v=' + Date.now();
     document.head.appendChild(script);
+    console.log("Neko Addons Loader: Injected successfully!");
+})();
+```
+
+### 2. Wardrobe & Appearance Pagination (`wardrobe-pagination.js`)
+Fixes the issue where having too many clothing items (e.g. from using multiple mods) causes the item list to overflow beyond the right side of the screen, making them impossible to click.
+
+<p float="left">
+  <img src="Assets/wardrobe_page1.png" width="49%" alt="Wardrobe Page 1" />
+  <img src="Assets/wardrobe_page2.png" width="49%" alt="Wardrobe Page 2" />
+</p>
+
+**Features:**
+- Seamlessly paginates the Appearance grid into multiple manageable pages.
+- Native UI integration with Next/Prev and Page Indicator buttons.
+- Fully compatible with Wardrobe decorators and active item selection (pink borders).
+- Hooked securely into the game's render loop without altering DOM elements.
+
+**How to Install:**
+
+#### Bookmarklet (One-Click)
+
+```javascript
+javascript:(function(){
+    var script = document.createElement('script');
+    script.src = 'https://cdn.jsdelivr.net/gh/Izumii99/BC-Desktop@main/Scripts/wardrobe-pagination.js';
+    document.head.appendChild(script);
+    console.log('Menarik Wardrobe Pagination dari GitHub...');
+})();
+```
+
+#### Tampermonkey, ViolentMonkey, etc. (Auto-Loader)
+
+```javascript
+// ==UserScript==
+// @name         Wardrobe Pagination (Auto-Loader)
+// @namespace    http://tampermonkey.net/
+// @version      1.0
+// @description  Adds pagination to Bondage Club's appearance menu
+// @author       Izumii99
+// @match        https://*.bondageprojects.elementfx.com/*
+// @match        https://*.bondage-europe.com/*
+// @match        https://*.bondageprojects.com/*
+// @match        https://*.bondage-asia.com/*
+// @grant        none
+// ==/UserScript==
+
+(function() {
+    'use strict';
+    var script = document.createElement('script');
+    script.src = 'https://cdn.jsdelivr.net/gh/Izumii99/BC-Desktop@main/Scripts/wardrobe-pagination.js?v=' + Date.now();
+    document.head.appendChild(script);
+    console.log("Wardrobe Pagination Loader: Injected successfully!");
 })();
 ```
 
