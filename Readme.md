@@ -52,7 +52,7 @@ javascript:(function(){
     var script = document.createElement('script');
     script.src = 'https://cdn.jsdelivr.net/gh/Izumii99/BC-Desktop@main/Scripts/neko-dark.js';
     document.head.appendChild(script);
-    console.log('Menarik Neko Dark dari GitHub...');
+    console.log('Fetching Neko Dark from GitHub...');
 })();
 ```
 
@@ -104,7 +104,7 @@ javascript:(function(){
     var script = document.createElement('script');
     script.src = 'https://cdn.jsdelivr.net/gh/Izumii99/BC-Desktop@main/Scripts/wardrobe-pagination.js';
     document.head.appendChild(script);
-    console.log('Menarik Wardrobe Pagination dari GitHub...');
+    console.log('Fetching Wardrobe Pagination from GitHub...');
 })();
 ```
 
