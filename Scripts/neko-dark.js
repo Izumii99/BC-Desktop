@@ -234,23 +234,21 @@
 
             /* Now online (Soft Vibrant Blue) */
             html body #TextAreaChatLog .nk-online {
-                background: #132032 !important;
-                border: 1px solid #3b82f6 !important;
-                color: #93c5fd !important;
-                opacity: 0.95 !important;
-                box-shadow: 0 0 5px rgba(59, 130, 246, 0.25) !important;
+                background: #0d1624 !important;
+                border: 1px solid #2563eb !important;
+                color: #60a5fa !important;
+                opacity: 0.65 !important;
             }
-            html body #TextAreaChatLog .nk-online *:not(.ChatMessageName) { color: #93c5fd !important; text-shadow: none !important; }
+            html body #TextAreaChatLog .nk-online *:not(.ChatMessageName) { color: #60a5fa !important; text-shadow: none !important; }
 
             /* Now offline (Soft Vibrant Rose) */
             html body #TextAreaChatLog .nk-offline {
-                background: #2e101a !important;
-                border: 1px solid #e11d48 !important;
-                color: #fda4af !important;
-                opacity: 0.95 !important;
-                box-shadow: 0 0 5px rgba(225, 29, 72, 0.25) !important;
+                background: #1f0810 !important;
+                border: 1px solid #be123c !important;
+                color: #fb7185 !important;
+                opacity: 0.65 !important;
             }
-            html body #TextAreaChatLog .nk-offline *:not(.ChatMessageName) { color: #fda4af !important; text-shadow: none !important; }
+            html body #TextAreaChatLog .nk-offline *:not(.ChatMessageName) { color: #fb7185 !important; text-shadow: none !important; }
 
             /* Whisper (Soft Vibrant Fuchsia/Magenta) */
             html body #TextAreaChatLog .ChatMessageWhisper {
@@ -264,12 +262,12 @@
 
             /* Voice (dark amber/gold) */
             html body #TextAreaChatLog .nk-voice {
-                background: #221b0e !important;
+                background: #1c150a !important;
                 border: 1px solid #7a5c1a !important;
-                color: #d4a84a !important;
-                opacity: 0.88 !important;
+                color: #cda240 !important;
+                opacity: 0.75 !important;
             }
-            html body #TextAreaChatLog .nk-voice *:not(.ChatMessageName) { color: #d4a84a !important; text-shadow: none !important; }
+            html body #TextAreaChatLog .nk-voice *:not(.ChatMessageName) { color: #cda240 !important; text-shadow: none !important; }
 
             /* Entered (dim periwinkle, italic, centered) */
             html body #TextAreaChatLog .nk-enter {
