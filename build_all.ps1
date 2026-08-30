@@ -1,4 +1,4 @@
-﻿Write-Host "Building Lightweight..."
+Write-Host "Building Lightweight..."
 dotnet publish -c Release -r win-x64 --self-contained false -o publish/lightweight
 
 Write-Host "Building Standalone..."
@@ -46,10 +46,11 @@ Write-Host "Cleaning obj folder again..."
 Remove-Item -Path "obj" -Recurse -Force -ErrorAction SilentlyContinue
 Remove-Item -Path "bin" -Recurse -Force -ErrorAction SilentlyContinue
 
-Write-Host "Cleaning debug scripts from production folders..."
+Write-Host "Cleaning debug scripts and personal addons from production folders..."
 $targets = @("publish/lightweight", "publish/lightweight-hidden", "publish/standalone", "publish/standalone-hidden")
 foreach ($t in $targets) {
     Remove-Item "$t/Scripts/*debug*.js" -Force -ErrorAction SilentlyContinue
+    Remove-Item "$t/Scripts/force-ungarbled.js" -Force -ErrorAction SilentlyContinue
 }
 
 Write-Host "Zipping..."
@@ -58,5 +59,10 @@ Compress-Archive -Path "publish/lightweight/*" -DestinationPath "publish/BC-Desk
 Compress-Archive -Path "publish/lightweight-hidden/*" -DestinationPath "publish/BC-Desktop-Lightweight-Hidden.zip" -Force
 Compress-Archive -Path "publish/standalone/*" -DestinationPath "publish/BC-Desktop-Standalone.zip" -Force
 Compress-Archive -Path "publish/standalone-hidden/*" -DestinationPath "publish/BC-Desktop-Standalone-Hidden.zip" -Force
+
+Write-Host "Restoring personal addons to local folders..."
+foreach ($t in $targets) {
+    Copy-Item "Scripts/force-ungarbled.js" -Destination "$t/Scripts/" -Force -ErrorAction SilentlyContinue
+}
 
 Write-Host "Done!"
