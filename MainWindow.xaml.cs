@@ -361,6 +361,22 @@ public partial class MainWindow : Window
                 return bestInput;
             };
 
+            let patchInterval = setInterval(() => {
+                if (typeof window.ElementFocus === 'function' && !window.ElementFocus._isHooked) {
+                    let origElementFocus = window.ElementFocus;
+                    window.ElementFocus = function(ID) {
+                        if (window.bcIsMouseDown) return;
+                        let active = document.activeElement;
+                        let isUserTyping = active && (active.tagName === 'INPUT' || active.tagName === 'TEXTAREA' || active.isContentEditable);
+                        if (isUserTyping && active.id !== ID) return;
+                        if (window.getSelection().toString().length > 0) return;
+                        origElementFocus(ID);
+                    };
+                    window.ElementFocus._isHooked = true;
+                    clearInterval(patchInterval);
+                }
+            }, 200);
+
             HTMLElement.prototype.focus = function() {
                 try {
                     if (this.id === 'InputChat') {
