@@ -375,6 +375,10 @@
 
         for (const { cls, re } of PATTERNS) {
             if (re.test(text)) {
+                // ponytail: don't style normal player chat (chat, whisper, beep) as system events, except voice
+                const isPlayer = el.classList.contains("ChatMessageChat") || el.classList.contains("ChatMessageWhisper") || el.classList.contains("ChatMessageBeep");
+                if (cls !== "nk-voice" && isPlayer) continue;
+
                 el.classList.add(cls);
                 return;
             }
