@@ -266,6 +266,12 @@ public partial class MainWindow : Window
                     window.bcFocusMemory = null;
                 }
                 
+                if (isEditable(e.target)) {
+                    window.bcForceUnfocusSearch = false;
+                } else {
+                    window.bcForceUnfocusSearch = true;
+                }
+                
                 let ic = document.getElementById('InputChat');
                 if (ic) window.bcInputChatLastValue = ic.value;
             }, true);
@@ -277,6 +283,8 @@ public partial class MainWindow : Window
                     let active = document.activeElement;
                     if (active && (active.tagName === 'INPUT' || active.tagName === 'TEXTAREA' || active.isContentEditable) && active.id !== 'InputChat') return;
                     if (window.getSelection().toString().length > 0) return;
+                    
+                    if (window.bcForceUnfocusSearch) return;
                     
                     let best = window.bcRunFocusCrawler ? window.bcRunFocusCrawler() : null;
                     if (best && document.activeElement !== best) {
@@ -338,7 +346,7 @@ public partial class MainWindow : Window
                 for (let i = 0; i < inputs.length; i++) {
                     let el = inputs[i];
                     if (el.disabled) continue;
-                    if (el.offsetParent === null) continue;
+                    
                     let rect = el.getBoundingClientRect();
                     if (rect.width === 0 || rect.height === 0) continue;
                     
@@ -351,8 +359,15 @@ public partial class MainWindow : Window
                     if (el.id === 'InputChat' || el.id === 'TextAreaChatLog') score -= 500000;
                     
                     if (el.tagName === 'TEXTAREA') score += 1000;
-                    if (el.id && el.id.toLowerCase().indexOf('search') !== -1) score -= 2000;
-                    if (el.className && el.className.toLowerCase().indexOf('search') !== -1) score -= 2000;
+                    
+                    let isSearch = false;
+                    if (el.id && el.id.toLowerCase().indexOf('search') !== -1) isSearch = true;
+                    if (el.className && typeof el.className === 'string' && el.className.toLowerCase().indexOf('search') !== -1) isSearch = true;
+                    
+                    if (isSearch) {
+                        if (window.bcForceUnfocusSearch) continue;
+                        score -= 2000;
+                    }
                     
                     if (window.bcFocusMemory === el) score += 1000000000;
                     
@@ -379,17 +394,28 @@ public partial class MainWindow : Window
 
             HTMLElement.prototype.focus = function() {
                 try {
-                    if (this.id === 'InputChat') {
-                        if (window.bcIsMouseDown) return;
-                        
-                        let active = document.activeElement;
-                        if (active && (active.tagName === 'INPUT' || active.tagName === 'TEXTAREA' || active.isContentEditable) && active.id !== 'InputChat') {
-                            return;
-                        }
-                        if (window.getSelection().toString().length > 0) {
-                            return;
-                        }
+                    if (window.bcIsMouseDown) return;
 
+                    let active = document.activeElement;
+                    let isUserTyping = active && (active.tagName === 'INPUT' || active.tagName === 'TEXTAREA' || active.isContentEditable);
+                    
+                    let isAggressiveInput = this.id === 'InputChat' || 
+                                            this.id === 'FriendListSearch' || 
+                                            this.id === 'friend-list-search-input' || 
+                                            this.id === 'LogSearch' || 
+                                            this.id === 'preference-search' ||
+                                            (this.id && this.id.toLowerCase().includes('search'));
+
+                    if (isAggressiveInput) {
+                        if (isUserTyping && active !== this && active.id !== 'InputChat') return;
+                        if (window.getSelection().toString().length > 0) return;
+                        
+                        if (window.bcForceUnfocusSearch && this.id !== 'InputChat') {
+                            return;
+                        }
+                    }
+
+                    if (this.id === 'InputChat') {
                         let best = window.bcRunFocusCrawler ? window.bcRunFocusCrawler() : null;
                         if (best && best !== this) {
                             if (window.bcFocusAndTeleport) {
@@ -404,12 +430,31 @@ public partial class MainWindow : Window
 
             let focusObserver = new MutationObserver((mutations) => {
                 let shouldCheck = false;
+                let addedInputs = false;
                 for (let m of mutations) {
-                    if (m.type === 'childList' && m.addedNodes.length > 0) shouldCheck = true;
-                    if (m.type === 'attributes') shouldCheck = true;
-                    if (shouldCheck) break;
+                    if (m.type === 'childList') {
+                        if (m.addedNodes.length > 0) {
+                            for (let i = 0; i < m.addedNodes.length; i++) {
+                                let n = m.addedNodes[i];
+                                if (n.tagName === 'INPUT' || n.tagName === 'TEXTAREA' || (n.querySelector && n.querySelector('input, textarea'))) {
+                                    addedInputs = true;
+                                    shouldCheck = true;
+                                }
+                            }
+                        }
+                        if (m.removedNodes.length > 0) {
+                            for (let i = 0; i < m.removedNodes.length; i++) {
+                                let n = m.removedNodes[i];
+                                if (n.tagName === 'INPUT' || n.tagName === 'TEXTAREA' || (n.querySelector && n.querySelector('input, textarea'))) {
+                                    shouldCheck = true;
+                                }
+                            }
+                        }
+                    }
                 }
                 
+                if (addedInputs) window.bcForceUnfocusSearch = false;
+
                 if (shouldCheck) {
                     if (window.bcFocusTimeout) clearTimeout(window.bcFocusTimeout);
                     window.bcFocusTimeout = setTimeout(() => {
@@ -422,6 +467,8 @@ public partial class MainWindow : Window
                         if (window.getSelection().toString().length > 0) {
                             return;
                         }
+                        
+                        if (window.bcForceUnfocusSearch) return;
 
                         let best = window.bcRunFocusCrawler ? window.bcRunFocusCrawler() : null;
                         if (best && best.id !== 'InputChat' && document.activeElement !== best) {
@@ -430,7 +477,7 @@ public partial class MainWindow : Window
                     }, 50);
                 }
             });
-            focusObserver.observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ['style', 'class'] });
+            focusObserver.observe(document.body, { childList: true, subtree: true });
 
             let origClipboard = navigator.clipboard;
             let mockClipboard = {
