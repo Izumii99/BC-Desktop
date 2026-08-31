@@ -210,6 +210,12 @@
                 border: 1px solid ${P.border} !important;
                 color: ${P.text} !important;
             }
+            html body .chat-room-top-menu-btn[data-color="Blocked"] {
+                background-color: #870c0c !important;
+            }
+            html body .chat-room-top-menu-btn[data-color="Limited"] {
+                background-color: #9c6c0b !important;
+            }
             html body .chat-room-top-menu-btn img,
             html body .chat-room-top-menu-btn svg {
                 filter: invert(0.75) sepia(0.2) hue-rotate(240deg) !important;

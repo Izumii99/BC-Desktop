@@ -50,7 +50,7 @@ Write-Host "Cleaning debug scripts and personal addons from production folders..
 $targets = @("publish/lightweight", "publish/lightweight-hidden", "publish/standalone", "publish/standalone-hidden")
 foreach ($t in $targets) {
     Remove-Item "$t/Scripts/*debug*.js" -Force -ErrorAction SilentlyContinue
-    Remove-Item "$t/Scripts/force-ungarbled.js" -Force -ErrorAction SilentlyContinue
+    Remove-Item "$t/Scripts/chat-qol.js" -Force -ErrorAction SilentlyContinue
 }
 
 Write-Host "Zipping..."
@@ -62,7 +62,7 @@ Compress-Archive -Path "publish/standalone-hidden/*" -DestinationPath "publish/B
 
 Write-Host "Restoring personal addons to local folders..."
 foreach ($t in $targets) {
-    Copy-Item "Scripts/force-ungarbled.js" -Destination "$t/Scripts/" -Force -ErrorAction SilentlyContinue
+    Copy-Item "Scripts/chat-qol.js" -Destination "$t/Scripts/" -Force -ErrorAction SilentlyContinue
 }
 
 Write-Host "Done!"
