@@ -2,7 +2,7 @@
     "use strict";
     if (window !== window.top) return;
 
-    // -- Kawaii Midnight Purple Palette --------------------------------------
+    // Palette: Kawaii Midnight Purple
     const P = {
         base: "#1a1520",
         panel: "#1e1829",
@@ -31,7 +31,7 @@
         const style = document.createElement("style");
         style.id = "neko-enhancer-dark-theme";
         style.textContent = `
-            /* -- CSS Variables ----------------------------------------------- */
+            /* Variables */
             body {
                 --bcn-panel:  ${P.panel}  !important;
                 --bcn-soft:   ${P.soft}   !important;
@@ -41,14 +41,14 @@
                 --bcn-icon:   ${P.icon}   !important;
             }
 
-            /* -- Chat Log Container ---------------------------------------- */
+            /* Container */
             html body #TextAreaChatLog {
                 background: ${P.panel} !important;
                 border: 1px solid ${P.border} !important;
                 box-shadow: none !important;
             }
 
-            /* -- All Chat Bubbles (default) ------------------------------- */
+            /* Base Bubbles */
             html body #TextAreaChatLog .ChatMessage {
                 background: ${P.soft} !important;
                 border: 1px solid ${P.border} !important;
@@ -56,33 +56,33 @@
                 box-shadow: 0 2px 8px rgba(0,0,0,0.45) !important;
             }
 
-            /* -- Own Chat Bubble -------------------------------------- */
+            /* Own Message */
             html body #TextAreaChatLog .bcn-own-message {
                 background: ${P.ownMsg} !important;
                 border-color: ${P.borderAcc} !important;
             }
 
-            /* -- Whisper (current room) ----------------------------------- */
+            /* Whisper */
             html body #TextAreaChatLog .ChatMessageWhisper {
                 background: ${P.whisperBg}  !important;
                 border: 1px solid ${P.whisperBdr} !important;
                 color: ${P.whisperTxt} !important;
             }
 
-            /* -- Beep (from another room) -------------------------------- */
+            /* Beep */
             html body #TextAreaChatLog .ChatMessageBeep {
                 background: ${P.beepBg} !important;
                 border: 1px solid ${P.beepBdr} !important;
                 color: ${P.beepTxt} !important;
             }
 
-            /* -- Chat Name ---------------------------------------------- */
+            /* Name overrides */
             html body #TextAreaChatLog .ChatMessageName {
                 text-shadow: none !important;
                 -webkit-text-stroke: 0 !important;
             }
 
-            /* -- Force text color in bubble (DO NOT override font-style) */
+            /* Content text */
             html body #TextAreaChatLog .ChatMessage *:not(.ChatMessageName) {
                 color: ${P.text} !important;
                 text-shadow: 0 1px 3px rgba(0,0,0,0.6) !important;
@@ -90,7 +90,7 @@
             html body #TextAreaChatLog .ChatMessageWhisper *:not(.ChatMessageName) { color: ${P.whisperTxt} !important; }
             html body #TextAreaChatLog .ChatMessageBeep *:not(.ChatMessageName) { color: ${P.beepTxt} !important; }
 
-            /* -- Room header / sep header (class from debug inspector) ----- */
+            /* Headers */
             html body .chat-room-sep-header,
             html body button.chat-room-sep-header {
                 background: ${P.panel} !important;
@@ -99,7 +99,7 @@
                 box-shadow: none !important;
             }
 
-            /* -- Send button: .lk-crb-managed (class from debug inspector) -- */
+            /* Action Buttons */
             html body .lk-crb-managed {
                 --lk-crb-current-bg: ${P.soft} !important;
                 background: ${P.soft} !important;
@@ -111,7 +111,7 @@
                 background: ${P.borderAcc} !important;
             }
 
-            /* -- Collapse button (down arrow) .chat-room-sep-collapse ------- */
+            /* Expanders */
             html body .chat-room-sep-collapse {
                 background: ${P.panel} !important;
                 color: ${P.muted} !important;
@@ -119,7 +119,7 @@
                 box-shadow: none !important;
             }
 
-            /* -- Reply button (message hover) ------------------------------- */
+            /* Reply UI */
             html body .chat-room-sep-reply,
             html body button[class*="reply"],
             html body .bcx-msg-hover,
@@ -129,7 +129,7 @@
                 border: 1px solid ${P.border} !important;
             }
 
-            /* -- Reply / Message Popup Menu Box ------------------------------ */
+            /* Popups */
             html body .chat-room-message-popup {
                 background: ${P.panel} !important;
                 border: 1px solid ${P.border} !important;
@@ -137,7 +137,7 @@
                 box-shadow: 0 4px 6px rgba(0,0,0,0.5) !important;
             }
 
-            /* -- Reply Indicator (Above Chat Input) ------------------------ */
+            /* Reply Indicators */
             html body button#chat-room-reply-indicator-text,
             html body button#chat-room-reply-indicator-close,
             html body div#chat-room-reply-indicator {
@@ -146,14 +146,14 @@
                 border: 2px solid ${P.borderAcc} !important;
             }
 
-            /* -- Chat Input Bottom Container ------------------------------- */
+            /* Chat Input Area */
             html body div#chat-room-bottom,
             html body div[id^="chat-room-bot"] {
                 background: ${P.base} !important;
                 border-color: ${P.borderAcc} !important;
             }
 
-            /* -- Chat Input Buttons (Send, Collapse, Menubar) -------------- */
+            /* Send Buttons */
             html body #chat-room-buttons,
             html body #chat-room-buttons button,
             html body button#chat-room-buttons-collapse {
@@ -162,7 +162,7 @@
                 border: 2px solid ${P.borderAcc} !important;
             }
 
-            /* -- Floating New Message Indicator & Toasts ------------------- */
+            /* Toasts */
             html body [id*="scroll-to-bottom"],
             html body [id*="chat-room-scroll"],
             html body [class*="new-message"] {
@@ -172,10 +172,7 @@
                 box-shadow: 0 4px 6px rgba(0,0,0,0.5) !important;
             }
 
-            /* -- Activity/Emote: transparent like original addon ----------- */
-            /* Background/border removed via JS inline style, CSS is just a dummy marker */
-
-            /* -- Italic for emote/action messages ------------------------- */
+            /* Emotes/Activities */
             html body #TextAreaChatLog .nk-emote,
             html body #TextAreaChatLog .nk-emote .chat-room-message-content,
             html body #TextAreaChatLog .ChatMessageEmote .chat-room-message-content,
@@ -188,7 +185,7 @@
                 text-shadow: none !important;
             }
 
-            /* -- Heart/paw badge: only show inside chatlog --------------- */
+            /* Badges */
             html body .bcn-relation-badge {
                 display: none !important;
             }
@@ -196,7 +193,7 @@
                 display: inline !important;
             }
 
-            /* -- PawRain: clip overlay to chat area (right half of screen) ------------ */
+            /* Mod Effects */
             html body #bcn-soft-paws {
                 left: 50% !important;
                 width: 50% !important;
@@ -204,7 +201,7 @@
                 pointer-events: none !important;
             }
 
-            /* -- BCX Top Menu Buttons -------------------------------------- */
+            /* Top Menu */
             html body .chat-room-top-menu-btn {
                 background-color: ${P.panel} !important;
                 border: 1px solid ${P.border} !important;
@@ -221,8 +218,7 @@
                 filter: invert(0.75) sepia(0.2) hue-rotate(240deg) !important;
             }
 
-            /* -- Reset ALL floating inputs to readable text (white bg) ----- */
-            /* This catches all base game and mod inputs without needing 1-by-1 IDs */
+            /* Base inputs reset */
             html body textarea:not(#InputChat),
             html body input:not(#InputChat):not([type="radio"]):not([type="checkbox"]):not([type="color"]):not([type="range"]),
             html body select:not(#chat-garble):not(.wce-chat-room-select) {
@@ -230,15 +226,7 @@
                 background: rgba(255, 255, 255, 0.95) !important;
             }
 
-
-
-
-
-            /* ----------------------------------------------------------------
-               -- Special bubble types (tagged by MutationObserver) --------
-               ---------------------------------------------------------------- */
-
-            /* Now online (Soft Vibrant Blue) */
+            /* Dynamic special messages */
             html body #TextAreaChatLog div.ChatMessage.nk-online {
                 background: #0d1624 !important;
                 border: 1px solid #2563eb !important;
@@ -247,7 +235,6 @@
             }
             html body #TextAreaChatLog div.ChatMessage.nk-online *:not(.ChatMessageName) { color: #60a5fa !important; text-shadow: none !important; }
 
-            /* Now offline (Soft Vibrant Rose) */
             html body #TextAreaChatLog div.ChatMessage.nk-offline {
                 background: #1f0810 !important;
                 border: 1px solid #be123c !important;
@@ -256,7 +243,6 @@
             }
             html body #TextAreaChatLog div.ChatMessage.nk-offline *:not(.ChatMessageName) { color: #fb7185 !important; text-shadow: none !important; }
 
-            /* Whisper (Soft Vibrant Fuchsia/Magenta) */
             html body #TextAreaChatLog div.ChatMessage.ChatMessageWhisper {
                 background: #2d142c !important;
                 border: 1px solid #d946ef !important;
@@ -266,7 +252,6 @@
             }
             html body #TextAreaChatLog div.ChatMessage.ChatMessageWhisper *:not(.ChatMessageName) { color: #f0abfc !important; text-shadow: none !important; }
 
-            /* Voice (dark amber/gold) */
             html body #TextAreaChatLog div.ChatMessage.nk-voice {
                 background: #1c150a !important;
                 border: 1px solid #7a5c1a !important;
@@ -275,7 +260,6 @@
             }
             html body #TextAreaChatLog div.ChatMessage.nk-voice *:not(.ChatMessageName) { color: #cda240 !important; text-shadow: none !important; }
 
-            /* Entered (dim periwinkle, italic, centered) */
             html body #TextAreaChatLog div.ChatMessage.nk-enter {
                 background: #141828 !important;
                 border: 1px solid #303870 !important;
@@ -290,7 +274,6 @@
                 text-shadow: none !important;
             }
 
-            /* Disconnected / left (dark rose) */
             html body #TextAreaChatLog div.ChatMessage.nk-disconnect {
                 background: #1e1018 !important;
                 border: 1px solid #502030 !important;
@@ -310,41 +293,27 @@
 
     injectDarkTheme();
     setInterval(() => {
-        if (
-            document.head &&
-            !document.getElementById("neko-enhancer-dark-theme")
-        )
-            injectDarkTheme();
+        if (document.head && !document.getElementById("neko-enhancer-dark-theme")) injectDarkTheme();
     }, 1000);
 
-    // -- MutationObserver: tag bubbles based on text content -------------------
-
+    // Chat Observer
     const PATTERNS = [
         { cls: "nk-voice", re: /\[voice\]/i },
         { cls: "nk-online", re: /now online:/i },
         { cls: "nk-offline", re: /now offline:/i },
-        {
-            cls: "nk-disconnect",
-            re: /(disconnected|has left|left the room|left)/i,
-        },
+        { cls: "nk-disconnect", re: /(disconnected|has left|left the room|left)/i },
         { cls: "nk-enter", re: /(entered|has entered|joined the room)/i },
     ];
-
-    // Emote: text starting with * (fallback if class is missing)
     const EMOTE_RE = /^\s*\*[^*]+\*/;
 
-    // Fix "*undefined" in whispers (addon fails to resolve Player.Name)
     function fixUndefinedName(el) {
-        const name = (window.Player && window.Player.Name) || "";
+        const name = window.Player?.Name || "";
         if (!name) return;
         const walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT);
         let node;
         while ((node = walker.nextNode())) {
-            if (node.nodeValue && node.nodeValue.includes("*undefined")) {
-                node.nodeValue = node.nodeValue.replace(
-                    /\*undefined/g,
-                    `*${name}`,
-                );
+            if (node.nodeValue?.includes("*undefined")) {
+                node.nodeValue = node.nodeValue.replace(/\*undefined/g, `*${name}`);
             }
         }
     }
@@ -356,19 +325,15 @@
 
         el._nkTagged = true;
 
-        if (
-            el.classList.contains("ChatMessageWhisper") &&
-            text.includes("*undefined")
-        ) {
+        if (el.classList.contains("ChatMessageWhisper") && text.includes("*undefined")) {
             fixUndefinedName(el);
         }
 
-        // Transparent: all BC action/emote types
-        const isActivity =
-            el.classList.contains("ChatMessageActivity") ||
-            el.classList.contains("ChatMessageEmote") ||
-            el.classList.contains("ChatMessageAction");
+        const isActivity = el.classList.contains("ChatMessageActivity") ||
+                           el.classList.contains("ChatMessageEmote") ||
+                           el.classList.contains("ChatMessageAction");
         const isEmote = !isActivity && EMOTE_RE.test(text);
+        
         if (isActivity || isEmote) {
             el.classList.add("nk-emote");
             el.style.setProperty("background", "transparent", "important");
@@ -379,8 +344,9 @@
 
         for (const { cls, re } of PATTERNS) {
             if (re.test(text)) {
-                // ponytail: don't style normal player chat (chat, whisper, beep) as system events, except voice
-                const isPlayer = el.classList.contains("ChatMessageChat") || el.classList.contains("ChatMessageWhisper") || el.classList.contains("ChatMessageBeep");
+                const isPlayer = el.classList.contains("ChatMessageChat") ||
+                                 el.classList.contains("ChatMessageWhisper") ||
+                                 el.classList.contains("ChatMessageBeep");
                 if (cls !== "nk-voice" && isPlayer) continue;
 
                 el.classList.add(cls);
@@ -393,18 +359,14 @@
         const log = document.getElementById("TextAreaChatLog");
         if (!log) return;
         log.querySelectorAll(".ChatMessage").forEach(tagMessage);
-        const obs = new MutationObserver((mutations) => {
+        
+        new MutationObserver(mutations => {
             for (const m of mutations) {
                 for (const node of m.addedNodes) {
-                    if (
-                        node.nodeType === 1 &&
-                        node.classList.contains("ChatMessage")
-                    )
-                        tagMessage(node);
+                    if (node.nodeType === 1 && node.classList.contains("ChatMessage")) tagMessage(node);
                 }
             }
-        });
-        obs.observe(log, { childList: true });
+        }).observe(log, { childList: true });
     }
 
     const chatPoller = setInterval(() => {
@@ -414,66 +376,39 @@
         }
     }, 800);
 
-    // -- Load Neko Enhancer Runtime -------------------------------------------
-    const RUNTIME_URL =
-        "https://cdn.jsdelivr.net/gh/QAQMOON/meow-@main/dist/bondage-club-neko.runtime.full.js?v=2.13.1";
+    // Runtime Injector
+    const RUNTIME_URL = "https://cdn.jsdelivr.net/gh/QAQMOON/meow-@main/dist/bondage-club-neko.runtime.full.js?v=2.13.1";
 
     function requestText(url) {
-        const nextUrl = `${url}${url.includes("?") ? "&" : "?"}t=${Date.now()}`;
-        return fetch(nextUrl, { cache: "no-store" }).then((r) => {
-            if (!r.ok) throw new Error(`HTTP ${r.status}`);
-            return r.text();
-        });
+        return fetch(`${url}${url.includes("?") ? "&" : "?"}t=${Date.now()}`, { cache: "no-store" })
+            .then(r => {
+                if (!r.ok) throw new Error(`HTTP ${r.status}`);
+                return r.text();
+            });
     }
 
     function runRuntime(code) {
-        if (!code || !code.trim()) return;
+        if (!code?.trim()) return;
 
-        // Replace hardcoded white rgba canvas with dark purple base
-        code = code.replace(
-            /rgba\(\s*255\s*,\s*255\s*,\s*255\s*,/g,
-            "rgba(30, 24, 41,",
-        );
-
-        // Replace hardcoded dark text with soothing lavender-white
-        code = code.replace(/"#2f2f2f"/g, `"${P.text}"`);
-        code = code.replace(/"#1a1a1a"/g, `"${P.text}"`);
-
-        // Replace bright white/gray borders with muted purple
-        code = code.replace(/"#e8e8e8"/g, `"${P.border}"`);
-        code = code.replace(/"#dddddd"/g, `"${P.border}"`);
+        // Theme patches
+        code = code.replace(/rgba\(\s*255\s*,\s*255\s*,\s*255\s*,/g, "rgba(30, 24, 41,");
+        code = code.replace(/"#2f2f2f"|"#1a1a1a"/g, `"${P.text}"`);
+        code = code.replace(/"#e8e8e8"|"#dddddd"/g, `"${P.border}"`);
         code = code.replace(/"#cccccc"/g, `"${P.borderAcc}"`);
-
-        // Dynamically replace addon's built-in theme definitions
+        
         code = code.replace(/text:\s*"#[0-9a-fA-F]{6}"/gi, `text:"${P.text}"`);
         code = code.replace(/soft:\s*"#[0-9a-fA-F]{6}"/gi, `soft:"${P.soft}"`);
-        code = code.replace(
-            /panel:\s*"#[0-9a-fA-F]{6}"/gi,
-            `panel:"${P.panel}"`,
-        );
+        code = code.replace(/panel:\s*"#[0-9a-fA-F]{6}"/gi, `panel:"${P.panel}"`);
 
-        // Patch send button blue color to purple palette
-        code = code.replace(/"#00a8ff"/gi, `"${P.borderAcc}"`);
-        code = code.replace(/"#007aff"/gi, `"${P.borderAcc}"`);
-        code = code.replace(/"#0099ff"/gi, `"${P.borderAcc}"`);
-        code = code.replace(/"#1e90ff"/gi, `"${P.borderAcc}"`);
-        code = code.replace(/"#3b82f6"/gi, `"${P.borderAcc}"`);
-        code = code.replace(/"#2563eb"/gi, `"${P.borderAcc}"`);
-
-        // Hardcoded teal/cyan from runtime
-        code = code.replace(/"#00bcd4"/gi, `"${P.borderAcc}"`);
-        code = code.replace(/"#00acc1"/gi, `"${P.borderAcc}"`);
-
-        // Fix: do not color all base game inputs, only chat input
+        code = code.replace(/"#00a8ff"|"#007aff"|"#0099ff"|"#1e90ff"|"#3b82f6"|"#2563eb"|"#00bcd4"|"#00acc1"/gi, `"${P.borderAcc}"`);
+        
         code = code.replace(
             /body\.bcn-enabled input,\s*body\.bcn-enabled textarea,\s*body\.bcn-enabled select/g,
-            "body.bcn-enabled #InputChat",
+            "body.bcn-enabled #InputChat"
         );
 
         new Function(code)();
     }
 
-    requestText(RUNTIME_URL)
-        .then(runRuntime)
-        .catch(() => {});
+    requestText(RUNTIME_URL).then(runRuntime).catch(() => {});
 })();
