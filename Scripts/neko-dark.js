@@ -62,6 +62,18 @@
                 border-color: ${P.borderAcc} !important;
             }
 
+            /* BCE Notifications */
+            html body #TextAreaChatLog .ChatMessage.bce-notification {
+                background: ${P.panel} !important;
+                border: 1px solid ${P.border} !important;
+                color: ${P.text} !important;
+                box-shadow: ${P.borderAcc} 3px 0px 0px 0px inset, 0 2px 8px rgba(0,0,0,0.45) !important;
+            }
+            html body #TextAreaChatLog .ChatMessage.bce-notification *:not(.ChatMessageName) {
+                color: ${P.text} !important;
+                text-shadow: none !important;
+            }
+
             /* Whisper */
             html body #TextAreaChatLog .ChatMessageWhisper {
                 background: ${P.whisperBg}  !important;
