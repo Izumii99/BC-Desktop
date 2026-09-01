@@ -29,3 +29,4 @@ Scripts/*debug*.js
 ## Addons og
 # Tempat ai agent bisa tracking code original hasil fork jika dibutuhkan
 addons_og/
+build_all.ps1
