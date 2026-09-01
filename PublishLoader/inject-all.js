@@ -17,47 +17,21 @@
     if (window._bcRemoteLoaderInjected) return;
     window._bcRemoteLoaderInjected = true;
 
-    console.log("BC Desktop: Injecting remote scripts...");
+    const managerURL = "https://cdn.jsdelivr.net/gh/Izumii99/BC-Desktop@main/Scripts/addon-manager.js";
 
-    const repoInfoURL = "https://data.jsdelivr.com/v1/package/gh/Izumii99/BC-Desktop@main";
-    const baseURL = "https://cdn.jsdelivr.net/gh/Izumii99/BC-Desktop@main/Scripts/";
+    function injectManager() {
+        let target = document.head || document.documentElement;
+        if (!target) {
+            setTimeout(injectManager, 10);
+            return;
+        }
 
-    fetch(repoInfoURL)
-        .then((response) => response.json())
-        .then((data) => {
-            let scriptsDir = null;
-            if (data && data.files) {
-                scriptsDir = data.files.find((f) => f.type === "directory" && f.name === "Scripts");
-            }
+        let script = document.createElement("script");
+        script.src = managerURL + "?v=" + Date.now();
+        script.async = false;
+        target.appendChild(script);
+        console.log("BC Desktop: Loaded Addon Manager remotely");
+    }
 
-            if (!scriptsDir || !scriptsDir.files) {
-                console.error("BC Desktop: Could not find Scripts directory in jsDelivr response.");
-                return;
-            }
-
-            const scripts = scriptsDir.files
-                .filter((f) => f.type === "file" && f.name.endsWith(".js") && !f.name.toLowerCase().includes("debug"))
-                .map((f) => f.name);
-
-            function injectScripts() {
-                let target = document.head || document.documentElement;
-                if (!target) {
-                    setTimeout(injectScripts, 10);
-                    return;
-                }
-
-                scripts.forEach((scriptName) => {
-                    let script = document.createElement("script");
-                    script.src = baseURL + scriptName + "?v=" + Date.now();
-                    script.async = false;
-                    target.appendChild(script);
-                    console.log(`BC Desktop: Loaded ${scriptName} remotely (Wildcard)`);
-                });
-            }
-
-            injectScripts();
-        })
-        .catch((err) => {
-            console.error("BC Desktop: Failed to fetch remote script list.", err);
-        });
+    injectManager();
 })();
