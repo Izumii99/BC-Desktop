@@ -19,16 +19,16 @@
 
     console.log("BC Desktop: Addon Manager initializing...");
 
-    const REPO_API_URL = "https://data.jsdelivr.com/v1/package/gh/Izumii99/BC-Desktop@main";
-    const SCRIPT_BASE_URL = "https://cdn.jsdelivr.net/gh/Izumii99/BC-Desktop@main/Scripts/";
+    const REPO_API_URL =
+        "https://data.jsdelivr.com/v1/package/gh/Izumii99/BC-Desktop@main";
+    const SCRIPT_BASE_URL =
+        "https://cdn.jsdelivr.net/gh/Izumii99/BC-Desktop@main/Scripts/";
     const STORAGE_KEY = "BCDesktop_Addons_Config";
 
-    // Mod Manager UI State
     let isModalOpen = false;
-    let scriptsList = []; // Array of string filenames
-    let scriptStatuses = {}; // { "filename.js": "loading" | "loaded" | "failed" | "disabled" }
-    
-    // Load config from localStorage (defaults to empty object, meaning everything is ON by default)
+    let scriptsList = [];
+    let scriptStatuses = {};
+
     let userConfig = {};
     try {
         const saved = localStorage.getItem(STORAGE_KEY);
@@ -43,9 +43,6 @@
         } catch (e) {}
     }
 
-    // --- UI Creation ---
-
-    // 1. Floating Button
     const floatingBtn = document.createElement("div");
     floatingBtn.innerHTML = "🧩";
     Object.assign(floatingBtn.style, {
@@ -54,10 +51,10 @@
         right: "20px",
         width: "50px",
         height: "50px",
-        backgroundColor: "#4c3a70", // Neko dark purple
+        backgroundColor: "#4c3a70",
         color: "white",
         borderRadius: "50%",
-        display: "none", // Hidden initially
+        display: "none",
         justifyContent: "center",
         alignItems: "center",
         fontSize: "24px",
@@ -65,15 +62,20 @@
         boxShadow: "0 4px 10px rgba(0,0,0,0.5)",
         zIndex: "999999",
         transition: "transform 0.2s, background-color 0.2s",
-        userSelect: "none"
+        userSelect: "none",
     });
-    
-    floatingBtn.onmouseenter = () => { floatingBtn.style.backgroundColor = "#6a5299"; floatingBtn.style.transform = "scale(1.1)"; };
-    floatingBtn.onmouseleave = () => { floatingBtn.style.backgroundColor = "#4c3a70"; floatingBtn.style.transform = "scale(1)"; };
+
+    floatingBtn.onmouseenter = () => {
+        floatingBtn.style.backgroundColor = "#6a5299";
+        floatingBtn.style.transform = "scale(1.1)";
+    };
+    floatingBtn.onmouseleave = () => {
+        floatingBtn.style.backgroundColor = "#4c3a70";
+        floatingBtn.style.transform = "scale(1)";
+    };
     floatingBtn.onclick = toggleModal;
     document.body.appendChild(floatingBtn);
 
-    // 2. Modal Overlay
     const modalOverlay = document.createElement("div");
     Object.assign(modalOverlay.style, {
         position: "fixed",
@@ -86,12 +88,12 @@
         zIndex: "1000000",
         display: "none",
         justifyContent: "center",
-        alignItems: "center"
+        alignItems: "center",
     });
 
     const modalContent = document.createElement("div");
     Object.assign(modalContent.style, {
-        backgroundColor: "#1e1e24", // Dark background
+        backgroundColor: "#1e1e24",
         width: "400px",
         maxWidth: "90%",
         maxHeight: "80%",
@@ -102,10 +104,9 @@
         overflow: "hidden",
         border: "1px solid #3d3159",
         color: "#e0e0e0",
-        fontFamily: "Arial, sans-serif"
+        fontFamily: "Arial, sans-serif",
     });
 
-    // Modal Header
     const modalHeader = document.createElement("div");
     Object.assign(modalHeader.style, {
         backgroundColor: "#2a223c",
@@ -115,19 +116,22 @@
         alignItems: "center",
         borderBottom: "1px solid #3d3159",
         fontWeight: "bold",
-        fontSize: "18px"
+        fontSize: "18px",
     });
     modalHeader.innerHTML = `<span>🧩 BC Desktop Addons</span>`;
-    
+
     const closeBtn = document.createElement("span");
     closeBtn.innerHTML = "✖";
-    Object.assign(closeBtn.style, { cursor: "pointer", color: "#a0a0a0", fontSize: "16px" });
-    closeBtn.onmouseenter = () => closeBtn.style.color = "white";
-    closeBtn.onmouseleave = () => closeBtn.style.color = "#a0a0a0";
+    Object.assign(closeBtn.style, {
+        cursor: "pointer",
+        color: "#a0a0a0",
+        fontSize: "16px",
+    });
+    closeBtn.onmouseenter = () => (closeBtn.style.color = "white");
+    closeBtn.onmouseleave = () => (closeBtn.style.color = "#a0a0a0");
     closeBtn.onclick = toggleModal;
     modalHeader.appendChild(closeBtn);
-    
-    // Modal Body (List of addons)
+
     const modalBody = document.createElement("div");
     Object.assign(modalBody.style, {
         padding: "15px 20px",
@@ -135,11 +139,10 @@
         flexGrow: "1",
         display: "flex",
         flexDirection: "column",
-        gap: "10px"
+        gap: "10px",
     });
     modalBody.innerHTML = `<div style="text-align: center; color: #888;">Fetching scripts...</div>`;
 
-    // Modal Footer
     const modalFooter = document.createElement("div");
     Object.assign(modalFooter.style, {
         backgroundColor: "#2a223c",
@@ -147,9 +150,10 @@
         borderTop: "1px solid #3d3159",
         textAlign: "center",
         fontSize: "12px",
-        color: "#aaa"
+        color: "#aaa",
     });
-    modalFooter.innerText = "Changes will take effect on the next game refresh (F5).";
+    modalFooter.innerText =
+        "Changes will take effect on the next game refresh (F5).";
 
     modalContent.appendChild(modalHeader);
     modalContent.appendChild(modalBody);
@@ -157,7 +161,6 @@
     modalOverlay.appendChild(modalContent);
     document.body.appendChild(modalOverlay);
 
-    // Clicking outside modal closes it
     modalOverlay.onclick = (e) => {
         if (e.target === modalOverlay) toggleModal();
     };
@@ -170,15 +173,17 @@
 
     function renderList() {
         modalBody.innerHTML = "";
-        
+
         if (scriptsList.length === 0) {
             modalBody.innerHTML = `<div style="text-align: center; color: #888;">No scripts found or still loading...</div>`;
             return;
         }
 
-        scriptsList.forEach(scriptName => {
-            const isEnabled = userConfig[scriptName] !== false; // Default to true
-            const status = scriptStatuses[scriptName] || (isEnabled ? "loading" : "disabled");
+        scriptsList.forEach((scriptName) => {
+            const isEnabled = userConfig[scriptName] !== false;
+            const status =
+                scriptStatuses[scriptName] ||
+                (isEnabled ? "loading" : "disabled");
 
             const itemDiv = document.createElement("div");
             Object.assign(itemDiv.style, {
@@ -188,16 +193,19 @@
                 backgroundColor: "#262035",
                 padding: "12px 15px",
                 borderRadius: "8px",
-                border: "1px solid #3d3159"
+                border: "1px solid #3d3159",
             });
 
-            // Name and Status
             const infoDiv = document.createElement("div");
-            
+
             const titleSpan = document.createElement("div");
-            titleSpan.innerText = scriptName.replace('.js', '');
-            Object.assign(titleSpan.style, { fontWeight: "bold", fontSize: "14px", marginBottom: "4px" });
-            
+            titleSpan.innerText = scriptName.replace(".js", "");
+            Object.assign(titleSpan.style, {
+                fontWeight: "bold",
+                fontSize: "14px",
+                marginBottom: "4px",
+            });
+
             const statusSpan = document.createElement("div");
             statusSpan.style.fontSize = "11px";
             if (status === "loaded") {
@@ -213,11 +221,10 @@
                 statusSpan.innerText = "🟡 Loading...";
                 statusSpan.style.color = "#ffeb3b";
             }
-            
+
             infoDiv.appendChild(titleSpan);
             infoDiv.appendChild(statusSpan);
 
-            // Toggle Button
             const toggleWrapper = document.createElement("div");
             Object.assign(toggleWrapper.style, {
                 width: "44px",
@@ -226,9 +233,9 @@
                 borderRadius: "12px",
                 position: "relative",
                 cursor: "pointer",
-                transition: "background-color 0.2s"
+                transition: "background-color 0.2s",
             });
-            
+
             const toggleCircle = document.createElement("div");
             Object.assign(toggleCircle.style, {
                 width: "18px",
@@ -239,7 +246,7 @@
                 top: "3px",
                 left: isEnabled ? "23px" : "3px",
                 transition: "left 0.2s",
-                boxShadow: "0 2px 4px rgba(0,0,0,0.3)"
+                boxShadow: "0 2px 4px rgba(0,0,0,0.3)",
             });
 
             toggleWrapper.onclick = () => {
@@ -250,19 +257,20 @@
             };
 
             toggleWrapper.appendChild(toggleCircle);
-            
+
             itemDiv.appendChild(infoDiv);
             itemDiv.appendChild(toggleWrapper);
             modalBody.appendChild(itemDiv);
         });
     }
 
-
-    // --- Visibility Checker ---
     setInterval(() => {
         try {
-            // Only show floating button if in Login or Profile screen
-            if (window.CurrentScreen === "Login" || window.CurrentScreen === "Information") {
+            if (
+                window.CurrentScreen === "Login" ||
+                window.CurrentScreen === "Information" ||
+                window.CurrentScreen === "Profile"
+            ) {
                 if (floatingBtn.style.display === "none") {
                     floatingBtn.style.display = "flex";
                 }
@@ -274,15 +282,14 @@
         } catch (e) {}
     }, 1000);
 
-
-    // --- Core Logic: Fetch & Inject ---
-
     fetch(REPO_API_URL)
         .then((response) => response.json())
         .then((data) => {
             let scriptsDir = null;
             if (data && data.files) {
-                scriptsDir = data.files.find((f) => f.type === "directory" && f.name === "Scripts");
+                scriptsDir = data.files.find(
+                    (f) => f.type === "directory" && f.name === "Scripts",
+                );
             }
 
             if (!scriptsDir || !scriptsDir.files) {
@@ -291,13 +298,15 @@
             }
 
             scriptsList = scriptsDir.files
-                .filter((f) => f.type === "file" && f.name.endsWith(".js") && !f.name.toLowerCase().includes("debug") && f.name !== "addon-manager.js")
+                .filter(
+                    (f) =>
+                        f.type === "file" &&
+                        f.name.endsWith(".js") &&
+                        !f.name.toLowerCase().includes("debug") &&
+                        f.name !== "addon-manager.js",
+                )
                 .map((f) => f.name);
 
-            // Update UI list since we fetched the files
-            if (isModalOpen) renderList();
-
-            // Inject the enabled scripts
             function injectTargetScripts() {
                 let target = document.head || document.documentElement;
                 if (!target) {
@@ -306,8 +315,8 @@
                 }
 
                 scriptsList.forEach((scriptName) => {
-                    const isEnabled = userConfig[scriptName] !== false; // Default true
-                    
+                    const isEnabled = userConfig[scriptName] !== false;
+
                     if (!isEnabled) {
                         scriptStatuses[scriptName] = "disabled";
                         return;
@@ -316,18 +325,23 @@
                     scriptStatuses[scriptName] = "loading";
 
                     let script = document.createElement("script");
-                    script.src = SCRIPT_BASE_URL + scriptName + "?v=" + Date.now();
+                    script.src =
+                        SCRIPT_BASE_URL + scriptName + "?v=" + Date.now();
                     script.async = false;
-                    
+
                     script.onload = () => {
                         scriptStatuses[scriptName] = "loaded";
-                        console.log(`BC Desktop: Successfully loaded ${scriptName}`);
+                        console.log(
+                            `BC Desktop: Successfully loaded ${scriptName}`,
+                        );
                         if (isModalOpen) renderList();
                     };
-                    
+
                     script.onerror = () => {
                         scriptStatuses[scriptName] = "failed";
-                        console.error(`BC Desktop: Failed to load ${scriptName}`);
+                        console.error(
+                            `BC Desktop: Failed to load ${scriptName}`,
+                        );
                         if (isModalOpen) renderList();
                     };
 
@@ -338,7 +352,10 @@
             injectTargetScripts();
         })
         .catch((err) => {
-            console.error("BC Desktop: Failed to fetch remote script list.", err);
+            console.error(
+                "BC Desktop: Failed to fetch remote script list.",
+                err,
+            );
             modalBody.innerHTML = `<div style="text-align: center; color: #f44336;">Failed to fetch script list from jsDelivr.</div>`;
         });
 })();
