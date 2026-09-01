@@ -18,7 +18,7 @@ A minimal native desktop wrapper for BC, built with **WPF** and **.NET 8**. Uses
 ## Features
 
 - **Auto-detects the latest game version** on every launch
-- **Addon loader** injected automatically on page load
+- **OTA (Over-the-Air) Remote Loader**: All addons and scripts are fetched automatically from GitHub on startup. You never need to re-download the desktop app just to get script updates!
 - **Borderless custom title bar** with seamless drag, minimize, maximize, and close
 - **Sleeping Tabs (Suspend on minimize)** to drastically reduce RAM while in background
 - **Multi-monitor support** with proper DPI scaling bounds
@@ -29,17 +29,19 @@ A minimal native desktop wrapper for BC, built with **WPF** and **.NET 8**. Uses
 This repository also hosts standalone scripts in the `Scripts/` folder. You can use them directly via Tampermonkey or Bookmarklets even without the Desktop App:
 
 ### 1. Neko Dark Mode (`neko-dark.js`)
-A custom dark mode theme designed specifically for **Neko Chat Enhancer**. 
+
+A custom dark mode theme designed specifically for **Neko Chat Enhancer**.
 
 <img src="Assets/neko_dark_preview.png" width="700" alt="Neko Dark Mode Preview" />
 
 **Design Highlights:**
+
 - **Deep Purple Aesthetic:** Replaces the default harsh black/white with a sleek, unified dark purple palette that feels premium and is much easier on the eyes.
 - **Refined Background Overlay:** The floating heart (love) particles in the background are tweaked with custom opacity and blend modes, giving a subtle and beautiful half-screen ambiance without distracting from the chat.
 - **Improved Readability:** Action texts, whispers, and chat borders have been re-colored to stand out elegantly against the dark background.
 
-**Prerequisite:** 
-Because this is a theme for **Neko Chat Enhancer**, you must have the original addon by *QAQMOON* installed and enabled first.
+**Prerequisite:**
+Because this is a theme for **Neko Chat Enhancer**, you must have the original addon by _QAQMOON_ installed and enabled first.
 
 <img src="Assets/neko_chat_enhancer.png" width="700" alt="Neko Chat Enhancer Required" />
 
@@ -48,11 +50,12 @@ Because this is a theme for **Neko Chat Enhancer**, you must have the original a
 #### Bookmarklet (One-Click)
 
 ```javascript
-javascript:(function(){
-    var script = document.createElement('script');
-    script.src = 'https://cdn.jsdelivr.net/gh/Izumii99/BC-Desktop@main/Scripts/neko-dark.js';
+javascript: (function () {
+    var script = document.createElement("script");
+    script.src =
+        "https://cdn.jsdelivr.net/gh/Izumii99/BC-Desktop@main/Scripts/neko-dark.js";
     document.head.appendChild(script);
-    console.log('Fetching Neko Dark from GitHub...');
+    console.log("Fetching Neko Dark from GitHub...");
 })();
 ```
 
@@ -72,16 +75,19 @@ javascript:(function(){
 // @grant        none
 // ==/UserScript==
 
-(function() {
-    'use strict';
-    var script = document.createElement('script');
-    script.src = 'https://cdn.jsdelivr.net/gh/Izumii99/BC-Desktop@main/Scripts/neko-dark.js?v=' + Date.now();
+(function () {
+    "use strict";
+    var script = document.createElement("script");
+    script.src =
+        "https://cdn.jsdelivr.net/gh/Izumii99/BC-Desktop@main/Scripts/neko-dark.js?v=" +
+        Date.now();
     document.head.appendChild(script);
     console.log("Neko Addons Loader: Injected successfully!");
 })();
 ```
 
 ### 2. Wardrobe & Appearance Pagination (`wardrobe-pagination.js`)
+
 Fixes the issue where having too many clothing items (e.g. from using multiple mods) causes the item list to overflow beyond the right side of the screen, making them impossible to click.
 
 <p float="left">
@@ -90,6 +96,7 @@ Fixes the issue where having too many clothing items (e.g. from using multiple m
 </p>
 
 **Features:**
+
 - Seamlessly paginates the Appearance grid into multiple manageable pages.
 - Native UI integration with Next/Prev and Page Indicator buttons.
 - Fully compatible with Wardrobe decorators and active item selection (pink borders).
@@ -100,11 +107,12 @@ Fixes the issue where having too many clothing items (e.g. from using multiple m
 #### Bookmarklet (One-Click)
 
 ```javascript
-javascript:(function(){
-    var script = document.createElement('script');
-    script.src = 'https://cdn.jsdelivr.net/gh/Izumii99/BC-Desktop@main/Scripts/wardrobe-pagination.js';
+javascript: (function () {
+    var script = document.createElement("script");
+    script.src =
+        "https://cdn.jsdelivr.net/gh/Izumii99/BC-Desktop@main/Scripts/wardrobe-pagination.js";
     document.head.appendChild(script);
-    console.log('Fetching Wardrobe Pagination from GitHub...');
+    console.log("Fetching Wardrobe Pagination from GitHub...");
 })();
 ```
 
@@ -124,10 +132,12 @@ javascript:(function(){
 // @grant        none
 // ==/UserScript==
 
-(function() {
-    'use strict';
-    var script = document.createElement('script');
-    script.src = 'https://cdn.jsdelivr.net/gh/Izumii99/BC-Desktop@main/Scripts/wardrobe-pagination.js?v=' + Date.now();
+(function () {
+    "use strict";
+    var script = document.createElement("script");
+    script.src =
+        "https://cdn.jsdelivr.net/gh/Izumii99/BC-Desktop@main/Scripts/wardrobe-pagination.js?v=" +
+        Date.now();
     document.head.appendChild(script);
     console.log("Wardrobe Pagination Loader: Injected successfully!");
 })();
@@ -138,10 +148,10 @@ javascript:(function(){
 |                            | Electron / Web Browser | BC Desktop (WPF)                    |
 | -------------------------- | ---------------------- | ----------------------------------- |
 | **Bundled Browser**        | Chromium (~150 MB)     | OS native (WebView2)                |
-| **CPU (Active Playing)**   | ~3% – 15%              | ~1% – 3%                            |
+| **CPU (Active Playing)**   | ~3% – 15%              | ~1% – 5%                            |
 | **RAM (Active Playing)**   | ~700 MB – 1.2 GB       | ~500 MB – 650 MB                    |
-| **RAM (Idle/Background)**  | ~300 MB – 500 MB       | ~50 MB – 150 MB (Sleeping Tabs)     |
-| **App Size (Lightweight)** | ~100–200 MB            | ~3 MB                               |
+| **RAM (Idle/Background)**  | ~300 MB – 500 MB       | ~100 MB – 250 MB (Sleeping Tabs)    |
+| **App Size (Lightweight)** | ~100–200 MB            | ~4 MB                               |
 | **App Size (Standalone)**  | ~100–200 MB            | ~160 MB (Contains .NET, no Browser) |
 
 ## Requirements
