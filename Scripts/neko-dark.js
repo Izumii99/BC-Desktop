@@ -239,44 +239,44 @@
                ---------------------------------------------------------------- */
 
             /* Now online (Soft Vibrant Blue) */
-            html body #TextAreaChatLog .nk-online {
+            html body #TextAreaChatLog div.ChatMessage.nk-online {
                 background: #0d1624 !important;
                 border: 1px solid #2563eb !important;
                 color: #60a5fa !important;
                 opacity: 0.65 !important;
             }
-            html body #TextAreaChatLog .nk-online *:not(.ChatMessageName) { color: #60a5fa !important; text-shadow: none !important; }
+            html body #TextAreaChatLog div.ChatMessage.nk-online *:not(.ChatMessageName) { color: #60a5fa !important; text-shadow: none !important; }
 
             /* Now offline (Soft Vibrant Rose) */
-            html body #TextAreaChatLog .nk-offline {
+            html body #TextAreaChatLog div.ChatMessage.nk-offline {
                 background: #1f0810 !important;
                 border: 1px solid #be123c !important;
                 color: #fb7185 !important;
                 opacity: 0.65 !important;
             }
-            html body #TextAreaChatLog .nk-offline *:not(.ChatMessageName) { color: #fb7185 !important; text-shadow: none !important; }
+            html body #TextAreaChatLog div.ChatMessage.nk-offline *:not(.ChatMessageName) { color: #fb7185 !important; text-shadow: none !important; }
 
             /* Whisper (Soft Vibrant Fuchsia/Magenta) */
-            html body #TextAreaChatLog .ChatMessageWhisper {
+            html body #TextAreaChatLog div.ChatMessage.ChatMessageWhisper {
                 background: #2d142c !important;
                 border: 1px solid #d946ef !important;
                 color: #f0abfc !important;
                 opacity: 0.95 !important;
                 box-shadow: 0 0 5px rgba(217, 70, 239, 0.25) !important;
             }
-            html body #TextAreaChatLog .ChatMessageWhisper *:not(.ChatMessageName) { color: #f0abfc !important; text-shadow: none !important; }
+            html body #TextAreaChatLog div.ChatMessage.ChatMessageWhisper *:not(.ChatMessageName) { color: #f0abfc !important; text-shadow: none !important; }
 
             /* Voice (dark amber/gold) */
-            html body #TextAreaChatLog .nk-voice {
+            html body #TextAreaChatLog div.ChatMessage.nk-voice {
                 background: #1c150a !important;
                 border: 1px solid #7a5c1a !important;
                 color: #cda240 !important;
                 opacity: 0.75 !important;
             }
-            html body #TextAreaChatLog .nk-voice *:not(.ChatMessageName) { color: #cda240 !important; text-shadow: none !important; }
+            html body #TextAreaChatLog div.ChatMessage.nk-voice *:not(.ChatMessageName) { color: #cda240 !important; text-shadow: none !important; }
 
             /* Entered (dim periwinkle, italic, centered) */
-            html body #TextAreaChatLog .nk-enter {
+            html body #TextAreaChatLog div.ChatMessage.nk-enter {
                 background: #141828 !important;
                 border: 1px solid #303870 !important;
                 color: #8898d0 !important;
@@ -285,13 +285,13 @@
                 box-shadow: none !important;
                 text-align: center !important;
             }
-            html body #TextAreaChatLog .nk-enter *:not(.ChatMessageName) {
+            html body #TextAreaChatLog div.ChatMessage.nk-enter *:not(.ChatMessageName) {
                 color: #8898d0 !important;
                 text-shadow: none !important;
             }
 
             /* Disconnected / left (dark rose) */
-            html body #TextAreaChatLog .nk-disconnect {
+            html body #TextAreaChatLog div.ChatMessage.nk-disconnect {
                 background: #1e1018 !important;
                 border: 1px solid #502030 !important;
                 color: #c07080 !important;
@@ -300,7 +300,7 @@
                 box-shadow: none !important;
                 text-align: center !important;
             }
-            html body #TextAreaChatLog .nk-disconnect *:not(.ChatMessageName) {
+            html body #TextAreaChatLog div.ChatMessage.nk-disconnect *:not(.ChatMessageName) {
                 color: #c07080 !important;
                 text-shadow: none !important;
             }
