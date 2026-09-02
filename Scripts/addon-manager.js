@@ -23,7 +23,7 @@
         const popupOverlay = document.createElement("div");
         Object.assign(popupOverlay.style, {
             position: "fixed", top: "0", left: "0", width: "100%", height: "100%",
-            backgroundColor: "rgba(10, 8, 16, 0.8)", zIndex: "10001",
+            backgroundColor: "rgba(10, 8, 16, 0.8)", zIndex: "1000005",
             display: "flex", justifyContent: "center", alignItems: "center",
             opacity: "0", transition: "opacity 0.2s ease"
         });
