@@ -30,6 +30,15 @@
         console.log("BC Desktop: Local tester mode detected, pulling scripts from " + SCRIPT_BASE_URL);
     }
 
+    const SCRIPT_INFO = {
+        "autofocus.js": { title: "Autofocus", desc: "Automatically focuses the chat input box." },
+        "bcx-preset-changer.js": { title: "BCX Preset Changer", desc: "Quickly toggle BCX presets via custom UI." },
+        "chat-qol.js": { title: "Chat QoL", desc: "Quality of Life features for the chat window." },
+        "neko-dark.js": { title: "Neko Dark Theme", desc: "A sleek dark theme for Bondage Club by Neko." },
+        "translate.js": { title: "In-Game Translator", desc: "In-game translation tool for chat messages." },
+        "wardrobe-pagination.js": { title: "Wardrobe Pagination", desc: "Adds pagination to wardrobe items." }
+    };
+
     const ULTRABC_OPTIONS = [
         { label: "❌ Off", url: "" },
         { label: "🇬🇧 English", url: "https://tetris245.github.io/ultrabc.github.io/ULTRAbcloader.user.js" },
@@ -56,15 +65,14 @@
     }
 
     const floatingBtn = document.createElement("div");
-    floatingBtn.innerHTML = "🧩";
+    floatingBtn.innerHTML = `<img src="https://cdn.jsdelivr.net/gh/Izumii99/BC-Desktop@main/Assets/Icon.png" style="width: 28px; height: 28px;" />`;
     Object.assign(floatingBtn.style, {
         position: "fixed",
-        top: "10px",
-        left: "50%",
-        transform: "translateX(-50%)",
+        bottom: "20px",
+        left: "20px",
         width: "50px",
         height: "50px",
-        backgroundColor: "#4c3a70",
+        backgroundColor: "#2e2742",
         color: "white",
         borderRadius: "50%",
         display: "none",
@@ -76,15 +84,16 @@
         zIndex: "999999",
         transition: "transform 0.2s, background-color 0.2s",
         userSelect: "none",
+        border: "2px solid #3d3554"
     });
 
     floatingBtn.onmouseenter = () => {
-        floatingBtn.style.backgroundColor = "#6a5299";
-        floatingBtn.style.transform = "translateX(-50%) scale(1.1)";
+        floatingBtn.style.backgroundColor = "#3d3554";
+        floatingBtn.style.transform = "scale(1.1)";
     };
     floatingBtn.onmouseleave = () => {
-        floatingBtn.style.backgroundColor = "#4c3a70";
-        floatingBtn.style.transform = "translateX(-50%) scale(1)";
+        floatingBtn.style.backgroundColor = "#2e2742";
+        floatingBtn.style.transform = "scale(1)";
     };
     floatingBtn.onclick = toggleModal;
     document.body.appendChild(floatingBtn);
@@ -96,8 +105,8 @@
         left: "0",
         width: "100%",
         height: "100%",
-        backgroundColor: "rgba(0, 0, 0, 0.7)",
-        backdropFilter: "blur(4px)",
+        backgroundColor: "rgba(0, 0, 0, 0.75)",
+        backdropFilter: "blur(6px)",
         zIndex: "1000000",
         display: "none",
         justifyContent: "center",
@@ -106,67 +115,66 @@
 
     const modalContent = document.createElement("div");
     Object.assign(modalContent.style, {
-        backgroundColor: "#1e1e24",
-        width: "400px",
+        backgroundColor: "#1a1625",
+        width: "450px",
         maxWidth: "90%",
-        maxHeight: "80%",
-        borderRadius: "12px",
-        boxShadow: "0 8px 32px rgba(0,0,0,0.8)",
+        maxHeight: "85%",
+        borderRadius: "16px",
+        boxShadow: "0 12px 40px rgba(0,0,0,0.8)",
         display: "flex",
         flexDirection: "column",
         overflow: "hidden",
-        border: "1px solid #3d3159",
-        color: "#e0e0e0",
-        fontFamily: "Arial, sans-serif",
+        border: "1px solid #2e2640",
+        color: "#f5f5f5",
+        fontFamily: "'Inter', Arial, sans-serif",
     });
 
     const modalHeader = document.createElement("div");
     Object.assign(modalHeader.style, {
-        backgroundColor: "#2a223c",
-        padding: "15px 20px",
+        backgroundColor: "#211c2e",
+        padding: "18px 24px",
         display: "flex",
         justifyContent: "space-between",
         alignItems: "center",
-        borderBottom: "1px solid #3d3159",
+        borderBottom: "1px solid #2e2640",
         fontWeight: "bold",
-        fontSize: "18px",
+        fontSize: "16px",
     });
-    modalHeader.innerHTML = `<span>🧩 BC Desktop Addons</span>`;
+    modalHeader.innerHTML = `<div style="display:flex; align-items:center; gap:8px;"><img src="https://cdn.jsdelivr.net/gh/Izumii99/BC-Desktop@main/Assets/Icon.png" style="width: 20px; height: 20px;" /><span>Addons Manager</span></div>`;
 
     const closeBtn = document.createElement("span");
     closeBtn.innerHTML = "✖";
     Object.assign(closeBtn.style, {
         cursor: "pointer",
-        color: "#a0a0a0",
-        fontSize: "16px",
+        color: "#a59fb5",
+        fontSize: "14px",
     });
     closeBtn.onmouseenter = () => (closeBtn.style.color = "white");
-    closeBtn.onmouseleave = () => (closeBtn.style.color = "#a0a0a0");
+    closeBtn.onmouseleave = () => (closeBtn.style.color = "#a59fb5");
     closeBtn.onclick = toggleModal;
     modalHeader.appendChild(closeBtn);
 
     const modalBody = document.createElement("div");
     Object.assign(modalBody.style, {
-        padding: "15px 20px",
+        padding: "20px 24px",
         overflowY: "auto",
         flexGrow: "1",
         display: "flex",
         flexDirection: "column",
-        gap: "10px",
+        gap: "12px",
     });
-    modalBody.innerHTML = `<div style="text-align: center; color: #888;">Fetching scripts...</div>`;
+    modalBody.innerHTML = `<div style="text-align: center; color: #a59fb5;">Fetching scripts...</div>`;
 
     const modalFooter = document.createElement("div");
     Object.assign(modalFooter.style, {
-        backgroundColor: "#2a223c",
-        padding: "12px 20px",
-        borderTop: "1px solid #3d3159",
+        backgroundColor: "#211c2e",
+        padding: "14px 24px",
+        borderTop: "1px solid #2e2640",
         textAlign: "center",
-        fontSize: "12px",
-        color: "#aaa",
+        fontSize: "11px",
+        color: "#8a8d9b",
     });
-    modalFooter.innerText =
-        "Changes will take effect on the next game refresh (F5).";
+    modalFooter.innerText = "Changes will take effect on the next game refresh (F5).";
 
     modalContent.appendChild(modalHeader);
     modalContent.appendChild(modalBody);
@@ -181,51 +189,83 @@
     function toggleModal() {
         isModalOpen = !isModalOpen;
         modalOverlay.style.display = isModalOpen ? "flex" : "none";
-        if (isModalOpen) renderList(); // Re-render to update statuses
+        if (isModalOpen) renderList();
     }
 
     function renderList() {
         modalBody.innerHTML = "";
 
         if (scriptsList.length === 0) {
-            modalBody.innerHTML = `<div style="text-align: center; color: #888;">No scripts found or still loading...</div>`;
+            modalBody.innerHTML = `<div style="text-align: center; color: #a59fb5;">No scripts found or still loading...</div>`;
             return;
         }
 
-        // Render ULTRABc Select Dropdown
+        // --- Render ULTRABc ---
         const ultrabcDiv = document.createElement("div");
         Object.assign(ultrabcDiv.style, {
             display: "flex",
-            justifyContent: "space-between",
             alignItems: "center",
-            backgroundColor: "#262035",
-            padding: "12px 15px",
-            borderRadius: "8px",
-            border: "1px solid #3d3159",
-            marginBottom: "10px"
+            backgroundColor: "#211c2e",
+            padding: "14px",
+            borderRadius: "12px",
+            border: "1px solid #2e2640",
+            position: "relative",
+            overflow: "hidden",
+            flexShrink: "0"
         });
         
-        const uInfoDiv = document.createElement("div");
+        const uIcon = document.createElement("div");
+        Object.assign(uIcon.style, {
+            backgroundColor: "#352d4d",
+            borderRadius: "10px",
+            width: "48px",
+            height: "48px",
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "center",
+            fontSize: "24px",
+            marginRight: "15px",
+            flexShrink: "0"
+        });
+        uIcon.innerText = "👑";
+
+        const uInfo = document.createElement("div");
+        Object.assign(uInfo.style, { flexGrow: "1", display: "flex", flexDirection: "column", minWidth: "0" });
+        
         const uTitle = document.createElement("div");
         uTitle.innerText = "ULTRABc";
-        Object.assign(uTitle.style, { fontWeight: "bold", fontSize: "14px", marginBottom: "4px" });
+        Object.assign(uTitle.style, { fontWeight: "bold", fontSize: "14px", color: "#f5f5f5", marginBottom: "4px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" });
         
-        const uStatus = document.createElement("div");
-        uStatus.style.fontSize = "11px";
+        const uDesc = document.createElement("div");
+        uDesc.innerText = "Massive Bondage Club Mod Toolkit";
+        Object.assign(uDesc.style, { fontSize: "12px", color: "#a59fb5", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" });
+        
+        const uStatusDotContainer = document.createElement("div");
+        Object.assign(uStatusDotContainer.style, { marginTop: "8px" });
+        const uStatusDot = document.createElement("div");
+        
         let uConfig = userConfig["ULTRABc"];
-        if (uConfig) {
-            uStatus.innerText = "🟢 Enabled";
-            uStatus.style.color = "#4caf50";
-        } else {
-            uStatus.innerText = "⚪ Disabled";
-            uStatus.style.color = "#9e9e9e";
-        }
-        uInfoDiv.appendChild(uTitle);
-        uInfoDiv.appendChild(uStatus);
+        Object.assign(uStatusDot.style, {
+            width: "8px", height: "8px", borderRadius: "50%",
+            backgroundColor: uConfig ? "#4caf50" : "#8a8d9b"
+        });
+        uStatusDotContainer.appendChild(uStatusDot);
+
+        uInfo.appendChild(uTitle);
+        uInfo.appendChild(uDesc);
+        uInfo.appendChild(uStatusDotContainer);
         
         const uSelect = document.createElement("select");
         Object.assign(uSelect.style, {
-            backgroundColor: "#4c3a70", color: "white", border: "1px solid #3d3159", borderRadius: "4px", padding: "4px"
+            backgroundColor: "#2e2742",
+            color: "#f5f5f5",
+            border: "1px solid #3d3554",
+            borderRadius: "6px",
+            padding: "6px",
+            fontSize: "11px",
+            outline: "none",
+            cursor: "pointer",
+            flexShrink: "0"
         });
         
         ULTRABC_OPTIONS.forEach(opt => {
@@ -241,92 +281,190 @@
             saveConfig();
             renderList();
         };
+
+        const uChainBadge = document.createElement("div");
+        Object.assign(uChainBadge.style, {
+            position: "absolute", bottom: "0", right: "0", width: "24px", height: "24px",
+            backgroundColor: "#2e2742", borderTopLeftRadius: "8px",
+            display: "flex", justifyContent: "center", alignItems: "center",
+            fontSize: "10px", color: "#a59fb5"
+        });
+        uChainBadge.innerText = "🔗";
         
-        ultrabcDiv.appendChild(uInfoDiv);
+        ultrabcDiv.appendChild(uIcon);
+        ultrabcDiv.appendChild(uInfo);
         ultrabcDiv.appendChild(uSelect);
+        ultrabcDiv.appendChild(uChainBadge);
         modalBody.appendChild(ultrabcDiv);
 
+        // --- Render scripts ---
         scriptsList.forEach((scriptName) => {
             const isEnabled = userConfig[scriptName] !== false;
-            const status =
-                scriptStatuses[scriptName] ||
-                (isEnabled ? "loading" : "disabled");
+            const status = scriptStatuses[scriptName] || (isEnabled ? "loading" : "disabled");
 
             const itemDiv = document.createElement("div");
             Object.assign(itemDiv.style, {
                 display: "flex",
-                justifyContent: "space-between",
                 alignItems: "center",
-                backgroundColor: "#262035",
-                padding: "12px 15px",
-                borderRadius: "8px",
-                border: "1px solid #3d3159",
+                backgroundColor: "#211c2e",
+                padding: "14px",
+                borderRadius: "12px",
+                border: "1px solid #2e2640",
+                position: "relative",
+                overflow: "hidden",
+                flexShrink: "0"
             });
 
+            const sIcon = document.createElement("div");
+            Object.assign(sIcon.style, {
+                backgroundColor: "#352d4d",
+                borderRadius: "10px",
+                width: "48px",
+                height: "48px",
+                display: "flex",
+                justifyContent: "center",
+                alignItems: "center",
+                fontSize: "24px",
+                marginRight: "15px",
+                flexShrink: "0"
+            });
+            sIcon.innerText = "📜";
+
             const infoDiv = document.createElement("div");
+            Object.assign(infoDiv.style, { flexGrow: "1", display: "flex", flexDirection: "column", minWidth: "0" });
+
+            const info = SCRIPT_INFO[scriptName] || { title: scriptName.replace(".js", ""), desc: "Local Addon Script" };
 
             const titleSpan = document.createElement("div");
-            titleSpan.innerText = scriptName.replace(".js", "");
+            titleSpan.innerText = info.title;
             Object.assign(titleSpan.style, {
                 fontWeight: "bold",
                 fontSize: "14px",
+                color: "#f5f5f5",
                 marginBottom: "4px",
+                whiteSpace: "nowrap",
+                overflow: "hidden",
+                textOverflow: "ellipsis"
             });
 
-            const statusSpan = document.createElement("div");
-            statusSpan.style.fontSize = "11px";
-            if (status === "loaded") {
-                statusSpan.innerText = "🟢 Loaded successfully";
-                statusSpan.style.color = "#4caf50";
-            } else if (status === "failed") {
-                statusSpan.innerText = "🔴 Failed to load";
-                statusSpan.style.color = "#f44336";
-            } else if (status === "disabled") {
-                statusSpan.innerText = "⚪ Disabled";
-                statusSpan.style.color = "#9e9e9e";
-            } else {
-                statusSpan.innerText = "🟡 Loading...";
-                statusSpan.style.color = "#ffeb3b";
-            }
+            const descSpan = document.createElement("div");
+            descSpan.innerText = info.desc;
+            Object.assign(descSpan.style, { 
+                fontSize: "12px", color: "#a59fb5", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" 
+            });
+
+            const statusDotContainer = document.createElement("div");
+            Object.assign(statusDotContainer.style, { marginTop: "8px" });
+            const statusDot = document.createElement("div");
+            Object.assign(statusDot.style, { width: "8px", height: "8px", borderRadius: "50%", display: "inline-block", marginRight: "6px" });
+            
+            if (status === "loaded") statusDot.style.backgroundColor = "#4caf50";
+            else if (status === "failed") statusDot.style.backgroundColor = "#f44336";
+            else if (status === "disabled") statusDot.style.backgroundColor = "#8a8d9b";
+            else statusDot.style.backgroundColor = "#ffeb3b";
+            
+            const statusText = document.createElement("span");
+            statusText.innerText = status === "loaded" ? "Loaded" : status === "disabled" ? "Disabled" : status === "failed" ? "Failed" : "Loading...";
+            Object.assign(statusText.style, { fontSize: "10px", color: "#8a8d9b", verticalAlign: "top" });
+
+            statusDotContainer.appendChild(statusDot);
+            statusDotContainer.appendChild(statusText);
 
             infoDiv.appendChild(titleSpan);
-            infoDiv.appendChild(statusSpan);
+            infoDiv.appendChild(descSpan);
+            
+            if (scriptName === "chat-qol.js") {
+                const keysBtn = document.createElement("div");
+                keysBtn.innerText = "Show Hotkeys ▼";
+                Object.assign(keysBtn.style, {
+                    fontSize: "10px", color: "#a59fb5", cursor: "pointer", marginTop: "6px", display: "inline-block", width: "fit-content", padding: "2px 6px", backgroundColor: "#352d4d", borderRadius: "4px"
+                });
+                
+                const keysList = document.createElement("div");
+                keysList.innerHTML = `
+                    • <b>Tab</b>: Autocomplete<br>
+                    • <b>Alt + 1~0</b>: Whisper char by position<br>
+                    • <b>Alt + C/V</b>: Pet Ear/Tail (BCAR+)<br>
+                    • <b>Ctrl + Space</b>: Scroll chat to bottom
+                `;
+                Object.assign(keysList.style, {
+                    display: "none", fontSize: "10px", color: "#8a8d9b", marginTop: "4px",
+                    backgroundColor: "#1a1625", padding: "6px", borderRadius: "6px", border: "1px solid #2e2640"
+                });
+                
+                keysBtn.onclick = () => {
+                    const isHidden = keysList.style.display === "none";
+                    keysList.style.display = isHidden ? "block" : "none";
+                    keysBtn.innerText = isHidden ? "Hide Hotkeys ▲" : "Show Hotkeys ▼";
+                };
+                
+                infoDiv.appendChild(keysBtn);
+                infoDiv.appendChild(keysList);
+            }
 
-            const toggleWrapper = document.createElement("div");
-            Object.assign(toggleWrapper.style, {
-                width: "44px",
-                height: "24px",
-                backgroundColor: isEnabled ? "#4caf50" : "#555",
-                borderRadius: "12px",
-                position: "relative",
+            infoDiv.appendChild(statusDotContainer);
+
+            // Custom Liko Toggle Switch
+            const toggleContainer = document.createElement("div");
+            Object.assign(toggleContainer.style, {
+                display: "flex",
+                backgroundColor: "#2e2742",
+                borderRadius: "20px",
+                padding: "4px",
+                alignItems: "center",
+                fontSize: "10px",
+                fontWeight: "bold",
+                color: "#a59fb5",
+                border: "1px solid #3d3554",
                 cursor: "pointer",
-                transition: "background-color 0.2s",
+                userSelect: "none",
+                flexShrink: "0",
+                marginLeft: "10px"
             });
 
-            const toggleCircle = document.createElement("div");
-            Object.assign(toggleCircle.style, {
-                width: "18px",
-                height: "18px",
-                backgroundColor: "white",
-                borderRadius: "50%",
-                position: "absolute",
-                top: "3px",
-                left: isEnabled ? "23px" : "3px",
-                transition: "left 0.2s",
-                boxShadow: "0 2px 4px rgba(0,0,0,0.3)",
+            const offBtn = document.createElement("div");
+            offBtn.innerText = "OFF";
+            Object.assign(offBtn.style, {
+                padding: "4px 12px",
+                borderRadius: "16px",
+                backgroundColor: !isEnabled ? "#7b7194" : "transparent",
+                color: !isEnabled ? "white" : "#a59fb5",
+                transition: "all 0.2s"
             });
 
-            toggleWrapper.onclick = () => {
+            const onBtn = document.createElement("div");
+            onBtn.innerText = "ON";
+            Object.assign(onBtn.style, {
+                padding: "4px 12px",
+                borderRadius: "16px",
+                backgroundColor: isEnabled ? "#7b7194" : "transparent",
+                color: isEnabled ? "white" : "#a59fb5",
+                transition: "all 0.2s"
+            });
+
+            toggleContainer.appendChild(offBtn);
+            toggleContainer.appendChild(onBtn);
+
+            toggleContainer.onclick = () => {
                 const newState = !isEnabled;
                 userConfig[scriptName] = newState;
                 saveConfig();
-                renderList(); // Re-render to update toggle visual immediately
+                renderList();
             };
 
-            toggleWrapper.appendChild(toggleCircle);
+            const chainBadge = document.createElement("div");
+            Object.assign(chainBadge.style, {
+                position: "absolute", bottom: "0", right: "0", width: "24px", height: "24px",
+                backgroundColor: "#2e2742", borderTopLeftRadius: "8px",
+                display: "flex", justifyContent: "center", alignItems: "center",
+                fontSize: "10px", color: "#a59fb5"
+            });
+            chainBadge.innerText = "🔗";
 
+            itemDiv.appendChild(sIcon);
             itemDiv.appendChild(infoDiv);
-            itemDiv.appendChild(toggleWrapper);
+            itemDiv.appendChild(toggleContainer);
+            itemDiv.appendChild(chainBadge);
             modalBody.appendChild(itemDiv);
         });
     }
