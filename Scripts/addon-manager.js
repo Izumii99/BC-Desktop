@@ -19,6 +19,64 @@
 
     console.log("BC Desktop: Addon Manager initializing...");
 
+    function showFeaturePopup(title, contentHTML) {
+        const popupOverlay = document.createElement("div");
+        Object.assign(popupOverlay.style, {
+            position: "fixed", top: "0", left: "0", width: "100%", height: "100%",
+            backgroundColor: "rgba(10, 8, 16, 0.8)", zIndex: "10001",
+            display: "flex", justifyContent: "center", alignItems: "center",
+            opacity: "0", transition: "opacity 0.2s ease"
+        });
+
+        const popupBox = document.createElement("div");
+        Object.assign(popupBox.style, {
+            backgroundColor: "#1a1625", border: "1px solid #3d3554", borderRadius: "12px",
+            padding: "20px", width: "80%", maxWidth: "420px", color: "#f5f5f5",
+            boxShadow: "0 10px 30px rgba(0,0,0,0.5)", transform: "scale(0.9)", transition: "transform 0.2s ease"
+        });
+
+        const popupTitle = document.createElement("div");
+        popupTitle.innerText = title;
+        Object.assign(popupTitle.style, {
+            fontSize: "16px", fontWeight: "bold", marginBottom: "12px", borderBottom: "1px solid #2e2640", paddingBottom: "8px"
+        });
+
+        const popupContent = document.createElement("div");
+        popupContent.innerHTML = contentHTML;
+        Object.assign(popupContent.style, {
+            fontSize: "13px", color: "#d1cddd", lineHeight: "1.6"
+        });
+
+        const closeBtn = document.createElement("button");
+        closeBtn.innerText = "Close";
+        Object.assign(closeBtn.style, {
+            marginTop: "20px", width: "100%", padding: "10px", borderRadius: "8px", border: "none",
+            backgroundColor: "#352d4d", color: "#f5f5f5", cursor: "pointer", fontWeight: "bold", transition: "background-color 0.2s"
+        });
+        closeBtn.onmouseenter = () => closeBtn.style.backgroundColor = "#463d66";
+        closeBtn.onmouseleave = () => closeBtn.style.backgroundColor = "#352d4d";
+        
+        closeBtn.onclick = () => {
+            popupOverlay.style.opacity = "0";
+            popupBox.style.transform = "scale(0.9)";
+            setTimeout(() => popupOverlay.remove(), 200);
+        };
+        popupOverlay.onclick = (e) => {
+            if (e.target === popupOverlay) closeBtn.onclick();
+        };
+
+        popupBox.appendChild(popupTitle);
+        popupBox.appendChild(popupContent);
+        popupBox.appendChild(closeBtn);
+        popupOverlay.appendChild(popupBox);
+        document.body.appendChild(popupOverlay);
+
+        requestAnimationFrame(() => {
+            popupOverlay.style.opacity = "1";
+            popupBox.style.transform = "scale(1)";
+        });
+    }
+
     let REPO_API_URL =
         "https://data.jsdelivr.com/v1/package/gh/Izumii99/BC-Desktop@main";
     let SCRIPT_BASE_URL =
@@ -31,13 +89,13 @@
     }
 
     const SCRIPT_INFO = {
-        "autofocus.js": { title: "Autofocus", desc: "Automatically focuses the chat input box." },
-        "chat-qol.js": { title: "Chat QoL", desc: "Quality of Life features for the chat window." },
-        "fusam.js": { title: "FUSAM Loader", desc: "Fantastic Ultimate Solution to Addon Management.", icon: "🛠️" },
-        "LikoPlugin.js": { title: "Liko Plugin", desc: "Player customization and utility plugin.", icon: "https://cdn.jsdelivr.net/gh/awdrrawd/liko-Plugin-Repository@main/Images/PCM_ICON.png" },
-        "neko-dark.js": { title: "Neko Dark Theme", desc: "A sleek dark theme for Bondage Club by Neko." },
-        "translate.js": { title: "In-Game Translator", desc: "In-game translation tool for chat messages." },
-        "wardrobe-pagination.js": { title: "Wardrobe Pagination", desc: "Adds pagination to wardrobe items." }
+        "autofocus.js": { title: "Autofocus", desc: "Automatically focuses the chat input box.", url: "https://github.com/Izumii99/BC-Desktop/blob/main/tester/Scripts/autofocus.js" },
+        "chat-qol.js": { title: "Chat QoL", desc: "Quality of Life features for the chat window.", url: "https://github.com/Izumii99/BC-Desktop/blob/main/tester/Scripts/chat-qol.js" },
+        "fusam.js": { title: "FUSAM Loader", desc: "Fantastic Ultimate Solution to Addon Management.", icon: "🛠️", url: "https://gitlab.com/zahk3277/bc-addon-loader" },
+        "LikoPlugin.js": { title: "Liko Plugin", desc: "Player customization and utility plugin.", icon: "https://cdn.jsdelivr.net/gh/awdrrawd/liko-Plugin-Repository@main/Images/PCM_ICON.png", url: "https://github.com/awdrrawd/liko-Plugin-Repository" },
+        "neko-dark.js": { title: "Neko Dark Theme", desc: "A sleek dark theme for Bondage Club by Neko.", url: "https://github.com/Izumii99/BC-Desktop/blob/main/tester/Scripts/neko-dark.js" },
+        "translate.js": { title: "In-Game Translator", desc: "In-game translation tool for chat messages.", url: "https://github.com/Izumii99/BC-Desktop/blob/main/tester/Scripts/translate.js" },
+        "wardrobe-pagination.js": { title: "Wardrobe Pagination", desc: "Adds pagination to wardrobe items.", url: "https://github.com/Izumii99/BC-Desktop/blob/main/tester/Scripts/wardrobe-pagination.js" }
     };
 
     const ULTRABC_OPTIONS = [
@@ -319,9 +377,13 @@
             position: "absolute", bottom: "0", right: "0", width: "24px", height: "24px",
             backgroundColor: "#2e2742", borderTopLeftRadius: "8px", borderBottomRightRadius: "10px",
             display: "flex", justifyContent: "center", alignItems: "center",
-            fontSize: "10px", color: "#a59fb5"
+            fontSize: "10px", color: "#a59fb5", cursor: "pointer", transition: "background-color 0.2s ease, color 0.2s"
         });
         uChainBadge.innerText = "🔗";
+        uChainBadge.title = "Open Repository";
+        uChainBadge.onmouseenter = () => { uChainBadge.style.backgroundColor = "#3d3554"; uChainBadge.style.color = "#fff"; };
+        uChainBadge.onmouseleave = () => { uChainBadge.style.backgroundColor = "#2e2742"; uChainBadge.style.color = "#a59fb5"; };
+        uChainBadge.onclick = () => window.open("https://github.com/tetris245/ultrabc.github.io", "_blank");
         
         ultrabcDiv.appendChild(uIcon);
         ultrabcDiv.appendChild(uInfo);
@@ -416,31 +478,29 @@
             
             if (scriptName === "chat-qol.js") {
                 const keysBtn = document.createElement("div");
-                keysBtn.innerText = "Show Hotkeys ▼";
+                keysBtn.innerText = "🔍 View Features";
                 Object.assign(keysBtn.style, {
-                    fontSize: "10px", color: "#a59fb5", cursor: "pointer", marginTop: "6px", display: "inline-block", width: "fit-content", padding: "2px 6px", backgroundColor: "#352d4d", borderRadius: "4px"
+                    fontSize: "11px", color: "#b39ddb", cursor: "pointer", marginTop: "8px", display: "inline-block", width: "fit-content",
+                    padding: "4px 10px", backgroundColor: "rgba(179, 157, 219, 0.1)", borderRadius: "6px", border: "1px solid rgba(179, 157, 219, 0.3)",
+                    transition: "all 0.2s ease", fontWeight: "bold"
                 });
                 
-                const keysList = document.createElement("div");
-                keysList.innerHTML = `
-                    • <b>Tab</b>: Autocomplete<br>
-                    • <b>Alt + 1~0</b>: Whisper char by position<br>
-                    • <b>Alt + C/V</b>: Pet Ear/Tail (BCAR+)<br>
-                    • <b>Ctrl + Space</b>: Scroll chat to bottom
-                `;
-                Object.assign(keysList.style, {
-                    display: "none", fontSize: "10px", color: "#8a8d9b", marginTop: "4px",
-                    backgroundColor: "#1a1625", padding: "6px", borderRadius: "6px", border: "1px solid #2e2640"
-                });
+                keysBtn.onmouseenter = () => keysBtn.style.backgroundColor = "rgba(179, 157, 219, 0.25)";
+                keysBtn.onmouseleave = () => keysBtn.style.backgroundColor = "rgba(179, 157, 219, 0.1)";
                 
                 keysBtn.onclick = () => {
-                    const isHidden = keysList.style.display === "none";
-                    keysList.style.display = isHidden ? "block" : "none";
-                    keysBtn.innerText = isHidden ? "Hide Hotkeys ▲" : "Show Hotkeys ▼";
+                    showFeaturePopup("Chat QoL - Features & Hotkeys", `
+                        <div style="margin-bottom:12px;"><b>Quality of Life (QoL)</b> features specifically designed to make chatting and interacting faster and easier:</div>
+                        <ul style="margin:0; padding-left:24px; color:#e0e0e0;">
+                            <li style="margin-bottom:8px;"><b>Tab Key</b>: Instantly auto-completes the targeted character's name when typing a whisper.</li>
+                            <li style="margin-bottom:8px;"><b>Alt + 1~0</b>: Quickly whisper a character based on their position in the room (e.g. Alt+1 for the first person).</li>
+                            <li style="margin-bottom:8px;"><b>Alt + C / Alt + V</b>: Pet the Ear or Tail of your currently targeted character <i>(Requires BCAR+ to be active)</i>.</li>
+                            <li style="margin-bottom:4px;"><b>Ctrl + Space</b>: Force scroll the chatbox to the very bottom.</li>
+                        </ul>
+                    `);
                 };
                 
                 infoDiv.appendChild(keysBtn);
-                infoDiv.appendChild(keysList);
             }
 
             infoDiv.appendChild(statusDotContainer);
@@ -498,9 +558,18 @@
                 position: "absolute", bottom: "0", right: "0", width: "24px", height: "24px",
                 backgroundColor: "#2e2742", borderTopLeftRadius: "8px", borderBottomRightRadius: "10px",
                 display: "flex", justifyContent: "center", alignItems: "center",
-                fontSize: "10px", color: "#a59fb5"
+                fontSize: "10px", color: "#a59fb5", cursor: "pointer", transition: "background-color 0.2s ease, color 0.2s"
             });
             chainBadge.innerText = "🔗";
+            if (info.url) {
+                chainBadge.title = "View Source / Repository";
+                chainBadge.onmouseenter = () => { chainBadge.style.backgroundColor = "#3d3554"; chainBadge.style.color = "#fff"; };
+                chainBadge.onmouseleave = () => { chainBadge.style.backgroundColor = "#2e2742"; chainBadge.style.color = "#a59fb5"; };
+                chainBadge.onclick = () => window.open(info.url, "_blank");
+            } else {
+                chainBadge.style.opacity = "0.5";
+                chainBadge.style.cursor = "default";
+            }
 
             itemDiv.appendChild(sIcon);
             itemDiv.appendChild(infoDiv);
