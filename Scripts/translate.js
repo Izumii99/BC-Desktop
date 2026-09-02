@@ -87,17 +87,49 @@
         controls.style.gap = "10px";
         controls.style.alignItems = "center";
 
+        const commonOptions = `
+            <option value="en">Inggris</option>
+            <option value="id">Indonesia</option>
+            <option value="ja">Jepang</option>
+            <option value="zh-CN">China</option>
+            <option value="ru">Rusia</option>
+            <option disabled>──────────</option>
+        `;
+        
+        const allOptions = `
+            <option value="ar">Arab</option>
+            <option value="nl">Belanda</option>
+            <option value="zh-CN">China</option>
+            <option value="tl">Filipina</option>
+            <option value="hi">Hindi</option>
+            <option value="id">Indonesia</option>
+            <option value="en">Inggris</option>
+            <option value="it">Italia</option>
+            <option value="ja">Jepang</option>
+            <option value="de">Jerman</option>
+            <option value="ko">Korea</option>
+            <option value="ms">Melayu</option>
+            <option value="fr">Perancis</option>
+            <option value="pl">Polandia</option>
+            <option value="pt">Portugis</option>
+            <option value="ru">Rusia</option>
+            <option value="es">Spanyol</option>
+            <option value="th">Thailand</option>
+            <option value="tr">Turki</option>
+            <option value="uk">Ukraina</option>
+            <option value="vi">Vietnam</option>
+        `;
+
         const sourceLang = document.createElement("select");
-        sourceLang.innerHTML =
-            '<option value="auto">Otomatis</option><option value="en" selected>Inggris</option><option value="id">Indonesia</option><option value="ja">Jepang</option><option value="zh-CN">China</option><option value="ms">Melayu</option>';
+        sourceLang.innerHTML = '<option value="auto" selected>Otomatis</option>' + commonOptions + allOptions;
         sourceLang.style.flex = "1";
         sourceLang.style.padding = "5px";
         sourceLang.style.borderRadius = "4px";
         sourceLang.style.border = "1px solid #ccc";
 
         const targetLang = document.createElement("select");
-        targetLang.innerHTML =
-            '<option value="id">Indonesia</option><option value="en">Inggris</option><option value="ja">Jepang</option><option value="zh-CN">China</option><option value="ms">Melayu</option>';
+        targetLang.innerHTML = commonOptions + allOptions;
+        targetLang.value = "en"; // Default target ke Inggris
         targetLang.style.flex = "1";
         targetLang.style.padding = "5px";
         targetLang.style.borderRadius = "4px";

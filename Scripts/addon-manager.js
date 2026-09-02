@@ -269,7 +269,9 @@
             if (
                 window.CurrentScreen === "Login" ||
                 window.CurrentScreen === "Information" ||
-                window.CurrentScreen === "Profile"
+                window.CurrentScreen === "Profile" ||
+                window.CurrentScreen === "Preference" ||
+                window.CurrentScreen === "InformationSheet"
             ) {
                 if (floatingBtn.style.display === "none") {
                     floatingBtn.style.display = "flex";
