@@ -211,7 +211,6 @@
             borderRadius: "12px",
             border: "1px solid #2e2640",
             position: "relative",
-            overflow: "hidden",
             flexShrink: "0"
         });
         
@@ -318,7 +317,7 @@
         const uChainBadge = document.createElement("div");
         Object.assign(uChainBadge.style, {
             position: "absolute", bottom: "0", right: "0", width: "24px", height: "24px",
-            backgroundColor: "#2e2742", borderTopLeftRadius: "8px",
+            backgroundColor: "#2e2742", borderTopLeftRadius: "8px", borderBottomRightRadius: "10px",
             display: "flex", justifyContent: "center", alignItems: "center",
             fontSize: "10px", color: "#a59fb5"
         });
@@ -344,7 +343,6 @@
                 borderRadius: "12px",
                 border: "1px solid #2e2640",
                 position: "relative",
-                overflow: "hidden",
                 flexShrink: "0"
             });
 
@@ -498,7 +496,7 @@
             const chainBadge = document.createElement("div");
             Object.assign(chainBadge.style, {
                 position: "absolute", bottom: "0", right: "0", width: "24px", height: "24px",
-                backgroundColor: "#2e2742", borderTopLeftRadius: "8px",
+                backgroundColor: "#2e2742", borderTopLeftRadius: "8px", borderBottomRightRadius: "10px",
                 display: "flex", justifyContent: "center", alignItems: "center",
                 fontSize: "10px", color: "#a59fb5"
             });
@@ -546,14 +544,18 @@
         if (typeof Player !== "undefined" && Player.ExtensionSettings && Player.ExtensionSettings.BCX) {
             let saved = Player.ExtensionSettings.BCX;
             let parsed = null;
-            if (typeof saved === "string" && saved.startsWith("{")) {
-                try { parsed = JSON.parse(saved); } catch(e) {}
-            }
-            if (!parsed && typeof LZString !== "undefined") {
-                try { parsed = JSON.parse(LZString.decompressFromBase64(saved)); } catch(e) {}
-            }
-            if (!parsed && typeof LZString !== "undefined") {
-                try { parsed = JSON.parse(LZString.decompressFromUTF16(saved)); } catch(e) {}
+            if (typeof saved === "object" && saved !== null) {
+                parsed = saved;
+            } else if (typeof saved === "string") {
+                if (saved.startsWith("{")) {
+                    try { parsed = JSON.parse(saved); } catch(e) {}
+                }
+                if (!parsed && typeof LZString !== "undefined") {
+                    try { parsed = JSON.parse(LZString.decompressFromBase64(saved)); } catch(e) {}
+                }
+                if (!parsed && typeof LZString !== "undefined") {
+                    try { parsed = JSON.parse(LZString.decompressFromUTF16(saved)); } catch(e) {}
+                }
             }
             if (parsed && parsed.preset !== undefined) currentPreset = parsed.preset;
         }
@@ -581,14 +583,18 @@
                 let saved = Player.ExtensionSettings.BCX;
                 let parsed = null;
                 
-                if (typeof saved === "string" && saved.startsWith("{")) {
-                    try { parsed = JSON.parse(saved); } catch(e) {}
-                }
-                if (!parsed && typeof LZString !== "undefined") {
-                    try { parsed = JSON.parse(LZString.decompressFromBase64(saved)); } catch(e) {}
-                }
-                if (!parsed && typeof LZString !== "undefined") {
-                    try { parsed = JSON.parse(LZString.decompressFromUTF16(saved)); } catch(e) {}
+                if (typeof saved === "object" && saved !== null) {
+                    parsed = saved;
+                } else if (typeof saved === "string") {
+                    if (saved.startsWith("{")) {
+                        try { parsed = JSON.parse(saved); } catch(e) {}
+                    }
+                    if (!parsed && typeof LZString !== "undefined") {
+                        try { parsed = JSON.parse(LZString.decompressFromBase64(saved)); } catch(e) {}
+                    }
+                    if (!parsed && typeof LZString !== "undefined") {
+                        try { parsed = JSON.parse(LZString.decompressFromUTF16(saved)); } catch(e) {}
+                    }
                 }
                 
                 if (!parsed || typeof parsed !== "object") {
@@ -598,7 +604,9 @@
                 
                 parsed.preset = parseInt(bcxSelect.value);
                 
-                if (typeof saved === "string" && saved.startsWith("{")) {
+                if (typeof saved === "object" && saved !== null) {
+                    Player.ExtensionSettings.BCX = parsed;
+                } else if (typeof saved === "string" && saved.startsWith("{")) {
                     Player.ExtensionSettings.BCX = JSON.stringify(parsed);
                 } else if (typeof LZString !== "undefined") {
                     if (LZString.compressToBase64(LZString.decompressFromBase64(saved)) === saved) {
