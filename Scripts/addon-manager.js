@@ -33,6 +33,8 @@
     const SCRIPT_INFO = {
         "autofocus.js": { title: "Autofocus", desc: "Automatically focuses the chat input box." },
         "chat-qol.js": { title: "Chat QoL", desc: "Quality of Life features for the chat window." },
+        "fusam.js": { title: "FUSAM Loader", desc: "Fantastic Ultimate Solution to Addon Management.", icon: "🛠️" },
+        "LikoPlugin.js": { title: "Liko Plugin", desc: "Player customization and utility plugin.", icon: "https://cdn.jsdelivr.net/gh/awdrrawd/liko-Plugin-Repository@main/Images/PCM_ICON.png" },
         "neko-dark.js": { title: "Neko Dark Theme", desc: "A sleek dark theme for Bondage Club by Neko." },
         "translate.js": { title: "In-Game Translator", desc: "In-game translation tool for chat messages." },
         "wardrobe-pagination.js": { title: "Wardrobe Pagination", desc: "Adds pagination to wardrobe items." }
@@ -68,7 +70,7 @@
     Object.assign(floatingBtn.style, {
         position: "fixed",
         bottom: "20px",
-        left: "20px",
+        right: "20px",
         width: "50px",
         height: "50px",
         backgroundColor: "#2e2742",
@@ -226,7 +228,7 @@
             marginRight: "15px",
             flexShrink: "0"
         });
-        uIcon.innerText = "👑";
+        uIcon.innerText = "⚡";
 
         const uInfo = document.createElement("div");
         Object.assign(uInfo.style, { flexGrow: "1", display: "flex", flexDirection: "column", minWidth: "0" });
@@ -254,32 +256,64 @@
         uInfo.appendChild(uDesc);
         uInfo.appendChild(uStatusDotContainer);
         
-        const uSelect = document.createElement("select");
-        Object.assign(uSelect.style, {
-            backgroundColor: "#2e2742",
-            color: "#f5f5f5",
-            border: "1px solid #3d3554",
-            borderRadius: "6px",
-            padding: "6px",
-            fontSize: "11px",
-            outline: "none",
-            cursor: "pointer",
-            flexShrink: "0"
+        const uSelectContainer = document.createElement("div");
+        Object.assign(uSelectContainer.style, { position: "relative", flexShrink: "0", zIndex: "100" });
+
+        const uSelectBtn = document.createElement("div");
+        Object.assign(uSelectBtn.style, {
+            backgroundColor: "#2e2742", color: "#f5f5f5", border: "1px solid #3d3554",
+            borderRadius: "6px", padding: "6px 10px", fontSize: "11px", cursor: "pointer",
+            display: "flex", alignItems: "center", gap: "6px"
         });
+        
+        const uSelectDropdown = document.createElement("div");
+        Object.assign(uSelectDropdown.style, {
+            position: "absolute", top: "100%", right: "0", marginTop: "4px",
+            backgroundColor: "#1a1625", border: "1px solid #3d3554", borderRadius: "6px",
+            boxShadow: "0 4px 12px rgba(0,0,0,0.5)", display: "none",
+            flexDirection: "column", overflow: "hidden", minWidth: "100px"
+        });
+        
+        const updateULTRABcLabel = () => {
+            let activeOpt = ULTRABC_OPTIONS.find(o => o.url === uConfig) || ULTRABC_OPTIONS[0];
+            let rawText = activeOpt.label;
+            uSelectBtn.innerHTML = `<span>${rawText}</span> <span style="font-size:9px; color:#a59fb5;">▼</span>`;
+        };
+        updateULTRABcLabel();
+        
+        uSelectBtn.onclick = (e) => {
+            e.stopPropagation();
+            uSelectDropdown.style.display = uSelectDropdown.style.display === "none" ? "flex" : "none";
+        };
         
         ULTRABC_OPTIONS.forEach(opt => {
-            let option = document.createElement("option");
-            option.value = opt.url;
-            option.innerText = opt.label;
-            if (uConfig === opt.url) option.selected = true;
-            uSelect.appendChild(option);
+            let item = document.createElement("div");
+            item.innerHTML = opt.label;
+            Object.assign(item.style, {
+                padding: "8px 12px", fontSize: "11px", color: "#f5f5f5", cursor: "pointer",
+                backgroundColor: uConfig === opt.url ? "#352d4d" : "transparent",
+                fontWeight: uConfig === opt.url ? "bold" : "normal",
+                whiteSpace: "nowrap"
+            });
+            item.onmouseenter = () => item.style.backgroundColor = "#2e2742";
+            item.onmouseleave = () => item.style.backgroundColor = uConfig === opt.url ? "#352d4d" : "transparent";
+            item.onclick = (e) => {
+                e.stopPropagation();
+                userConfig["ULTRABc"] = opt.url;
+                saveConfig();
+                renderList();
+            };
+            uSelectDropdown.appendChild(item);
         });
         
-        uSelect.onchange = (e) => {
-            userConfig["ULTRABc"] = e.target.value;
-            saveConfig();
-            renderList();
-        };
+        uSelectContainer.appendChild(uSelectBtn);
+        uSelectContainer.appendChild(uSelectDropdown);
+        
+        document.addEventListener("click", (e) => {
+            if (!uSelectContainer.contains(e.target) && uSelectDropdown.style.display !== "none") {
+                uSelectDropdown.style.display = "none";
+            }
+        });
 
         const uChainBadge = document.createElement("div");
         Object.assign(uChainBadge.style, {
@@ -292,7 +326,7 @@
         
         ultrabcDiv.appendChild(uIcon);
         ultrabcDiv.appendChild(uInfo);
-        ultrabcDiv.appendChild(uSelect);
+        ultrabcDiv.appendChild(uSelectContainer);
         ultrabcDiv.appendChild(uChainBadge);
         modalBody.appendChild(ultrabcDiv);
 
@@ -325,14 +359,24 @@
                 alignItems: "center",
                 fontSize: "24px",
                 marginRight: "15px",
-                flexShrink: "0"
+                flexShrink: "0",
+                overflow: "hidden"
             });
-            sIcon.innerText = "📜";
 
             const infoDiv = document.createElement("div");
             Object.assign(infoDiv.style, { flexGrow: "1", display: "flex", flexDirection: "column", minWidth: "0" });
 
             const info = SCRIPT_INFO[scriptName] || { title: scriptName.replace(".js", ""), desc: "Local Addon Script" };
+
+            if (info.icon) {
+                if (info.icon.startsWith("http")) {
+                    sIcon.innerHTML = `<img src="${info.icon}" style="width: 100%; height: 100%; object-fit: contain;" />`;
+                } else {
+                    sIcon.innerText = info.icon;
+                }
+            } else {
+                sIcon.innerText = "📜";
+            }
 
             const titleSpan = document.createElement("div");
             titleSpan.innerText = info.title;
@@ -500,10 +544,18 @@
         const bcxPresets = { 0: "Dominant", 1: "Switch", 2: "Submissive", 3: "Slave" };
         let currentPreset = -1;
         if (typeof Player !== "undefined" && Player.ExtensionSettings && Player.ExtensionSettings.BCX) {
-            try {
-                let p = JSON.parse(LZString.decompressFromBase64(Player.ExtensionSettings.BCX));
-                if (p && p.preset !== undefined) currentPreset = p.preset;
-            } catch (e) {}
+            let saved = Player.ExtensionSettings.BCX;
+            let parsed = null;
+            if (typeof saved === "string" && saved.startsWith("{")) {
+                try { parsed = JSON.parse(saved); } catch(e) {}
+            }
+            if (!parsed && typeof LZString !== "undefined") {
+                try { parsed = JSON.parse(LZString.decompressFromBase64(saved)); } catch(e) {}
+            }
+            if (!parsed && typeof LZString !== "undefined") {
+                try { parsed = JSON.parse(LZString.decompressFromUTF16(saved)); } catch(e) {}
+            }
+            if (parsed && parsed.preset !== undefined) currentPreset = parsed.preset;
         }
         
         Object.entries(bcxPresets).forEach(([val, name]) => {
@@ -527,9 +579,36 @@
             }
             try {
                 let saved = Player.ExtensionSettings.BCX;
-                let parsed = JSON.parse(LZString.decompressFromBase64(saved));
+                let parsed = null;
+                
+                if (typeof saved === "string" && saved.startsWith("{")) {
+                    try { parsed = JSON.parse(saved); } catch(e) {}
+                }
+                if (!parsed && typeof LZString !== "undefined") {
+                    try { parsed = JSON.parse(LZString.decompressFromBase64(saved)); } catch(e) {}
+                }
+                if (!parsed && typeof LZString !== "undefined") {
+                    try { parsed = JSON.parse(LZString.decompressFromUTF16(saved)); } catch(e) {}
+                }
+                
+                if (!parsed || typeof parsed !== "object") {
+                    alert("Could not parse BCX data. Format unrecognized or corrupted.");
+                    return;
+                }
+                
                 parsed.preset = parseInt(bcxSelect.value);
-                Player.ExtensionSettings.BCX = LZString.compressToBase64(JSON.stringify(parsed));
+                
+                if (typeof saved === "string" && saved.startsWith("{")) {
+                    Player.ExtensionSettings.BCX = JSON.stringify(parsed);
+                } else if (typeof LZString !== "undefined") {
+                    if (LZString.compressToBase64(LZString.decompressFromBase64(saved)) === saved) {
+                        Player.ExtensionSettings.BCX = LZString.compressToBase64(JSON.stringify(parsed));
+                    } else {
+                        Player.ExtensionSettings.BCX = LZString.compressToUTF16(JSON.stringify(parsed));
+                    }
+                } else {
+                    Player.ExtensionSettings.BCX = LZString.compressToBase64(JSON.stringify(parsed));
+                }
                 
                 if (typeof ServerPlayerExtensionSettingsSync === "function") {
                     ServerPlayerExtensionSettingsSync("BCX");
