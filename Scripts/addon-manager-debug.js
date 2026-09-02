@@ -303,40 +303,44 @@
                 )
                 .map((f) => f.name);
 
-            function injectTargetScripts() {
+            async function injectTargetScripts() {
                 let target = document.head || document.documentElement;
                 if (!target) {
                     setTimeout(injectTargetScripts, 10);
                     return;
                 }
 
-                scriptsList.forEach((scriptName) => {
+                for (const scriptName of scriptsList) {
                     const isEnabled = userConfig[scriptName] !== false;
 
                     if (!isEnabled) {
                         scriptStatuses[scriptName] = "disabled";
-                        return;
+                        continue;
                     }
 
                     scriptStatuses[scriptName] = "loading";
+                    if (isModalOpen) renderList();
 
-                    fetch(SCRIPT_BASE_URL + scriptName + "?v=" + Date.now())
-                        .then(res => res.text())
-                        .then(code => {
-                            let script = document.createElement("script");
-                            script.textContent = code;
-                            target.appendChild(script);
+                    try {
+                        let res = await fetch(SCRIPT_BASE_URL + scriptName + "?v=" + Date.now());
+                        if (!res.ok) throw new Error("HTTP " + res.status);
+                        let code = await res.text();
 
-                            scriptStatuses[scriptName] = "loaded";
-                            console.log(`BC Desktop: Successfully loaded ${scriptName}`);
-                            if (isModalOpen) renderList();
-                        })
-                        .catch(err => {
-                            scriptStatuses[scriptName] = "failed";
-                            console.error(`BC Desktop: Failed to load ${scriptName}`, err);
-                            if (isModalOpen) renderList();
-                        });
-                });
+                        let script = document.createElement("script");
+                        script.textContent = code;
+                        target.appendChild(script);
+
+                        scriptStatuses[scriptName] = "loaded";
+                        console.log(`BC Desktop: Successfully loaded ${scriptName}`);
+                    } catch (err) {
+                        scriptStatuses[scriptName] = "failed";
+                        console.error(`BC Desktop: Failed to load ${scriptName}`, err);
+                    }
+                    if (isModalOpen) renderList();
+
+                    // Small delay to avoid GitHub rate limits
+                    await new Promise((r) => setTimeout(r, 200));
+                }
             }
 
             injectTargetScripts();
