@@ -32,7 +32,6 @@
 
     const SCRIPT_INFO = {
         "autofocus.js": { title: "Autofocus", desc: "Automatically focuses the chat input box." },
-        "bcx-preset-changer.js": { title: "BCX Preset Changer", desc: "Quickly toggle BCX presets via custom UI." },
         "chat-qol.js": { title: "Chat QoL", desc: "Quality of Life features for the chat window." },
         "neko-dark.js": { title: "Neko Dark Theme", desc: "A sleek dark theme for Bondage Club by Neko." },
         "translate.js": { title: "In-Game Translator", desc: "In-game translation tool for chat messages." },
@@ -467,6 +466,96 @@
             itemDiv.appendChild(chainBadge);
             modalBody.appendChild(itemDiv);
         });
+
+        // --- Advanced Tools ---
+        const advBtn = document.createElement("div");
+        advBtn.innerText = "⚙️ Advanced Tools ▼";
+        Object.assign(advBtn.style, {
+            textAlign: "center", fontSize: "12px", color: "#a59fb5", cursor: "pointer", 
+            marginTop: "10px", padding: "8px", backgroundColor: "#211c2e", borderRadius: "8px", border: "1px solid #2e2640"
+        });
+
+        const advPanel = document.createElement("div");
+        Object.assign(advPanel.style, {
+            display: "none", flexDirection: "column", gap: "10px", marginTop: "10px",
+            padding: "12px", backgroundColor: "#1a1625", borderRadius: "8px", border: "1px dashed #3d3554"
+        });
+
+        const bcxTitle = document.createElement("div");
+        bcxTitle.innerText = "BCX Preset Override";
+        Object.assign(bcxTitle.style, { fontWeight: "bold", fontSize: "12px", color: "#f5f5f5" });
+        
+        const bcxDesc = document.createElement("div");
+        bcxDesc.innerText = "Change your BCX preset safely without wiping data.";
+        Object.assign(bcxDesc.style, { fontSize: "10px", color: "#a59fb5", marginBottom: "8px" });
+
+        const bcxControls = document.createElement("div");
+        Object.assign(bcxControls.style, { display: "flex", gap: "8px" });
+
+        const bcxSelect = document.createElement("select");
+        Object.assign(bcxSelect.style, {
+            flexGrow: "1", backgroundColor: "#2e2742", color: "#f5f5f5", border: "1px solid #3d3554", borderRadius: "6px", padding: "6px", fontSize: "11px", outline: "none", cursor: "pointer"
+        });
+        
+        const bcxPresets = { 0: "Dominant", 1: "Switch", 2: "Submissive", 3: "Slave" };
+        let currentPreset = -1;
+        if (typeof Player !== "undefined" && Player.ExtensionSettings && Player.ExtensionSettings.BCX) {
+            try {
+                let p = JSON.parse(LZString.decompressFromBase64(Player.ExtensionSettings.BCX));
+                if (p && p.preset !== undefined) currentPreset = p.preset;
+            } catch (e) {}
+        }
+        
+        Object.entries(bcxPresets).forEach(([val, name]) => {
+            let opt = document.createElement("option");
+            opt.value = val;
+            opt.innerText = name + (currentPreset == val ? " (Current)" : "");
+            if (currentPreset == val) opt.selected = true;
+            bcxSelect.appendChild(opt);
+        });
+
+        const bcxApply = document.createElement("button");
+        bcxApply.innerText = "Apply";
+        Object.assign(bcxApply.style, {
+            backgroundColor: "#4caf50", color: "white", border: "none", borderRadius: "6px", padding: "6px 12px", fontSize: "11px", cursor: "pointer", fontWeight: "bold"
+        });
+
+        bcxApply.onclick = () => {
+            if (typeof Player === "undefined" || !Player.ExtensionSettings || !Player.ExtensionSettings.BCX) {
+                alert("BCX data not found! Make sure you are logged in and BCX is active.");
+                return;
+            }
+            try {
+                let saved = Player.ExtensionSettings.BCX;
+                let parsed = JSON.parse(LZString.decompressFromBase64(saved));
+                parsed.preset = parseInt(bcxSelect.value);
+                Player.ExtensionSettings.BCX = LZString.compressToBase64(JSON.stringify(parsed));
+                
+                if (typeof ServerPlayerExtensionSettingsSync === "function") {
+                    ServerPlayerExtensionSettingsSync("BCX");
+                }
+                alert("Success! BCX Preset changed to " + bcxPresets[bcxSelect.value] + ".\n\nPlease refresh (F5) the game now for changes to take effect.");
+                toggleModal(); // Close modal
+            } catch (e) {
+                alert("Failed to change preset: " + e.message);
+            }
+        };
+
+        bcxControls.appendChild(bcxSelect);
+        bcxControls.appendChild(bcxApply);
+        
+        advPanel.appendChild(bcxTitle);
+        advPanel.appendChild(bcxDesc);
+        advPanel.appendChild(bcxControls);
+
+        advBtn.onclick = () => {
+            const isHidden = advPanel.style.display === "none";
+            advPanel.style.display = isHidden ? "flex" : "none";
+            advBtn.innerText = isHidden ? "⚙️ Advanced Tools ▲" : "⚙️ Advanced Tools ▼";
+        };
+
+        modalBody.appendChild(advBtn);
+        modalBody.appendChild(advPanel);
     }
 
     setInterval(() => {
