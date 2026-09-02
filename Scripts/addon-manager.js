@@ -19,11 +19,23 @@
 
     console.log("BC Desktop: Addon Manager initializing...");
 
-    const REPO_API_URL =
+    let REPO_API_URL =
         "https://data.jsdelivr.com/v1/package/gh/Izumii99/BC-Desktop@main";
-    const SCRIPT_BASE_URL =
+    let SCRIPT_BASE_URL =
         "https://cdn.jsdelivr.net/gh/Izumii99/BC-Desktop@main/Scripts/";
     const STORAGE_KEY = "BCDesktop_Addons_Config";
+
+    if (window.bcLocalScripts) {
+        SCRIPT_BASE_URL = "http://bc-desktop.local/";
+        console.log("BC Desktop: Local tester mode detected, pulling scripts from " + SCRIPT_BASE_URL);
+    }
+
+    const ULTRABC_OPTIONS = [
+        { label: "❌ Off", url: "" },
+        { label: "🇬🇧 English", url: "https://tetris245.github.io/ultrabc.github.io/ULTRABcloader.user.js" },
+        { label: "🇨🇳 Chinese", url: "https://tetris245.github.io/ultrabc.github.io/ULTRABcloader-ch.user.js" },
+        { label: "🇪🇸 Spanish", url: "https://tetris245.github.io/ultrabc.github.io/ULTRABcloader-es.user.js" }
+    ];
 
     let isModalOpen = false;
     let scriptsList = [];
@@ -47,8 +59,9 @@
     floatingBtn.innerHTML = "🧩";
     Object.assign(floatingBtn.style, {
         position: "fixed",
-        bottom: "20px",
-        right: "20px",
+        top: "10px",
+        left: "50%",
+        transform: "translateX(-50%)",
         width: "50px",
         height: "50px",
         backgroundColor: "#4c3a70",
@@ -67,11 +80,11 @@
 
     floatingBtn.onmouseenter = () => {
         floatingBtn.style.backgroundColor = "#6a5299";
-        floatingBtn.style.transform = "scale(1.1)";
+        floatingBtn.style.transform = "translateX(-50%) scale(1.1)";
     };
     floatingBtn.onmouseleave = () => {
         floatingBtn.style.backgroundColor = "#4c3a70";
-        floatingBtn.style.transform = "scale(1)";
+        floatingBtn.style.transform = "translateX(-50%) scale(1)";
     };
     floatingBtn.onclick = toggleModal;
     document.body.appendChild(floatingBtn);
@@ -179,6 +192,60 @@
             return;
         }
 
+        // Render ULTRABc Select Dropdown
+        const ultrabcDiv = document.createElement("div");
+        Object.assign(ultrabcDiv.style, {
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            backgroundColor: "#262035",
+            padding: "12px 15px",
+            borderRadius: "8px",
+            border: "1px solid #3d3159",
+            marginBottom: "10px"
+        });
+        
+        const uInfoDiv = document.createElement("div");
+        const uTitle = document.createElement("div");
+        uTitle.innerText = "ULTRABc";
+        Object.assign(uTitle.style, { fontWeight: "bold", fontSize: "14px", marginBottom: "4px" });
+        
+        const uStatus = document.createElement("div");
+        uStatus.style.fontSize = "11px";
+        let uConfig = userConfig["ULTRABc"];
+        if (uConfig) {
+            uStatus.innerText = "🟢 Enabled";
+            uStatus.style.color = "#4caf50";
+        } else {
+            uStatus.innerText = "⚪ Disabled";
+            uStatus.style.color = "#9e9e9e";
+        }
+        uInfoDiv.appendChild(uTitle);
+        uInfoDiv.appendChild(uStatus);
+        
+        const uSelect = document.createElement("select");
+        Object.assign(uSelect.style, {
+            backgroundColor: "#4c3a70", color: "white", border: "1px solid #3d3159", borderRadius: "4px", padding: "4px"
+        });
+        
+        ULTRABC_OPTIONS.forEach(opt => {
+            let option = document.createElement("option");
+            option.value = opt.url;
+            option.innerText = opt.label;
+            if (uConfig === opt.url) option.selected = true;
+            uSelect.appendChild(option);
+        });
+        
+        uSelect.onchange = (e) => {
+            userConfig["ULTRABc"] = e.target.value;
+            saveConfig();
+            renderList();
+        };
+        
+        ultrabcDiv.appendChild(uInfoDiv);
+        ultrabcDiv.appendChild(uSelect);
+        modalBody.appendChild(ultrabcDiv);
+
         scriptsList.forEach((scriptName) => {
             const isEnabled = userConfig[scriptName] !== false;
             const status =
@@ -284,6 +351,14 @@
         } catch (e) {}
     }, 1000);
 
+    if (window.bcLocalScripts) {
+        scriptsList = window.bcLocalScripts.filter(
+            (f) => !f.toLowerCase().includes("debug") && f !== "addon-manager.js" && f.endsWith(".js")
+        );
+        injectTargetScripts();
+        return;
+    }
+
     fetch(REPO_API_URL)
         .then((response) => response.json())
         .then((data) => {
@@ -314,6 +389,14 @@
                 if (!target) {
                     setTimeout(injectTargetScripts, 10);
                     return;
+                }
+
+                if (userConfig["ULTRABc"]) {
+                    let uScript = document.createElement("script");
+                    uScript.src = userConfig["ULTRABc"] + "?v=" + Date.now();
+                    uScript.async = false;
+                    target.appendChild(uScript);
+                    console.log("BC Desktop: Injected ULTRABc");
                 }
 
                 scriptsList.forEach((scriptName) => {
