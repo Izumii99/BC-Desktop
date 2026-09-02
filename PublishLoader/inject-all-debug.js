@@ -18,7 +18,7 @@
     window._bcRemoteLoaderInjected = true;
 
     // Use raw.githubusercontent.com to always fetch the freshest debug manager
-    const managerURL = "https://raw.githubusercontent.com/Izumii99/BC-Desktop/main/Scripts/addon-manager-debug.js";
+    const managerURL = "https://raw.githubusercontent.com/Izumii99/BC-Desktop/main/Scripts/addon-manager.js";
 
     function injectManager() {
         let target = document.head || document.documentElement;

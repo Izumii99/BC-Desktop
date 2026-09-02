@@ -32,9 +32,9 @@
 
     const ULTRABC_OPTIONS = [
         { label: "❌ Off", url: "" },
-        { label: "🇬🇧 English", url: "https://tetris245.github.io/ultrabc.github.io/ULTRABcloader.user.js" },
-        { label: "🇨🇳 Chinese", url: "https://tetris245.github.io/ultrabc.github.io/ULTRABcloader-ch.user.js" },
-        { label: "🇪🇸 Spanish", url: "https://tetris245.github.io/ultrabc.github.io/ULTRABcloader-es.user.js" }
+        { label: "🇬🇧 English", url: "https://tetris245.github.io/ultrabc.github.io/ULTRAbcloader.user.js" },
+        { label: "🇨🇳 Chinese", url: "https://tetris245.github.io/ultrabc.github.io/ULTRAbcloader-ch.user.js" },
+        { label: "🇪🇸 Spanish", url: "https://tetris245.github.io/ultrabc.github.io/ULTRAbcloader-es.user.js" }
     ];
 
     let isModalOpen = false;
