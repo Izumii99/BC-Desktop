@@ -128,27 +128,35 @@
     // Alt + C (Ear) and Alt + V (Tail) shortcuts for BCAR+
     document.addEventListener("keydown", (e) => {
         if (e.altKey && !e.shiftKey && !e.ctrlKey) {
-            if (e.key.toLowerCase() === 'c' || e.key.toLowerCase() === 'v') {
+            if (e.code === 'KeyC' || e.code === 'KeyV') {
                 if (typeof CurrentScreen !== "undefined" && CurrentScreen === "ChatRoom" && typeof ChatRoomClick === "function") {
-                    if (typeof Player !== "undefined" && Player && Player.BCAR && Player.BCAR.bcarSettings) {
+                    if (typeof Player !== "undefined" && Player) {
                         e.preventDefault();
-                        let type = e.key.toLowerCase() === 'c' ? 'ear' : 'tail';
-                        let btnPos = Player.BCAR.bcarSettings.animationButtonsPosition;
+                        
+                        let type = e.code === 'KeyC' ? 'ear' : 'tail';
+                        
+                        // Default to lowerleft jika object bcarSettings belum/gagal dimuat
+                        let btnPos = "lowerleft"; 
+                        if (Player.BCAR && Player.BCAR.bcarSettings && Player.BCAR.bcarSettings.animationButtonsPosition) {
+                            btnPos = Player.BCAR.bcarSettings.animationButtonsPosition;
+                        }
                         
                         let originalX = typeof MouseX !== "undefined" ? MouseX : 0;
                         let originalY = typeof MouseY !== "undefined" ? MouseY : 0;
                         
                         if (btnPos === "lowerleft") {
                             MouseX = 22;
-                            MouseY = (type === 'ear') ? 882 : 927;
+                            MouseY = (type === 'ear') ? 882 : 937; // Diset ke 937 agar aman di tengah tombol tail
                         } else if (btnPos === "lowerright") {
                             MouseX = 980;
-                            MouseY = (type === 'ear') ? 882 : 927;
+                            MouseY = (type === 'ear') ? 882 : 937;
                         } else if (btnPos === "upperleft") {
                             MouseX = 22;
                             MouseY = (type === 'ear') ? 157 : 202;
                         } else {
-                            return; // Fallback if position is unknown or disabled
+                            // Jika posisi lain, kita fallback ke click standar di kiri bawah
+                            MouseX = 22;
+                            MouseY = (type === 'ear') ? 882 : 937;
                         }
                         
                         ChatRoomClick();
@@ -161,9 +169,9 @@
         }
     }, true);
 
-    // Alt + Space to scroll chat to bottom
+    // Ctrl + Space untuk scroll chat ke paling bawah (Diganti dari Alt+Space agar tidak buka menu Windows)
     document.addEventListener("keydown", (e) => {
-        if (e.altKey && !e.shiftKey && !e.ctrlKey && e.code === "Space") {
+        if (e.ctrlKey && !e.shiftKey && !e.altKey && e.code === "Space") {
             if (typeof CurrentScreen !== "undefined" && CurrentScreen === "ChatRoom") {
                 let chatLog = document.getElementById("TextAreaChatLog");
                 if (chatLog) {
