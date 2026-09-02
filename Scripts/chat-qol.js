@@ -16,21 +16,28 @@
                     }
                 }
 
-                // Default Chat Room Icons to Squinted 1x (State 1) upon login
-                if (!defaultIconStateApplied && typeof ChatRoomHideIconState !== "undefined") {
-                    if (window.ChatRoomHideIconState === 0) {
+                // Persist Chat Room Icons State (Hide Icon) across reconnects
+                if (typeof window.qolSavedIconState === "undefined") {
+                    window.qolSavedIconState = 1; // Default to squinted 1x
+                    if (typeof window.ChatRoomHideIconState !== "undefined" && window.ChatRoomHideIconState === 0) {
                         window.ChatRoomHideIconState = 1;
-                        defaultIconStateApplied = true;
                     }
                 }
-                
-                if (typeof CurrentScreen !== "undefined" && CurrentScreen === "ChatRoom") {
-                     if (!defaultIconStateApplied && typeof ChatRoomHideIconState !== "undefined") {
-                         if (window.ChatRoomHideIconState === 0) {
-                             window.ChatRoomHideIconState = 1;
-                         }
-                         defaultIconStateApplied = true;
-                     }
+
+                if (typeof window.ChatRoomLoad === "function" && !window.ChatRoomLoad.hasQolHook) {
+                    const origChatRoomLoad = window.ChatRoomLoad;
+                    window.ChatRoomLoad = function() {
+                        origChatRoomLoad.apply(this, arguments);
+                        if (typeof window.ChatRoomHideIconState !== "undefined") {
+                            window.ChatRoomHideIconState = window.qolSavedIconState;
+                        }
+                    };
+                    window.ChatRoomLoad.hasQolHook = true;
+                }
+
+                // Update saved state when user manually clicks the eye icon
+                if (typeof CurrentScreen !== "undefined" && CurrentScreen === "ChatRoom" && typeof window.ChatRoomHideIconState !== "undefined") {
+                    window.qolSavedIconState = window.ChatRoomHideIconState;
                 }
             }
         } catch (e) {}
@@ -113,6 +120,55 @@
                         let chatInput = document.getElementById("InputChat");
                         if (chatInput) chatInput.focus();
                     }
+                }
+            }
+        }
+    }, true);
+
+    // Alt + C (Ear) and Alt + V (Tail) shortcuts for BCAR+
+    document.addEventListener("keydown", (e) => {
+        if (e.altKey && !e.shiftKey && !e.ctrlKey) {
+            if (e.key.toLowerCase() === 'c' || e.key.toLowerCase() === 'v') {
+                if (typeof CurrentScreen !== "undefined" && CurrentScreen === "ChatRoom" && typeof ChatRoomClick === "function") {
+                    if (typeof Player !== "undefined" && Player && Player.BCAR && Player.BCAR.bcarSettings) {
+                        e.preventDefault();
+                        let type = e.key.toLowerCase() === 'c' ? 'ear' : 'tail';
+                        let btnPos = Player.BCAR.bcarSettings.animationButtonsPosition;
+                        
+                        let originalX = typeof MouseX !== "undefined" ? MouseX : 0;
+                        let originalY = typeof MouseY !== "undefined" ? MouseY : 0;
+                        
+                        if (btnPos === "lowerleft") {
+                            MouseX = 22;
+                            MouseY = (type === 'ear') ? 882 : 927;
+                        } else if (btnPos === "lowerright") {
+                            MouseX = 980;
+                            MouseY = (type === 'ear') ? 882 : 927;
+                        } else if (btnPos === "upperleft") {
+                            MouseX = 22;
+                            MouseY = (type === 'ear') ? 157 : 202;
+                        } else {
+                            return; // Fallback if position is unknown or disabled
+                        }
+                        
+                        ChatRoomClick();
+                        
+                        MouseX = originalX;
+                        MouseY = originalY;
+                    }
+                }
+            }
+        }
+    }, true);
+
+    // Alt + Space to scroll chat to bottom
+    document.addEventListener("keydown", (e) => {
+        if (e.altKey && !e.shiftKey && !e.ctrlKey && e.code === "Space") {
+            if (typeof CurrentScreen !== "undefined" && CurrentScreen === "ChatRoom") {
+                let chatLog = document.getElementById("TextAreaChatLog");
+                if (chatLog) {
+                    e.preventDefault();
+                    chatLog.scrollTop = chatLog.scrollHeight;
                 }
             }
         }
