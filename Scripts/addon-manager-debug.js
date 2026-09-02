@@ -320,28 +320,22 @@
 
                     scriptStatuses[scriptName] = "loading";
 
-                    let script = document.createElement("script");
-                    script.src =
-                        SCRIPT_BASE_URL + scriptName + "?v=" + Date.now();
-                    script.async = false;
+                    fetch(SCRIPT_BASE_URL + scriptName + "?v=" + Date.now())
+                        .then(res => res.text())
+                        .then(code => {
+                            let script = document.createElement("script");
+                            script.textContent = code;
+                            target.appendChild(script);
 
-                    script.onload = () => {
-                        scriptStatuses[scriptName] = "loaded";
-                        console.log(
-                            `BC Desktop: Successfully loaded ${scriptName}`,
-                        );
-                        if (isModalOpen) renderList();
-                    };
-
-                    script.onerror = () => {
-                        scriptStatuses[scriptName] = "failed";
-                        console.error(
-                            `BC Desktop: Failed to load ${scriptName}`,
-                        );
-                        if (isModalOpen) renderList();
-                    };
-
-                    target.appendChild(script);
+                            scriptStatuses[scriptName] = "loaded";
+                            console.log(`BC Desktop: Successfully loaded ${scriptName}`);
+                            if (isModalOpen) renderList();
+                        })
+                        .catch(err => {
+                            scriptStatuses[scriptName] = "failed";
+                            console.error(`BC Desktop: Failed to load ${scriptName}`, err);
+                            if (isModalOpen) renderList();
+                        });
                 });
             }
 
