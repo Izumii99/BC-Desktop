@@ -494,7 +494,7 @@
                         <ul style="margin:0; padding-left:24px; color:#e0e0e0;">
                             <li style="margin-bottom:8px;"><b>Tab Key</b>: Instantly auto-completes the targeted character's name when typing a whisper.</li>
                             <li style="margin-bottom:8px;"><b>Alt + 1~0</b>: Quickly whisper a character based on their position in the room (e.g. Alt+1 for the first person).</li>
-                            <li style="margin-bottom:8px;"><b>Alt + C / Alt + V</b>: Pet the Ear or Tail of your currently targeted character <i>(Requires BCAR+ to be active)</i>.</li>
+                            <li style="margin-bottom:8px;"><b>Alt + C / Alt + V / Alt + B</b>: Pet the Ear / Tail / Wings of your currently targeted character <i>(Requires BCAR+ to be active)</i>.</li>
                             <li style="margin-bottom:4px;"><b>Ctrl + Space</b>: Force scroll the chatbox to the very bottom.</li>
                         </ul>
                     `);
