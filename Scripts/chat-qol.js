@@ -106,8 +106,9 @@
                         e.preventDefault();
                         
                         // Toggle whisper target
-                        if (window.ChatRoomTargetMemberNumber == target.MemberNumber) {
-                            // Vanilla BC uses null, but BCX/ULTRAbc uses -1 for "Talk to everyone"
+                        let isToggleOff = (window.ChatRoomTargetMemberNumber == target.MemberNumber);
+                        
+                        if (isToggleOff) {
                             if (typeof window.BCX_Loaded !== "undefined" || window.ChatRoomTargetMemberNumber === -1) {
                                 window.ChatRoomTargetMemberNumber = -1;
                             } else {
@@ -117,8 +118,19 @@
                             window.ChatRoomTargetMemberNumber = target.MemberNumber;
                         }
                         
+                        // Update the input placeholder visually (Fixing the issue where it still said "Talk to everyone")
                         let chatInput = document.getElementById("InputChat");
-                        if (chatInput) chatInput.focus();
+                        if (chatInput) {
+                            if (isToggleOff) {
+                                let pubText = (typeof TextGet === "function") ? (TextGet("PublicChat") || "Talk to everyone") : "Talk to everyone";
+                                chatInput.setAttribute("placeholder", pubText);
+                            } else {
+                                let name = target.Name || String(target.MemberNumber);
+                                let whispText = (typeof TextGet === "function") ? (TextGet("WhisperTo") || "Whisper to") : "Whisper to";
+                                chatInput.setAttribute("placeholder", whispText + " " + name);
+                            }
+                            chatInput.focus();
+                        }
                     }
                 }
             }
@@ -137,7 +149,7 @@
                         if (e.code === 'KeyV') type = 'tail';
                         if (e.code === 'KeyB') type = 'wings';
                         
-                        // Default to lowerleft jika object bcarSettings belum/gagal dimuat
+                        // Default to lower-left if bcarSettings fails to load
                         let btnPos = "lowerleft"; 
                         if (Player.BCAR && Player.BCAR.bcarSettings && Player.BCAR.bcarSettings.animationButtonsPosition) {
                             btnPos = Player.BCAR.bcarSettings.animationButtonsPosition;
@@ -153,7 +165,7 @@
                             MouseX = (btnPos === "upperright") ? 980 : 22;
                             MouseY = (type === 'ear') ? 157 : (type === 'tail') ? 202 : 247;
                         } else {
-                            // Jika posisi lain, kita fallback ke click standar di kiri bawah
+                            // Fallback to standard bottom-left click for unsupported positions
                             MouseX = 22;
                             MouseY = (type === 'ear') ? 882 : (type === 'tail') ? 937 : 992;
                         }
@@ -168,7 +180,7 @@
         }
     }, true);
 
-    // Ctrl + Space untuk scroll chat ke paling bawah (Diganti dari Alt+Space agar tidak buka menu Windows)
+    // Ctrl + Space to scroll chat to bottom (Changed from Alt+Space to prevent opening Windows menu)
     document.addEventListener("keydown", (e) => {
         if (e.ctrlKey && !e.shiftKey && !e.altKey && e.code === "Space") {
             if (typeof CurrentScreen !== "undefined" && CurrentScreen === "ChatRoom") {
