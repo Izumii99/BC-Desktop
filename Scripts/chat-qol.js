@@ -125,15 +125,17 @@
         }
     }, true);
 
-    // Alt + C (Ear) and Alt + V (Tail) shortcuts for BCAR+
+    // Alt + C (Ear), Alt + V (Tail), and Alt + B (Wings) shortcuts for BCAR+
     document.addEventListener("keydown", (e) => {
         if (e.altKey && !e.shiftKey && !e.ctrlKey) {
-            if (e.code === 'KeyC' || e.code === 'KeyV') {
+            if (e.code === 'KeyC' || e.code === 'KeyV' || e.code === 'KeyB') {
                 if (typeof CurrentScreen !== "undefined" && CurrentScreen === "ChatRoom" && typeof ChatRoomClick === "function") {
                     if (typeof Player !== "undefined" && Player) {
                         e.preventDefault();
                         
-                        let type = e.code === 'KeyC' ? 'ear' : 'tail';
+                        let type = 'ear';
+                        if (e.code === 'KeyV') type = 'tail';
+                        if (e.code === 'KeyB') type = 'wings';
                         
                         // Default to lowerleft jika object bcarSettings belum/gagal dimuat
                         let btnPos = "lowerleft"; 
@@ -144,19 +146,16 @@
                         let originalX = typeof MouseX !== "undefined" ? MouseX : 0;
                         let originalY = typeof MouseY !== "undefined" ? MouseY : 0;
                         
-                        if (btnPos === "lowerleft") {
-                            MouseX = 22;
-                            MouseY = (type === 'ear') ? 882 : 937; // Diset ke 937 agar aman di tengah tombol tail
-                        } else if (btnPos === "lowerright") {
-                            MouseX = 980;
-                            MouseY = (type === 'ear') ? 882 : 937;
-                        } else if (btnPos === "upperleft") {
-                            MouseX = 22;
-                            MouseY = (type === 'ear') ? 157 : 202;
+                        if (btnPos === "lowerleft" || btnPos === "lowerright") {
+                            MouseX = (btnPos === "lowerright") ? 980 : 22;
+                            MouseY = (type === 'ear') ? 882 : (type === 'tail') ? 937 : 992;
+                        } else if (btnPos === "upperleft" || btnPos === "upperright") {
+                            MouseX = (btnPos === "upperright") ? 980 : 22;
+                            MouseY = (type === 'ear') ? 157 : (type === 'tail') ? 202 : 247;
                         } else {
                             // Jika posisi lain, kita fallback ke click standar di kiri bawah
                             MouseX = 22;
-                            MouseY = (type === 'ear') ? 882 : 937;
+                            MouseY = (type === 'ear') ? 882 : (type === 'tail') ? 937 : 992;
                         }
                         
                         ChatRoomClick();
