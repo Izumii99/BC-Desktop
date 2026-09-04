@@ -83,13 +83,13 @@
         "https://cdn.jsdelivr.net/gh/Izumii99/BC-Desktop@main/Scripts/";
     const STORAGE_KEY = "BCDesktop_Addons_Config";
 
-    // RAW DEBUG MODE: bypass jsDelivr sepenuhnya, pakai GitHub API + raw.githubusercontent.com
-    const RAW_BASE = "https://raw.githubusercontent.com/Izumii99/BC-Desktop/main/Scripts/";
-    const RAW_API  = "https://api.github.com/repos/Izumii99/BC-Desktop/contents/Scripts";
+    // RAW DEBUG MODE: pakai GitHub API untuk file list (selalu fresh),
+    // tapi tetap load script dari jsDelivr (MIME type benar)
+    const RAW_API = "https://api.github.com/repos/Izumii99/BC-Desktop/contents/Scripts";
     if (window.bcRawDebugMode) {
-        REPO_API_URL   = RAW_API;
-        SCRIPT_BASE_URL = RAW_BASE;
-        console.log("BC Desktop: RAW DEBUG mode — bypassing jsDelivr, using GitHub API + raw.githubusercontent.com");
+        REPO_API_URL = RAW_API;
+        // SCRIPT_BASE_URL tetap jsDelivr — raw.githubusercontent.com tidak bisa <script src> (MIME: text/plain)
+        console.log("BC Desktop: RAW DEBUG mode — file list via GitHub API, scripts via jsDelivr");
     }
 
     if (window.bcLocalScripts) {
