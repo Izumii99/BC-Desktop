@@ -27,13 +27,16 @@
             return;
         }
 
+        // Flag: sinyal ke addon-manager untuk bypass jsDelivr sepenuhnya
+        window.bcRawDebugMode = true;
+
         fetch(managerURL + "?v=" + Date.now())
             .then(r => r.text())
             .then(code => {
                 let script = document.createElement("script");
                 script.textContent = code;
                 target.appendChild(script);
-                console.log("BC Desktop: Loaded Addon Manager (DEBUG) remotely");
+                console.log("BC Desktop: Loaded Addon Manager (DEBUG/RAW) remotely");
             })
             .catch(e => console.error("BC Desktop DEBUG: Failed to load manager", e));
     }

@@ -83,6 +83,15 @@
         "https://cdn.jsdelivr.net/gh/Izumii99/BC-Desktop@main/Scripts/";
     const STORAGE_KEY = "BCDesktop_Addons_Config";
 
+    // RAW DEBUG MODE: bypass jsDelivr sepenuhnya, pakai GitHub API + raw.githubusercontent.com
+    const RAW_BASE = "https://raw.githubusercontent.com/Izumii99/BC-Desktop/main/Scripts/";
+    const RAW_API  = "https://api.github.com/repos/Izumii99/BC-Desktop/contents/Scripts";
+    if (window.bcRawDebugMode) {
+        REPO_API_URL   = RAW_API;
+        SCRIPT_BASE_URL = RAW_BASE;
+        console.log("BC Desktop: RAW DEBUG mode — bypassing jsDelivr, using GitHub API + raw.githubusercontent.com");
+    }
+
     if (window.bcLocalScripts) {
         SCRIPT_BASE_URL = "http://bc-desktop.local/";
         console.log("BC Desktop: Local tester mode detected, pulling scripts from " + SCRIPT_BASE_URL);
@@ -610,22 +619,33 @@
         return;
     }
 
-    fetch(REPO_API_URL)
+    fetch(REPO_API_URL + "?v=" + Date.now(), window.bcRawDebugMode ? {
+        headers: { "Accept": "application/vnd.github+json" }
+    } : {})
         .then((response) => response.json())
         .then((data) => {
-            let scriptsDir = null;
-            if (data && data.files) {
-                scriptsDir = data.files.find(
+            // GitHub API: data = array of { name, type, ... }
+            // jsDelivr API: data = { files: [{ type:"directory", name:"Scripts", files:[...] }] }
+            let rawFiles = null;
+            if (window.bcRawDebugMode && Array.isArray(data)) {
+                rawFiles = data; // GitHub API langsung return array file di Scripts/
+            } else if (data && data.files) {
+                const scriptsDir = data.files.find(
                     (f) => f.type === "directory" && f.name === "Scripts",
                 );
+                if (!scriptsDir || !scriptsDir.files) {
+                    console.error("BC Desktop: Could not find Scripts directory.");
+                    return;
+                }
+                rawFiles = scriptsDir.files;
             }
 
-            if (!scriptsDir || !scriptsDir.files) {
+            if (!rawFiles) {
                 console.error("BC Desktop: Could not find Scripts directory.");
                 return;
             }
 
-            scriptsList = scriptsDir.files
+            scriptsList = rawFiles
                 .filter(
                     (f) =>
                         f.type === "file" &&
