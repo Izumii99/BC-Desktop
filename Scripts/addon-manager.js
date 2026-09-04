@@ -635,9 +635,9 @@
                 )
                 .map((f) => f.name);
 
-            // Pastikan echo-activity.js selalu ada, walau jsDelivr belum index
+            // Pastikan echo-activity.js selalu ada di urutan pertama, walau jsDelivr belum index
             if (!scriptsList.includes("echo-activity.js")) {
-                scriptsList.push("echo-activity.js");
+                scriptsList.unshift("echo-activity.js");
             }
 
             function injectTargetScripts() {
