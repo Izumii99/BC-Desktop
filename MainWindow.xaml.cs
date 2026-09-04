@@ -234,7 +234,15 @@ public partial class MainWindow : Window
                     let text = '';
                     let activeEl = document.activeElement;
                     if (activeEl && (activeEl.tagName === 'INPUT' || activeEl.tagName === 'TEXTAREA')) {
-                        text = activeEl.value.substring(activeEl.selectionStart, activeEl.selectionEnd);
+                        try {
+                            if (activeEl.selectionStart !== null && activeEl.selectionStart !== undefined) {
+                                text = activeEl.value.substring(activeEl.selectionStart, activeEl.selectionEnd);
+                            } else {
+                                text = activeEl.value;
+                            }
+                        } catch (err) {
+                            text = activeEl.value;
+                        }
                     } else {
                         text = window.getSelection().toString();
                     }
@@ -316,7 +324,8 @@ public partial class MainWindow : Window
                     let lastVal = window.bcInputChatLastValue || '';
                     if (ic.value.startsWith(lastVal) && ic.value.length > lastVal.length) {
                         let leaked = ic.value.substring(lastVal.length);
-                        if (best.tagName === 'INPUT' || best.tagName === 'TEXTAREA') {
+                        // Jangan corrupt number input dengan leaked text non-numerik
+                        if ((best.tagName === 'INPUT' && best.type !== 'number') || best.tagName === 'TEXTAREA') {
                             best.value = (best.value || '') + leaked;
                             try { best.selectionStart = best.value.length; best.selectionEnd = best.value.length; } catch(e) {}
                         } else if (best.isContentEditable) {
@@ -380,11 +389,12 @@ public partial class MainWindow : Window
                 if (typeof window.ElementFocus === 'function' && !window.ElementFocus._isHooked) {
                     let origElementFocus = window.ElementFocus;
                     window.ElementFocus = function(ID) {
-                        if (window.bcIsMouseDown) return;
+                        let isLayeringInput = typeof ID === 'string' && ID.startsWith('layering-input-');
+                        if (window.bcIsMouseDown && !isLayeringInput) return;
                         let active = document.activeElement;
                         let isUserTyping = active && (active.tagName === 'INPUT' || active.tagName === 'TEXTAREA' || active.isContentEditable);
-                        if (isUserTyping && active.id !== ID) return;
-                        if (window.getSelection().toString().length > 0) return;
+                        if (!isLayeringInput && isUserTyping && active.id !== ID) return;
+                        if (!isLayeringInput && window.getSelection().toString().length > 0) return;
                         origElementFocus(ID);
                     };
                     window.ElementFocus._isHooked = true;
@@ -394,7 +404,13 @@ public partial class MainWindow : Window
 
             HTMLElement.prototype.focus = function() {
                 try {
-                    if (window.bcIsMouseDown) return;
+                    let isLayeringInput = this.id && this.id.startsWith('layering-input-');
+                    if (window.bcIsMouseDown && !isLayeringInput) return;
+
+                    // Anti-steal: jika layering input sedang aktif, blok SEMUA focus programmatic ke elemen lain
+                    let currentActive = document.activeElement;
+                    let currentIsLayering = currentActive && currentActive.id && currentActive.id.startsWith('layering-input-');
+                    if (currentIsLayering && !isLayeringInput) return;
 
                     let active = document.activeElement;
                     let isUserTyping = active && (active.tagName === 'INPUT' || active.tagName === 'TEXTAREA' || active.isContentEditable);
@@ -505,7 +521,15 @@ public partial class MainWindow : Window
                     let text = '';
                     let activeEl = document.activeElement;
                     if (activeEl && (activeEl.tagName === 'INPUT' || activeEl.tagName === 'TEXTAREA')) {
-                        text = activeEl.value.substring(activeEl.selectionStart, activeEl.selectionEnd);
+                        try {
+                            if (activeEl.selectionStart !== null && activeEl.selectionStart !== undefined) {
+                                text = activeEl.value.substring(activeEl.selectionStart, activeEl.selectionEnd);
+                            } else {
+                                text = activeEl.value;
+                            }
+                        } catch (err) {
+                            text = activeEl.value;
+                        }
                     } else {
                         text = window.getSelection().toString();
                     }

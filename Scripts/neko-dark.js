@@ -101,6 +101,11 @@
             }
             html body #TextAreaChatLog .ChatMessageWhisper *:not(.ChatMessageName) { color: ${P.whisperTxt} !important; }
             html body #TextAreaChatLog .ChatMessageBeep *:not(.ChatMessageName) { color: ${P.beepTxt} !important; }
+            
+            /* Links */
+            html body #TextAreaChatLog a {
+                color: #60a5fa !important;
+            }
 
             /* Headers */
             html body .chat-room-sep-header,
