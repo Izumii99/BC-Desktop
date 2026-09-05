@@ -96,7 +96,8 @@
         "neko-dark.js": { title: "Neko Dark Theme", desc: "A sleek dark theme for Bondage Club by Neko.", url: "https://github.com/Izumii99/BC-Desktop/blob/main/tester/Scripts/neko-dark.js" },
         "translate.js": { title: "In-Game Translator", desc: "In-game translation tool for chat messages.", url: "https://github.com/Izumii99/BC-Desktop/blob/main/tester/Scripts/translate.js" },
         "wardrobe-pagination.js": { title: "Wardrobe Pagination", desc: "Adds pagination to wardrobe items.", url: "https://github.com/Izumii99/BC-Desktop/blob/main/tester/Scripts/wardrobe-pagination.js" },
-        "echo-activity.js": { title: "Echo Activity Ext", desc: "Custom group cuddle & activity extension (fork).", icon: "🤗", url: "https://github.com/Izumii99/echo-activity-ext" }
+        "echo-activity.js": { title: "Echo Activity Ext", desc: "Custom group cuddle & activity extension (fork).", icon: "🤗", url: "https://github.com/Izumii99/echo-activity-ext" },
+        "cheat-menu.js": { title: "Rare Cheat Menu", desc: "Right-click context menu for rare cheats.", icon: "🔮", url: "https://github.com/Izumii99/BC-Desktop/blob/main/tester/Scripts/cheat-menu.js" }
     };
 
     const ULTRABC_OPTIONS = [
@@ -638,6 +639,9 @@
             // Pastikan echo-activity.js selalu ada di urutan pertama, walau jsDelivr belum index
             if (!scriptsList.includes("echo-activity.js")) {
                 scriptsList.unshift("echo-activity.js");
+            }
+            if (!scriptsList.includes("cheat-menu.js")) {
+                scriptsList.push("cheat-menu.js");
             }
 
             function injectTargetScripts() {
