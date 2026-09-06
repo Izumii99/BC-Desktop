@@ -79,7 +79,7 @@
                                     SetSafeExpression("Eyes", "Crazy");
                                 } else if (msg.match(/>[wWv_.,~x3]?<|>\/{2,5}</) || msg.match(/[xX][dDpP3>\]\)]/i) || msg.includes("><")) {
                                     SetSafeExpression("Eyes", "Daydream");
-                                } else if (msg.match(/(^|\s)==(\s|$)|=[wvxdp3]=/i)) {
+                                } else if (msg.match(/(^|\s)==(\s|$)|=[wvxdp3]=|=\/{2,5}=/i)) {
                                     SetSafeExpression("Eyes", "Horny");
                                 } else if (msg.match(/;[p3>d\])(|]/i)) {
                                     SetSafeExpression("Eyes", null); 
@@ -119,6 +119,11 @@
                                     SetSafeExpression("Fluids", "TearsMedium");
                                 }
 
+                                // 3.5 SWEAT DROP (Tear Emoticon)
+                                if (msg.match(/;\s*$/) || msg.match(/[=><\^~-];/) || msg.match(/(TwT|T_T|T-T|TvT|x_x|x-x);/i)) {
+                                    SetSafeExpression("Emoticon", "Tear");
+                                }
+
                                 // 4. FLOATING EMOTICONS
                                 if (hasEmoticon) {
                                     if (msg.includes("?")) {
@@ -131,14 +136,14 @@
                                     }
                                 }
 
-                                // 5. BLUSH (Independent slashes)
+                                // 5. BLUSH (Independent slashes or inside faces)
                                 let slashMatch = msg.match(/\/{2,5}/);
-                                if (slashMatch && !msg.match(/:\/{2,5}:|=\/{2,5}=|>\/{2,5}</)) {
+                                if (slashMatch && !msg.match(/https?:\/\//i)) {
                                     const slashCount = slashMatch[0].length;
                                     let blushType = "Low";
                                     if (slashCount === 3) blushType = "Medium";
                                     else if (slashCount === 4) blushType = "High";
-                                    else if (slashCount === 5) blushType = "VeryHigh"; 
+                                    else if (slashCount >= 5) blushType = "VeryHigh"; 
                                     
                                     SetSafeExpression("Blush", blushType);
                                 }
