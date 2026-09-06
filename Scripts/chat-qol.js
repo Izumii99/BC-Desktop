@@ -40,6 +40,10 @@
 
                     const doQolLogic = function() {
                         try {
+                            // Only apply emoticons if whispering is not active (public chat)
+                            let isWhisper = (typeof window.ChatRoomTargetMemberNumber !== "undefined" && window.ChatRoomTargetMemberNumber !== null && window.ChatRoomTargetMemberNumber !== -1);
+                            if (isWhisper) return;
+
                             let chatInput = document.getElementById("InputChat");
                             let msg = chatInput ? chatInput.value : "";
                             if (msg && typeof CharacterSetFacialExpression === "function" && typeof Player !== "undefined" && Player) {
