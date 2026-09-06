@@ -81,21 +81,25 @@
                                     SetSafeExpression("Eyes", "Daydream");
                                 } else if (msg.match(/(^|\s)==(\s|$)|=[wvxdp3]=|=\/{2,5}=/i)) {
                                     SetSafeExpression("Eyes", "Horny");
-                                } else if (msg.match(/;[p3>d\])(|]/i)) {
+                                } else if (msg.match(/;[p3>d\])(|]/i) || msg.match(/qwq/i)) {
                                     SetSafeExpression("Eyes", null); 
                                     SetSafeExpression("Eyes1", "Closed");
                                 } else if (msg.match(/:[p3>d\])(|]/i)) {
                                     SetSafeExpression("Eyes", null);
                                 } else if (msg.match(/>[.,~_3]?>|<[.,~_3]?</)) {
                                     SetSafeExpression("Eyes", "Dazed");
-                                } else if (msg.match(/=.*=|T[xw]T|TT/i)) {
+                                } else if (msg.match(/T[xw_v-]T|TT/i)) {
+                                    SetSafeExpression("Eyes", "Shy");
+                                } else if (msg.match(/=.*=|>[.,~_3]>|<[.,~_3]</i)) {
                                     SetSafeExpression("Eyes", "Closed");
                                 }
 
                                 // 2. MOUTH PARSING
                                 if (msg.match(/[x:;]D/i)) {
                                     SetSafeExpression("Mouth", "Laughing");
-                                } else if (msg.match(/[x:;]3|[x:;]>|=w=|>w</i)) {
+                                } else if (msg.match(/D:/)) {
+                                    SetSafeExpression("Mouth", "Sad");
+                                } else if (msg.match(/[x:;]3|[x:;]>|=w=|>w<|qwq/i) || msg.match(/>[.,~_]>|<[.,~_]</)) {
                                     SetSafeExpression("Mouth", "Happy");
                                 } else if (msg.match(/[x:;]p/i)) {
                                     SetSafeExpression("Mouth", "Ahegao");
@@ -115,7 +119,7 @@
                                 } else if (msg.match(/>[.,~_3]?>|<[.,~_3]?</)) {
                                     SetSafeExpression("Eyebrows", "Lowered");
                                 }
-                                if (msg.match(/T[xw_]T|TT/i)) {
+                                if (msg.match(/T[xw_v-]T|TT|qwq/i)) {
                                     SetSafeExpression("Fluids", "TearsMedium");
                                 }
 
