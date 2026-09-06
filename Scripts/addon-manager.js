@@ -491,28 +491,29 @@
                 keysBtn.onclick = () => {
                     showFeaturePopup("Chat QoL - Features & Hotkeys", `
                         <div style="margin-bottom:12px; max-height: 400px; overflow-y: auto; padding-right: 8px;">
-                            <div style="margin-bottom:8px; font-weight:bold; color:#b39ddb;">✨ Auto-Emoticons (Text-to-Expression)</div>
-                            <div style="margin-bottom:12px; font-size:12px;">Typing text emoticons automatically changes your character's facial expressions! No need to click the menu.
+                            <div style="margin-bottom:8px; font-weight:bold; color:#b39ddb;">Auto-Emoticons (Text-to-Expression)</div>
+                            <div style="margin-bottom:12px; font-size:12px;">Typing text emoticons automatically changes your character's facial expressions. No need to click the menu.
                                 <ul style="margin:4px 0 0 0; padding-left:24px; color:#e0e0e0; font-size:11px;">
-                                    <li><b>Eyes:</b> <code>^^</code>, <code>0.0</code>, <code>o_o</code>, <code>@_@</code>, <code>><</code>, <code>= =</code>, <code>;p</code>, <code>:)</code></li>
-                                    <li><b>Mouth:</b> <code>:D</code>, <code>:3</code>, <code>:p</code>, <code>^~^</code>, <code>:(</code>, <code>=3=</code></li>
-                                    <li><b>Eyebrows:</b> <code>>:(</code>, <code>TT</code>, <code>>_></code></li>
+                                    <li><b>Eyes:</b> <code>^^</code>, <code>0.0</code>, <code>o_o</code>, <code>@_@</code>, <code>&gt;&lt;</code>, <code>= =</code>, <code>;p</code>, <code>:)</code></li>
+                                    <li><b>Mouth:</b> <code>:D</code>, <code>:3</code>, <code>:p</code>, <code>^~^</code>, <code>:(</code>, <code>=3=</code>, <code>=w=</code>, <code>=////=</code></li>
+                                    <li><b>Eyebrows:</b> <code>&gt;:(</code>, <code>TT</code>, <code>&gt;_&gt;</code></li>
                                 </ul>
                             </div>
                             
-                            <div style="margin-bottom:8px; font-weight:bold; color:#b39ddb;">🎈 Floating Emoticons & Blush</div>
+                            <div style="margin-bottom:8px; font-weight:bold; color:#b39ddb;">Floating Emoticons & Effects</div>
                             <div style="margin-bottom:12px; font-size:12px;">
                                 <ul style="margin:0; padding-left:24px; color:#e0e0e0; font-size:11px;">
-                                    <li>Add <code>!</code>, <code>?</code>, or <code>#</code> to an emoticon to trigger floating icons.</li>
-                                    <li>Type <code>brb</code> or <code>afk</code> to permanently show the AFK/BRB icon.</li>
-                                    <li>Use <code>//</code> to <code>/////</code> to add blush (Low to Custom Very High).</li>
+                                    <li style="margin-bottom:4px;"><b>Action Icons:</b> Add <code>!</code>, <code>?</code>, or <code>#</code> to an emoticon to trigger floating icons.</li>
+                                    <li style="margin-bottom:4px;"><b>Sweat Drop:</b> End your message with <code>;</code> or attach it to a face (e.g. <code>=v=;</code>) to show a tear.</li>
+                                    <li style="margin-bottom:4px;"><b>AFK / BRB:</b> Type <code>brb</code> or <code>afk</code> to permanently show the status icon.</li>
+                                    <li style="margin-bottom:4px;"><b>Blush:</b> Use <code>//</code> to <code>/////</code> to add blush (Low to Custom Very High). Works inside faces like <code>=//=</code> too.</li>
                                 </ul>
                             </div>
 
-                            <div style="margin-bottom:8px; font-weight:bold; color:#b39ddb;">⌨️ Hotkeys & Chat Fixes</div>
+                            <div style="margin-bottom:8px; font-weight:bold; color:#b39ddb;">Hotkeys & Chat Fixes</div>
                             <ul style="margin:0; padding-left:24px; color:#e0e0e0; font-size:11px;">
                                 <li style="margin-bottom:4px;"><b>Tab Key</b>: Instantly auto-completes the targeted character's name when typing a whisper.</li>
-                                <li style="margin-bottom:4px;"><b>Alt + 1~0</b>: Quickly whisper a character based on their position in the room (e.g. Alt+1 for the first person).</li>
+                                <li style="margin-bottom:4px;"><b>Alt + 1~0</b>: Quickly whisper a character based on their actual left-to-right visual position in the room.</li>
                                 <li style="margin-bottom:4px;"><b>Alt + C/V/B</b>: Pet the Ear/Tail/Wings of your target <i>(Requires BCAR+)</i>.</li>
                                 <li style="margin-bottom:4px;"><b>Ctrl + Space</b>: Force scroll the chatbox to the very bottom.</li>
                                 <li style="margin-bottom:4px;"><b>Ungarbled Chat</b>: Automatically reveals garbled text for immersion settings.</li>
