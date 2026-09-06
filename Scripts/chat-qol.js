@@ -35,9 +35,10 @@
                     window.ChatRoomLoad.hasQolHook = true;
                 }
 
-                if (typeof window.ChatRoomSendChat === "function" && !window.ChatRoomSendChat.hasEmoticonHook) {
-                    const origChatRoomSendChat = window.ChatRoomSendChat;
-                    window.ChatRoomSendChat = function() {
+                if (typeof window.ChatRoomSendChat === "function" && !window._qolHasEmoticonHook) {
+                    window._qolHasEmoticonHook = true;
+
+                    const doQolLogic = function() {
                         try {
                             let chatInput = document.getElementById("InputChat");
                             let msg = chatInput ? chatInput.value : "";
@@ -147,9 +148,30 @@
                         } catch (e) {
                             console.error("Chat QoL Addon Error:", e);
                         }
-                        return origChatRoomSendChat.apply(this, arguments);
                     };
-                    window.ChatRoomSendChat.hasEmoticonHook = true;
+
+                    if (typeof window.bcModSdk !== "undefined") {
+                        try {
+                            const modApi = window.bcModSdk.registerMod({
+                                name: "BCDesktop_ChatQoL",
+                                fullName: "Chat QoL & Emoticons",
+                                version: "1.0.0",
+                                repository: "https://github.com/Izumii99/BC-Desktop"
+                            });
+                            modApi.hookFunction("ChatRoomSendChat", 0, (args, next) => {
+                                doQolLogic();
+                                return next(args);
+                            });
+                        } catch(e) {
+                            console.error("Failed to register with ModSDK", e);
+                        }
+                    } else {
+                        const origChatRoomSendChat = window.ChatRoomSendChat;
+                        window.ChatRoomSendChat = function () {
+                            doQolLogic();
+                            return origChatRoomSendChat.apply(this, arguments);
+                        };
+                    }
                 }
 
                 // Update saved state when user manually clicks the eye icon
