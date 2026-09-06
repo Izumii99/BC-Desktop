@@ -160,10 +160,16 @@ A massive quality-of-life upgrade for the chat system that seamlessly translates
 
 **How to Install:**
 
-#### Bookmarklet (Combined Wardrobe & Chat QoL)
+#### Bookmarklet (One-Click)
 
 ```javascript
-javascript:(function(){if(window.FUSAM===undefined){let n=document.createElement("script");n.type="module";n.setAttribute("src","https://sidiousious.gitlab.io/bc-addon-loader/fusam.js?_="+Date.now());document.head.appendChild(n)}const myAddons=["https://cdn.jsdelivr.net/gh/Izumii99/BC-Desktop@main/Scripts/wardrobe-pagination.js","https://cdn.jsdelivr.net/gh/Izumii99/BC-Desktop@main/Scripts/chat-qol.js"];myAddons.forEach(url=>{let s=document.createElement("script");s.src=url+"?_="+Date.now();s.type="text/javascript";s.crossOrigin="anonymous";document.head.appendChild(s)})();
+javascript: (function () {
+    var script = document.createElement("script");
+    script.src =
+        "https://cdn.jsdelivr.net/gh/Izumii99/BC-Desktop@main/Scripts/chat-qol.js";
+    document.head.appendChild(script);
+    console.log("Fetching Chat QoL from GitHub...");
+})();
 ```
 
 #### Tampermonkey, ViolentMonkey, etc. (Auto-Loader)
@@ -190,6 +196,60 @@ javascript:(function(){if(window.FUSAM===undefined){let n=document.createElement
         Date.now();
     document.head.appendChild(script);
     console.log("Chat QoL Loader: Injected successfully!");
+})();
+```
+
+### 4. Addon Manager UI (`addon-manager.js`)
+
+A built-in GUI to manage all your installed BC Desktop addons and compatible community scripts in one place.
+
+<img src="Assets/addon_manager.png" width="400" alt="Addon Manager" />
+
+**Features:**
+
+- Provides a floating quick-access button inside the game (available in the login screen, profile, etc.).
+- Allows you to easily toggle scripts ON or OFF without messing with Tampermonkey or bookmarklets again.
+- Integrates a built-in version of ULTRABc (with language selection).
+- Automatically fetches and updates scripts from the repository.
+
+**How to Install:**
+
+#### Bookmarklet (One-Click)
+
+```javascript
+javascript: (function () {
+    var script = document.createElement("script");
+    script.src =
+        "https://cdn.jsdelivr.net/gh/Izumii99/BC-Desktop@main/Scripts/addon-manager.js";
+    document.head.appendChild(script);
+    console.log("Fetching Addon Manager from GitHub...");
+})();
+```
+
+#### Tampermonkey, ViolentMonkey, etc. (Auto-Loader)
+
+```javascript
+// ==UserScript==
+// @name         BC Desktop Addon Manager
+// @namespace    http://tampermonkey.net/
+// @version      1.0
+// @description  Manages BC Desktop addons with a built-in UI
+// @author       Izumii99
+// @match        https://*.bondageprojects.elementfx.com/*
+// @match        https://*.bondage-europe.com/*
+// @match        https://*.bondageprojects.com/*
+// @match        https://*.bondage-asia.com/*
+// @grant        none
+// ==/UserScript==
+
+(function () {
+    "use strict";
+    var script = document.createElement("script");
+    script.src =
+        "https://cdn.jsdelivr.net/gh/Izumii99/BC-Desktop@main/Scripts/addon-manager.js?v=" +
+        Date.now();
+    document.head.appendChild(script);
+    console.log("Addon Manager Loader: Injected successfully!");
 })();
 ```
 
