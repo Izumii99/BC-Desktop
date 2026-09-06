@@ -242,6 +242,19 @@
                 let myNumber = (typeof Player !== "undefined" && Player.MemberNumber) ? Player.MemberNumber : -1;
                 let otherChars = window.ChatRoomCharacter.filter(c => c.MemberNumber !== myNumber);
                 
+                // Sort left-to-right based on actual drawing X coordinates
+                otherChars.sort((a, b) => {
+                    let getX = (c) => {
+                        if (typeof c.X === "number") return c.X;
+                        if (typeof window.ChatRoomCharacterDrawlist !== "undefined") {
+                            let draw = window.ChatRoomCharacterDrawlist.find(d => d.Character === c || d.C === c);
+                            if (draw && typeof draw.X === "number") return draw.X;
+                        }
+                        return window.ChatRoomCharacter.indexOf(c) * 500;
+                    };
+                    return getX(a) - getX(b);
+                });
+
                 let index = parseInt(e.key) - 1;
                 if (e.key === '0') index = 9;
                 
