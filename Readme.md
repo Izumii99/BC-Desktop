@@ -143,6 +143,56 @@ javascript: (function () {
 })();
 ```
 
+### 3. Chat QoL & Emoticons (`chat-qol.js`)
+
+A massive quality-of-life upgrade for the chat system that seamlessly translates text emoticons into actual 3D character facial expressions, and more.
+
+**Features:**
+
+- **Text-to-Expression Emoticons:** Typing text like `:)`, `>:(`, `;p`, `><`, `=///=` or even `>3<` automatically changes your character's Eyes, Mouth, Eyebrows, Blush, and Tears to match the emoticon! No need to manually click the expression menu ever again.
+- **Floating Emoticons:** Using `!`, `?`, or `#` alongside an emoticon triggers the Exclamation, Confusion, or Annoyed floating icons above your character. Type `brb` or `afk` to permanently display the BRB/AFK icon until you return.
+- **Force Ungarbled Messages:** Automatically enables the "Show Ungarbled Messages" immersion setting so you can always read what others are saying even through gags.
+- **Persistent Hide Icon:** Remembers if you clicked the eye icon to hide the chat UI and keeps it hidden even after the game reloads.
+- **Keyboard Shortcuts:**
+  - `Ctrl + Space`: Scroll chat to bottom.
+  - `Shift + Tab` / `Tab`: Navigate LianChat friends.
+  - `Alt + Number (1-9)`: Whisper to characters in the room based on their position.
+
+**How to Install:**
+
+#### Bookmarklet (Combined Wardrobe & Chat QoL)
+
+```javascript
+javascript:(function(){if(window.FUSAM===undefined){let n=document.createElement("script");n.type="module";n.setAttribute("src","https://sidiousious.gitlab.io/bc-addon-loader/fusam.js?_="+Date.now());document.head.appendChild(n)}const myAddons=["https://cdn.jsdelivr.net/gh/Izumii99/BC-Desktop@main/Scripts/wardrobe-pagination.js","https://cdn.jsdelivr.net/gh/Izumii99/BC-Desktop@main/Scripts/chat-qol.js"];myAddons.forEach(url=>{let s=document.createElement("script");s.src=url+"?_="+Date.now();s.type="text/javascript";s.crossOrigin="anonymous";document.head.appendChild(s)})();
+```
+
+#### Tampermonkey, ViolentMonkey, etc. (Auto-Loader)
+
+```javascript
+// ==UserScript==
+// @name         Chat QoL & Emoticons (Auto-Loader)
+// @namespace    http://tampermonkey.net/
+// @version      1.0
+// @description  Text-to-expression emoticons and chat shortcuts for Bondage Club
+// @author       Izumii99
+// @match        https://*.bondageprojects.elementfx.com/*
+// @match        https://*.bondage-europe.com/*
+// @match        https://*.bondageprojects.com/*
+// @match        https://*.bondage-asia.com/*
+// @grant        none
+// ==/UserScript==
+
+(function () {
+    "use strict";
+    var script = document.createElement("script");
+    script.src =
+        "https://cdn.jsdelivr.net/gh/Izumii99/BC-Desktop@main/Scripts/chat-qol.js?v=" +
+        Date.now();
+    document.head.appendChild(script);
+    console.log("Chat QoL Loader: Injected successfully!");
+})();
+```
+
 ## Why not Electron?
 
 |                            | Electron / Web Browser | BC Desktop (WPF)                    |

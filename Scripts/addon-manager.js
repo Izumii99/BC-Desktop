@@ -490,13 +490,34 @@
                 
                 keysBtn.onclick = () => {
                     showFeaturePopup("Chat QoL - Features & Hotkeys", `
-                        <div style="margin-bottom:12px;"><b>Quality of Life (QoL)</b> features specifically designed to make chatting and interacting faster and easier:</div>
-                        <ul style="margin:0; padding-left:24px; color:#e0e0e0;">
-                            <li style="margin-bottom:8px;"><b>Tab Key</b>: Instantly auto-completes the targeted character's name when typing a whisper.</li>
-                            <li style="margin-bottom:8px;"><b>Alt + 1~0</b>: Quickly whisper a character based on their position in the room (e.g. Alt+1 for the first person).</li>
-                            <li style="margin-bottom:8px;"><b>Alt + C / Alt + V / Alt + B</b>: Pet the Ear / Tail / Wings of your currently targeted character <i>(Requires BCAR+ to be active)</i>.</li>
-                            <li style="margin-bottom:4px;"><b>Ctrl + Space</b>: Force scroll the chatbox to the very bottom.</li>
-                        </ul>
+                        <div style="margin-bottom:12px; max-height: 400px; overflow-y: auto; padding-right: 8px;">
+                            <div style="margin-bottom:8px; font-weight:bold; color:#b39ddb;">✨ Auto-Emoticons (Text-to-Expression)</div>
+                            <div style="margin-bottom:12px; font-size:12px;">Typing text emoticons automatically changes your character's facial expressions! No need to click the menu.
+                                <ul style="margin:4px 0 0 0; padding-left:24px; color:#e0e0e0; font-size:11px;">
+                                    <li><b>Eyes:</b> <code>^^</code>, <code>0.0</code>, <code>o_o</code>, <code>@_@</code>, <code>><</code>, <code>= =</code>, <code>;p</code>, <code>:)</code></li>
+                                    <li><b>Mouth:</b> <code>:D</code>, <code>:3</code>, <code>:p</code>, <code>^~^</code>, <code>:(</code>, <code>=3=</code></li>
+                                    <li><b>Eyebrows:</b> <code>>:(</code>, <code>TT</code>, <code>>_></code></li>
+                                </ul>
+                            </div>
+                            
+                            <div style="margin-bottom:8px; font-weight:bold; color:#b39ddb;">🎈 Floating Emoticons & Blush</div>
+                            <div style="margin-bottom:12px; font-size:12px;">
+                                <ul style="margin:0; padding-left:24px; color:#e0e0e0; font-size:11px;">
+                                    <li>Add <code>!</code>, <code>?</code>, or <code>#</code> to an emoticon to trigger floating icons.</li>
+                                    <li>Type <code>brb</code> or <code>afk</code> to permanently show the AFK/BRB icon.</li>
+                                    <li>Use <code>//</code> to <code>/////</code> to add blush (Low to Custom Very High).</li>
+                                </ul>
+                            </div>
+
+                            <div style="margin-bottom:8px; font-weight:bold; color:#b39ddb;">⌨️ Hotkeys & Chat Fixes</div>
+                            <ul style="margin:0; padding-left:24px; color:#e0e0e0; font-size:11px;">
+                                <li style="margin-bottom:4px;"><b>Tab Key</b>: Instantly auto-completes the targeted character's name when typing a whisper.</li>
+                                <li style="margin-bottom:4px;"><b>Alt + 1~0</b>: Quickly whisper a character based on their position in the room (e.g. Alt+1 for the first person).</li>
+                                <li style="margin-bottom:4px;"><b>Alt + C/V/B</b>: Pet the Ear/Tail/Wings of your target <i>(Requires BCAR+)</i>.</li>
+                                <li style="margin-bottom:4px;"><b>Ctrl + Space</b>: Force scroll the chatbox to the very bottom.</li>
+                                <li style="margin-bottom:4px;"><b>Ungarbled Chat</b>: Automatically reveals garbled text for immersion settings.</li>
+                            </ul>
+                        </div>
                     `);
                 };
                 

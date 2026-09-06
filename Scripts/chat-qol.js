@@ -35,6 +35,123 @@
                     window.ChatRoomLoad.hasQolHook = true;
                 }
 
+                if (typeof window.ChatRoomSendChat === "function" && !window.ChatRoomSendChat.hasEmoticonHook) {
+                    const origChatRoomSendChat = window.ChatRoomSendChat;
+                    window.ChatRoomSendChat = function() {
+                        try {
+                            let chatInput = document.getElementById("InputChat");
+                            let msg = chatInput ? chatInput.value : "";
+                            if (msg && typeof CharacterSetFacialExpression === "function" && typeof Player !== "undefined" && Player) {
+                                
+                                let hasEmoticon = false;
+
+                                const SetSafeExpression = (group, expr, timer = 5) => {
+                                    hasEmoticon = true;
+                                    if (timer === null) {
+                                        CharacterSetFacialExpression(Player, group, expr);
+                                    } else {
+                                        CharacterSetFacialExpression(Player, group, expr, timer);
+                                    }
+                                    if (group.startsWith("Eyes") || group === "Mouth") {
+                                        // Force re-render to prevent facial twitching
+                                        setTimeout(() => {
+                                            if (Player && typeof CharacterRefresh === "function") CharacterRefresh(Player);
+                                        }, 150);
+                                        setTimeout(() => {
+                                            if (Player && typeof CharacterRefresh === "function") CharacterRefresh(Player);
+                                        }, 500);
+                                    }
+                                };
+
+                                // 1. EYES PARSING
+                                if (msg.match(/\^.*\^|\^\^/)) {
+                                    SetSafeExpression("Eyes", "ShylyHappy");
+                                } else if (msg.match(/0\.0|0_0|0x0/)) {
+                                    SetSafeExpression("Eyes", "Scared");
+                                } else if (msg.match(/o\.o|o_o|oxo/i)) {
+                                    SetSafeExpression("Eyes", "Surprised");
+                                } else if (msg.match(/@.*@/)) {
+                                    SetSafeExpression("Eyes", "Dazed");
+                                } else if (msg.match(/>[wWv_.,~x3]?<|>\/{2,5}</) || msg.match(/[xX][dDpP3>\]\)]/i) || msg.includes("><")) {
+                                    SetSafeExpression("Eyes", "Daydream");
+                                } else if (msg.match(/(^|\s)==(\s|$)|=[wvxdp3]=/i)) {
+                                    SetSafeExpression("Eyes", "Horny");
+                                } else if (msg.match(/;[p3>d\])(|]/i)) {
+                                    SetSafeExpression("Eyes", null); 
+                                    SetSafeExpression("Eyes1", "Closed");
+                                } else if (msg.match(/:[p3>d\])(|]/i)) {
+                                    SetSafeExpression("Eyes", null);
+                                } else if (msg.match(/=.*=|>[.,~_3]>|<[.,~_3]<|T[xw]T|TT/i)) {
+                                    SetSafeExpression("Eyes", "Closed");
+                                }
+
+                                // 2. MOUTH PARSING
+                                if (msg.match(/[x:;]D/i)) {
+                                    SetSafeExpression("Mouth", "Laughing");
+                                } else if (msg.match(/[x:;]3|[x:;]>|=w=|>w</i) || msg.match(/>[.,~_]>|<[.,~_]</)) {
+                                    SetSafeExpression("Mouth", "Happy");
+                                } else if (msg.match(/[x:;]p/i)) {
+                                    SetSafeExpression("Mouth", "Ahegao");
+                                } else if (msg.match(/\^~?\^|=v=|TwT|>v</i) || msg.match(/[x:;=]\)/i)) {
+                                    SetSafeExpression("Mouth", "Smile");
+                                } else if (msg.match(/=~=|@~?@|TxT/i) || msg.match(/[x:;=]\(/i)) {
+                                    SetSafeExpression("Mouth", "Frown");
+                                } else if (msg.match(/=\/{2,5}=|>\/{2,5}</) || msg.match(/=3=|>3<|>3>|<3</)) {
+                                    SetSafeExpression("Mouth", "Pout");
+                                }
+
+                                // 3. EYEBROWS & TEARS
+                                if (msg.match(/>[:;xX=]|[:;xX=]</)) {
+                                    SetSafeExpression("Eyebrows", "Angry");
+                                } else if (msg.match(/TT|T[xw]T/i) || msg.match(/><|T_T/i)) {
+                                    SetSafeExpression("Eyebrows", "Sad");
+                                } else if (msg.match(/>[.,~_3]>|<[.,~_3]</)) {
+                                    SetSafeExpression("Eyebrows", "Lowered");
+                                }
+                                if (msg.match(/T[xw_]T|TT/i)) {
+                                    SetSafeExpression("Fluids", "TearsMedium");
+                                }
+
+                                // 4. FLOATING EMOTICONS
+                                if (hasEmoticon) {
+                                    if (msg.includes("?")) {
+                                        SetSafeExpression("Emoticon", "Confusion");
+                                    } else if (msg.includes("!")) {
+                                        SetSafeExpression("Emoticon", "Exclamation");
+                                    }
+                                    if (msg.includes("#")) {
+                                        SetSafeExpression("Emoticon", "Annoyed");
+                                    }
+                                }
+
+                                // 5. BLUSH (Independent slashes)
+                                let slashMatch = msg.match(/\/{2,5}/);
+                                if (slashMatch && !msg.match(/:\/{2,5}:|=\/{2,5}=|>\/{2,5}</)) {
+                                    const slashCount = slashMatch[0].length;
+                                    let blushType = "Low";
+                                    if (slashCount === 3) blushType = "Medium";
+                                    else if (slashCount === 4) blushType = "High";
+                                    else if (slashCount === 5) blushType = "VeryHigh"; 
+                                    
+                                    SetSafeExpression("Blush", blushType);
+                                }
+
+                                // 6. AFK & BRB (Permanent)
+                                let afkMatch = msg.match(/(^|\s)(afk|brb)~?(\s|$)/i);
+                                if (afkMatch) {
+                                    let type = afkMatch[2].toLowerCase();
+                                    type = type.charAt(0).toUpperCase() + type.slice(1); // Afk or Brb
+                                    SetSafeExpression("Emoticon", type, null);
+                                }
+                            }
+                        } catch (e) {
+                            console.error("Chat QoL Addon Error:", e);
+                        }
+                        return origChatRoomSendChat.apply(this, arguments);
+                    };
+                    window.ChatRoomSendChat.hasEmoticonHook = true;
+                }
+
                 // Update saved state when user manually clicks the eye icon
                 if (typeof CurrentScreen !== "undefined" && CurrentScreen === "ChatRoom" && typeof window.ChatRoomHideIconState !== "undefined") {
                     window.qolSavedIconState = window.ChatRoomHideIconState;
