@@ -52,20 +52,27 @@
 
                                 const SetSafeExpression = (group, expr, timer = 5) => {
                                     hasEmoticon = true;
-                                    if (timer === null) {
-                                        CharacterSetFacialExpression(Player, group, expr);
-                                    } else {
-                                        CharacterSetFacialExpression(Player, group, expr, timer);
-                                    }
-                                    if (group.startsWith("Eyes") || group === "Mouth") {
-                                        // Force re-render to prevent facial twitching
-                                        setTimeout(() => {
-                                            if (Player && typeof CharacterRefresh === "function") CharacterRefresh(Player);
-                                        }, 150);
-                                        setTimeout(() => {
-                                            if (Player && typeof CharacterRefresh === "function") CharacterRefresh(Player);
-                                        }, 500);
-                                    }
+                                    
+                                    // Bypass for WCE Animation Engine: Delay expression until after talking animation finishes
+                                    let isWCEAnim = (typeof window.bceAnimationEngineEnabled === "function" && window.bceAnimationEngineEnabled());
+                                    let delay = isWCEAnim ? Math.min(msg.length * 65, 5000) : 0;
+
+                                    setTimeout(() => {
+                                        if (timer === null) {
+                                            CharacterSetFacialExpression(Player, group, expr);
+                                        } else {
+                                            CharacterSetFacialExpression(Player, group, expr, timer);
+                                        }
+                                        if (group.startsWith("Eyes") || group === "Mouth") {
+                                            // Force re-render to prevent facial twitching
+                                            setTimeout(() => {
+                                                if (Player && typeof CharacterRefresh === "function") CharacterRefresh(Player);
+                                            }, 150);
+                                            setTimeout(() => {
+                                                if (Player && typeof CharacterRefresh === "function") CharacterRefresh(Player);
+                                            }, 500);
+                                        }
+                                    }, delay);
                                 };
 
                                 // 1. EYES PARSING
@@ -88,18 +95,20 @@
                                     SetSafeExpression("Eyes", null);
                                 } else if (msg.match(/>[.,~_3]?>|<[.,~_3]?</)) {
                                     SetSafeExpression("Eyes", "Dazed");
-                                } else if (msg.match(/T[xw_v-]T|TT/i)) {
+                                } else if (msg.match(/T[xw_v-]T|TT/)) {
                                     SetSafeExpression("Eyes", "Shy");
-                                } else if (msg.match(/=.*=|>[.,~_3]>|<[.,~_3]</i)) {
+                                } else if (msg.match(/qwq/i)) {
+                                    SetSafeExpression("Eyes", "Shy");
+                                } else if (msg.match(/=[_~^.-]=|>[.,~_3]>|<[.,~_3]</i)) {
                                     SetSafeExpression("Eyes", "Closed");
                                 }
 
                                 // 2. MOUTH PARSING
-                                if (msg.match(/[x:;]D/i)) {
+                                if (msg.match(/(^|\s|[.,~])[x:;]D(?=$|\s|[.,?!~;*)"\]])/i)) {
                                     SetSafeExpression("Mouth", "Laughing");
                                 } else if (msg.match(/D:/)) {
                                     SetSafeExpression("Mouth", "Sad");
-                                } else if (msg.match(/[x:;]3|[x:;]>|=w=|>w<|qwq/i) || msg.match(/>[.,~_]>|<[.,~_]</)) {
+                                } else if (msg.match(/[x:;]3|[x:;]>|=w=|>w<|qwq/i) || msg.match(/>[.,~_]>|<[.,~_]< /)) {
                                     SetSafeExpression("Mouth", "Happy");
                                 } else if (msg.match(/[x:;]p/i)) {
                                     SetSafeExpression("Mouth", "Ahegao");
@@ -114,12 +123,12 @@
                                 // 3. EYEBROWS & TEARS
                                 if (msg.match(/>[:;xX=]|[:;xX=]</)) {
                                     SetSafeExpression("Eyebrows", "Angry");
-                                } else if (msg.match(/TT|T[xw]T/i) || msg.match(/><|T_T/i)) {
+                                } else if (msg.match(/TT|T[xw]T/) || msg.match(/><|T_T/)) {
                                     SetSafeExpression("Eyebrows", "Sad");
-                                } else if (msg.match(/>[.,~_3]?>|<[.,~_3]?</)) {
+                                } else if (msg.match(/>[.,~_3]>|<[.,~_3]</)) {
                                     SetSafeExpression("Eyebrows", "Lowered");
                                 }
-                                if (msg.match(/T[xw_v-]T|TT|qwq/i)) {
+                                if (msg.match(/T[xw_v-]T|TT/) || msg.match(/qwq/i)) {
                                     SetSafeExpression("Fluids", "TearsMedium");
                                 }
 
