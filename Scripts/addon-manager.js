@@ -640,20 +640,23 @@
                 );
             }
 
-            if (!scriptsDir || !scriptsDir.files) {
-                console.error("BC Desktop: Could not find Scripts directory.");
-                return;
+            let apiScripts = [];
+            if (scriptsDir && scriptsDir.files) {
+                apiScripts = scriptsDir.files
+                    .filter(
+                        (f) =>
+                            f.type === "file" &&
+                            f.name.endsWith(".js") &&
+                            !f.name.toLowerCase().includes("debug") &&
+                            f.name !== "addon-manager.js"
+                    )
+                    .map((f) => f.name);
+            } else {
+                console.warn("BC Desktop: Could not find Scripts directory from API. Falling back to known scripts.");
             }
 
-            scriptsList = scriptsDir.files
-                .filter(
-                    (f) =>
-                        f.type === "file" &&
-                        f.name.endsWith(".js") &&
-                        !f.name.toLowerCase().includes("debug") &&
-                        f.name !== "addon-manager.js",
-                )
-                .map((f) => f.name);
+            let knownScripts = Object.keys(SCRIPT_INFO).filter(name => name.endsWith(".js") && name !== "addon-manager.js");
+            scriptsList = [...new Set([...apiScripts, ...knownScripts])];
 
             function injectTargetScripts() {
                 let target = document.head || document.documentElement;
