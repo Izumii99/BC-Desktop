@@ -222,7 +222,7 @@
       </div>
 
       <section class="rounded-2xl bg-black/30 border border-white/[0.08] focus-within:border-purple-500/50 focus-within:ring-2 focus-within:ring-purple-500/20 transition-all p-3.5 mb-3">
-        <textarea id="bc-translate-input" class="w-full min-h-[72px] bg-transparent border-none outline-none resize-none text-sm text-slate-100 placeholder-slate-500 bc-translator-scroll leading-relaxed p-0 focus:ring-0" placeholder="Ketik teks di sini..."></textarea>
+        <textarea id="bc-translate-input" class="w-full min-h-[72px] !bg-transparent border-none outline-none resize-none text-sm !text-slate-100 placeholder-slate-500 bc-translator-scroll leading-relaxed p-0 focus:ring-0" placeholder="Ketik teks di sini..."></textarea>
         
         <div id="bc-translate-correction-container" class="hidden mt-1 text-xs text-rose-400">
             Maksud Anda: <span id="bc-translate-correction" class="bc-spell-error"></span>
@@ -245,7 +245,7 @@
           </span>
         </div>
         
-        <textarea id="bc-translate-output" class="w-full min-h-[60px] bg-transparent border-none outline-none resize-none text-xl font-semibold text-white tracking-tight leading-none placeholder-slate-600 bc-translator-scroll p-0 focus:ring-0" placeholder="Hasil terjemahan akan muncul di sini..." readonly></textarea>
+        <textarea id="bc-translate-output" class="w-full min-h-[60px] !bg-transparent border-none outline-none resize-none text-xl font-semibold !text-white tracking-tight leading-none placeholder-slate-600 bc-translator-scroll p-0 focus:ring-0" placeholder="Hasil terjemahan akan muncul di sini..." readonly></textarea>
         
         <div id="bc-translate-meta" class="mt-2.5 pt-2.5 border-t border-white/5 hidden flex-col gap-1 text-[11px] text-slate-400 font-medium">
             <div id="bc-translate-src-romaji" class="hidden"></div>
