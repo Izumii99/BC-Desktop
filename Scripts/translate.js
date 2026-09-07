@@ -85,7 +85,7 @@
 
         const btn = document.createElement("button");
         btn.id = "bc-google-translate-btn";
-        btn.innerHTML = \`<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 8l6 6"></path><path d="M4 14l6-6 2-3"></path><path d="M2 5h12"></path><path d="M7 2h1"></path><path d="M22 22l-5-10-5 10"></path><path d="M14 18h6"></path></svg>\`;
+        btn.innerHTML = `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 8l6 6"></path><path d="M4 14l6-6 2-3"></path><path d="M2 5h12"></path><path d="M7 2h1"></path><path d="M22 22l-5-10-5 10"></path><path d="M14 18h6"></path></svg>`;
         btn.style.position = "fixed";
         btn.style.top = "10px";
         btn.style.left = "10px";
@@ -112,16 +112,16 @@
         popup.style.zIndex = "1000000";
         popup.style.display = "none";
 
-        const commonOptions = \`
+        const commonOptions = `
             <option value="en">Inggris (EN)</option>
             <option value="id">Indonesia (ID)</option>
             <option value="ja">Jepang (JP)</option>
             <option value="zh-CN">China (CN)</option>
             <option value="ru">Rusia (RU)</option>
             <option disabled>──────────</option>
-        \`;
+        `;
         
-        const allOptions = \`
+        const allOptions = `
             <option value="ar">Arab</option>
             <option value="nl">Belanda</option>
             <option value="zh-CN">China</option>
@@ -143,9 +143,9 @@
             <option value="tr">Turki</option>
             <option value="uk">Ukraina</option>
             <option value="vi">Vietnam</option>
-        \`;
+        `;
 
-        popup.innerHTML = \`
+        popup.innerHTML = `
 <main class="w-full max-w-[460px] min-w-[320px] rounded-3xl bg-slate-900/80 backdrop-blur-2xl border border-white/10 shadow-glow-card p-5 ring-1 ring-white/5 transition-all duration-300" data-purpose="translator-widget" style="color: #f1f5f9; font-family: ui-sans-serif, system-ui, sans-serif;">
   <header class="flex items-center justify-between pb-4 border-b border-white/5 cursor-move" id="bc-translate-header">
     <div class="flex items-center space-x-2.5 pointer-events-none">
@@ -188,8 +188,8 @@
           </button>
           <select id="bc-translate-source" class="bc-select-overlay">
             <option value="auto" selected>Otomatis</option>
-            \${commonOptions}
-            \${allOptions}
+            ${commonOptions}
+            ${allOptions}
           </select>
         </div>
         
@@ -206,8 +206,8 @@
             <svg class="w-3.5 h-3.5 text-slate-400 group-hover:text-slate-200 transition-transform group-hover:translate-y-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M19 9l-7 7-7-7" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path></svg>
           </button>
           <select id="bc-translate-target" class="bc-select-overlay">
-            \${commonOptions}
-            \${allOptions}
+            ${commonOptions}
+            ${allOptions}
           </select>
         </div>
       </nav>
@@ -260,7 +260,7 @@
         </div>
       </section>
   </div>
-</main>\`;
+</main>`;
 
         document.body.appendChild(btn);
         document.body.appendChild(popup);
@@ -363,7 +363,7 @@
                 const sl = sourceLang.value;
                 const tl = targetLang.value;
                 const res = await fetch(
-                    \`https://translate.googleapis.com/translate_a/single?client=gtx&sl=\${sl}&tl=\${tl}&dt=t&dt=sp&dt=qc&dt=rm&q=\${encodeURIComponent(text)}\`
+                    `https://translate.googleapis.com/translate_a/single?client=gtx&sl=${sl}&tl=${tl}&dt=t&dt=sp&dt=qc&dt=rm&q=${encodeURIComponent(text)}`
                 );
                 const data = await res.json();
                 let translated = "";
@@ -447,13 +447,13 @@
 
             if (btnDragging) {
                 if (Math.abs(dx) > 3 || Math.abs(dy) > 3) btnMoved = true;
-                btn.style.left = \`\${btnInitX + dx}px\`;
-                btn.style.top = \`\${btnInitY + dy}px\`;
+                btn.style.left = `${btnInitX + dx}px`;
+                btn.style.top = `${btnInitY + dy}px`;
                 btn.style.bottom = "auto";
                 btn.style.right = "auto";
             } else if (popupDragging) {
-                popup.style.left = \`\${popupInitX + dx}px\`;
-                popup.style.top = \`\${popupInitY + dy}px\`;
+                popup.style.left = `${popupInitX + dx}px`;
+                popup.style.top = `${popupInitY + dy}px`;
                 popup.style.bottom = "auto";
                 popup.style.right = "auto";
             }
