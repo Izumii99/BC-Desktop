@@ -66,7 +66,7 @@
                 .bc-translator-scroll::-webkit-scrollbar-thumb:hover {
                   background: rgba(255, 255, 255, 0.3);
                 }
-                .bc-select-overlay {
+                html body #bc-translate-popup .bc-select-overlay {
                     position: absolute;
                     inset: 0;
                     width: 100%;
@@ -74,12 +74,14 @@
                     opacity: 0;
                     cursor: pointer;
                     appearance: none;
+                    background-color: transparent !important;
                 }
-                .bc-select-overlay option {
-                    background-color: #1e293b;
-                    color: white;
+                html body #bc-translate-popup .bc-select-overlay option {
+                    background-color: #1e293b !important;
+                    color: white !important;
                 }
-                textarea#bc-translate-input, textarea#bc-translate-output {
+                html body #bc-translate-popup textarea#bc-translate-input, 
+                html body #bc-translate-popup textarea#bc-translate-output {
                     background-color: transparent !important;
                     color: white !important;
                 }
