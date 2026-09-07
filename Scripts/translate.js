@@ -79,6 +79,10 @@
                     background-color: #1e293b;
                     color: white;
                 }
+                textarea#bc-translate-input, textarea#bc-translate-output {
+                    background-color: transparent !important;
+                    color: white !important;
+                }
             `;
             document.head.appendChild(style);
         }
@@ -113,36 +117,36 @@
         popup.style.display = "none";
 
         const commonOptions = `
-            <option value="en">Inggris (EN)</option>
-            <option value="id">Indonesia (ID)</option>
-            <option value="ja">Jepang (JP)</option>
-            <option value="zh-CN">China (CN)</option>
-            <option value="ru">Rusia (RU)</option>
+            <option value="en">English (EN)</option>
+            <option value="id">Indonesian (ID)</option>
+            <option value="ja">Japanese (JP)</option>
+            <option value="zh-CN">Chinese (CN)</option>
+            <option value="ru">Russian (RU)</option>
             <option disabled>──────────</option>
         `;
         
         const allOptions = `
-            <option value="ar">Arab</option>
-            <option value="nl">Belanda</option>
-            <option value="zh-CN">China</option>
-            <option value="tl">Filipina</option>
+            <option value="ar">Arabic</option>
+            <option value="nl">Dutch</option>
+            <option value="zh-CN">Chinese</option>
+            <option value="tl">Filipino</option>
             <option value="hi">Hindi</option>
-            <option value="id">Indonesia</option>
-            <option value="en">Inggris</option>
-            <option value="it">Italia</option>
-            <option value="ja">Jepang</option>
-            <option value="de">Jerman</option>
-            <option value="ko">Korea</option>
-            <option value="ms">Melayu</option>
-            <option value="fr">Perancis</option>
-            <option value="pl">Polandia</option>
-            <option value="pt">Portugis</option>
-            <option value="ru">Rusia</option>
-            <option value="es">Spanyol</option>
-            <option value="th">Thailand</option>
-            <option value="tr">Turki</option>
-            <option value="uk">Ukraina</option>
-            <option value="vi">Vietnam</option>
+            <option value="id">Indonesian</option>
+            <option value="en">English</option>
+            <option value="it">Italian</option>
+            <option value="ja">Japanese</option>
+            <option value="de">German</option>
+            <option value="ko">Korean</option>
+            <option value="ms">Malay</option>
+            <option value="fr">French</option>
+            <option value="pl">Polish</option>
+            <option value="pt">Portuguese</option>
+            <option value="ru">Russian</option>
+            <option value="es">Spanish</option>
+            <option value="th">Thai</option>
+            <option value="tr">Turkish</option>
+            <option value="uk">Ukrainian</option>
+            <option value="vi">Vietnamese</option>
         `;
 
         popup.innerHTML = `
@@ -182,18 +186,18 @@
           <button class="w-full flex items-center justify-between px-3 py-2 rounded-xl bg-white/[0.04] group-hover:bg-white/[0.08] border border-white/10 text-xs font-medium text-slate-200 group-hover:text-white transition focus:outline-none">
             <div class="flex items-center gap-2 truncate">
               <span class="w-2 h-2 rounded-full bg-purple-400 ring-2 ring-purple-400/25"></span>
-              <span class="truncate" id="bc-translate-source-label">Otomatis</span>
+              <span class="truncate" id="bc-translate-source-label">Auto</span>
             </div>
             <svg class="w-3.5 h-3.5 text-slate-400 group-hover:text-slate-200 transition-transform group-hover:translate-y-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M19 9l-7 7-7-7" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path></svg>
           </button>
           <select id="bc-translate-source" class="bc-select-overlay">
-            <option value="auto" selected>Otomatis</option>
+            <option value="auto" selected>Auto</option>
             ${commonOptions}
             ${allOptions}
           </select>
         </div>
         
-        <button id="bc-translate-swap" class="p-2 rounded-xl bg-white/[0.06] hover:bg-purple-600 hover:text-white border border-white/10 text-slate-300 transition-all duration-300 hover:rotate-180 hover:shadow-lg hover:shadow-purple-500/30 active:scale-95" title="Tukar Bahasa">
+        <button id="bc-translate-swap" class="p-2 rounded-xl bg-white/[0.06] hover:bg-purple-600 hover:text-white border border-white/10 text-slate-300 transition-all duration-300 hover:rotate-180 hover:shadow-lg hover:shadow-purple-500/30 active:scale-95" title="Swap Languages">
           <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" viewBox="0 0 24 24"><path d="m16 3 4 4-4 4"></path><path d="M20 7H4"></path><path d="m8 21-4-4 4-4"></path><path d="M4 17h16"></path></svg>
         </button>
         
@@ -201,7 +205,7 @@
           <button class="w-full flex items-center justify-between px-3 py-2 rounded-xl bg-white/[0.04] group-hover:bg-white/[0.08] border border-white/10 text-xs font-medium text-slate-200 group-hover:text-white transition focus:outline-none">
             <div class="flex items-center gap-2 truncate">
               <span class="w-2 h-2 rounded-full bg-violet-400 ring-2 ring-violet-400/25"></span>
-              <span class="truncate" id="bc-translate-target-label">Inggris (EN)</span>
+              <span class="truncate" id="bc-translate-target-label">English (EN)</span>
             </div>
             <svg class="w-3.5 h-3.5 text-slate-400 group-hover:text-slate-200 transition-transform group-hover:translate-y-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M19 9l-7 7-7-7" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path></svg>
           </button>
@@ -213,7 +217,7 @@
       </nav>
 
       <div class="flex items-center space-x-1.5 mb-3.5 px-0.5 text-[11px]">
-        <span class="text-slate-500 mr-1 text-[10px] font-semibold tracking-wider uppercase">Cepat:</span>
+        <span class="text-slate-500 mr-1 text-[10px] font-semibold tracking-wider uppercase">Quick:</span>
         <button class="bc-quick-lang px-2 py-0.5 rounded-md bg-white/[0.05] hover:bg-white/10 text-slate-300 transition" data-lang="en">EN</button>
         <button class="bc-quick-lang px-2 py-0.5 rounded-md bg-white/[0.05] hover:bg-white/10 text-slate-300 transition" data-lang="ja">JP</button>
         <button class="bc-quick-lang px-2 py-0.5 rounded-md bg-white/[0.05] hover:bg-white/10 text-slate-300 transition" data-lang="es">ES</button>
@@ -222,16 +226,16 @@
       </div>
 
       <section class="rounded-2xl bg-black/30 border border-white/[0.08] focus-within:border-purple-500/50 focus-within:ring-2 focus-within:ring-purple-500/20 transition-all p-3.5 mb-3">
-        <textarea id="bc-translate-input" class="w-full min-h-[72px] !bg-transparent border-none outline-none resize-none text-sm !text-slate-100 placeholder-slate-500 bc-translator-scroll leading-relaxed p-0 focus:ring-0" placeholder="Ketik teks di sini..."></textarea>
+        <textarea id="bc-translate-input" class="w-full min-h-[72px] !bg-transparent border-none outline-none resize-none text-sm !text-slate-100 placeholder-slate-500 bc-translator-scroll leading-relaxed p-0 focus:ring-0" placeholder="Type text here..."></textarea>
         
         <div id="bc-translate-correction-container" class="hidden mt-1 text-xs text-rose-400">
-            Maksud Anda: <span id="bc-translate-correction" class="bc-spell-error"></span>
+            Did you mean: <span id="bc-translate-correction" class="bc-spell-error"></span>
         </div>
 
         <div class="flex items-center justify-between pt-2 mt-1 border-t border-white/5 text-slate-400 text-xs">
           <div class="flex items-center space-x-1"></div>
           <div class="flex items-center space-x-2">
-            <button id="bc-translate-clear" class="p-1 rounded-md hover:bg-white/10 hover:text-rose-400 text-slate-400 transition" title="Hapus teks (Clear)">
+            <button id="bc-translate-clear" class="p-1 rounded-md hover:bg-white/10 hover:text-rose-400 text-slate-400 transition" title="Clear text">
               <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="18" x2="6" y1="6" y2="18"></line><line x1="6" x2="18" y1="6" y2="18"></line></svg>
             </button>
           </div>
@@ -241,11 +245,11 @@
       <section class="rounded-2xl bg-gradient-to-b from-white/[0.06] to-white/[0.02] border border-purple-500/25 shadow-lg shadow-black/20 p-4 transition-all flex flex-col">
         <div class="flex items-center justify-between mb-1.5 text-xs">
           <span class="text-[11px] uppercase tracking-wider font-semibold text-purple-400 flex items-center gap-1.5">
-            <span class="w-1.5 h-1.5 rounded-full bg-purple-400"></span> Hasil Terjemahan
+            <span class="w-1.5 h-1.5 rounded-full bg-purple-400"></span> Translation
           </span>
         </div>
         
-        <textarea id="bc-translate-output" class="w-full min-h-[60px] !bg-transparent border-none outline-none resize-none text-xl font-semibold !text-white tracking-tight leading-none placeholder-slate-600 bc-translator-scroll p-0 focus:ring-0" placeholder="Hasil terjemahan akan muncul di sini..." readonly></textarea>
+        <textarea id="bc-translate-output" class="w-full min-h-[60px] !bg-transparent border-none outline-none resize-none text-xl font-semibold !text-white tracking-tight leading-none placeholder-slate-600 bc-translator-scroll p-0 focus:ring-0" placeholder="Translation will appear here..." readonly></textarea>
         
         <div id="bc-translate-meta" class="mt-2.5 pt-2.5 border-t border-white/5 hidden flex-col gap-1 text-[11px] text-slate-400 font-medium">
             <div id="bc-translate-src-romaji" class="hidden"></div>
@@ -255,7 +259,7 @@
         <div class="flex items-center justify-end mt-3.5 pt-2.5 border-t border-white/5 text-slate-400">
           <button id="bc-translate-copy" class="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-purple-600 hover:bg-purple-500 text-white border border-purple-400/40 text-xs font-medium transition active:scale-95 shadow-md shadow-purple-600/30">
             <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewBox="0 0 24 24"><rect height="14" rx="2" ry="2" width="14" x="8" y="8"></rect><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"></path></svg>
-            <span id="bc-translate-copy-text">Salin</span>
+            <span id="bc-translate-copy-text">Copy</span>
           </button>
         </div>
       </section>
@@ -327,12 +331,12 @@
             try {
                 await navigator.clipboard.writeText(outputArea.value);
                 const originalText = copyText.innerText;
-                copyText.innerText = "Tersalin!";
+                copyText.innerText = "Copied!";
                 setTimeout(() => {
                     copyText.innerText = originalText;
                 }, 1800);
             } catch (err) {
-                console.error("Gagal menyalin teks", err);
+                console.error("Failed to copy text", err);
             }
         };
 
@@ -354,7 +358,7 @@
                 metaDiv.classList.add("hidden");
                 return;
             }
-            outputArea.value = "Menerjemahkan...";
+            outputArea.value = "Translating...";
             metaDiv.classList.add("hidden");
             srcRomaji.classList.add("hidden");
             tgtRomaji.classList.add("hidden");
@@ -383,11 +387,11 @@
                     metaDiv.classList.remove("hidden");
                     metaDiv.style.display = "flex";
                     if (sourceR) {
-                        srcRomaji.innerText = "Asli: " + sourceR;
+                        srcRomaji.innerText = "Source: " + sourceR;
                         srcRomaji.classList.remove("hidden");
                     }
                     if (targetR) {
-                        tgtRomaji.innerText = "Hasil: " + targetR;
+                        tgtRomaji.innerText = "Result: " + targetR;
                         tgtRomaji.classList.remove("hidden");
                     }
                 }
@@ -406,7 +410,7 @@
 
                 outputArea.value = translated;
             } catch (err) {
-                outputArea.value = "Error: Gagal menerjemahkan.";
+                outputArea.value = "Error: Failed to translate.";
             }
         };
 
