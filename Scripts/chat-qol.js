@@ -743,9 +743,9 @@
                                     SetSafeExpression("Mouth", "Laughing");
                                 } else if (
                                     qolConfig.emoticons.emoFrown &&
-                                    msg.match(/D:/)
+                                    (msg.match(/D:/) || msg.match(/=[_~^.-]=/i) || msg.match(/=~=/i) || msg.match(/(^|[\s*~])([x:;=]\()(?=$|[\s.,?!~*])/i))
                                 ) {
-                                    SetSafeExpression("Mouth", "Sad");
+                                    SetSafeExpression("Mouth", "Frown");
                                 } else if (
                                     (qolConfig.emoticons.emoCat &&
                                         msg.match(/(^|[\s*~])([x:;]3|[x:;]>|=w=|>w<)(?=$|[\s.,?!~*])/i)) ||
@@ -766,11 +766,10 @@
                                     SetSafeExpression("Mouth", "Smile");
                                 } else if (
                                     qolConfig.emoticons.emoSad &&
-                                    (msg.match(/=~=|@~?@|TxT/i) ||
-                                        msg.match(/(^|[\s*~])([x:;=]\()(?=$|[\s.,?!~*])/i) ||
+                                    (msg.match(/@~?@|TxT/i) ||
                                         msg.match(/>[.,~_3]>|<[.,~_3]</))
                                 ) {
-                                    SetSafeExpression("Mouth", "Frown");
+                                    SetSafeExpression("Mouth", "Sad");
                                 } else if (
                                     qolConfig.emoticons.emoPout &&
                                     (msg.match(/=\/{2,5}=|>\/{2,5}</) ||
