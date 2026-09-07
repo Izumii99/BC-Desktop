@@ -66,7 +66,7 @@
                 .bc-translator-scroll::-webkit-scrollbar-thumb:hover {
                   background: rgba(255, 255, 255, 0.3);
                 }
-                html body #bc-translate-popup .bc-select-overlay {
+                html body #bc-google-translate-popup .bc-select-overlay {
                     position: absolute;
                     inset: 0;
                     width: 100%;
@@ -76,14 +76,15 @@
                     appearance: none;
                     background-color: transparent !important;
                 }
-                html body #bc-translate-popup .bc-select-overlay option {
+                html body #bc-google-translate-popup .bc-select-overlay option {
                     background-color: #1e293b !important;
                     color: white !important;
                 }
-                html body #bc-translate-popup textarea#bc-translate-input, 
-                html body #bc-translate-popup textarea#bc-translate-output {
+                html body #bc-google-translate-popup textarea#bc-translate-input, 
+                html body #bc-google-translate-popup textarea#bc-translate-output {
                     background-color: transparent !important;
                     color: white !important;
+                    box-shadow: none !important;
                 }
             `;
             document.head.appendChild(style);
@@ -152,7 +153,7 @@
         `;
 
         popup.innerHTML = `
-<main class="w-full max-w-[460px] min-w-[320px] rounded-3xl bg-slate-900/80 backdrop-blur-2xl border border-white/10 shadow-glow-card p-5 ring-1 ring-white/5 transition-all duration-300" data-purpose="translator-widget" style="color: #f1f5f9; font-family: ui-sans-serif, system-ui, sans-serif;">
+<main class="w-full max-w-[460px] min-w-[320px] rounded-3xl bg-slate-900/80 backdrop-blur-2xl border border-white/10 shadow-2xl shadow-purple-950/40 p-5 ring-1 ring-white/5 transition-all duration-300 hover:border-white/15" data-purpose="translator-widget" style="color: #f1f5f9; font-family: ui-sans-serif, system-ui, sans-serif;">
   <header class="flex items-center justify-between pb-4 border-b border-white/5 cursor-move" id="bc-translate-header">
     <div class="flex items-center space-x-2.5 pointer-events-none">
       <div class="w-8 h-8 rounded-xl bg-gradient-to-tr from-purple-600 to-violet-500 flex items-center justify-center text-white shadow-md shadow-purple-500/25 ring-1 ring-white/20">
@@ -170,6 +171,7 @@
           <h1 class="text-sm font-semibold tracking-wide text-white m-0 leading-none">Google Translate</h1>
           <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-purple-500/15 text-purple-300 border border-purple-500/30">Pro AI</span>
         </div>
+        <p class="text-[11px] text-slate-400 mt-0.5 mb-0">Deep Neural Engine v4.2</p>
       </div>
     </div>
     <div class="flex items-center space-x-1.5 text-slate-400 cursor-default">
@@ -183,9 +185,9 @@
   </header>
   
   <div id="bc-translate-body">
-      <nav class="mt-3.5 mb-3 flex items-center justify-between gap-2">
+      <nav class="mt-3.5 mb-3 flex items-center justify-between gap-2" data-purpose="language-selector-bar">
         <div class="relative flex-1 group">
-          <button class="w-full flex items-center justify-between px-3 py-2 rounded-xl bg-white/[0.04] group-hover:bg-white/[0.08] border border-white/10 text-xs font-medium text-slate-200 group-hover:text-white transition focus:outline-none">
+          <button class="w-full flex items-center justify-between px-3 py-2 rounded-xl bg-white/[0.04] group-hover:bg-white/[0.08] border border-white/10 text-xs font-medium text-slate-200 group-hover:text-white transition focus:outline-none focus:ring-1 focus:ring-purple-500">
             <div class="flex items-center gap-2 truncate">
               <span class="w-2 h-2 rounded-full bg-purple-400 ring-2 ring-purple-400/25"></span>
               <span class="truncate" id="bc-translate-source-label">Auto</span>
@@ -199,12 +201,12 @@
           </select>
         </div>
         
-        <button id="bc-translate-swap" class="p-2 rounded-xl bg-white/[0.06] hover:bg-purple-600 hover:text-white border border-white/10 text-slate-300 transition-all duration-300 hover:rotate-180 hover:shadow-lg hover:shadow-purple-500/30 active:scale-95" title="Swap Languages">
-          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" viewBox="0 0 24 24"><path d="m16 3 4 4-4 4"></path><path d="M20 7H4"></path><path d="m8 21-4-4 4-4"></path><path d="M4 17h16"></path></svg>
+        <button id="bc-translate-swap" class="p-2 rounded-xl bg-white/[0.06] hover:bg-purple-600 hover:text-white border border-white/10 text-slate-300 transition-all duration-300 hover:rotate-180 hover:shadow-lg hover:shadow-purple-500/30 active:scale-95 focus:outline-none" title="Tukar Bahasa (Swap)">
+          <svg class="w-3.5 h-3.5 group-hover:stroke-current" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" viewBox="0 0 24 24"><path d="m16 3 4 4-4 4"></path><path d="M20 7H4"></path><path d="m8 21-4-4 4-4"></path><path d="M4 17h16"></path></svg>
         </button>
         
         <div class="relative flex-1 group">
-          <button class="w-full flex items-center justify-between px-3 py-2 rounded-xl bg-white/[0.04] group-hover:bg-white/[0.08] border border-white/10 text-xs font-medium text-slate-200 group-hover:text-white transition focus:outline-none">
+          <button class="w-full flex items-center justify-between px-3 py-2 rounded-xl bg-white/[0.04] group-hover:bg-white/[0.08] border border-white/10 text-xs font-medium text-slate-200 group-hover:text-white transition focus:outline-none focus:ring-1 focus:ring-purple-500">
             <div class="flex items-center gap-2 truncate">
               <span class="w-2 h-2 rounded-full bg-violet-400 ring-2 ring-violet-400/25"></span>
               <span class="truncate" id="bc-translate-target-label">English (EN)</span>
@@ -218,16 +220,16 @@
         </div>
       </nav>
 
-      <div class="flex items-center space-x-1.5 mb-3.5 px-0.5 text-[11px]">
-        <span class="text-slate-500 mr-1 text-[10px] font-semibold tracking-wider uppercase">Quick:</span>
+      <div class="flex items-center space-x-1.5 mb-3.5 px-0.5 text-[11px]" data-purpose="quick-presets">
+        <span class="text-slate-500 mr-1 text-[10px] font-semibold tracking-wider uppercase">Cepat:</span>
         <button class="bc-quick-lang px-2 py-0.5 rounded-md bg-white/[0.05] hover:bg-white/10 text-slate-300 transition" data-lang="en">EN</button>
         <button class="bc-quick-lang px-2 py-0.5 rounded-md bg-white/[0.05] hover:bg-white/10 text-slate-300 transition" data-lang="ja">JP</button>
         <button class="bc-quick-lang px-2 py-0.5 rounded-md bg-white/[0.05] hover:bg-white/10 text-slate-300 transition" data-lang="es">ES</button>
-        <button class="bc-quick-lang px-2 py-0.5 rounded-md bg-white/[0.05] hover:bg-white/10 text-slate-300 transition" data-lang="id">ID</button>
-        <button class="bc-quick-lang px-2 py-0.5 rounded-md bg-white/[0.05] hover:bg-white/10 text-slate-300 transition" data-lang="zh-CN">CN</button>
+        <button class="bc-quick-lang px-2 py-0.5 rounded-md bg-white/[0.05] hover:bg-white/10 text-slate-300 transition" data-lang="fr">FR</button>
+        <button class="bc-quick-lang px-2 py-0.5 rounded-md bg-white/[0.05] hover:bg-white/10 text-slate-300 transition" data-lang="de">DE</button>
       </div>
 
-      <section class="rounded-2xl bg-black/30 border border-white/[0.08] focus-within:border-purple-500/50 focus-within:ring-2 focus-within:ring-purple-500/20 transition-all p-3.5 mb-3">
+      <section class="rounded-2xl bg-black/30 border border-white/[0.08] hover:border-white/15 focus-within:border-purple-500/50 focus-within:ring-2 focus-within:ring-purple-500/20 transition-all p-3.5 mb-3 relative group" data-purpose="source-box">
         <textarea id="bc-translate-input" class="w-full min-h-[72px] !bg-transparent border-none outline-none resize-none text-sm !text-slate-100 placeholder-slate-500 bc-translator-scroll leading-relaxed p-0 focus:ring-0" placeholder="Type text here..."></textarea>
         
         <div id="bc-translate-correction-container" class="hidden mt-1 text-xs text-rose-400">
@@ -235,36 +237,73 @@
         </div>
 
         <div class="flex items-center justify-between pt-2 mt-1 border-t border-white/5 text-slate-400 text-xs">
-          <div class="flex items-center space-x-1"></div>
+          <div class="flex items-center space-x-1">
+            <button class="p-1.5 rounded-lg hover:text-white hover:bg-white/10 transition" title="Dengarkan (Listen)" type="button">
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewBox="0 0 24 24"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path></svg>
+            </button>
+            <button class="p-1.5 rounded-lg hover:text-purple-400 hover:bg-white/10 transition" title="Input Suara (Mic)" type="button">
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewBox="0 0 24 24"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"></path><path d="M19 10v2a7 7 0 0 1-14 0v-2"></path><line x1="12" x2="12" y1="19" y2="22"></line></svg>
+            </button>
+          </div>
           <div class="flex items-center space-x-2">
-            <button id="bc-translate-clear" class="p-1 rounded-md hover:bg-white/10 hover:text-rose-400 text-slate-400 transition" title="Clear text">
+            <button id="bc-translate-clear" class="p-1 rounded-md hover:bg-white/10 hover:text-rose-400 text-slate-400 transition" title="Hapus teks (Clear)">
               <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="18" x2="6" y1="6" y2="18"></line><line x1="6" x2="18" y1="6" y2="18"></line></svg>
             </button>
           </div>
         </div>
       </section>
 
-      <section class="rounded-2xl bg-gradient-to-b from-white/[0.06] to-white/[0.02] border border-purple-500/25 shadow-lg shadow-black/20 p-4 transition-all flex flex-col">
+      <section class="rounded-2xl bg-gradient-to-b from-white/[0.06] to-white/[0.02] border border-purple-500/25 shadow-lg shadow-black/20 p-4 transition-all flex flex-col" data-purpose="translation-result">
         <div class="flex items-center justify-between mb-1.5 text-xs">
           <span class="text-[11px] uppercase tracking-wider font-semibold text-purple-400 flex items-center gap-1.5">
-            <span class="w-1.5 h-1.5 rounded-full bg-purple-400"></span> Translation
+            <span class="w-1.5 h-1.5 rounded-full bg-purple-400"></span> Hasil Terjemahan
           </span>
         </div>
         
-        <textarea id="bc-translate-output" class="w-full min-h-[60px] !bg-transparent border-none outline-none resize-none text-xl font-semibold !text-white tracking-tight leading-none placeholder-slate-600 bc-translator-scroll p-0 focus:ring-0" placeholder="Translation will appear here..." readonly></textarea>
+        <textarea id="bc-translate-output" class="w-full min-h-[60px] !bg-transparent border-none outline-none resize-none text-2xl font-semibold !text-white tracking-tight leading-none placeholder-slate-600 bc-translator-scroll p-0 focus:ring-0 py-1" placeholder="Translation will appear here..." readonly></textarea>
         
         <div id="bc-translate-meta" class="mt-2.5 pt-2.5 border-t border-white/5 hidden flex-col gap-1 text-[11px] text-slate-400 font-medium">
             <div id="bc-translate-src-romaji" class="hidden"></div>
             <div id="bc-translate-tgt-romaji" class="hidden"></div>
         </div>
 
-        <div class="flex items-center justify-end mt-3.5 pt-2.5 border-t border-white/5 text-slate-400">
-          <button id="bc-translate-copy" class="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-purple-600 hover:bg-purple-500 text-white border border-purple-400/40 text-xs font-medium transition active:scale-95 shadow-md shadow-purple-600/30">
-            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewBox="0 0 24 24"><rect height="14" rx="2" ry="2" width="14" x="8" y="8"></rect><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"></path></svg>
-            <span id="bc-translate-copy-text">Copy</span>
-          </button>
+        <div class="flex items-center justify-between mt-3.5 pt-2.5 border-t border-white/5 text-slate-400">
+          <div class="flex items-center space-x-1">
+            <button class="p-1.5 rounded-lg hover:text-purple-300 hover:bg-white/10 transition" title="Dengarkan pengucapan (Pronounce)" type="button">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewBox="0 0 24 24"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path><path d="M19.07 4.93a10 10 0 0 1 0 14.14"></path></svg>
+            </button>
+            <button class="p-1.5 rounded-lg hover:text-amber-400 hover:bg-white/10 transition" title="Simpan ke Favorit (Bookmark)" type="button">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
+            </button>
+          </div>
+          <div class="flex items-center space-x-1">
+            <button id="bc-translate-copy" class="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-purple-600 hover:bg-purple-500 text-white border border-purple-400/40 text-xs font-medium transition active:scale-95 shadow-md shadow-purple-600/30">
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewBox="0 0 24 24"><rect height="14" rx="2" ry="2" width="14" x="8" y="8"></rect><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"></path></svg>
+              <span id="bc-translate-copy-text">Salin</span>
+            </button>
+            <button class="p-1.5 rounded-lg hover:text-white hover:bg-white/10 transition" title="Bagikan (Share)" type="button">
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewBox="0 0 24 24"><circle cx="18" cy="5" r="3"></circle><circle cx="6" cy="12" r="3"></circle><circle cx="18" cy="19" r="3"></circle><line x1="8.59" x2="15.42" y1="13.51" y2="17.49"></line><line x1="15.41" x2="8.59" y1="6.51" y2="10.49"></line></svg>
+            </button>
+          </div>
         </div>
       </section>
+
+      <footer class="mt-4 pt-3 border-t border-white/5 flex items-center justify-between text-[11px] text-slate-400" data-purpose="widget-status-footer">
+        <div class="flex items-center gap-1.5 text-slate-400">
+          <span class="inline-block w-1.5 h-1.5 rounded-full bg-purple-400 shadow-sm shadow-purple-400/50 animate-pulse"></span>
+          <span class="text-[11px]">Siap Menerjemahkan</span>
+        </div>
+        <div class="flex items-center space-x-2">
+          <span class="flex items-center gap-0.5">
+            <kbd class="px-1.5 py-0.5 text-[9px] font-semibold bg-white/10 rounded border border-white/10 text-slate-300">⌘</kbd>
+            <kbd class="px-1.5 py-0.5 text-[9px] font-semibold bg-white/10 rounded border border-white/10 text-slate-300">↵</kbd>
+          </span>
+          <span class="text-slate-500">•</span>
+          <span class="flex items-center gap-0.5">
+            <kbd class="px-1.5 py-0.5 text-[9px] font-semibold bg-white/10 rounded border border-white/10 text-slate-300">Esc</kbd>
+          </span>
+        </div>
+      </footer>
   </div>
 </main>`;
 
