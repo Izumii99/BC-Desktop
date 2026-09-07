@@ -6,7 +6,7 @@
 
     let qolConfig = {
         enableEmoticons: true,
-        disableOnWhisper: false,
+        disableOnWhisper: true,
         emoticons: {
             emoHappy: true,
             emoSurprised: true,
