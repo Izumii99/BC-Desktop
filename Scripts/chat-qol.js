@@ -6,6 +6,7 @@
 
     let qolConfig = {
         enableEmoticons: true,
+        disableOnWhisper: false,
         emoticons: {
             emoHappy: true,
             emoSurprised: true,
@@ -481,6 +482,13 @@
     qolBody.appendChild(emoContainer);
     qolBody.appendChild(
         createToggle(
+            "disableOnWhisper",
+            "Disable On Whisper",
+            "Emoticons won't trigger when whispering.",
+        ),
+    );
+    qolBody.appendChild(
+        createToggle(
             "enableLianChatShortcut",
             "Enable LianChat Nav",
             "Use Shift+Tab or Tab to navigate LC menus.",
@@ -602,7 +610,7 @@
                                     "undefined" &&
                                 window.ChatRoomTargetMemberNumber !== null &&
                                 window.ChatRoomTargetMemberNumber !== -1;
-                            if (isWhisper) return;
+                            if (isWhisper && qolConfig.disableOnWhisper) return;
 
                             let chatInput =
                                 document.getElementById("InputChat");
