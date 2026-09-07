@@ -581,7 +581,7 @@
                             typeof window.ChatRoomHideIconState !== "undefined"
                         ) {
                             window.ChatRoomHideIconState =
-                                window.qolSavedIconState;
+                                typeof window.qolSavedIconState !== "undefined" ? window.qolSavedIconState : 1;
                         }
                     };
                     window.ChatRoomLoad.hasQolHook = true;
@@ -675,7 +675,7 @@
                                 // 1. EYES PARSING
                                 if (
                                     qolConfig.emoticons.emoHappy &&
-                                    msg.match(/\^.*\^|\^\^|\^~\^/)
+                                    msg.match(/(^|\s)\^([_^~.-]+)?\^/)
                                 ) {
                                     SetSafeExpression("Eyes", "ShylyHappy");
                                 } else if (
@@ -685,18 +685,18 @@
                                     SetSafeExpression("Eyes", "Surprised");
                                 } else if (
                                     qolConfig.emoticons.emoSurprisedO &&
-                                    msg.match(/o\.o|o_o|oxo/i)
+                                    msg.match(/(^|[\s,])(o\.o|o_o|oxo)(?=$|[\s,?!.])/i)
                                 ) {
                                     SetSafeExpression("Eyes", "Surprised");
                                 } else if (
                                     qolConfig.emoticons.emoCrazy &&
-                                    msg.match(/@.*@/)
+                                    msg.match(/@[_.,~-]*@/)
                                 ) {
                                     SetSafeExpression("Eyes", "Crazy");
                                 } else if (
                                     qolConfig.emoticons.emoDaydream &&
                                     (msg.match(/>[wWv_.,~x3]?<|>\/{2,5}</) ||
-                                        msg.match(/[xX][dDpP3>\]\)]/i) ||
+                                        msg.match(/(^|[\s~*])([xX][dDpP3>\]\)])(?=$|[\s.,?!~*])/i) ||
                                         msg.includes("><"))
                                 ) {
                                     SetSafeExpression("Eyes", "Daydream");
@@ -726,12 +726,12 @@
                                     SetSafeExpression("Eyes", "Dazed");
                                 } else if (
                                     qolConfig.emoticons.emoSad &&
-                                    msg.match(/T[xw_v-]T|TT/)
+                                    msg.match(/(^|[\s*~])(T[xw_v-]T|TT)(?=$|[\s.,?!~*])/)
                                 ) {
                                     SetSafeExpression("Eyes", "Shy");
                                 } else if (
                                     qolConfig.emoticons.emoQwq &&
-                                    msg.match(/qwq/i)
+                                    msg.match(/(^|[\s*~])(qwq)(?=$|[\s.,?!~*])/i)
                                 ) {
                                     SetSafeExpression("Eyes", "Shy");
                                 } else if (
@@ -756,26 +756,26 @@
                                     SetSafeExpression("Mouth", "Sad");
                                 } else if (
                                     (qolConfig.emoticons.emoCat &&
-                                        msg.match(/[x:;]3|[x:;]>|=w=|>w</i)) ||
+                                        msg.match(/(^|[\s*~])([x:;]3|[x:;]>|=w=|>w<)(?=$|[\s.,?!~*])/i)) ||
                                     (qolConfig.emoticons.emoQwq &&
-                                        msg.match(/qwq/i))
+                                        msg.match(/(^|[\s*~])(qwq)(?=$|[\s.,?!~*])/i))
                                 ) {
                                     SetSafeExpression("Mouth", "Happy");
                                 } else if (
                                     qolConfig.emoticons.emoWink &&
-                                    msg.match(/[x:;]p/i)
+                                    msg.match(/(^|[\s*~])([x:;][pP])(?=$|[\s.,?!~*])/i)
                                 ) {
                                     SetSafeExpression("Mouth", "Ahegao");
                                 } else if (
                                     qolConfig.emoticons.emoHappy &&
                                     (msg.match(/\^~?\^|=v=|TwT|>v</i) ||
-                                        msg.match(/[x:;=]\)/i))
+                                        msg.match(/(^|[\s*~])([x:;=]\))(?=$|[\s.,?!~*])/i))
                                 ) {
                                     SetSafeExpression("Mouth", "Smile");
                                 } else if (
                                     qolConfig.emoticons.emoSad &&
                                     (msg.match(/=~=|@~?@|TxT/i) ||
-                                        msg.match(/[x:;=]\(/i) ||
+                                        msg.match(/(^|[\s*~])([x:;=]\()(?=$|[\s.,?!~*])/i) ||
                                         msg.match(/>[.,~_3]>|<[.,~_3]</))
                                 ) {
                                     SetSafeExpression("Mouth", "Frown");
@@ -787,9 +787,9 @@
                                     SetSafeExpression("Mouth", "Pout");
                                 } else if (
                                     (qolConfig.emoticons.emoSurprisedZero &&
-                                        msg.match(/0\.0|0_0|0x0/)) ||
+                                        msg.match(/(^|[\s*~])(0\.0|0_0|0x0)(?=$|[\s.,?!~*])/)) ||
                                     (qolConfig.emoticons.emoSurprisedO &&
-                                        msg.match(/o\.o|o_o|oxo/i))
+                                        msg.match(/(^|[\s*~])(o\.o|o_o|oxo)(?=$|[\s.,?!~*])/i))
                                 ) {
                                     SetSafeExpression("Mouth", "HalfOpen");
                                 }
@@ -797,13 +797,13 @@
                                 // 3. EYEBROWS & TEARS
                                 if (
                                     qolConfig.emoticons.emoAngry &&
-                                    msg.match(/>[:;xX=]|[:;xX=]</)
+                                    msg.match(/(^|[\s*~])(>[:;xX=]|[:;xX=]<)(?=$|[\s.,?!~*])/)
                                 ) {
                                     SetSafeExpression("Eyebrows", "Angry");
                                 } else if (
                                     qolConfig.emoticons.emoSad &&
-                                    (msg.match(/TT|T[xw]T/) ||
-                                        msg.match(/><|T_T/))
+                                    (msg.match(/(^|[\s*~])(TT|T[xw]T)(?=$|[\s.,?!~*])/) ||
+                                        msg.match(/(^|[\s*~])(><|T_T)(?=$|[\s.,?!~*])/))
                                 ) {
                                     SetSafeExpression("Eyebrows", "Sad");
                                 } else if (
@@ -813,16 +813,16 @@
                                     SetSafeExpression("Eyebrows", "Harsh");
                                 } else if (
                                     (qolConfig.emoticons.emoSurprisedZero &&
-                                        msg.match(/0\.0|0_0|0x0/)) ||
+                                        msg.match(/(^|[\s*~])(0\.0|0_0|0x0)(?=$|[\s.,?!~*])/)) ||
                                     (qolConfig.emoticons.emoSurprisedO &&
-                                        msg.match(/o\.o|o_o|oxo/i))
+                                        msg.match(/(^|[\s*~])(o\.o|o_o|oxo)(?=$|[\s.,?!~*])/i))
                                 ) {
                                     SetSafeExpression("Eyebrows", "Raised");
                                 }
                                 if (
                                     qolConfig.emoticons.emoSad &&
-                                    (msg.match(/T[xw_v-]T|TT/) ||
-                                        msg.match(/qwq/i))
+                                    (msg.match(/(^|[\s*~])(T[xw_v-]T|TT)(?=$|[\s.,?!~*])/) ||
+                                        msg.match(/(^|[\s*~])(qwq)(?=$|[\s.,?!~*])/i))
                                 ) {
                                     SetSafeExpression("Fluids", "TearsMedium");
                                 }
