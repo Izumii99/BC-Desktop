@@ -6,7 +6,6 @@
 
     let qolConfig = {
         enableEmoticons: true,
-        enableOnWhisper: false,
         emoticons: {
             emoHappy: true,
             emoSurprised: true,
@@ -482,13 +481,6 @@
     qolBody.appendChild(emoContainer);
     qolBody.appendChild(
         createToggle(
-            "enableOnWhisper",
-            "Active on Whisper",
-            "Allow emoticons to trigger when whispering.",
-        ),
-    );
-    qolBody.appendChild(
-        createToggle(
             "enableLianChatShortcut",
             "Enable LianChat Nav",
             "Use Shift+Tab or Tab to navigate LC menus.",
@@ -604,19 +596,9 @@
                     const doQolLogic = function () {
                         if (!qolConfig.enableEmoticons) return;
                         try {
-                            // Only apply emoticons if whispering is not active (public chat)
                             let chatInput =
                                 document.getElementById("InputChat");
                             let msg = chatInput ? chatInput.value : "";
-
-                            let isWhisper =
-                                (typeof window.ChatRoomTargetMemberNumber !==
-                                    "undefined" &&
-                                window.ChatRoomTargetMemberNumber !== null &&
-                                window.ChatRoomTargetMemberNumber !== -1) ||
-                                msg.trim().startsWith("/w ") ||
-                                msg.trim().startsWith("/whisper ");
-                            if (isWhisper && !qolConfig.enableOnWhisper) return;
                             if (
                                 msg &&
                                 typeof CharacterSetFacialExpression ===
