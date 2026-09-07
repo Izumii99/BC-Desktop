@@ -170,7 +170,7 @@
                                 } else if (msg.match(/qwq/i)) {
                                     SetSafeExpression("Eyes", "Shy");
                                 } else if (
-                                    msg.match(/=[_~^.-]=|>[.,~_3]>|<[.,~_3]</i)
+                                    msg.match(/=[_~^.-]=/i)
                                 ) {
                                     SetSafeExpression("Eyes", "Closed");
                                 }
@@ -185,8 +185,7 @@
                                 } else if (msg.match(/D:/)) {
                                     SetSafeExpression("Mouth", "Sad");
                                 } else if (
-                                    msg.match(/[x:;]3|[x:;]>|=w=|>w<|qwq/i) ||
-                                    msg.match(/>[.,~_]>|<[.,~_]< /)
+                                    msg.match(/[x:;]3|[x:;]>|=w=|>w<|qwq/i)
                                 ) {
                                     SetSafeExpression("Mouth", "Happy");
                                 } else if (msg.match(/[x:;]p/i)) {
@@ -198,7 +197,8 @@
                                     SetSafeExpression("Mouth", "Smile");
                                 } else if (
                                     msg.match(/=~=|@~?@|TxT/i) ||
-                                    msg.match(/[x:;=]\(/i)
+                                    msg.match(/[x:;=]\(/i) ||
+                                    msg.match(/>[.,~_3]>|<[.,~_3]</)
                                 ) {
                                     SetSafeExpression("Mouth", "Frown");
                                 } else if (
@@ -217,7 +217,7 @@
                                 ) {
                                     SetSafeExpression("Eyebrows", "Sad");
                                 } else if (msg.match(/>[.,~_3]>|<[.,~_3]</)) {
-                                    SetSafeExpression("Eyebrows", "Lowered");
+                                    SetSafeExpression("Eyebrows", "Harsh");
                                 }
                                 if (
                                     msg.match(/T[xw_v-]T|TT/) ||
