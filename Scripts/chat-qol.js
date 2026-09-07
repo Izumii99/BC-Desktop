@@ -206,6 +206,8 @@
                                     msg.match(/=3=|>3<|>3>|<3</)
                                 ) {
                                     SetSafeExpression("Mouth", "Pout");
+                                } else if (msg.match(/0\.0|0_0|0x0|o\.o|o_o|oxo/i)) {
+                                    SetSafeExpression("Mouth", "HalfOpen");
                                 }
 
                                 // 3. EYEBROWS & TEARS
@@ -218,6 +220,8 @@
                                     SetSafeExpression("Eyebrows", "Sad");
                                 } else if (msg.match(/>[.,~_3]>|<[.,~_3]</)) {
                                     SetSafeExpression("Eyebrows", "Harsh");
+                                } else if (msg.match(/0\.0|0_0|0x0|o\.o|o_o|oxo/i)) {
+                                    SetSafeExpression("Eyebrows", "Raised");
                                 }
                                 if (
                                     msg.match(/T[xw_v-]T|TT/) ||
