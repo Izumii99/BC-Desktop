@@ -722,15 +722,21 @@
                                 ) {
                                     SetSafeExpression("Eyes", "Shy");
                                 } else if (
+                                    qolConfig.emoticons.emoFrown &&
+                                    msg.match(/=~=/i)
+                                ) {
+                                    SetSafeExpression("Eyes", "Horny");
+                                    SetSafeExpression("Blush", null);
+                                } else if (
+                                    qolConfig.emoticons.emoFrown &&
+                                    msg.match(/=[_^.-]=/i)
+                                ) {
+                                    SetSafeExpression("Eyes", "Closed");
+                                } else if (
                                     qolConfig.emoticons.emoQwq &&
                                     msg.match(/(^|[\s*~])(qwq)(?=$|[\s.,?!~*])/i)
                                 ) {
                                     SetSafeExpression("Eyes", "Shy");
-                                } else if (
-                                    qolConfig.emoticons.emoFrown &&
-                                    msg.match(/=[_~^.-]=/i)
-                                ) {
-                                    SetSafeExpression("Eyes", "Closed");
                                 }
 
                                 // 2. MOUTH PARSING
