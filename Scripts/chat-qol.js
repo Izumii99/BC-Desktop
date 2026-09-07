@@ -6,7 +6,7 @@
 
     let qolConfig = {
         enableEmoticons: true,
-        disableOnWhisper: true,
+        enableOnWhisper: false,
         emoticons: {
             emoHappy: true,
             emoSurprised: true,
@@ -482,9 +482,9 @@
     qolBody.appendChild(emoContainer);
     qolBody.appendChild(
         createToggle(
-            "disableOnWhisper",
-            "Disable On Whisper",
-            "Emoticons won't trigger when whispering.",
+            "enableOnWhisper",
+            "Active on Whisper",
+            "Allow emoticons to trigger when whispering.",
         ),
     );
     qolBody.appendChild(
@@ -610,7 +610,7 @@
                                     "undefined" &&
                                 window.ChatRoomTargetMemberNumber !== null &&
                                 window.ChatRoomTargetMemberNumber !== -1;
-                            if (isWhisper && qolConfig.disableOnWhisper) return;
+                            if (isWhisper && !qolConfig.enableOnWhisper) return;
 
                             let chatInput =
                                 document.getElementById("InputChat");
