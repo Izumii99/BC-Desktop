@@ -57,12 +57,13 @@
                 .bc-translator-scroll::-webkit-scrollbar-track { background: transparent; }
                 .bc-translator-scroll::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 4px; }
 
-                /* Prevent Tailwind CDN preflight (like line-height: inherit) from leaking to game inputs */
+                /* Prevent Tailwind CDN preflight from leaking to game inputs */
                 input:not(#translate-root *), 
                 textarea:not(#translate-root *), 
                 select:not(#translate-root *), 
                 button:not(#translate-root *) {
                     line-height: normal !important;
+                    font-family: Arial, sans-serif !important;
                 }
 
                 /* Dedicated class for widget textareas — does not touch BC game styles */
