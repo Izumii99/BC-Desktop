@@ -453,8 +453,8 @@
     emoSubList.appendChild(
         createToggle(
             null,
-            "Blushing Slashes",
-            "//, ///, ////",
+            "Blush / Shy Face",
+            "//, ///, >///>, <///<",
             true,
             "emoBlush",
         ),
@@ -693,9 +693,14 @@
                                 ) {
                                     SetSafeExpression("Eyes", "Daydream");
                                 } else if (
+                                    qolConfig.emoticons.emoBlush &&
+                                    msg.match(/(>|<)\/{2,5}(>|<)/)
+                                ) {
+                                    SetSafeExpression("Eyes", "Shy");
+                                } else if (
                                     qolConfig.emoticons.emoHorny &&
                                     msg.match(
-                                        /(^|\s)==(\s|$)|=[wvxdp3]=|=\/{2,5}=/i,
+                                        /(^|[\s*~])([xX][qQ]|[xX]_[xX]|[oO]_[oO]|@_@)(?=$|[\s.,?!~*])/i,
                                     )
                                 ) {
                                     SetSafeExpression("Eyes", "Horny");
@@ -741,6 +746,11 @@
 
                                 // 2. MOUTH PARSING
                                 if (
+                                    qolConfig.emoticons.emoBlush &&
+                                    msg.match(/(>|<)\/{2,5}(>|<)/)
+                                ) {
+                                    SetSafeExpression("Mouth", null);
+                                } else if (
                                     qolConfig.emoticons.emoHappy &&
                                     msg.match(
                                         /(^|\s|[.,~])[x:;]D(?=$|\s|[.,?!~;*)"\]])/i,
@@ -793,6 +803,11 @@
 
                                 // 3. EYEBROWS & TEARS
                                 if (
+                                    qolConfig.emoticons.emoBlush &&
+                                    msg.match(/(>|<)\/{2,5}(>|<)/)
+                                ) {
+                                    SetSafeExpression("Eyebrows", "Lowered");
+                                } else if (
                                     qolConfig.emoticons.emoAngry &&
                                     msg.match(/(^|[\s*~])(>[:;xX=]|[:;xX=]<)(?=$|[\s.,?!~*])/)
                                 ) {
