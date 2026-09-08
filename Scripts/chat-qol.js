@@ -28,6 +28,7 @@
         enableScrollShortcut: true,
         forceUngarbled: true,
         persistIconState: true,
+        smartClosedEyes: true,
     };
     try {
         const saved = localStorage.getItem("BCDesktop_ChatQoL_Config");
@@ -502,8 +503,15 @@
     );
     qolBody.appendChild(
         createToggle(
+            "smartClosedEyes",
+            "Smart Closed Eyes",
+            "See everyone while your eyes are closed (bypasses expression blindness).",
+        ),
+    );
+    qolBody.appendChild(
+        createToggle(
             "enableScrollShortcut",
-            "Enable Scroll to Bottom",
+            "Enable Quick Scroll to Bottom",
             "Use Ctrl + Space to quick scroll chat.",
         ),
     );
@@ -916,9 +924,10 @@
                         }
                     };
 
+                    let modApi = null;
                     if (typeof window.bcModSdk !== "undefined") {
                         try {
-                            const modApi = window.bcModSdk.registerMod({
+                            modApi = window.bcModSdk.registerMod({
                                 name: "BCDesktop_ChatQoL",
                                 fullName: "Chat QoL & Emoticons",
                                 version: "1.0.0",
@@ -943,16 +952,63 @@
                             return origChatRoomSendChat.apply(this, arguments);
                         };
                     }
-                }
 
-                // Update saved state when user manually clicks the eye icon
-                if (
-                    typeof CurrentScreen !== "undefined" &&
-                    CurrentScreen === "ChatRoom" &&
-                    typeof window.ChatRoomHideIconState !== "undefined"
-                ) {
-                    if (qolConfig.persistIconState) {
-                        window.qolSavedIconState = window.ChatRoomHideIconState;
+                    // Update saved state when user manually clicks the eye icon
+                    if (
+                        typeof CurrentScreen !== "undefined" &&
+                        CurrentScreen === "ChatRoom" &&
+                        typeof window.ChatRoomHideIconState !== "undefined"
+                    ) {
+                        if (qolConfig.persistIconState) {
+                            window.qolSavedIconState = window.ChatRoomHideIconState;
+                        }
+                    }
+
+                    // Smart Closed Eyes Logic
+                    if (!window.smartClosedEyesHooked) {
+                        window.smartClosedEyesHooked = true;
+                        
+                        const sceWrapper = (args, next) => {
+                            let shouldBypass = false;
+                            if (qolConfig.smartClosedEyes && typeof Player !== "undefined" && typeof Player.GetBlindLevel === "function") {
+                                const hasBlindItem = Player.Effect && (Player.Effect.includes("BlindHeavy") || Player.Effect.includes("BlindNormal") || Player.Effect.includes("BlindLight"));
+                                if (!hasBlindItem && Player.GetBlindLevel() > 0) {
+                                    shouldBypass = true;
+                                }
+                            }
+                            
+                            let origGetBlindLevel = null;
+                            if (shouldBypass) {
+                                origGetBlindLevel = Player.GetBlindLevel;
+                                Player.GetBlindLevel = function() { return 0; };
+                            }
+                            
+                            try {
+                                return next ? next(args) : args.origFn.apply(args.ctx, args.args);
+                            } finally {
+                                if (shouldBypass && origGetBlindLevel) {
+                                    Player.GetBlindLevel = origGetBlindLevel;
+                                }
+                            }
+                        };
+
+                        if (modApi) {
+                            modApi.hookFunction("ChatRoomUpdateDisplay", 0, sceWrapper);
+                            modApi.hookFunction("ChatRoomClick", 0, sceWrapper);
+                            if (typeof window.ChatRoomSync === "function") modApi.hookFunction("ChatRoomSync", 0, sceWrapper);
+                        } else {
+                            const hookManual = (fnName) => {
+                                if (typeof window[fnName] === "function") {
+                                    const orig = window[fnName];
+                                    window[fnName] = function() {
+                                        return sceWrapper({ origFn: orig, ctx: this, args: arguments });
+                                    };
+                                }
+                            };
+                            hookManual("ChatRoomUpdateDisplay");
+                            hookManual("ChatRoomClick");
+                            hookManual("ChatRoomSync");
+                        }
                     }
                 }
             }
