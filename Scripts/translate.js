@@ -6,15 +6,12 @@
         if (document.getElementById("bc-google-translate-btn")) return;
 
         if (!document.getElementById("tailwind-script")) {
-            const script = document.createElement("script");
-            script.id = "tailwind-script";
-            script.src = "https://cdn.tailwindcss.com?plugins=forms,container-queries";
-            document.head.appendChild(script);
-
             const configScript = document.createElement("script");
             configScript.innerHTML = `
                 window.tailwind = window.tailwind || {};
                 window.tailwind.config = {
+                  corePlugins: { preflight: false },
+                  important: '#translate-root',
                   theme: {
                     extend: {
                       colors: {
@@ -38,6 +35,11 @@
                 };
             `;
             document.head.appendChild(configScript);
+
+            const script = document.createElement("script");
+            script.id = "tailwind-script";
+            script.src = "https://cdn.tailwindcss.com";
+            document.head.appendChild(script);
         }
 
         if (!document.getElementById("translate-glassmorphic-styles")) {
@@ -55,6 +57,14 @@
                 .bc-translator-scroll::-webkit-scrollbar-track { background: transparent; }
                 .bc-translator-scroll::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 4px; }
 
+                /* Prevent Tailwind CDN preflight (like line-height: inherit) from leaking to game inputs */
+                input:not(#translate-root *), 
+                textarea:not(#translate-root *), 
+                select:not(#translate-root *), 
+                button:not(#translate-root *) {
+                    line-height: normal !important;
+                }
+
                 /* Dedicated class for widget textareas — does not touch BC game styles */
                 html body #translate-widget-container .bc-widget-textarea {
                     background: transparent !important;
@@ -64,6 +74,7 @@
                     box-shadow: none !important;
                     resize: none !important;
                     font-family: ui-sans-serif, system-ui, sans-serif !important;
+                    color: #e2e8f0 !important;
                 }
                 html body #translate-widget-container .bc-widget-textarea::placeholder {
                     opacity: 1 !important;
@@ -152,15 +163,11 @@
         btn.id = "bc-google-translate-btn";
         btn.setAttribute("aria-label", "Google Translate Floating Widget");
         btn.className = "w-12 h-12 rounded-2xl bg-gradient-to-br from-purple-600 via-indigo-600 to-purple-800 text-white flex items-center justify-center shadow-glow-purple border border-purple-400/40 hover:scale-105 active:scale-95 transition-all duration-200";
-        btn.style.position = "fixed";
-        btn.style.top = "10px";
-        btn.style.left = "10px";
-        btn.style.zIndex = "999999";
+        btn.style.cssText = "position:fixed;top:10px;left:10px;z-index:999999";
         btn.innerHTML = `
         <svg class="w-6 h-6 drop-shadow" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path d="M3 5h12M9 3v2m1.048 9.5A18.022 18.022 0 016.412 9m6.088 9h7M11 21l5-10 5 10M12.751 5C11.783 10.77 8.07 15.61 3 18.129" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
         </svg>`;
-
         const popup = document.createElement("div");
         popup.id = "translate-widget-container";
         popup.style.position = "fixed";
@@ -229,9 +236,8 @@
             <div>
                 <div class="flex items-center space-x-2">
                     <h1 class="text-[15px] font-semibold tracking-tight text-white m-0">Google Translate</h1>
-                    <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-purple-900/60 text-purple-300 border border-purple-500/40 tracking-wider uppercase">Pro AI</span>
+                    <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-purple-900/60 text-purple-300 border border-purple-500/40 tracking-wider uppercase">UwU</span>
                 </div>
-                <p class="text-[11px] text-[#787c94] font-medium tracking-normal mt-0.5 mb-0">Deep Neural Engine v4.2</p>
             </div>
         </div>
         <div class="flex items-center space-x-2.5 text-zinc-400 pr-1 cursor-default">
@@ -288,12 +294,10 @@
 
         <!-- Quick presets -->
         <nav aria-label="Quick languages" class="flex items-center space-x-1.5 px-0.5 text-xs">
-            <span class="text-[10px] font-bold tracking-wider text-[#5f637b] mr-1">CEPAT:</span>
+            <span class="text-[10px] font-bold tracking-wider text-[#5f637b] mr-1">QUICK:</span>
             <button class="bc-quick-lang px-2.5 py-0.5 rounded-md bg-[#212335] text-slate-300 text-[11px] font-medium hover:bg-purple-900/40 hover:text-purple-300 border border-white/5 transition-all" data-lang="en" type="button">EN</button>
-            <button class="bc-quick-lang px-2.5 py-0.5 rounded-md bg-[#212335] text-slate-300 text-[11px] font-medium hover:bg-purple-900/40 hover:text-purple-300 border border-white/5 transition-all" data-lang="ja" type="button">JP</button>
-            <button class="bc-quick-lang px-2.5 py-0.5 rounded-md bg-[#212335] text-slate-300 text-[11px] font-medium hover:bg-purple-900/40 hover:text-purple-300 border border-white/5 transition-all" data-lang="es" type="button">ES</button>
-            <button class="bc-quick-lang px-2.5 py-0.5 rounded-md bg-[#212335] text-slate-300 text-[11px] font-medium hover:bg-purple-900/40 hover:text-purple-300 border border-white/5 transition-all" data-lang="fr" type="button">FR</button>
-            <button class="bc-quick-lang px-2.5 py-0.5 rounded-md bg-[#212335] text-slate-300 text-[11px] font-medium hover:bg-purple-900/40 hover:text-purple-300 border border-white/5 transition-all" data-lang="de" type="button">DE</button>
+            <button class="bc-quick-lang px-2.5 py-0.5 rounded-md bg-[#212335] text-slate-300 text-[11px] font-medium hover:bg-purple-900/40 hover:text-purple-300 border border-white/5 transition-all" data-lang="id" type="button">IND</button>
+            <button class="bc-quick-lang px-2.5 py-0.5 rounded-md bg-[#212335] text-slate-300 text-[11px] font-medium hover:bg-purple-900/40 hover:text-purple-300 border border-white/5 transition-all" data-lang="zh-CN" type="button">CN</button>
         </nav>
 
         <!-- Source input -->
@@ -304,15 +308,7 @@
                 Did you mean: <span id="bc-translate-correction" class="bc-spell-error"></span>
             </div>
 
-            <div class="flex items-center justify-between pt-2 border-t border-white/[0.04] text-zinc-400 mt-auto">
-                <div class="flex items-center space-x-3">
-                    <button aria-label="Listen source text" class="hover:text-purple-400 transition-colors" type="button">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M15.536 8.464a5 5 0 010 7.072M18.364 5.636a9 9 0 010 12.728M11 5L6 9H2v6h4l5 4V5z" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"></path></svg>
-                    </button>
-                    <button aria-label="Voice input" class="hover:text-purple-400 transition-colors" type="button">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"></path></svg>
-                    </button>
-                </div>
+            <div class="flex items-center justify-end pt-2 border-t border-white/[0.04] text-zinc-400 mt-auto">
                 <button aria-label="Clear text" class="hover:text-white transition-colors" id="clear-input" type="button">
                     <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" viewBox="0 0 24 24"><line x1="18" x2="6" y1="6" y2="18"></line><line x1="6" x2="18" y1="6" y2="18"></line></svg>
                 </button>
@@ -324,7 +320,7 @@
             <div>
                 <div class="flex items-center space-x-1.5 text-[10px] font-bold text-purple-400 tracking-wider mb-2 uppercase">
                     <span class="w-1.5 h-1.5 rounded-full bg-purple-500"></span>
-                    <span>HASIL TERJEMAHAN</span>
+                    <span>TRANSLATION</span>
                 </div>
                 <textarea id="translation-text" class="bc-widget-textarea bc-output-muted w-full font-medium text-[15px] leading-snug bc-translator-scroll p-0" rows="3" readonly placeholder="Translation will appear here..."></textarea>
                 <div id="bc-translate-meta" class="hidden flex-col gap-1 text-[11px] text-[#71768e] font-medium mt-1">
@@ -333,31 +329,22 @@
                 </div>
             </div>
             
-            <div class="flex items-center justify-between pt-3 border-t border-white/[0.04] mt-2">
-                <div class="flex items-center space-x-3 text-zinc-400">
-                    <button aria-label="Listen translation" class="hover:text-purple-400 transition-colors" type="button">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M15.536 8.464a5 5 0 010 7.072M18.364 5.636a9 9 0 010 12.728M11 5L6 9H2v6h4l5 4V5z" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"></path></svg>
-                    </button>
-                    <button aria-label="Save translation" class="hover:text-amber-400 transition-colors" id="star-btn" type="button">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"></path></svg>
-                    </button>
-                </div>
-                <div class="flex items-center space-x-2">
-                    <button class="flex items-center space-x-1.5 bg-gradient-to-r from-purple-600 via-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-medium text-xs py-1.5 px-3.5 rounded-xl shadow-[0_0_15px_rgba(147,51,234,0.4)] active:scale-95 transition-all" id="copy-translation-btn" type="button">
-                        <svg class="w-3.5 h-3.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path></svg>
-                        <span id="copy-text-span">Salin</span>
-                    </button>
-                    <button aria-label="Share translation" class="text-zinc-400 hover:text-white p-1 transition-colors" type="button">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"></path></svg>
-                    </button>
-                </div>
+            <div class="flex items-center justify-end pt-3 border-t border-white/[0.04] mt-2">
+                <button class="flex items-center space-x-1.5 bg-gradient-to-r from-purple-600 via-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-medium text-xs py-1.5 px-3.5 rounded-xl shadow-[0_0_15px_rgba(147,51,234,0.4)] active:scale-95 transition-all" id="copy-translation-btn" type="button">
+                    <svg class="w-3.5 h-3.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path></svg>
+                    <span id="copy-text-span">Copy</span>
+                </button>
             </div>
         </section>
     </div>
 </main>`;
 
-        document.body.appendChild(btn);
-        document.body.appendChild(popup);
+        const root = document.createElement("div");
+        root.id = "translate-root";
+        root.style.cssText = "position:fixed;top:0;left:0;width:0;height:0;overflow:visible;z-index:999990";
+        root.appendChild(btn);
+        root.appendChild(popup);
+        document.body.appendChild(root);
 
         // --- State ---
         let sourceLangValue = "auto";
@@ -384,7 +371,6 @@
         const metaDiv         = document.getElementById("bc-translate-meta");
         const srcRomaji       = document.getElementById("bc-translate-src-romaji");
         const tgtRomaji       = document.getElementById("bc-translate-tgt-romaji");
-        const starBtn         = document.getElementById("star-btn");
 
         // --- Custom dropdown logic ---
         function getLangLabel(langs, value) {
@@ -473,7 +459,7 @@
                   <svg class="w-3.5 h-3.5 text-emerald-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7" />
                   </svg>
-                  <span class="text-emerald-200">Tersalin</span>
+                  <span class="text-emerald-200">Copied!</span>
                 `;
                 setTimeout(() => { copyBtn.innerHTML = originalHtml; }, 1500);
             } catch (err) {
@@ -481,11 +467,6 @@
             }
         };
 
-        // --- Star ---
-        starBtn.onclick = () => {
-            starBtn.classList.toggle('text-amber-400');
-            starBtn.classList.toggle('fill-amber-400');
-        };
 
         // --- Quick lang presets ---
         const quickLangBtns = document.querySelectorAll(".bc-quick-lang");
@@ -514,44 +495,64 @@
             srcRomaji.classList.add("hidden");
             tgtRomaji.classList.add("hidden");
 
+            const sl = sourceLangValue;
+            const tl = targetLangValue;
+            const q  = encodeURIComponent(text);
+
+            const tryGoogle = async (base) => {
+                const r = await fetch(`${base}/translate_a/single?client=gtx&sl=${sl}&tl=${tl}&dt=t&q=${q}`);
+                if (!r.ok) throw new Error(`HTTP ${r.status}`);
+                return r.json();
+            };
+
+            const tryGoogleDict = async () => {
+                // Chrome dict endpoint — different CORS policy than gtx
+                const r = await fetch(`https://clients5.google.com/translate_a/t?client=dict-chrome-ex&sl=${sl}&tl=${tl}&dt=t&q=${q}`);
+                if (!r.ok) throw new Error(`HTTP ${r.status}`);
+                const d = await r.json();
+                // dict endpoint returns { sentences: [{trans, orig}] }
+                if (d.sentences) return d.sentences.map(s => s.trans || "").join("");
+                throw new Error("dict: unexpected format");
+            };
+
+            const tryMyMemory = async () => {
+                // Pass sl as-is ("auto" is accepted by MyMemory for auto-detection)
+                const r = await fetch(`https://api.mymemory.translated.net/get?q=${q}&langpair=${sl}|${tl}`);
+                if (!r.ok) throw new Error(`HTTP ${r.status}`);
+                const mm = await r.json();
+                if (mm.responseStatus !== 200) throw new Error("MyMemory: " + mm.responseStatus);
+                return mm.responseData.translatedText;
+            };
+
             try {
-                const sl = sourceLangValue;
-                const tl = targetLangValue;
-                const res = await fetch(
-                    `https://translate.googleapis.com/translate_a/single?client=gtx&sl=${sl}&tl=${tl}&dt=t&dt=sp&dt=qc&dt=rm&q=${encodeURIComponent(text)}`
-                );
-                const data = await res.json();
                 let translated = "";
-                let sourceR = "";
-                let targetR = "";
-                if (data && data[0]) {
-                    data[0].forEach((item) => {
-                        if (item[0]) translated += item[0];
-                        if (item[0] === null) {
-                            if (item[2]) targetR = item[2];
-                            if (item[3]) sourceR = item[3];
-                        }
-                    });
+
+                // Try Google first (2 gtx endpoints + dict endpoint), fall back to MyMemory
+                let googleData = null;
+                try { googleData = await tryGoogle("https://translate.googleapis.com"); } catch (_) {}
+                if (!googleData) {
+                    try { googleData = await tryGoogle("https://translate.google.com"); } catch (_) {}
                 }
 
-                if (sourceR || targetR) {
-                    metaDiv.classList.remove("hidden");
-                    metaDiv.style.display = "flex";
-                    if (sourceR) { srcRomaji.innerText = "Source: " + sourceR; srcRomaji.classList.remove("hidden"); }
-                    if (targetR) { tgtRomaji.innerText = "Result: " + targetR; tgtRomaji.classList.remove("hidden"); }
-                }
-
-                const spellCorrection = data && data[7] && data[7][1] ? data[7][1] : null;
-                if (spellCorrection) {
-                    correctionContainer.classList.remove("hidden");
-                    correctionBtn.innerText = spellCorrection;
+                if (googleData && googleData[0]) {
+                    googleData[0].forEach(item => { if (item[0]) translated += item[0]; });
+                    const spell = googleData[7]?.[1] ?? null;
+                    if (spell) { correctionContainer.classList.remove("hidden"); correctionBtn.innerText = spell; }
+                    else { correctionContainer.classList.add("hidden"); }
                 } else {
+                    // Try Chrome dict endpoint
+                    try { translated = await tryGoogleDict(); } catch (_) {}
+                    if (!translated) {
+                        // Final fallback: MyMemory
+                        translated = await tryMyMemory();
+                    }
                     correctionContainer.classList.add("hidden");
                 }
 
-                outputArea.value = translated;
+                outputArea.value = translated || "(empty)";
             } catch (err) {
-                outputArea.value = "Error: Failed to translate.";
+                outputArea.value = "Error: " + (err.message || "Failed to translate.");
+                console.error("[translate]", err);
             }
         };
 
