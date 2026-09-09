@@ -501,7 +501,7 @@
             const q  = encodeURIComponent(text);
 
             const tryGoogle = async (base) => {
-                const r = await fetch(`${base}/translate_a/single?client=gtx&sl=${sl}&tl=${tl}&dt=t&q=${q}`);
+                const r = await fetch(`${base}/translate_a/single?client=gtx&sl=${sl}&tl=${tl}&dt=t&dt=sp&q=${q}`);
                 if (!r.ok) throw new Error(`HTTP ${r.status}`);
                 return r.json();
             };

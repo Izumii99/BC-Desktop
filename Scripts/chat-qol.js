@@ -708,10 +708,20 @@
                                 } else if (
                                     qolConfig.emoticons.emoHorny &&
                                     msg.match(
-                                        /(^|[\s*~])([xX][qQ]|[xX]_[xX]|[oO]_[oO]|@_@)(?=$|[\s.,?!~*])/i,
+                                        /(^|[\s*~])([xX][qQ]|[xX]_[xX]|[oO]_[oO]|@_@|={2,}|=\[_\]=)(?=$|[\s.,?!~*])/i,
                                     )
                                 ) {
                                     SetSafeExpression("Eyes", "Horny");
+                                } else if (
+                                    qolConfig.emoticons.emoCat &&
+                                    msg.match(/(^|[\s*~])(=w=|>w<)(?=$|[\s.,?!~*])/i)
+                                ) {
+                                    SetSafeExpression("Eyes", "ShylyHappy");
+                                } else if (
+                                    qolConfig.emoticons.emoVSmile &&
+                                    msg.match(/(^|[\s*~])(=v=|>v<)(?=$|[\s.,?!~*])/i)
+                                ) {
+                                    SetSafeExpression("Eyes", "ShylyHappy");
                                 } else if (
                                     qolConfig.emoticons.emoWink &&
                                     (msg.match(/;[p3>d\])(|]/i) ||
