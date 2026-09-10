@@ -7,14 +7,21 @@
     let qolConfig = {
         enableEmoticons: true,
         emoticons: {
+            emoCat: true,
+            emoVSmile: true,
             emoHappy: true,
-            emoSurprised: true,
+            emoLaugh: true,
+            emoSmile: true,
+            emoSurprisedZero: true,
+            emoSurprisedO: true,
             emoCrazy: true,
             emoDaydream: true,
             emoHorny: true,
             emoWink: true,
             emoDazed: true,
             emoSad: true,
+            emoQwq: true,
+            emoFrown: true,
             emoPout: true,
             emoAngry: true,
             emoBlush: true,
@@ -757,6 +764,11 @@
                                     SetSafeExpression("Blush", null);
                                 } else if (
                                     qolConfig.emoticons.emoFrown &&
+                                    msg.match(/D:/)
+                                ) {
+                                    SetSafeExpression("Eyes", "Dazed");
+                                } else if (
+                                    qolConfig.emoticons.emoFrown &&
                                     msg.match(/=[_^.-]=/i)
                                 ) {
                                     SetSafeExpression("Eyes", "Closed");
@@ -774,7 +786,7 @@
                                 ) {
                                     SetSafeExpression("Mouth", null);
                                 } else if (
-                                    qolConfig.emoticons.emoHappy &&
+                                    qolConfig.emoticons.emoLaugh &&
                                     msg.match(
                                         /(^|\s|[.,~])[x:;]D(?=$|\s|[.,?!~;*)"\]])/i,
                                     )
@@ -782,7 +794,12 @@
                                     SetSafeExpression("Mouth", "Laughing");
                                 } else if (
                                     qolConfig.emoticons.emoFrown &&
-                                    (msg.match(/D:/) || msg.match(/=[_~^.-]=/i) || msg.match(/=~=/i) || msg.match(/(^|[\s*~])([x:;=]\()(?=$|[\s.,?!~*])/i))
+                                    msg.match(/D:/)
+                                ) {
+                                    SetSafeExpression("Mouth", "Sad");
+                                } else if (
+                                    qolConfig.emoticons.emoFrown &&
+                                    (msg.match(/=[_~^.-]=/i) || msg.match(/=~=/i) || msg.match(/(^|[\s*~])([x:;=]\()(?=$|[\s.,?!~*])/i))
                                 ) {
                                     SetSafeExpression("Mouth", "Frown");
                                 } else if (
@@ -798,9 +815,8 @@
                                 ) {
                                     SetSafeExpression("Mouth", "Ahegao");
                                 } else if (
-                                    qolConfig.emoticons.emoHappy &&
-                                    (msg.match(/\^~?\^|TwT|>v</i) ||
-                                        msg.match(/(^|[\s*~])([x:;=]\))(?=$|[\s.,?!~*])/i))
+                                    (qolConfig.emoticons.emoHappy && msg.match(/\^~?\^|TwT|>v</i)) ||
+                                    (qolConfig.emoticons.emoSmile && msg.match(/(^|[\s*~])([x:;=]\))(?=$|[\s.,?!~*])/i))
                                 ) {
                                     SetSafeExpression("Mouth", "Smile");
                                 } else if (
