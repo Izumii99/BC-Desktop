@@ -8,7 +8,10 @@
         enableEmoticons: true,
         emoticons: {
             emoCat: true,
+            emoCatW: true,
+            emoCatWClosed: true,
             emoVSmile: true,
+            emoVSmileClosed: true,
             emoHappy: true,
             emoLaugh: true,
             emoSmile: true,
@@ -41,13 +44,12 @@
         const saved = localStorage.getItem("BCDesktop_ChatQoL_Config");
         if (saved) {
             let parsed = JSON.parse(saved);
+            const defaultEmo = qolConfig.emoticons;
             qolConfig = Object.assign(qolConfig, parsed);
-            if (parsed.emoticons) {
-                qolConfig.emoticons = Object.assign(
-                    qolConfig.emoticons,
-                    parsed.emoticons,
-                );
-            }
+            qolConfig.emoticons = Object.assign(
+                defaultEmo,
+                parsed.emoticons || {}
+            );
         }
     } catch (e) {}
 
@@ -378,10 +380,19 @@
     };
 
     emoSubList.appendChild(
-        createToggle(null, "Cat Face", ":3, ;3, =w=, >w<", true, "emoCat"),
+        createToggle(null, "Cat Face (Open)", ":3, ;3, :>", true, "emoCat"),
     );
     emoSubList.appendChild(
-        createToggle(null, "V-Smile", "=v=, >v<", true, "emoVSmile"),
+        createToggle(null, "Cat Face (Horny)", "=w=, >w>, <w<, =////=", true, "emoCatW"),
+    );
+    emoSubList.appendChild(
+        createToggle(null, "Cat Face (Shy)", ">w<", true, "emoCatWClosed")
+    );
+    emoSubList.appendChild(
+        createToggle(null, "V-Smile", "=v=, >v>, <v<", true, "emoVSmile"),
+    );
+    emoSubList.appendChild(
+        createToggle(null, "V-Smile (Shy)", ">v<", true, "emoVSmileClosed")
     );
     emoSubList.appendChild(
         createToggle(null, "Happy / Smile", "^_^, ^^, ^~^", true, "emoHappy"),
@@ -720,17 +731,17 @@
                                 ) {
                                     SetSafeExpression("Eyes", "Horny");
                                 } else if (
-                                    (qolConfig.emoticons.emoCat && msg.match(/(^|[\s*~])(=w=)(?=$|[\s.,?!~*])/i)) ||
-                                    (qolConfig.emoticons.emoVSmile && msg.match(/(^|[\s*~])(=v=)(?=$|[\s.,?!~*])/i))
+                                    (qolConfig.emoticons.emoCatW && msg.match(/(^|[\s*~])(=w=|>w>|<w<|=\/{2,5}=)(?=$|[\s.,?!~*])/i)) ||
+                                    (qolConfig.emoticons.emoVSmile && msg.match(/(^|[\s*~])(=v=|>v>|<v<)(?=$|[\s.,?!~*])/i))
                                 ) {
                                     SetSafeExpression("Eyes", "Horny");
                                 } else if (
-                                    qolConfig.emoticons.emoCat &&
+                                    qolConfig.emoticons.emoCatWClosed &&
                                     msg.match(/(^|[\s*~])(>w<)(?=$|[\s.,?!~*])/i)
                                 ) {
                                     SetSafeExpression("Eyes", "ShylyHappy");
                                 } else if (
-                                    qolConfig.emoticons.emoVSmile &&
+                                    qolConfig.emoticons.emoVSmileClosed &&
                                     msg.match(/(^|[\s*~])(>v<)(?=$|[\s.,?!~*])/i)
                                 ) {
                                     SetSafeExpression("Eyes", "ShylyHappy");
@@ -803,8 +814,9 @@
                                 ) {
                                     SetSafeExpression("Mouth", "Frown");
                                 } else if (
-                                    (qolConfig.emoticons.emoCat &&
-                                        msg.match(/(^|[\s*~])([x:;]3|[x:;]>|=w=|>w<)(?=$|[\s.,?!~*])/i)) ||
+                                    (qolConfig.emoticons.emoCat && msg.match(/(^|[\s*~])([x:;]3|[x:;]>)(?=$|[\s.,?!~*])/i)) ||
+                                    (qolConfig.emoticons.emoCatW && msg.match(/(^|[\s*~])(=w=|>w>|<w<)(?=$|[\s.,?!~*])/i)) ||
+                                    (qolConfig.emoticons.emoCatWClosed && msg.match(/(^|[\s*~])(>w<)(?=$|[\s.,?!~*])/i)) ||
                                     (qolConfig.emoticons.emoQwq &&
                                         msg.match(/(^|[\s*~])(qwq)(?=$|[\s.,?!~*])/i))
                                 ) {
@@ -815,13 +827,14 @@
                                 ) {
                                     SetSafeExpression("Mouth", "Ahegao");
                                 } else if (
-                                    (qolConfig.emoticons.emoHappy && msg.match(/\^~?\^|TwT|>v</i)) ||
+                                    (qolConfig.emoticons.emoHappy && msg.match(/\^~?\^|TwT/i)) ||
+                                    (qolConfig.emoticons.emoVSmileClosed && msg.match(/(^|[\s*~])(>v<)(?=$|[\s.,?!~*])/i)) ||
                                     (qolConfig.emoticons.emoSmile && msg.match(/(^|[\s*~])([x:;=]\))(?=$|[\s.,?!~*])/i))
                                 ) {
                                     SetSafeExpression("Mouth", "Smile");
                                 } else if (
                                     qolConfig.emoticons.emoVSmile &&
-                                    msg.match(/(^|[\s*~])(=v=)(?=$|[\s.,?!~*])/i)
+                                    msg.match(/(^|[\s*~])(=v=|>v>|<v<)(?=$|[\s.,?!~*])/i)
                                 ) {
                                     SetSafeExpression("Mouth", "Smirk");
                                 } else if (
