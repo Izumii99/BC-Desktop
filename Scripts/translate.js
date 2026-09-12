@@ -501,34 +501,44 @@
             const q  = encodeURIComponent(text);
 
             const tryGoogle = async (base) => {
-                const r = await fetch(`${base}/translate_a/single?client=gtx&sl=${sl}&tl=${tl}&dt=t&dt=sp&q=${q}`);
+                const r = await fetch(`${base}/translate_a/single?client=gtx&sl=${sl}&tl=${tl}&dt=t&dt=sp&dt=rm&dt=qca&dt=ss&q=${q}`);
                 if (!r.ok) throw new Error(`HTTP ${r.status}`);
                 return r.json();
             };
 
             const tryGoogleDict = async () => {
-                // Chrome dict endpoint — different CORS policy than gtx
-                const r = await fetch(`https://clients5.google.com/translate_a/t?client=dict-chrome-ex&sl=${sl}&tl=${tl}&dt=t&q=${q}`);
+                // Chrome dict endpoint
+                const r = await fetch(`https://clients5.google.com/translate_a/t?client=dict-chrome-ex&sl=${sl}&tl=${tl}&dt=t&dt=rm&dt=sp&q=${q}`);
                 if (!r.ok) throw new Error(`HTTP ${r.status}`);
                 const d = await r.json();
-                // dict endpoint returns { sentences: [{trans, orig}] }
-                if (d.sentences) return d.sentences.map(s => s.trans || "").join("");
+                if (d.sentences) {
+                    let t = "", sRm = "", tRm = "";
+                    d.sentences.forEach(s => {
+                        if (s.trans) t += s.trans;
+                        if (s.src_translit) sRm = s.src_translit;
+                        if (s.translit) tRm = s.translit;
+                    });
+                    let spell = d.spell && d.spell.spell_res ? d.spell.spell_res : null;
+                    return { translated: t, srcRomaji: sRm, tgtRomaji: tRm, spell: spell };
+                }
                 throw new Error("dict: unexpected format");
             };
 
             const tryMyMemory = async () => {
-                // Pass sl as-is ("auto" is accepted by MyMemory for auto-detection)
                 const r = await fetch(`https://api.mymemory.translated.net/get?q=${q}&langpair=${sl}|${tl}`);
                 if (!r.ok) throw new Error(`HTTP ${r.status}`);
                 const mm = await r.json();
                 if (mm.responseStatus !== 200) throw new Error("MyMemory: " + mm.responseStatus);
-                return mm.responseData.translatedText;
+                return { translated: mm.responseData.translatedText, srcRomaji: "", tgtRomaji: "", spell: null };
             };
 
             try {
                 let translated = "";
+                let srcRm = "";
+                let tgtRm = "";
+                let spellResult = null;
 
-                // Try Google first (2 gtx endpoints + dict endpoint), fall back to MyMemory
+                // Try Google first
                 let googleData = null;
                 try { googleData = await tryGoogle("https://translate.googleapis.com"); } catch (_) {}
                 if (!googleData) {
@@ -537,17 +547,57 @@
 
                 if (googleData && googleData[0]) {
                     googleData[0].forEach(item => { if (item[0]) translated += item[0]; });
-                    const spell = googleData[7]?.[1] ?? null;
-                    if (spell) { correctionContainer.classList.remove("hidden"); correctionBtn.innerText = spell; }
-                    else { correctionContainer.classList.add("hidden"); }
+                    const lastItem = googleData[0][googleData[0].length - 1];
+                    if (lastItem && lastItem[0] === null) {
+                        tgtRm = lastItem[2] || "";
+                        srcRm = lastItem[3] || "";
+                    }
+                    if (googleData[7] && googleData[7][1]) spellResult = googleData[7][1];
+                    else if (googleData[8] && googleData[8][1]) spellResult = googleData[8][1];
                 } else {
                     // Try Chrome dict endpoint
-                    try { translated = await tryGoogleDict(); } catch (_) {}
+                    try { 
+                        const res = await tryGoogleDict(); 
+                        translated = res.translated;
+                        srcRm = res.srcRomaji;
+                        tgtRm = res.tgtRomaji;
+                        spellResult = res.spell;
+                    } catch (_) {}
+                    
                     if (!translated) {
-                        // Final fallback: MyMemory
-                        translated = await tryMyMemory();
+                        const res = await tryMyMemory();
+                        translated = res.translated;
                     }
+                }
+
+                if (spellResult) {
+                    spellResult = spellResult.replace(/<\/?b>/gi, ""); // Clean up bold tags
+                    correctionContainer.classList.remove("hidden");
+                    correctionBtn.innerText = spellResult;
+                } else {
                     correctionContainer.classList.add("hidden");
+                }
+
+                if (srcRm || tgtRm) {
+                    metaDiv.classList.remove("hidden");
+                    metaDiv.style.display = "flex";
+                    if (srcRm) {
+                        srcRomaji.classList.remove("hidden");
+                        srcRomaji.innerHTML = `Read (Source): <span class="text-purple-300">${srcRm}</span>`;
+                    } else {
+                        srcRomaji.classList.add("hidden");
+                    }
+                    
+                    if (tgtRm) {
+                        tgtRomaji.classList.remove("hidden");
+                        tgtRomaji.innerHTML = `Read (Target): <span class="text-purple-300">${tgtRm}</span>`;
+                    } else {
+                        tgtRomaji.classList.add("hidden");
+                    }
+                } else {
+                    metaDiv.classList.add("hidden");
+                    srcRomaji.classList.add("hidden");
+                    tgtRomaji.classList.add("hidden");
                 }
 
                 outputArea.value = translated || "(empty)";
