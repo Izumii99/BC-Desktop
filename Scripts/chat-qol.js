@@ -39,6 +39,9 @@
         forceUngarbled: true,
         persistIconState: true,
         smartClosedEyes: true,
+        enablePetsuitAnim: true,
+        animCount: 9,
+        animDelay: 350,
     };
     try {
         const saved = localStorage.getItem("BCDesktop_ChatQoL_Config");
@@ -63,7 +66,7 @@
     }
 
     const qolBtn = document.createElement("div");
-    qolBtn.innerHTML = `<img src="data:image/png;base64,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" style="width: 100%; height: 100%; object-fit: contain;">`;
+    qolBtn.innerHTML = `<img src="data:image/png;base64,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" style="width: 100%; height: 100%; object-fit: contain;">`;
     Object.assign(qolBtn.style, {
         position: "fixed",
         top: "20px",
@@ -264,6 +267,90 @@
 
         row.appendChild(textContainer);
         row.appendChild(switchLabel);
+        return row;
+    }
+
+    function createNumberInput(
+        key,
+        labelTitle,
+        labelDesc = "",
+        min = 1,
+        max = 1000,
+        isSub = false
+    ) {
+        const row = document.createElement("div");
+        Object.assign(row.style, {
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            padding: isSub ? "12px 0 12px 24px" : "14px 0",
+            borderBottom: "1px solid #2e2640",
+        });
+
+        const textContainer = document.createElement("div");
+        textContainer.style.display = "flex";
+        textContainer.style.flexDirection = "column";
+        textContainer.style.gap = "4px";
+
+        const lbl = document.createElement("div");
+        lbl.innerText = labelTitle;
+        Object.assign(lbl.style, {
+            fontSize: isSub ? "14px" : "15px",
+            color: "#f5f5f5",
+            fontWeight: isSub ? "normal" : "500",
+        });
+
+        textContainer.appendChild(lbl);
+
+        if (labelDesc) {
+            const desc = document.createElement("div");
+            desc.innerText = labelDesc;
+            Object.assign(desc.style, {
+                fontSize: "12px",
+                color: "#a7a2b6",
+                lineHeight: "1.3",
+                paddingRight: "12px",
+            });
+            textContainer.appendChild(desc);
+        }
+
+        const inputContainer = document.createElement("div");
+        Object.assign(inputContainer.style, {
+            display: "flex",
+            alignItems: "center",
+        });
+
+        const numInput = document.createElement("input");
+        numInput.type = "number";
+        numInput.min = min;
+        numInput.max = max;
+        numInput.value = typeof qolConfig[key] !== "undefined" ? qolConfig[key] : min;
+        Object.assign(numInput.style, {
+            width: "60px",
+            backgroundColor: "#1a1625",
+            border: "1px solid #3d3554",
+            color: "#f5f5f5",
+            borderRadius: "4px",
+            padding: "4px 8px",
+            fontFamily: "inherit",
+            fontSize: "14px",
+            outline: "none"
+        });
+
+        numInput.onchange = (e) => {
+            let val = parseInt(e.target.value);
+            if (isNaN(val)) val = min;
+            if (val < min) val = min;
+            if (val > max) val = max;
+            e.target.value = val;
+            
+            qolConfig[key] = val;
+            saveQolConfig();
+        };
+
+        inputContainer.appendChild(numInput);
+        row.appendChild(textContainer);
+        row.appendChild(inputContainer);
         return row;
     }
 
@@ -547,6 +634,147 @@
             "Remembers your hidden/squint icon preference.",
         ),
     );
+    
+    const petContainer = document.createElement("div");
+    const petMain = document.createElement("div");
+    Object.assign(petMain.style, {
+        display: "flex",
+        justifyContent: "space-between",
+        alignItems: "center",
+        padding: "14px 0",
+        borderBottom: "1px solid #2e2640",
+    });
+
+    const petLeft = document.createElement("div");
+    Object.assign(petLeft.style, {
+        display: "flex",
+        alignItems: "center",
+        gap: "12px",
+        cursor: "pointer",
+        flex: "1",
+    });
+
+    const petExpand = document.createElement("span");
+    petExpand.innerHTML = "▼";
+    Object.assign(petExpand.style, {
+        color: "#a7a2b6",
+        fontSize: "12px",
+        width: "16px",
+        textAlign: "center",
+        transition: "transform 0.2s ease",
+        transform: "rotate(-90deg)"
+    });
+
+    const petLbl = document.createElement("div");
+    petLbl.innerText = "Petsuit Animation";
+    Object.assign(petLbl.style, {
+        fontSize: "15px",
+        color: "#f5f5f5",
+        fontWeight: "500",
+    });
+    
+    petLeft.appendChild(petExpand);
+    petLeft.appendChild(petLbl);
+
+    const petChk = document.createElement("input");
+    petChk.type = "checkbox";
+    petChk.checked = qolConfig.enablePetsuitAnim;
+    Object.assign(petChk.style, { opacity: "0", width: "0", height: "0" });
+
+    const petSwitchLabel = document.createElement("label");
+    Object.assign(petSwitchLabel.style, {
+        position: "relative",
+        display: "inline-block",
+        width: "38px",
+        height: "22px",
+        flexShrink: "0",
+        cursor: "pointer",
+    });
+
+    const petSlider = document.createElement("span");
+    Object.assign(petSlider.style, {
+        position: "absolute",
+        top: "0",
+        left: "0",
+        right: "0",
+        bottom: "0",
+        backgroundColor: petChk.checked ? "#a29bfe" : "#3d3554",
+        transition: "0.3s",
+        borderRadius: "22px",
+        boxShadow: petChk.checked
+            ? "0 0 8px rgba(162, 155, 254, 0.5)"
+            : "inset 0 2px 4px rgba(0,0,0,0.3)",
+    });
+
+    const petKnob = document.createElement("span");
+    Object.assign(petKnob.style, {
+        position: "absolute",
+        height: "16px",
+        width: "16px",
+        left: petChk.checked ? "19px" : "3px",
+        bottom: "3px",
+        backgroundColor: "#ffffff",
+        transition: "0.3s",
+        borderRadius: "50%",
+        boxShadow: "0 2px 4px rgba(0,0,0,0.2)",
+    });
+
+    petChk.onchange = (e) => {
+        qolConfig.enablePetsuitAnim = e.target.checked;
+        petSlider.style.backgroundColor = e.target.checked ? "#a29bfe" : "#3d3554";
+        petSlider.style.boxShadow = e.target.checked
+            ? "0 0 8px rgba(162, 155, 254, 0.5)"
+            : "inset 0 2px 4px rgba(0,0,0,0.3)";
+        petKnob.style.left = e.target.checked ? "19px" : "3px";
+        saveQolConfig();
+    };
+
+    petSlider.appendChild(petKnob);
+    petSwitchLabel.appendChild(petChk);
+    petSwitchLabel.appendChild(petSlider);
+
+    petMain.appendChild(petLeft);
+    petMain.appendChild(petSwitchLabel);
+
+    const petSubList = document.createElement("div");
+    Object.assign(petSubList.style, {
+        display: "none",
+        flexDirection: "column",
+        paddingLeft: "8px",
+        borderBottom: "1px solid #2e2640",
+        backgroundColor: "#161320",
+    });
+
+    petExpand.onclick = () => {
+        const isHidden = petSubList.style.display === "none";
+        petSubList.style.display = isHidden ? "flex" : "none";
+        petExpand.style.transform = isHidden ? "rotate(0deg)" : "rotate(-90deg)";
+    };
+
+    petSubList.appendChild(
+        createNumberInput(
+            "animCount",
+            "Petsuit Animation Count",
+            "Number of animation cycles to play.",
+            1,
+            100,
+            true
+        )
+    );
+    petSubList.appendChild(
+        createNumberInput(
+            "animDelay",
+            "Petsuit Animation Delay (ms)",
+            "Delay in milliseconds between pose changes (speed).",
+            20,
+            1000,
+            true
+        )
+    );
+
+    petContainer.appendChild(petMain);
+    petContainer.appendChild(petSubList);
+    qolBody.appendChild(petContainer);
 
     qolContent.appendChild(qolHeader);
     qolContent.appendChild(qolBody);
@@ -1382,4 +1610,119 @@
         },
         true,
     );
+
+    // -- Pose Animation Shortcut Button --
+    const animBtn = document.createElement("div");
+    animBtn.title = "Fast Pose Animation";
+    Object.assign(animBtn.style, {
+        position: "fixed",
+        bottom: "60px", // Diturunkan lagi agar lebih merapat
+        left: "12px",   
+        width: "50px",
+        height: "50px",
+        backgroundImage: "url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADIAAAAyCAYAAAAeP4ixAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsMAAA7DAcdvqGQAAAhESURBVGhD7VkLjF5FFb7nNff5799td7ustqxgsbGiwTYqKqU+4jNak+qixmoVxWgiBkVEQqSGGCDRagSVxBCgkSAR30RMNAqGIKL4wEQKYhR5FFrQClYKbWnN9zt3M3v6L/vAbhvDl0z233vPmTkzc943y57G/wkGBweXNk2zpmmaE4uiOLFpmtVVVR3h6Q57hBDOYOZtGESEv/cz88me7rDBxo0buSiKpf55COGsLMv2p6PPRqgf77xjzZo1qqrnMPOtqnpC+xybM7Pz3Ub2qOrpKX9Zlm8WkVvzPD81fT6vGBgYWGhmF2ZZ9kQ87ZvLsnyxmZ3CzD8govv9jRDR3ap6tZm9S0Rewcxb4vNdZnbuyMhI7dc5qKjrerGqQlivOrCHPX4DbjM9wYno7/65qm5etGhRx6930NA0zZCqXuOFfCoDGxGRy+ewEV21apX5hzNGURRHquqPvUBzGXET32yaZtiv47FkyZKyKIqXQTHwP36LyFUi8pm6rp/n6WeEEMI5Xr38ICLY0D7/3NHsy/P8w35+j6IoToBKM/NWMztp8eLFIyLyFcjAzPurqnqd55kWVVUdx8x/9UK1gjHzjUR0Hgybmd9NRJuY+ZapNs7Mv+t2u0f7dVJA+HgwoN/OzPdmWba7XTOE8LFutzsYQnhDvLUDAd3N8/xVqvrSwcHBI0XkMi9MnPAhVf14Pw8UPd25zLyzDx/U67NRZVcXRfFyeOiUv9PpHENEWz1vMsfjRPSTGIhvN7MXpPw9lGX5Imb+W4zSONlH+kz0r6Io1ntejxDCae3JOv6HiOg3+MvMt4UQjsmyjFX1LDP7IDN/v1XT6P0eFZH7iKh3K+mAqoUQPunXzkRkHRE95hnSAX31fP0wPj4uqnqV508HEe1UVcSlVVHovcm7fap6BdQnz/NleZ6/kpm/m7yHK78EiuTXzpj5jKn0OzI/bGYz9hpYHKrg50mFEZG1ZvY+nHzyDpvYvGzZsjydb/ny5R1VxY316ETk6+n7Hvbv308icoVfzC18U+sSZwLYAtTHz5MOETkfxpvn+UeYubcZInpQVV/i5wPquka20DscIvqnmX21LMvxSUR5nr+Xmb8VdXiXX5SIvueN88kwPDx8hIjc2GeenUR0c4wNPSFg5CLyYHx/R6fTOVBl/ns4S4nogXQ+pEuejhCMyrJcwszX9hHgZ/DKnmkqlGX5TLhcPw+ie5ZlQ2NjYwXoqqp6oZl9uU19mPm+pmme6+cDqqqCPU2oIZwPEU1ttyJykRcASSI26WmngpmtJKIdbg4Y6dmODoKkNPugcilNCzO7uLVjZv5FCOEtTdOs8HQTQF3Rz/BV9ROediqIyAWen5kR4SdF5xDCWrhSeMx2TTgWlA/dbvco3Fyn03mOmW1qnQfo4CTSeQ4AjE9ENnkhoiB3dzqdvoaYAsLCGD0/BAghfMqp6MKiKE5C2czMN6RxhJn/RES3MPNf/MEi5kyZKYQQxlF3pD7dDxRZqDU8L4CCC9c9VWoTBdzLzNflef5az18UxYYnc9mRv+eIkMKUZXm8n6MHM/uC33m/QUTbReRCxAEENbhLEXmrqn6tX3riR3IzE0CqrqrfjjT74IbT2gcZB2zHzN4jIjfgb8o/CVVVjRLRH/3CU43oQe4honuRRszkEDCgQgsXLhzw6yMBJaI7Ycg4nBDC27Ah8IjIr1pPV9f1CEzZ809CjLTtglugo16Q2Q5m/iUz/xm/422sxVrDw8MNPCFK6KIoViME5Hl+dF3Xz2/lQapDRHeJyMWzCci9DBZXrKqXIwDFCH3tTE87HTENuRJzhhCWo7hS1UtxXlhLVU9lZtzoXhHZkrp36L+ZHYsGSLfbXYBNThJ0JoDnQuLX/o/KTkQ2T1dAuU3sFpEv4tTTuSFY+5uZP5TQ70A9AlsZGBh4NjwWNIKZ3z6bjGJaMPOZs9wIvNOGdA5VPS0GO0OMUNUr2y4NBjM/gIItzQjgxczsHek8cwZKTmb+gxP2ceitmV0A4foVYsz802jUambvbx0CM18zXUKZzHF9WZbP8DLNCciHROSm1E6I6LbWiwBYDHlS8r4nBKpNvBORA/pgMxmwsRUrVoTJEs0dhmrOzNYja0X1KCKfczQqIpcy8yOqepmZvTPP86Piu8rMPkBEExttBzaM8hbqBO/knQoCIPrMMU1ZH13vUwcyZCSEiDn+XbfbfZaZHdfvBFHjMzNqmlTIbcjf4HJjJ3/MzE4Wkdsd3aNEdA8zP4zA6+eeF8BLYUAAF6l3hBDe5OmBqqpWMvOd/vYwYhkw4fnmBbEJ/mkR+QYRTTiLGF++5OlThBA+CofibgYZ+He8Sz/oGB0drYjo1/5UkaaHEN7o6VOgqxj7Wi3Pdng+qCGqBE9/UIGIzMy/77ORraj2PH2KoaGhUQTFhAed/UkNiXkDVEBEPk9E1+FEE6H+PZ3Rxj7btnQjh/SjEVIO3AwCZ3or6NqkaZAHupJp1M+ybBfqGDPbgK6Pp583qOrx6KAkJ/xYNOgDPFAIYR0zT/q+khwAcr5DA7R3Qginu0YcIv8eEblERF6dZdlKfN5DoGXmSWVyDJoYu1V1jZ9/3pDn+Sk+YjtBnyCif/Qrc2Nr9Wxk0sgY2hLgkKCu62OZ+bft6bZdxekG0pP0Q+q8x49+gPow810hhDPrukZT+nof8PxAA05EXu/nOqRAh2XBggVjbWEV258TMQatUKT9qvojBMz2OTP/cN4D4GwQ40QvtkDd2s/X6MKLCLox2MTVIvKaw3ojSDVE5Dwi+rmI3CEiEx1I9H7LslzX76vY4YxyZGRk8f+0Ln8ahwH+A5O+ZYktrKVVAAAAAElFTkSuQmCC')", // Gunakan path relatif
+        backgroundSize: "cover",
+        backgroundPosition: "center",
+        backgroundRepeat: "no-repeat",
+        backgroundColor: "#ffffff",
+        borderRadius: "4px",
+        display: "none",
+        alignItems: "center",
+        justifyContent: "center",
+        cursor: "pointer",
+        border: "2px solid #000",
+        userSelect: "none",
+        zIndex: "2147483647"
+    });
+
+    let animInterval = null;
+    let animFrame = 0;
+    const animPoses = [
+        "dialog-pose-button-grid-BodyUpper-OverTheHead",
+        "dialog-pose-button-grid-BodyUpper-BackElbowTouch"
+    ];
+
+    const triggerPose = (btnId) => {
+        let domBtn = document.getElementById(btnId);
+        if (domBtn) {
+            domBtn.click();
+        } else {
+            // Fallback jika menu pose tidak terbuka dan button DOM tidak ada
+            if (typeof CharacterSetActivePose === "function" && typeof Player !== "undefined") {
+                let poseName = btnId.split("-").pop();
+                try {
+                    CharacterSetActivePose(Player, poseName);
+                    if (typeof ServerSend === "function") ServerSend("ChatRoomCharacterPoseUpdate", { Pose: Player.Pose });
+                    if (typeof ChatRoomCharacterUpdate === "function") ChatRoomCharacterUpdate(Player);
+                    if (typeof CharacterRefresh === "function") CharacterRefresh(Player);
+                } catch(e) {}
+            }
+        }
+    };
+
+    animBtn.onclick = () => {
+        if (animInterval) return; // Abaikan klik jika animasi sedang berjalan
+
+        animBtn.style.backgroundColor = "rgba(100,200,100,0.8)";
+        animFrame = 0;
+        let count = 0;
+        const maxCycles = parseInt(qolConfig.animCount) || 9;
+        const speed = parseInt(qolConfig.animDelay) || 350;
+        
+        animInterval = setInterval(() => {
+            try {
+                let btnId = animPoses[animFrame % animPoses.length];
+                triggerPose(btnId);
+            } catch (e) {
+                console.error("Anim error", e);
+            }
+            
+            animFrame++;
+            count++;
+            if (count >= maxCycles) {
+                clearInterval(animInterval);
+                animInterval = null;
+                animBtn.style.backgroundColor = "#ffffff";
+                // Pastikan selalu berakhir di frame ke-2 (index 1 / BackElbowTouch)
+                try {
+                    triggerPose(animPoses[1]);
+                } catch (e) {}
+            }
+        }, speed);
+    };
+    
+    // Toggle animBtn visibility based on CurrentScreen & Petsuit/Restraint condition
+    setInterval(() => {
+        try {
+            let isRestricted = false;
+            if (typeof Player !== "undefined" && Player.Appearance) {
+                isRestricted = Player.Appearance.some(a => {
+                    if (!a.Asset) return false;
+                    let name = a.Asset.Name.toLowerCase();
+                    let group = a.Asset.Group.Name;
+                    // Cek jika ada item petsuit, armbinder, atau straitjacket di tubuh
+                    return name.includes("petsuit") || 
+                           name.includes("pet suit") ||
+                           name.includes("straitjacket") ||
+                           name.includes("armbinder") ||
+                           (group === "ItemArms" && a.Asset.IsRestraint);
+                });
+            }
+
+            if (typeof CurrentScreen !== "undefined" && CurrentScreen === "ChatRoom" && isRestricted && qolConfig.enablePetsuitAnim) {
+                if (!animBtn.parentNode) {
+                    document.body.appendChild(animBtn);
+                }
+                animBtn.style.display = "flex";
+            } else {
+                animBtn.style.display = "none";
+                if (animInterval) {
+                    clearInterval(animInterval);
+                    animInterval = null;
+                    animBtn.style.backgroundColor = "#ffffff";
+                }
+            }
+        } catch(e) {}
+    }, 2000);
+
 })();
