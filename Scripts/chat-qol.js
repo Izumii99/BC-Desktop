@@ -1419,24 +1419,36 @@
                         (c) => c.MemberNumber !== myNumber,
                     );
 
+                    // Refresh the drawlist so that X coordinates are up-to-date even if the game is alt-tabbed (frozen requestAnimationFrame)
+                    if (typeof window.ChatRoomCharacterBuildDrawlist === "function") {
+                        try { window.ChatRoomCharacterBuildDrawlist(); } catch (e) { }
+                    }
+
                     // Sort left-to-right based on actual drawing X coordinates
                     otherChars.sort((a, b) => {
-                        let getX = (c) => {
-                            if (typeof c.X === "number") return c.X;
-                            if (
-                                typeof window.ChatRoomCharacterDrawlist !==
-                                "undefined"
-                            ) {
-                                let draw =
-                                    window.ChatRoomCharacterDrawlist.find(
-                                        (d) => d.Character === c || d.C === c,
-                                    );
-                                if (draw && typeof draw.X === "number")
-                                    return draw.X;
+                        let getDrawInfo = (c) => {
+                            let x = typeof c.X === "number" ? c.X : null;
+                            let idx = -1;
+                            if (typeof window.ChatRoomCharacterDrawlist !== "undefined") {
+                                idx = window.ChatRoomCharacterDrawlist.findIndex(d => d.Character === c || d.C === c);
+                                if (idx !== -1) {
+                                    let draw = window.ChatRoomCharacterDrawlist[idx];
+                                    if (x === null && typeof draw.X === "number") x = draw.X;
+                                }
                             }
-                            return window.ChatRoomCharacter.indexOf(c) * 500;
+                            if (x === null) x = window.ChatRoomCharacter.indexOf(c) * 500;
+                            if (idx === -1) idx = window.ChatRoomCharacter.indexOf(c);
+                            return { x, idx };
                         };
-                        return getX(a) - getX(b);
+                        
+                        let infoA = getDrawInfo(a);
+                        let infoB = getDrawInfo(b);
+                        
+                        // Sort primarily by X coordinate
+                        if (infoA.x !== infoB.x) return infoA.x - infoB.x;
+                        
+                        // If X coordinates are identical (e.g. holding in Echo Activity), sort by drawlist index
+                        return infoA.idx - infoB.idx;
                     });
 
                     let index = parseInt(e.key) - 1;
