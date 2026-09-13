@@ -39,8 +39,8 @@
         forceUngarbled: true,
         persistIconState: true,
         smartClosedEyes: true,
-        enablePetsuitAnim: true,
-        animCount: 9,
+        enablePetsuitAnim: false,
+        animCount: 4,
         animDelay: 350,
     };
     try {
@@ -1666,7 +1666,7 @@
         animBtn.style.backgroundColor = "rgba(100,200,100,0.8)";
         animFrame = 0;
         let count = 0;
-        const maxCycles = parseInt(qolConfig.animCount) || 9;
+        const maxCycles = parseInt(qolConfig.animCount) || 4;
         const speed = parseInt(qolConfig.animDelay) || 350;
         
         animInterval = setInterval(() => {
