@@ -787,6 +787,98 @@
     qolModal.onclick = (e) => {
         if (e.target === qolModal) qolModal.style.display = "none";
     };
+    document.addEventListener(
+        "keydown",
+        (e) => {
+            if (e.key !== "Escape") return;
+            if (qolModal.style.display !== "flex") return;
+            e.preventDefault();
+            e.stopPropagation();
+            qolModal.style.display = "none";
+        },
+        true,
+    );
+
+    // -- Pose Animation Shortcut Button --
+    const animBtn = document.createElement("div");
+    animBtn.id = "bcd-qol-anim-btn";
+    animBtn.title = "Fast Pose Animation";
+    Object.assign(animBtn.style, {
+        position: "fixed",
+        bottom: "60px",
+        left: "12px",   
+        width: "50px",
+        height: "50px",
+        backgroundImage: "url('https://raw.githubusercontent.com/Izumii99/BC-Desktop/main/Assets/arm_logo_chat-qol.png')",
+        backgroundSize: "cover",
+        backgroundPosition: "center",
+        backgroundRepeat: "no-repeat",
+        backgroundColor: "#ffffff",
+        borderRadius: "4px",
+        display: "none",
+        alignItems: "center",
+        justifyContent: "center",
+        cursor: "pointer",
+        border: "2px solid #000",
+        userSelect: "none",
+        zIndex: "100"
+    });
+
+    let animInterval = null;
+    let animFrame = 0;
+    const animPoses = [
+        "dialog-pose-button-grid-BodyUpper-OverTheHead",
+        "dialog-pose-button-grid-BodyUpper-BackElbowTouch"
+    ];
+
+    const triggerPose = (btnId) => {
+        let domBtn = document.getElementById(btnId);
+        if (domBtn) {
+            domBtn.click();
+        } else {
+            // Fallback if pose menu is closed and button DOM is missing
+            if (typeof CharacterSetActivePose === "function" && typeof Player !== "undefined") {
+                let poseName = btnId.split("-").pop();
+                try {
+                    CharacterSetActivePose(Player, poseName);
+                    if (typeof ServerSend === "function") ServerSend("ChatRoomCharacterPoseUpdate", { Pose: Player.Pose });
+                    if (typeof ChatRoomCharacterUpdate === "function") ChatRoomCharacterUpdate(Player);
+                    if (typeof CharacterRefresh === "function") CharacterRefresh(Player);
+                } catch(e) {}
+            }
+        }
+    };
+
+    animBtn.onclick = () => {
+        if (animInterval) return; // Ignore if animation is already running
+
+        animBtn.style.backgroundColor = "rgba(100,200,100,0.8)";
+        animFrame = 0;
+        let count = 0;
+        const maxCycles = parseInt(qolConfig.animCount) || 4;
+        const speed = parseInt(qolConfig.animDelay) || 350;
+        
+        animInterval = setInterval(() => {
+            try {
+                let btnId = animPoses[animFrame % animPoses.length];
+                triggerPose(btnId);
+            } catch (e) {
+                console.error("Anim error", e);
+            }
+            
+            animFrame++;
+            count++;
+            if (count >= maxCycles) {
+                clearInterval(animInterval);
+                animInterval = null;
+                animBtn.style.backgroundColor = "#ffffff";
+                // Ensure it always ends on the second frame (index 1 / BackElbowTouch)
+                try {
+                    triggerPose(animPoses[1]);
+                } catch (e) {}
+            }
+        }, speed);
+    };
 
     setInterval(() => {
         try {
@@ -1307,6 +1399,36 @@
                 qolBtn.style.display = "none";
                 qolModal.style.display = "none";
             }
+
+            // Toggle animBtn visibility based on CurrentScreen & Petsuit/Restraint condition
+            let isRestricted = false;
+            if (typeof Player !== "undefined" && Player.Appearance) {
+                isRestricted = Player.Appearance.some(a => {
+                    if (!a.Asset) return false;
+                    let name = a.Asset.Name.toLowerCase();
+                    let group = a.Asset.Group.Name;
+                    // Check for petsuit, armbinder, or straitjacket on the character
+                    return name.includes("petsuit") || 
+                           name.includes("pet suit") ||
+                           name.includes("straitjacket") ||
+                           name.includes("armbinder") ||
+                           (group === "ItemArms" && a.Asset.IsRestraint);
+                });
+            }
+
+            if (typeof CurrentScreen !== "undefined" && CurrentScreen === "ChatRoom" && isRestricted && qolConfig.enablePetsuitAnim) {
+                if (!animBtn.parentNode) {
+                    document.body.appendChild(animBtn);
+                }
+                animBtn.style.display = "flex";
+            } else {
+                animBtn.style.display = "none";
+                if (animInterval) {
+                    clearInterval(animInterval);
+                    animInterval = null;
+                    animBtn.style.backgroundColor = "#ffffff";
+                }
+            }
         } catch (e) {}
     }, 2000);
 
@@ -1401,117 +1523,65 @@
         true,
     );
 
-    // Alt + Number (1-0) to whisper characters in room based on position
+    // Alt + Number (1-9) to whisper characters in room based on position
     document.addEventListener(
         "keydown",
         (e) => {
             if (!qolConfig.enableWhisperShortcut) return;
-            if (e.altKey && e.key >= "0" && e.key <= "9") {
-                if (
-                    typeof window.ChatRoomCharacter !== "undefined" &&
-                    Array.isArray(window.ChatRoomCharacter)
-                ) {
-                    let myNumber =
-                        typeof Player !== "undefined" && Player.MemberNumber
-                            ? Player.MemberNumber
-                            : -1;
-                    let otherChars = window.ChatRoomCharacter.filter(
-                        (c) => c.MemberNumber !== myNumber,
-                    );
+            // AltGr reports both altKey and ctrlKey, and types real characters on many layouts
+            if (!e.altKey || e.ctrlKey || e.shiftKey) return;
+            if (
+                typeof CurrentScreen === "undefined" ||
+                CurrentScreen !== "ChatRoom"
+            )
+                return;
 
-                    // Refresh the drawlist so that X coordinates are up-to-date even if the game is alt-tabbed (frozen requestAnimationFrame)
-                    if (typeof window.ChatRoomCharacterBuildDrawlist === "function") {
-                        try { window.ChatRoomCharacterBuildDrawlist(); } catch (e) { }
-                    }
+            // e.code stays stable on layouts where Alt rewrites e.key
+            let digit = /^(?:Digit|Numpad)([1-9])$/.exec(e.code || "");
+            if (!digit) return;
+            let index = parseInt(digit[1], 10) - 1;
 
-                    // Sort left-to-right based on actual drawing X coordinates
-                    otherChars.sort((a, b) => {
-                        let getDrawInfo = (c) => {
-                            let x = typeof c.X === "number" ? c.X : null;
-                            let idx = -1;
-                            if (typeof window.ChatRoomCharacterDrawlist !== "undefined") {
-                                idx = window.ChatRoomCharacterDrawlist.findIndex(d => d.Character === c || d.C === c);
-                                if (idx !== -1) {
-                                    let draw = window.ChatRoomCharacterDrawlist[idx];
-                                    if (x === null && typeof draw.X === "number") x = draw.X;
-                                }
-                            }
-                            if (x === null) x = window.ChatRoomCharacter.indexOf(c) * 500;
-                            if (idx === -1) idx = window.ChatRoomCharacter.indexOf(c);
-                            return { x, idx };
-                        };
-                        
-                        let infoA = getDrawInfo(a);
-                        let infoB = getDrawInfo(b);
-                        
-                        // Sort primarily by X coordinate
-                        if (infoA.x !== infoB.x) return infoA.x - infoB.x;
-                        
-                        // If X coordinates are identical (e.g. holding in Echo Activity), sort by drawlist index
-                        return infoA.idx - infoB.idx;
-                    });
+            // The drawlist is what the game actually renders left-to-right; it diverges
+            // from ChatRoomCharacter under VRAvatars and blind + BlindAdjacent
+            let roster =
+                Array.isArray(window.ChatRoomCharacterDrawlist) &&
+                window.ChatRoomCharacterDrawlist.length
+                    ? window.ChatRoomCharacterDrawlist
+                    : window.ChatRoomCharacter;
+            if (!Array.isArray(roster)) return;
 
-                    let index = parseInt(e.key) - 1;
-                    if (e.key === "0") index = 9;
+            let myNumber =
+                typeof Player !== "undefined" && Player
+                    ? Player.MemberNumber
+                    : null;
+            let otherChars = roster.filter(
+                (c) =>
+                    c && c.MemberNumber != null && c.MemberNumber !== myNumber,
+            );
+            if (index >= otherChars.length) return;
 
-                    if (index >= 0 && index < otherChars.length) {
-                        let target = otherChars[index];
-                        if (target && target.MemberNumber) {
-                            e.preventDefault();
+            let target = otherChars[index];
+            if (!target || target.MemberNumber == null) return;
 
-                            // Toggle whisper target
-                            let isToggleOff =
-                                window.ChatRoomTargetMemberNumber ==
-                                target.MemberNumber;
+            e.preventDefault();
+            e.stopPropagation();
 
-                            if (isToggleOff) {
-                                if (
-                                    typeof window.BCX_Loaded !== "undefined" ||
-                                    window.ChatRoomTargetMemberNumber === -1
-                                ) {
-                                    window.ChatRoomTargetMemberNumber = -1;
-                                } else {
-                                    window.ChatRoomTargetMemberNumber = null;
-                                }
-                            } else {
-                                window.ChatRoomTargetMemberNumber =
-                                    target.MemberNumber;
-                            }
+            // null is the only value BC reads as "no whisper target"
+            let isToggleOff =
+                window.ChatRoomTargetMemberNumber != null &&
+                window.ChatRoomTargetMemberNumber == target.MemberNumber;
+            let newTarget = isToggleOff ? null : target.MemberNumber;
 
-                            // Update the input placeholder visually (Fixing the issue where it still said "Talk to everyone")
-                            let chatInput =
-                                document.getElementById("InputChat");
-                            if (chatInput) {
-                                if (isToggleOff) {
-                                    let pubText =
-                                        typeof TextGet === "function"
-                                            ? TextGet("PublicChat") ||
-                                              "Talk to everyone"
-                                            : "Talk to everyone";
-                                    chatInput.setAttribute(
-                                        "placeholder",
-                                        pubText,
-                                    );
-                                } else {
-                                    let name =
-                                        target.Name ||
-                                        String(target.MemberNumber);
-                                    let whispText =
-                                        typeof TextGet === "function"
-                                            ? TextGet("WhisperTo") ||
-                                              "Whisper to"
-                                            : "Whisper to";
-                                    chatInput.setAttribute(
-                                        "placeholder",
-                                        whispText + " " + name,
-                                    );
-                                }
-                                chatInput.focus();
-                            }
-                        }
-                    }
-                }
+            // ChatRoomSetTarget also raises ChatRoomTargetDirty, letting the game
+            // repaint the localized input placeholder on its own
+            if (typeof window.ChatRoomSetTarget === "function") {
+                window.ChatRoomSetTarget(newTarget);
+            } else {
+                window.ChatRoomTargetMemberNumber = newTarget;
             }
+
+            let chatInput = document.getElementById("InputChat");
+            if (chatInput) chatInput.focus();
         },
         true,
     );
@@ -1623,118 +1693,6 @@
         true,
     );
 
-    // -- Pose Animation Shortcut Button --
-    const animBtn = document.createElement("div");
-    animBtn.title = "Fast Pose Animation";
-    Object.assign(animBtn.style, {
-        position: "fixed",
-        bottom: "60px", // Diturunkan lagi agar lebih merapat
-        left: "12px",   
-        width: "50px",
-        height: "50px",
-        backgroundImage: "url('https://raw.githubusercontent.com/Izumii99/BC-Desktop/main/Assets/arm_logo_chat-qol.png')", // Gunakan path relatif
-        backgroundSize: "cover",
-        backgroundPosition: "center",
-        backgroundRepeat: "no-repeat",
-        backgroundColor: "#ffffff",
-        borderRadius: "4px",
-        display: "none",
-        alignItems: "center",
-        justifyContent: "center",
-        cursor: "pointer",
-        border: "2px solid #000",
-        userSelect: "none",
-        zIndex: "2147483647"
-    });
 
-    let animInterval = null;
-    let animFrame = 0;
-    const animPoses = [
-        "dialog-pose-button-grid-BodyUpper-OverTheHead",
-        "dialog-pose-button-grid-BodyUpper-BackElbowTouch"
-    ];
-
-    const triggerPose = (btnId) => {
-        let domBtn = document.getElementById(btnId);
-        if (domBtn) {
-            domBtn.click();
-        } else {
-            // Fallback jika menu pose tidak terbuka dan button DOM tidak ada
-            if (typeof CharacterSetActivePose === "function" && typeof Player !== "undefined") {
-                let poseName = btnId.split("-").pop();
-                try {
-                    CharacterSetActivePose(Player, poseName);
-                    if (typeof ServerSend === "function") ServerSend("ChatRoomCharacterPoseUpdate", { Pose: Player.Pose });
-                    if (typeof ChatRoomCharacterUpdate === "function") ChatRoomCharacterUpdate(Player);
-                    if (typeof CharacterRefresh === "function") CharacterRefresh(Player);
-                } catch(e) {}
-            }
-        }
-    };
-
-    animBtn.onclick = () => {
-        if (animInterval) return; // Abaikan klik jika animasi sedang berjalan
-
-        animBtn.style.backgroundColor = "rgba(100,200,100,0.8)";
-        animFrame = 0;
-        let count = 0;
-        const maxCycles = parseInt(qolConfig.animCount) || 4;
-        const speed = parseInt(qolConfig.animDelay) || 350;
-        
-        animInterval = setInterval(() => {
-            try {
-                let btnId = animPoses[animFrame % animPoses.length];
-                triggerPose(btnId);
-            } catch (e) {
-                console.error("Anim error", e);
-            }
-            
-            animFrame++;
-            count++;
-            if (count >= maxCycles) {
-                clearInterval(animInterval);
-                animInterval = null;
-                animBtn.style.backgroundColor = "#ffffff";
-                // Pastikan selalu berakhir di frame ke-2 (index 1 / BackElbowTouch)
-                try {
-                    triggerPose(animPoses[1]);
-                } catch (e) {}
-            }
-        }, speed);
-    };
-    
-    // Toggle animBtn visibility based on CurrentScreen & Petsuit/Restraint condition
-    setInterval(() => {
-        try {
-            let isRestricted = false;
-            if (typeof Player !== "undefined" && Player.Appearance) {
-                isRestricted = Player.Appearance.some(a => {
-                    if (!a.Asset) return false;
-                    let name = a.Asset.Name.toLowerCase();
-                    let group = a.Asset.Group.Name;
-                    // Cek jika ada item petsuit, armbinder, atau straitjacket di tubuh
-                    return name.includes("petsuit") || 
-                           name.includes("pet suit") ||
-                           name.includes("straitjacket") ||
-                           name.includes("armbinder") ||
-                           (group === "ItemArms" && a.Asset.IsRestraint);
-                });
-            }
-
-            if (typeof CurrentScreen !== "undefined" && CurrentScreen === "ChatRoom" && isRestricted && qolConfig.enablePetsuitAnim) {
-                if (!animBtn.parentNode) {
-                    document.body.appendChild(animBtn);
-                }
-                animBtn.style.display = "flex";
-            } else {
-                animBtn.style.display = "none";
-                if (animInterval) {
-                    clearInterval(animInterval);
-                    animInterval = null;
-                    animBtn.style.backgroundColor = "#ffffff";
-                }
-            }
-        } catch(e) {}
-    }, 2000);
 
 })();

@@ -19,6 +19,8 @@
 
     console.log("BC Desktop: Addon Manager initializing...");
 
+    let activeFeaturePopup = null;
+
     function showFeaturePopup(title, contentHTML) {
         const popupOverlay = document.createElement("div");
         Object.assign(popupOverlay.style, {
@@ -60,7 +62,9 @@
             popupOverlay.style.opacity = "0";
             popupBox.style.transform = "scale(0.9)";
             setTimeout(() => popupOverlay.remove(), 200);
+            if (activeFeaturePopup === popupOverlay) activeFeaturePopup = null;
         };
+        activeFeaturePopup = popupOverlay;
         popupOverlay.onclick = (e) => {
             if (e.target === popupOverlay) closeBtn.onclick();
         };
@@ -91,11 +95,14 @@
     const SCRIPT_INFO = {
         "autofocus.js": { title: "Autofocus", desc: "Automatically focuses the chat input box.", url: "https://github.com/Izumii99/BC-Desktop/blob/main/tester/Scripts/autofocus.js" },
         "chat-qol.js": { title: "Chat QoL", desc: "Quality of Life features for the chat window.", url: "https://github.com/Izumii99/BC-Desktop/blob/main/tester/Scripts/chat-qol.js" },
+        "cheat-menu.js": { title: "Cheat Menu", desc: "Quick access cheats for restraints, wardrobe, and NPCs.", icon: "https://cdn.jsdelivr.net/gh/Izumii99/BC-Desktop@main/Assets/cheat_ui.png", url: "https://github.com/Izumii99/BC-Desktop/blob/main/tester/Scripts/cheat-menu.js" },
         "fusam.js": { title: "FUSAM Loader", desc: "Fantastic Ultimate Solution to Addon Management.", icon: "🛠️", url: "https://gitlab.com/zahk3277/bc-addon-loader" },
         "LikoPlugin.js": { title: "Liko Plugin", desc: "Player customization and utility plugin.", icon: "https://cdn.jsdelivr.net/gh/awdrrawd/liko-Plugin-Repository@main/Images/PCM_ICON.png", url: "https://github.com/awdrrawd/liko-Plugin-Repository" },
         "neko-dark.js": { title: "Neko Dark Theme", desc: "A sleek dark theme for Bondage Club by Neko.", url: "https://github.com/Izumii99/BC-Desktop/blob/main/tester/Scripts/neko-dark.js" },
         "translate.js": { title: "In-Game Translator", desc: "In-game translation tool for chat messages.", url: "https://github.com/Izumii99/BC-Desktop/blob/main/tester/Scripts/translate.js" },
-        "wardrobe-pagination.js": { title: "Wardrobe Pagination", desc: "Adds pagination to wardrobe items.", url: "https://github.com/Izumii99/BC-Desktop/blob/main/tester/Scripts/wardrobe-pagination.js" }
+        "wardrobe-pagination.js": { title: "Wardrobe Pagination", desc: "Adds pagination to wardrobe items.", url: "https://github.com/Izumii99/BC-Desktop/blob/main/tester/Scripts/wardrobe-pagination.js" },
+        "wce-im-align.js": { title: "WCE IM Alignment", desc: "Moves the WCE instant messenger button into the bottom-left corner and stacks the Chat QoL pose button above it.", icon: "💬", url: "https://github.com/Izumii99/BC-Desktop/blob/main/tester/Scripts/wce-im-align.js" },
+        "screenshot-cleaner.js": { title: "Screenshot Cleaner", desc: "Automatically hides addon UI elements (like WCE sliders) when taking photos.", icon: "📸", url: "https://github.com/Izumii99/BC-Desktop/blob/main/tester/Scripts/screenshot-cleaner.js" }
     };
 
     const ULTRABC_OPTIONS = [
@@ -250,6 +257,28 @@
         modalOverlay.style.display = isModalOpen ? "flex" : "none";
         if (isModalOpen) renderList();
     }
+
+    document.addEventListener(
+        "keydown",
+        (e) => {
+            if (e.key !== "Escape") return;
+            if (activeFeaturePopup) {
+                e.preventDefault();
+                e.stopPropagation();
+                const overlay = activeFeaturePopup;
+                const closeBtnEl = overlay.querySelector("button");
+                if (closeBtnEl) closeBtnEl.click();
+                else overlay.remove();
+                activeFeaturePopup = null;
+                return;
+            }
+            if (!isModalOpen) return;
+            e.preventDefault();
+            e.stopPropagation();
+            toggleModal();
+        },
+        true,
+    );
 
     function renderList() {
         modalBody.innerHTML = "";
@@ -625,7 +654,7 @@
 
     if (window.bcLocalScripts) {
         scriptsList = window.bcLocalScripts.filter(
-            (f) => !f.toLowerCase().includes("debug") && f !== "addon-manager.js" && f.endsWith(".js")
+            (f) => !f.toLowerCase().includes("debug") && f !== "addon-manager.js" && f !== "echo-activity.js" && f.endsWith(".js")
         );
         injectTargetScripts();
         return;
@@ -649,7 +678,8 @@
                             f.type === "file" &&
                             f.name.endsWith(".js") &&
                             !f.name.toLowerCase().includes("debug") &&
-                            f.name !== "addon-manager.js"
+                            f.name !== "addon-manager.js" &&
+                            f.name !== "echo-activity.js"
                     )
                     .map((f) => f.name);
             } else {
