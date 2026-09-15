@@ -255,6 +255,108 @@ javascript: (function () {
 })();
 ```
 
+### 5. WCE IM Alignment (`wce-im-align.js`)
+
+A small layout fix that moves the Wholesome Club Extensions (WCE) Instant Messenger button into the bottom-left corner and stacks the Chat QoL Poses button cleanly above it.
+
+<p float="left">
+  <img src="Assets/WCE-IM-align_before.png" width="49%" alt="Before Alignment" />
+  <img src="Assets/WCE-IM-align_after.png" width="49%" alt="After Alignment" />
+</p>
+
+**Features:**
+- Seamlessly resolves UI collision between WCE IM and the Chat QoL Poses button.
+- Cleanly stacks the buttons in the corner, keeping your screen clutter-free.
+
+**How to Install:**
+
+#### Bookmarklet (One-Click)
+```javascript
+javascript: (function () {
+    var script = document.createElement("script");
+    script.src =
+        "https://cdn.jsdelivr.net/gh/Izumii99/BC-Desktop@main/Scripts/wce-im-align.js";
+    document.head.appendChild(script);
+    console.log("Fetching WCE IM Alignment from GitHub...");
+})();
+```
+
+#### Tampermonkey, ViolentMonkey, etc. (Auto-Loader)
+```javascript
+// ==UserScript==
+// @name         WCE IM Alignment
+// @namespace    http://tampermonkey.net/
+// @version      1.0
+// @description  Moves the WCE instant messenger button into the bottom-left corner
+// @author       Izumii99
+// @match        https://*.bondageprojects.elementfx.com/*
+// @match        https://*.bondage-europe.com/*
+// @match        https://*.bondageprojects.com/*
+// @match        https://*.bondage-asia.com/*
+// @grant        none
+// ==/UserScript==
+
+(function () {
+    "use strict";
+    var script = document.createElement("script");
+    script.src =
+        "https://cdn.jsdelivr.net/gh/Izumii99/BC-Desktop@main/Scripts/wce-im-align.js?v=" +
+        Date.now();
+    document.head.appendChild(script);
+    console.log("WCE IM Alignment Loader: Injected successfully!");
+})();
+```
+
+### 6. Cheat Menu (`cheat-menu.js`)
+
+A lightweight floating cheat menu that provides various shortcuts and utilities for testing and fun. *(Please give me more cheat so I can add that doesn't exist at ULTRABC or even mine work)*
+
+<img src="Assets/Cheat_menu.png" width="400" alt="Cheat Menu Preview" />
+
+**Features:**
+- Quick-access floating draggable menu.
+- Easily toggle invulnerability, instant escape, add money, and more.
+- Perfect for debugging, modding, or just playing around without grinding.
+
+**How to Install:**
+
+#### Bookmarklet (One-Click)
+```javascript
+javascript: (function () {
+    var script = document.createElement("script");
+    script.src =
+        "https://cdn.jsdelivr.net/gh/Izumii99/BC-Desktop@main/Scripts/cheat-menu.js";
+    document.head.appendChild(script);
+    console.log("Fetching Cheat Menu from GitHub...");
+})();
+```
+
+#### Tampermonkey, ViolentMonkey, etc. (Auto-Loader)
+```javascript
+// ==UserScript==
+// @name         Cheat Menu
+// @namespace    http://tampermonkey.net/
+// @version      1.0
+// @description  A lightweight floating cheat menu for Bondage Club
+// @author       Izumii99
+// @match        https://*.bondageprojects.elementfx.com/*
+// @match        https://*.bondage-europe.com/*
+// @match        https://*.bondageprojects.com/*
+// @match        https://*.bondage-asia.com/*
+// @grant        none
+// ==/UserScript==
+
+(function () {
+    "use strict";
+    var script = document.createElement("script");
+    script.src =
+        "https://cdn.jsdelivr.net/gh/Izumii99/BC-Desktop@main/Scripts/cheat-menu.js?v=" +
+        Date.now();
+    document.head.appendChild(script);
+    console.log("Cheat Menu Loader: Injected successfully!");
+})();
+```
+
 ## Why not Electron?
 
 |                            | Electron / Web Browser | BC Desktop (WPF)                    |
