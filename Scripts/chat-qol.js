@@ -596,7 +596,7 @@
         createToggle(
             "enableWhisperShortcut",
             "Enable Whisper Shortcut",
-            "Use Alt + 1-9 to whisper people in the room.",
+            "Use Alt + 1-9, 0, -, = to whisper people in the room.",
         ),
     );
     qolBody.appendChild(
@@ -1523,7 +1523,7 @@
         true,
     );
 
-    // Alt + Number (1-9) to whisper characters in room based on position
+    // Alt + Number (1-9, 0, -, =) to whisper characters in room based on position
     document.addEventListener(
         "keydown",
         (e) => {
@@ -1537,9 +1537,18 @@
                 return;
 
             // e.code stays stable on layouts where Alt rewrites e.key
-            let digit = /^(?:Digit|Numpad)([1-9])$/.exec(e.code || "");
-            if (!digit) return;
-            let index = parseInt(digit[1], 10) - 1;
+            let index = -1;
+            let code = e.code || "";
+            let digitMatch = /^(?:Digit|Numpad)([0-9])$/.exec(code);
+            if (digitMatch) {
+                let val = parseInt(digitMatch[1], 10);
+                index = val === 0 ? 9 : val - 1;
+            } else if (code === "Minus" || code === "NumpadSubtract") {
+                index = 10;
+            } else if (code === "Equal" || code === "NumpadAdd") {
+                index = 11;
+            }
+            if (index === -1) return;
 
             // The drawlist is what the game actually renders left-to-right; it diverges
             // from ChatRoomCharacter under VRAvatars and blind + BlindAdjacent

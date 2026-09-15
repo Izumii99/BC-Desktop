@@ -103,8 +103,7 @@
             html body #TextAreaChatLog .ChatMessageBeep *:not(.ChatMessageName) { color: ${P.beepTxt} !important; }
             
             /* Links */
-            html body #TextAreaChatLog .ChatMessage a,
-            html body #TextAreaChatLog .ChatMessage a:not(.ChatMessageName) {
+            html body #TextAreaChatLog .ChatMessage:not(.ChatMessageBeep) a:not(.ChatMessageName) {
                 color: #60a5fa !important;
                 text-decoration: underline !important;
             }
