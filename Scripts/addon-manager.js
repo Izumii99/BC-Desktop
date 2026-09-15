@@ -101,8 +101,7 @@
         "neko-dark.js": { title: "Neko Dark Theme", desc: "A sleek dark theme for Bondage Club by Neko.", url: "https://github.com/Izumii99/BC-Desktop/blob/main/tester/Scripts/neko-dark.js" },
         "translate.js": { title: "In-Game Translator", desc: "In-game translation tool for chat messages.", url: "https://github.com/Izumii99/BC-Desktop/blob/main/tester/Scripts/translate.js" },
         "wardrobe-pagination.js": { title: "Wardrobe Pagination", desc: "Adds pagination to wardrobe items.", url: "https://github.com/Izumii99/BC-Desktop/blob/main/tester/Scripts/wardrobe-pagination.js" },
-        "wce-im-align.js": { title: "WCE IM Alignment", desc: "Moves the WCE instant messenger button into the bottom-left corner and stacks the Chat QoL pose button above it.", icon: "💬", url: "https://github.com/Izumii99/BC-Desktop/blob/main/tester/Scripts/wce-im-align.js" },
-        "screenshot-cleaner.js": { title: "Screenshot Cleaner", desc: "Automatically hides addon UI elements (like WCE sliders) when taking photos.", icon: "📸", url: "https://github.com/Izumii99/BC-Desktop/blob/main/tester/Scripts/screenshot-cleaner.js" }
+        "screenshot-cleaner.js": { title: "Screenshot Cleaner", desc: "Keeps in-game photos to the characters, arousal meters and room only, dropping every button and addon overlay.", icon: "📸", url: "https://github.com/Izumii99/BC-Desktop/blob/main/tester/Scripts/screenshot-cleaner.js" }
     };
 
     const ULTRABC_OPTIONS = [
