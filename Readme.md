@@ -147,6 +147,8 @@ javascript: (function () {
 
 A massive quality-of-life upgrade for the chat system that seamlessly translates text emoticons into actual 3D character facial expressions, and more.
 
+<img src="Assets/chat_qol_ui.png" width="350" alt="Chat QoL Settings" />
+
 **Features:**
 
 - **Text-to-Expression Emoticons:** Typing text like `:)`, `>:(`, `;p`, `><`, `=///=` or even `>3<` automatically changes your character's Eyes, Mouth, Eyebrows, Blush, and Tears to match the emoticon! No need to manually click the expression menu ever again.
