@@ -255,18 +255,19 @@ javascript: (function () {
 })();
 ```
 
-### 5. WCE IM Alignment (`wce-im-align.js`)
+### 5. Screenshot Cleaner (`screenshot-cleaner.js`)
 
-A small layout fix that moves the Wholesome Club Extensions (WCE) Instant Messenger button into the bottom-left corner and stacks the Chat QoL Poses button cleanly above it.
+A must-have utility for taking perfectly clean photos. Every screenshot taken in-game will automatically remove all addon buttons, sliders, and overlays, so there's no need to hide them manually!
 
 <p float="left">
-  <img src="Assets/WCE-IM-align_before.png" width="49%" alt="Before Alignment" />
-  <img src="Assets/WCE-IM-align_after.png" width="49%" alt="After Alignment" />
+  <img src="Assets/cleaner_addon_before.png" width="49%" alt="Before Screenshot Cleaner" />
+  <img src="Assets/cleaner_addon_after.png" width="49%" alt="After Screenshot Cleaner" />
 </p>
 
 **Features:**
-- Seamlessly resolves UI collision between WCE IM and the Chat QoL Poses button.
-- Cleanly stacks the buttons in the corner, keeping your screen clutter-free.
+- Seamlessly drops every third-party button and addon overlay from the captured frame.
+- Keeps in-game photos limited strictly to the characters, their arousal meters, and the room.
+- Works securely at the canvas render level via `bcModSdk`.
 
 **How to Install:**
 
@@ -275,19 +276,19 @@ A small layout fix that moves the Wholesome Club Extensions (WCE) Instant Messen
 javascript: (function () {
     var script = document.createElement("script");
     script.src =
-        "https://cdn.jsdelivr.net/gh/Izumii99/BC-Desktop@main/Scripts/wce-im-align.js";
+        "https://cdn.jsdelivr.net/gh/Izumii99/BC-Desktop@main/Scripts/screenshot-cleaner.js";
     document.head.appendChild(script);
-    console.log("Fetching WCE IM Alignment from GitHub...");
+    console.log("Fetching Screenshot Cleaner from GitHub...");
 })();
 ```
 
 #### Tampermonkey, ViolentMonkey, etc. (Auto-Loader)
 ```javascript
 // ==UserScript==
-// @name         WCE IM Alignment
+// @name         Screenshot Cleaner
 // @namespace    http://tampermonkey.net/
-// @version      1.0
-// @description  Moves the WCE instant messenger button into the bottom-left corner
+// @version      2.0
+// @description  Keeps in-game photos limited to the characters, their arousal meters and the room.
 // @author       Izumii99
 // @match        https://*.bondageprojects.elementfx.com/*
 // @match        https://*.bondage-europe.com/*
@@ -300,10 +301,10 @@ javascript: (function () {
     "use strict";
     var script = document.createElement("script");
     script.src =
-        "https://cdn.jsdelivr.net/gh/Izumii99/BC-Desktop@main/Scripts/wce-im-align.js?v=" +
+        "https://cdn.jsdelivr.net/gh/Izumii99/BC-Desktop@main/Scripts/screenshot-cleaner.js?v=" +
         Date.now();
     document.head.appendChild(script);
-    console.log("WCE IM Alignment Loader: Injected successfully!");
+    console.log("Screenshot Cleaner Loader: Injected successfully!");
 })();
 ```
 
