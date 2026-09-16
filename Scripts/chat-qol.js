@@ -1629,12 +1629,8 @@
             } else if (code === "Equal" || code === "NumpadAdd") {
                 index = 11;
             }
-            if (index === -1) return;
-            let roster =
-                Array.isArray(window.ChatRoomCharacterDrawlist) &&
-                window.ChatRoomCharacterDrawlist.length
-                    ? window.ChatRoomCharacterDrawlist
-                    : window.ChatRoomCharacter;
+            if (index === -1) return;
+            let roster = window.ChatRoomCharacter;
             if (!Array.isArray(roster)) return;
 
             let myNumber =
