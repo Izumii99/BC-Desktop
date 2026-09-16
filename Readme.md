@@ -53,7 +53,7 @@ Because this is a theme for **Neko Chat Enhancer**, you must have the original a
 javascript: (function () {
     var script = document.createElement("script");
     script.src =
-        "https://cdn.jsdelivr.net/gh/Izumii99/BC-Desktop@main/Scripts/neko-dark.js";
+        "https://cdn.jsdelivr.net/gh/Izumii99/BC-Desktop@main/Scripts/neko-dark.js?v=" + Date.now();
     document.head.appendChild(script);
     console.log("Fetching Neko Dark from GitHub...");
 })();
@@ -110,7 +110,7 @@ Fixes the issue where having too many clothing items (e.g. from using multiple m
 javascript: (function () {
     var script = document.createElement("script");
     script.src =
-        "https://cdn.jsdelivr.net/gh/Izumii99/BC-Desktop@main/Scripts/wardrobe-pagination.js";
+        "https://cdn.jsdelivr.net/gh/Izumii99/BC-Desktop@main/Scripts/wardrobe-pagination.js?v=" + Date.now();
     document.head.appendChild(script);
     console.log("Fetching Wardrobe Pagination from GitHub...");
 })();
@@ -168,7 +168,7 @@ A massive quality-of-life upgrade for the chat system that seamlessly translates
 javascript: (function () {
     var script = document.createElement("script");
     script.src =
-        "https://cdn.jsdelivr.net/gh/Izumii99/BC-Desktop@main/Scripts/chat-qol.js";
+        "https://cdn.jsdelivr.net/gh/Izumii99/BC-Desktop@main/Scripts/chat-qol.js?v=" + Date.now();
     document.head.appendChild(script);
     console.log("Fetching Chat QoL from GitHub...");
 })();
@@ -222,7 +222,7 @@ A built-in GUI to manage all your installed BC Desktop addons and compatible com
 javascript: (function () {
     var script = document.createElement("script");
     script.src =
-        "https://cdn.jsdelivr.net/gh/Izumii99/BC-Desktop@main/Scripts/addon-manager.js";
+        "https://cdn.jsdelivr.net/gh/Izumii99/BC-Desktop@main/Scripts/addon-manager.js?v=" + Date.now();
     document.head.appendChild(script);
     console.log("Fetching Addon Manager from GitHub...");
 })();
@@ -276,7 +276,7 @@ A must-have utility for taking perfectly clean photos. Every screenshot taken in
 javascript: (function () {
     var script = document.createElement("script");
     script.src =
-        "https://cdn.jsdelivr.net/gh/Izumii99/BC-Desktop@main/Scripts/screenshot-cleaner.js";
+        "https://cdn.jsdelivr.net/gh/Izumii99/BC-Desktop@main/Scripts/screenshot-cleaner.js?v=" + Date.now();
     document.head.appendChild(script);
     console.log("Fetching Screenshot Cleaner from GitHub...");
 })();
@@ -326,7 +326,7 @@ A lightweight floating cheat menu that provides various shortcuts and utilities 
 javascript: (function () {
     var script = document.createElement("script");
     script.src =
-        "https://cdn.jsdelivr.net/gh/Izumii99/BC-Desktop@main/Scripts/cheat-menu.js";
+        "https://cdn.jsdelivr.net/gh/Izumii99/BC-Desktop@main/Scripts/cheat-menu.js?v=" + Date.now();
     document.head.appendChild(script);
     console.log("Fetching Cheat Menu from GitHub...");
 })();
