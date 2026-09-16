@@ -69,6 +69,62 @@
                     alert("Game not fully loaded yet!");
                 }
             }
+        },
+        {
+            // ponytail: wraps prereq checker — only targets 拉到身边, swaps UseHands→UseMouth fallback
+            name: "Unlock Pull to One Side (Mouth)",
+            desc: "Allows 'Pull to One Side' even with tied hands — uses mouth if free. Bypasses Echo leash prereqs for this activity only.",
+            action: () => {
+                if (typeof ActivityCheckPrerequisite !== 'function' || typeof ActivityCheckPrerequisites !== 'function') {
+                    alert("Game functions not loaded yet!"); return;
+                }
+
+                const TARGET = "拉到身边";
+                const origCheck = window.ActivityCheckPrerequisite;
+                const origChecks = window.ActivityCheckPrerequisites;
+
+                // Wrap per-prereq checker: for UseHands on Pull to One Side, fall back to mouth-free
+                // Luzi_* custom prereqs → always pass (for this activity, handled by wrapper below)
+                window.ActivityCheckPrerequisite = function(prereq, acting, acted, group) {
+                    if (window._pullToSideActive) {
+                        if (prereq === "UseHands")
+                            return !acting.IsMouthBlocked() || origCheck.call(this, prereq, acting, acted, group);
+                        if (typeof prereq === 'string' && prereq.startsWith('Luzi_'))
+                            return true;
+                    }
+                    return origCheck.call(this, prereq, acting, acted, group);
+                };
+
+                // Wrap per-activity checker: set flag when checking Pull to One Side,
+                // also force function-based prereqs (Echo's Prereqs.any/all) to pass
+                window.ActivityCheckPrerequisites = function(activity, acting, acted, group) {
+                    if (activity.Name === TARGET) {
+                        window._pullToSideActive = true;
+                        try {
+                            if (!activity.Prerequisite) return true;
+                            return activity.Prerequisite.every(pre => {
+                                if (typeof pre === 'function') return true;
+                                return window.ActivityCheckPrerequisite(pre, acting, acted, group);
+                            });
+                        } finally {
+                            window._pullToSideActive = false;
+                        }
+                    }
+                    return origChecks.call(this, activity, acting, acted, group);
+                };
+
+                // Also ensure ChatRoomCanBeLeashed passes when called from Echo's Luzi prereqs
+                if (typeof ChatRoomCanBeLeashed === 'function') {
+                    const origLeash = window.ChatRoomCanBeLeashed;
+                    window.ChatRoomCanBeLeashed = function() {
+                        if (window._pullToSideActive) return true;
+                        return origLeash.apply(this, arguments);
+                    };
+                }
+
+                console.log("Cheat applied: Pull to One Side (mouth mode) enabled.");
+                alert("'Pull to One Side' unlocked!\nHands tied? Uses mouth if free.\nEcho leash restrictions bypassed for this activity only.");
+            }
         }
     ];
 
