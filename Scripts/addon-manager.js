@@ -540,7 +540,7 @@
                             <div style="margin-bottom:8px; font-weight:bold; color:#b39ddb;">Hotkeys & Chat Fixes</div>
                             <ul style="margin:0; padding-left:24px; color:#e0e0e0; font-size:11px;">
                                 <li style="margin-bottom:4px;"><b>Tab Key</b>: Instantly auto-completes the targeted character's name when typing a whisper.</li>
-                                <li style="margin-bottom:4px;"><b>Alt + 1~0</b>: Quickly whisper a character based on their actual left-to-right visual position in the room.</li>
+                                <li style="margin-bottom:4px;"><b>Alt + 1~0</b>: Quickly whisper a character based on their actual left-to-right position in the room.</li>
                                 <li style="margin-bottom:4px;"><b>Alt + C/V/B</b>: Pet the Ear/Tail/Wings of your target <i>(Requires BCAR+)</i>.</li>
                                 <li style="margin-bottom:4px;"><b>Ctrl + Space</b>: Force scroll the chatbox to the very bottom.</li>
                                 <li style="margin-bottom:4px;"><b>Ungarbled Chat</b>: Automatically reveals garbled text for immersion settings.</li>
