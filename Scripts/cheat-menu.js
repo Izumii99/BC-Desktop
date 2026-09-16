@@ -71,7 +71,7 @@
             }
         },
         {
-            // ponytail: wraps prereq checker — only targets 拉到身边, swaps UseHands→UseMouth fallback
+
             name: "Unlock Pull to One Side (Mouth)",
             desc: "Allows 'Pull to One Side' even with tied hands — uses mouth if free. Bypasses Echo leash prereqs for this activity only.",
             action: () => {
@@ -79,25 +79,40 @@
                     alert("Game functions not loaded yet!"); return;
                 }
 
-                const TARGET = "拉到身边";
-                const origCheck = window.ActivityCheckPrerequisite;
-                const origChecks = window.ActivityCheckPrerequisites;
+                if (window._echoMouthHooksApplied || (typeof qolConfig !== 'undefined' && qolConfig.enableEchoMouthPull)) {
+                    alert("'Pull to One Side' is already enabled (either via this cheat or Chat QoL Auto-load)!");
+                    return;
+                }
 
-                // Wrap per-prereq checker: for UseHands on Pull to One Side, fall back to mouth-free
-                // Luzi_* custom prereqs → always pass (for this activity, handled by wrapper below)
-                window.ActivityCheckPrerequisite = function(prereq, acting, acted, group) {
+                const TARGET = "拉到身边";
+
+                if (!window._cheatMenuModApi && typeof window.bcModSdk !== "undefined") {
+                    try {
+                        window._cheatMenuModApi = window.bcModSdk.registerMod({
+                            name: "BCDesktop_CheatMenu_EchoMouth",
+                            fullName: "Cheat Menu - Echo Mouth",
+                            version: "1.0.0",
+                            repository: "https://github.com/Izumii99/BC-Desktop"
+                        });
+                    } catch (e) {
+                        console.warn("Failed to register cheat menu with ModSDK:", e);
+                    }
+                }
+                const modApi = window._cheatMenuModApi;
+
+                const doActivityCheckPrerequisite = (args, next) => {
+                    const prereq = args[0], acting = args[1], acted = args[2], group = args[3];
                     if (window._pullToSideActive) {
                         if (prereq === "UseHands")
-                            return !acting.IsMouthBlocked() || origCheck.call(this, prereq, acting, acted, group);
+                            return !acting.IsMouthBlocked() || next(args);
                         if (typeof prereq === 'string' && prereq.startsWith('Luzi_'))
                             return true;
                     }
-                    return origCheck.call(this, prereq, acting, acted, group);
+                    return next(args);
                 };
 
-                // Wrap per-activity checker: set flag when checking Pull to One Side,
-                // also force function-based prereqs (Echo's Prereqs.any/all) to pass
-                window.ActivityCheckPrerequisites = function(activity, acting, acted, group) {
+                const doActivityCheckPrerequisites = (args, next) => {
+                    const activity = args[0], acting = args[1], acted = args[2], group = args[3];
                     if (activity.Name === TARGET) {
                         window._pullToSideActive = true;
                         try {
@@ -110,25 +125,98 @@
                             window._pullToSideActive = false;
                         }
                     }
-                    return origChecks.call(this, activity, acting, acted, group);
+                    return next(args);
                 };
 
-                // Also ensure ChatRoomCanBeLeashed passes when called from Echo's Luzi prereqs
-                if (typeof ChatRoomCanBeLeashed === 'function') {
-                    const origLeash = window.ChatRoomCanBeLeashed;
-                    window.ChatRoomCanBeLeashed = function() {
-                        if (window._pullToSideActive) return true;
-                        return origLeash.apply(this, arguments);
-                    };
+                const doServerSend = (args, next) => {
+                    const Message = args[0], Data = args[1];
+                    if (Message === "ChatRoomChat" && Data && Data.Type === "Activity" && Data.Dictionary) {
+                        const isPullToSide = Data.Dictionary.some(d => 
+                            d.ActivityName === TARGET || 
+                            (d.Tag === "ActivityName" && typeof d.Text === 'string' && (d.Text === "Activity拉到身边" || d.Text === TARGET || d.Text.includes(TARGET)))
+                        );
+
+                        if (isPullToSide && typeof Player !== 'undefined' && !Player.CanInteract() && !Player.IsMouthBlocked()) {
+
+                            let targetName = "them";
+                            if (typeof CurrentCharacter !== 'undefined' && CurrentCharacter) {
+                                targetName = CurrentCharacter.Name;
+                            } else {
+                                const otherEntry = Data.Dictionary.find(d => (d.TargetCharacter && d.TargetCharacter !== Player.MemberNumber) || (d.SourceCharacter && d.SourceCharacter !== Player.MemberNumber));
+                                const otherId = otherEntry ? (otherEntry.TargetCharacter || otherEntry.SourceCharacter) : null;
+                                if (otherId && typeof ChatRoomCharacter !== 'undefined') {
+                                    const target = ChatRoomCharacter.find(c => c.MemberNumber === otherId);
+                                    if (target) targetName = target.Name;
+                                }
+                            }
+
+                            let pronoun = "her";
+                            if (Player.Pronoun) {
+                                const p = String(Player.Pronoun).toLowerCase();
+                                if (p.includes("he") || p.includes("him")) pronoun = "his";
+                                else if (p.includes("they") || p.includes("them")) pronoun = "their";
+                            }
+                            
+                            setTimeout(() => {
+                                if (typeof ServerSend === 'function') {
+
+                                    const sender = window._origServerSend_EchoMouth || window.ServerSend;
+                                    sender.call(window, "ChatRoomChat", {
+                                        Content: `bites onto the leash and pulls ${targetName} with ${pronoun} mouth`,
+                                        Type: "Emote",
+                                        Dictionary: []
+                                    });
+                                }
+                            }, 150);
+
+                            if (typeof CharacterSetFacialExpression === 'function') {
+                                CharacterSetFacialExpression(Player, "Mouth", "LipBite");
+                                if (typeof CharacterRefresh === 'function') CharacterRefresh(Player);
+                                if (typeof ChatRoomCharacterUpdate === 'function') ChatRoomCharacterUpdate(Player);
+                            }
+                        }
+                    }
+                    return next(args);
+                };
+
+                const doChatRoomCanBeLeashed = (args, next) => {
+                    if (window._pullToSideActive) return true;
+                    return next(args);
+                };
+
+                if (!window._echoMouthHooksApplied) {
+                    window._echoMouthHooksApplied = true;
+                    if (modApi) {
+                        modApi.hookFunction("ActivityCheckPrerequisite", 0, doActivityCheckPrerequisite);
+                        modApi.hookFunction("ActivityCheckPrerequisites", 0, doActivityCheckPrerequisites);
+                        modApi.hookFunction("ServerSend", 0, doServerSend);
+                        if (typeof ChatRoomCanBeLeashed === 'function') {
+                            modApi.hookFunction("ChatRoomCanBeLeashed", 0, doChatRoomCanBeLeashed);
+                        }
+                    } else {
+
+                        const origCheck = window.ActivityCheckPrerequisite;
+                        window.ActivityCheckPrerequisite = function() { return doActivityCheckPrerequisite(arguments, origCheck.bind(this)); };
+                        
+                        const origChecks = window.ActivityCheckPrerequisites;
+                        window.ActivityCheckPrerequisites = function() { return doActivityCheckPrerequisites(arguments, origChecks.bind(this)); };
+                        
+                        if (!window._origServerSend_EchoMouth) window._origServerSend_EchoMouth = window.ServerSend;
+                        window.ServerSend = function() { return doServerSend(arguments, window._origServerSend_EchoMouth.bind(this)); };
+
+                        if (typeof ChatRoomCanBeLeashed === 'function') {
+                            const origLeash = window.ChatRoomCanBeLeashed;
+                            window.ChatRoomCanBeLeashed = function() { return doChatRoomCanBeLeashed(arguments, origLeash.bind(this)); };
+                        }
+                    }
                 }
 
                 console.log("Cheat applied: Pull to One Side (mouth mode) enabled.");
-                alert("'Pull to One Side' unlocked!\nHands tied? Uses mouth if free.\nEcho leash restrictions bypassed for this activity only.");
+                alert("'Pull to One Side' unlocked!\nHands tied? Uses mouth if free.\nAdds text suffix and LipBite expression when used.");
             }
         }
     ];
 
-    // --- Profile menu button (below chat-qol gear button) ---
     const cheatBtn = document.createElement("div");
     cheatBtn.innerHTML = `<img src="https://raw.githubusercontent.com/Izumii99/BC-Desktop/main/Assets/cheat_ui.png" style="width: 100%; height: 100%; object-fit: cover; display: block; border-radius: 10px;">`;
     Object.assign(cheatBtn.style, {
@@ -155,7 +243,6 @@
     cheatBtn.onmouseenter = () => { cheatBtn.style.transform = "scale(1.1)"; };
     cheatBtn.onmouseleave = () => { cheatBtn.style.transform = "scale(1)"; };
 
-    // --- Modal overlay ---
     const cheatModal = document.createElement("div");
     Object.assign(cheatModal.style, {
         position: "fixed",
@@ -292,10 +379,6 @@
         true,
     );
 
-    // WebView2 sets AreDefaultContextMenusEnabled = false, so the DOM
-    // "contextmenu" event is often never dispatched. The game canvas also
-    // only binds HTML onclick, which never fires for button 2. Listen to
-    // the right-mouse release itself, and keep contextmenu as a fallback.
     function onChatRightClick(e) {
         if (!isChatRoom()) return;
         if (isCheatUi(e.target)) return;
@@ -308,7 +391,6 @@
     document.addEventListener("mouseup", onChatRightClick, true);
     document.addEventListener("contextmenu", onChatRightClick, true);
 
-    // ponytail: reuses the same polling pattern as chat-qol.js for screen visibility
     setInterval(() => {
         try {
             if (!uiAppended && document.body) {
@@ -324,7 +406,7 @@
                 cheatBtn.style.display = "flex";
             } else {
                 cheatBtn.style.display = "none";
-                // Leave an already-open menu alone on ChatRoom (opened via right-click)
+
                 if (!isChatRoom()) closeCheatMenu();
             }
         } catch (e) {}
