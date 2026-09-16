@@ -1270,11 +1270,13 @@
                                         blushType = "VeryHigh";
 
                                     SetSafeExpression("Blush", blushType);
-                                }
+                                }
                                 let afkMatch = msg.match(
-                                    /(^|\s)(afk|brb)~?(\s|$)/i,
+                                    /(^|\s)\(?(afk|brb)\)?~?(\s|$)/i,
                                 );
-                                if (qolConfig.emoticons.emoAfk && afkMatch) {
+                                let isOOC = msg.trim().startsWith("(");
+                                let hasParentheses = afkMatch && (afkMatch[0].includes("(") || afkMatch[0].includes(")"));
+                                if (qolConfig.emoticons.emoAfk && afkMatch && (isOOC || hasParentheses)) {
                                     let type = afkMatch[2].toLowerCase();
                                     type =
                                         type.charAt(0).toUpperCase() +

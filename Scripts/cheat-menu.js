@@ -6,6 +6,125 @@
 
     const cheats = [
         {
+            name: "Toggle Auto Mirror Restraints",
+            desc: "Automatically removes any restraint someone else puts on you and puts it back on them.",
+            action: () => {
+                if (typeof window === 'undefined' || !window.Player) {
+                    alert("Game not fully loaded yet!");
+                    return;
+                }
+                
+                if (window._autoMirrorActive) {
+                    window._autoMirrorActive = false;
+                    alert("Auto Mirror Restraints: OFF");
+                    console.log("Cheat applied: Auto Mirror OFF");
+                    return;
+                }
+                
+                window._autoMirrorActive = true;
+                alert("Auto Mirror Restraints: ON. Anyone who restrains you will be restrained themselves!");
+                console.log("Cheat applied: Auto Mirror ON");
+                
+                if (!window._autoMirrorHooked) {
+                    window._autoMirrorHooked = true;
+                    
+                    // Track the last person who targeted us
+                    window._lastTargeter = null;
+                    const origChatRoomMessage = window.ChatRoomMessage;
+                    window.ChatRoomMessage = function(data) {
+                        if (origChatRoomMessage) origChatRoomMessage(data);
+                        
+                        if (data && data.Dictionary) {
+                            let otherMember = null;
+                            let mentionsUs = false;
+                            
+                            if (Array.isArray(data.Dictionary)) {
+                                data.Dictionary.forEach(d => {
+                                    if (d.MemberNumber) {
+                                        if (d.MemberNumber === window.Player.MemberNumber) {
+                                            mentionsUs = true;
+                                        } else {
+                                            otherMember = d.MemberNumber;
+                                        }
+                                    }
+                                });
+                            }
+                            
+                            // If this message involves us and someone else, assume they are the last targeter
+                            if (mentionsUs && otherMember) {
+                                window._lastTargeter = otherMember;
+                            }
+                        }
+                    };
+
+                    // Monitor Appearance changes
+                    window._lastAppearance = window.Player.Appearance.map(a => a.Asset.Name + a.Asset.Group.Name);
+                    
+                    setInterval(() => {
+                        if (!window._autoMirrorActive || !window.Player || !window.Player.Appearance) return;
+                        
+                        const currentAppearance = window.Player.Appearance;
+                        const currentItems = currentAppearance.map(a => a.Asset.Name + a.Asset.Group.Name);
+                        
+                        // Find items that are newly added to us
+                        const added = currentAppearance.filter(a => !window._lastAppearance.includes(a.Asset.Name + a.Asset.Group.Name));
+                        
+                        if (added.length > 0) {
+                            added.forEach(newItem => {
+                                const group = newItem.Asset.Group.Name;
+                                // Only mirror items (restraints/toys), not normal clothes
+                                if (group.startsWith("Item")) {
+                                    console.log("Auto Mirror detected new item:", newItem.Asset.Name, group);
+                                    
+                                    setTimeout(() => {
+                                        let targetMember = window._lastTargeter;
+                                        if (!targetMember) {
+                                            // Fallback: find the first other player in the room
+                                            const other = window.ChatRoomCharacter && window.ChatRoomCharacter.find(c => c.MemberNumber !== window.Player.MemberNumber);
+                                            if (other) targetMember = other.MemberNumber;
+                                        }
+                                        
+                                        if (targetMember) {
+                                            const targetChar = window.ChatRoomCharacter && window.ChatRoomCharacter.find(c => c.MemberNumber === targetMember);
+                                            if (targetChar) {
+                                                // 1. Remove from us
+                                                window.InventoryRemove(window.Player, group);
+                                                window.ChatRoomCharacterItemUpdate(window.Player, group);
+                                                
+                                                // 2. Put on them
+                                                window.InventoryWear(targetChar, newItem.Asset.Name, group, newItem.Color);
+                                                const itemOnThem = window.InventoryGet(targetChar, group);
+                                                if (itemOnThem && newItem.Property) {
+                                                    itemOnThem.Property = Object.assign({}, newItem.Property);
+                                                }
+                                                window.ChatRoomCharacterItemUpdate(targetChar, group);
+                                                
+                                                // 3. Emote
+                                                window.ServerSend("ChatRoomChat", {
+                                                    Content: `*swiftly deflects the restraint and secures it onto ${targetChar.Name} instead!*`,
+                                                    Type: "Emote",
+                                                    Dictionary: []
+                                                });
+                                                console.log("Auto Mirror bounced to:", targetChar.Name);
+                                            }
+                                        } else {
+                                            // Fallback: just remove it if we don't know who did it
+                                            window.InventoryRemove(window.Player, group);
+                                            window.ChatRoomCharacterItemUpdate(window.Player, group);
+                                            console.log("Auto Mirror removed item but couldn't find source to bounce to.");
+                                        }
+                                    }, 200);
+                                }
+                            });
+                        }
+                        
+                        // Update our baseline
+                        window._lastAppearance = currentItems;
+                    }, 200);
+                }
+            }
+        },
+        {
             name: "Unlock & Remove Restraint",
             desc: "Unlocks and removes the restraint you are currently looking at/focusing on.",
             action: () => {
