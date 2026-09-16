@@ -43,6 +43,7 @@
         enableEchoMouthPull: true,
         animCount: 4,
         animDelay: 350,
+        enableScreenshotCleaner: true,
     };
     try {
         const saved = localStorage.getItem("BCDesktop_ChatQoL_Config");
@@ -643,6 +644,13 @@
             "Persist Chat Icon State",
             "Remembers your hidden/squint icon preference.",
         ),
+    );
+    qolBody.appendChild(
+        createToggle(
+            "enableScreenshotCleaner",
+            "Screenshot Cleaner",
+            "Hides UI elements when taking a screenshot (Photo Mode)."
+        )
     );
     
     const petContainer = document.createElement("div");
@@ -1757,5 +1765,81 @@
         },
         true,
     );
+
+    // --- Screenshot Cleaner + Hide Addon Buttons at Icon State 2+ ---
+    // Ported from screenshot-cleaner.js; polls until game draw functions exist.
+    (function () {
+        if (window._bcdScreenCleanerLoaded) return;
+        window._bcdScreenCleanerLoaded = true;
+
+        const SC_PASSTHROUGH = ["DrawCharacter", "ChatRoomDrawBackground"];
+        const SC_UI = [
+            "DrawButton", "DrawButtonHover", "DrawCheckbox",
+            "DrawBackNextButton", "DrawText", "DrawTextFit",
+            "DrawTextWrap", "DrawEmptyRect", "DrawCircle", "DrawProgressBar",
+        ];
+        const SC_IMG = ["DrawImage", "DrawImageEx", "DrawImageResize", "DrawImageZoomCanvas"];
+        let ptDepth = 0;
+
+        function scSuppressed() {
+            if (ptDepth > 0) return false;
+            if (qolConfig.enableScreenshotCleaner && window.CommonPhotoMode === true) return true;
+            if (typeof CurrentScreen !== "undefined" && CurrentScreen === "ChatRoom" &&
+                typeof window.ChatRoomHideIconState !== "undefined" && window.ChatRoomHideIconState >= 2) return true;
+            return false;
+        }
+
+        function isBg(s) { return typeof s === "string" && s.indexOf("Backgrounds/") === 0; }
+
+        function scInstall() {
+            const sdk = typeof window.bcModSdk !== "undefined"
+                ? window.bcModSdk.registerMod(
+                    { name: "BCD Screenshot Cleaner", fullName: "BC Desktop Screenshot Cleaner",
+                      version: "2.1.0", repository: "https://github.com/Izumii99/BC-Desktop" },
+                    { allowReplace: false })
+                : null;
+
+            function scHook(name, handler) {
+                if (typeof window[name] !== "function") return;
+                if (sdk) { sdk.hookFunction(name, 11, handler); return; }
+                const orig = window[name];
+                window[name] = function () {
+                    const a = Array.prototype.slice.call(arguments);
+                    return handler(a, (x) => orig.apply(this, x));
+                };
+            }
+
+            SC_PASSTHROUGH.forEach(n => scHook(n, (a, next) => {
+                ptDepth++; try { return next(a); } finally { ptDepth--; }
+            }));
+
+            SC_UI.forEach(n => scHook(n, (a, next) => {
+                if (scSuppressed()) return;
+                return next(a);
+            }));
+
+            SC_IMG.forEach(n => scHook(n, (a, next) => {
+                if (scSuppressed() && !isBg(a[0])) return true;
+                return next(a);
+            }));
+
+            scHook("DrawRect", (a, next) => {
+                const isFullCanvas = a[0] <= 0 && a[1] <= 0 && a[2] >= 2000 && a[3] >= 1000;
+                if (scSuppressed() && !isFullCanvas) return;
+                return next(a);
+            });
+
+            console.log("BC Desktop: Screenshot Cleaner + Icon Hide armed" + (sdk ? " via bcModSdk." : "."));
+        }
+
+        const waitForGame = setInterval(() => {
+            if (typeof window.DrawButton === "function" &&
+                typeof window.DrawCharacter === "function" &&
+                typeof window.CommonTakePhoto === "function") {
+                clearInterval(waitForGame);
+                scInstall();
+            }
+        }, 500);
+    })();
 
 })();
