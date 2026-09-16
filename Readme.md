@@ -86,64 +86,7 @@ javascript: (function () {
 })();
 ```
 
-### 2. Wardrobe & Appearance Pagination (`wardrobe-pagination.js`)
-
-Fixes the issue where having too many clothing items (e.g. from using multiple mods) causes the item list to overflow beyond the right side of the screen, making them impossible to click.
-
-<p float="left">
-  <img src="Assets/wardrobe_page1.png" width="49%" alt="Wardrobe Page 1" />
-  <img src="Assets/wardrobe_page2.png" width="49%" alt="Wardrobe Page 2" />
-</p>
-
-**Features:**
-
-- Seamlessly paginates the Appearance grid into multiple manageable pages.
-- Native UI integration with Next/Prev and Page Indicator buttons.
-- Fully compatible with Wardrobe decorators and active item selection (pink borders).
-- Hooked securely into the game's render loop without altering DOM elements.
-
-**How to Install:**
-
-#### Bookmarklet (One-Click)
-
-```javascript
-javascript: (function () {
-    var script = document.createElement("script");
-    script.src =
-        "https://cdn.jsdelivr.net/gh/Izumii99/BC-Desktop@main/Scripts/wardrobe-pagination.js";
-    document.head.appendChild(script);
-    console.log("Fetching Wardrobe Pagination from GitHub...");
-})();
-```
-
-#### Tampermonkey, ViolentMonkey, etc. (Auto-Loader)
-
-```javascript
-// ==UserScript==
-// @name         Wardrobe Pagination (Auto-Loader)
-// @namespace    http://tampermonkey.net/
-// @version      1.0
-// @description  Adds pagination to Bondage Club's appearance menu
-// @author       Izumii99
-// @match        https://*.bondageprojects.elementfx.com/*
-// @match        https://*.bondage-europe.com/*
-// @match        https://*.bondageprojects.com/*
-// @match        https://*.bondage-asia.com/*
-// @grant        none
-// ==/UserScript==
-
-(function () {
-    "use strict";
-    var script = document.createElement("script");
-    script.src =
-        "https://cdn.jsdelivr.net/gh/Izumii99/BC-Desktop@main/Scripts/wardrobe-pagination.js?v=" +
-        Date.now();
-    document.head.appendChild(script);
-    console.log("Wardrobe Pagination Loader: Injected successfully!");
-})();
-```
-
-### 3. Chat QoL & Emoticons (`chat-qol.js`)
+### 2. Chat QoL & Emoticons (`chat-qol.js`)
 
 A massive quality-of-life upgrade for the chat system that seamlessly translates text emoticons into actual 3D character facial expressions, and more.
 
@@ -151,6 +94,7 @@ A massive quality-of-life upgrade for the chat system that seamlessly translates
 
 **Features:**
 
+- **Wardrobe Pagination:** Seamlessly paginates the Appearance/Wardrobe grid into multiple manageable pages.
 - **Text-to-Expression Emoticons:** Typing text like `:)`, `>:(`, `;p`, `><`, `=///=` or even `>3<` automatically changes your character's Eyes, Mouth, Eyebrows, Blush, and Tears to match the emoticon! No need to manually click the expression menu ever again.
 - **Floating Emoticons:** Using `!`, `?`, or `#` alongside an emoticon triggers the Exclamation, Confusion, or Annoyed floating icons above your character. Type `brb` or `afk` to permanently display the BRB/AFK icon until you return.
 - **Force Ungarbled Messages:** Automatically enables the "Show Ungarbled Messages" immersion setting so you can always read what others are saying even through gags.
@@ -201,7 +145,7 @@ javascript: (function () {
 })();
 ```
 
-### 4. Addon Manager UI (`addon-manager.js`)
+### 3. Addon Manager UI (`addon-manager.js`)
 
 A built-in GUI to manage all your installed BC Desktop addons and compatible community scripts in one place.
 
@@ -255,7 +199,7 @@ javascript: (function () {
 })();
 ```
 
-### 5. Screenshot Cleaner (`screenshot-cleaner.js`)
+### 4. Screenshot Cleaner (`screenshot-cleaner.js`)
 
 A must-have utility for taking perfectly clean photos. Every screenshot taken in-game will automatically remove all addon buttons, sliders, and overlays, so there's no need to hide them manually!
 
@@ -308,7 +252,7 @@ javascript: (function () {
 })();
 ```
 
-### 6. Cheat Menu (`cheat-menu.js`)
+### 5. Cheat Menu (`cheat-menu.js`)
 
 A lightweight floating cheat menu that provides various shortcuts and utilities for testing and fun. *(Please give me more cheat so I can add that doesn't exist at ULTRABC or even mine work)*
 
