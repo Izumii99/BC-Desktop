@@ -211,7 +211,6 @@ A built-in GUI to manage all your installed BC Desktop addons and compatible com
 
 - Provides a floating quick-access button inside the game (available in the login screen, profile, etc.).
 - Allows you to easily toggle scripts ON or OFF without messing with Tampermonkey or bookmarklets again.
-- Integrates a built-in version of ULTRABc (with language selection).
 - Automatically fetches and updates scripts from the repository.
 
 **How to Install:**

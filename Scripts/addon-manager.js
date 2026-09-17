@@ -103,12 +103,7 @@
         "wardrobe-pagination.js": { title: "Wardrobe Pagination", desc: "Adds pagination to wardrobe items.", url: "https://github.com/Izumii99/BC-Desktop/blob/main/tester/Scripts/wardrobe-pagination.js" }
     };
 
-    const ULTRABC_OPTIONS = [
-        { label: "❌ Off", url: "" },
-        { label: "🇬🇧 English", url: "https://tetris245.github.io/ultrabc.github.io/ULTRAbcloader.user.js" },
-        { label: "🇨🇳 Chinese", url: "https://tetris245.github.io/ultrabc.github.io/ULTRAbcloader-ch.user.js" },
-        { label: "🇪🇸 Spanish", url: "https://tetris245.github.io/ultrabc.github.io/ULTRAbcloader-es.user.js" }
-    ];
+
 
     let isModalOpen = false;
     let scriptsList = [];
@@ -286,137 +281,7 @@
             return;
         }
 
-        // --- Render ULTRABc ---
-        const ultrabcDiv = document.createElement("div");
-        Object.assign(ultrabcDiv.style, {
-            display: "flex",
-            alignItems: "center",
-            backgroundColor: "#211c2e",
-            padding: "14px",
-            borderRadius: "12px",
-            border: "1px solid #2e2640",
-            position: "relative",
-            flexShrink: "0"
-        });
-        
-        const uIcon = document.createElement("div");
-        Object.assign(uIcon.style, {
-            backgroundColor: "#352d4d",
-            borderRadius: "10px",
-            width: "48px",
-            height: "48px",
-            display: "flex",
-            justifyContent: "center",
-            alignItems: "center",
-            fontSize: "24px",
-            marginRight: "15px",
-            flexShrink: "0"
-        });
-        uIcon.innerText = "⚡";
 
-        const uInfo = document.createElement("div");
-        Object.assign(uInfo.style, { flexGrow: "1", display: "flex", flexDirection: "column", minWidth: "0" });
-        
-        const uTitle = document.createElement("div");
-        uTitle.innerText = "ULTRABc";
-        Object.assign(uTitle.style, { fontWeight: "bold", fontSize: "14px", color: "#f5f5f5", marginBottom: "4px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" });
-        
-        const uDesc = document.createElement("div");
-        uDesc.innerText = "Massive Bondage Club Mod Toolkit";
-        Object.assign(uDesc.style, { fontSize: "12px", color: "#a59fb5", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" });
-        
-        const uStatusDotContainer = document.createElement("div");
-        Object.assign(uStatusDotContainer.style, { marginTop: "8px" });
-        const uStatusDot = document.createElement("div");
-        
-        let uConfig = userConfig["ULTRABc"];
-        Object.assign(uStatusDot.style, {
-            width: "8px", height: "8px", borderRadius: "50%",
-            backgroundColor: uConfig ? "#4caf50" : "#8a8d9b"
-        });
-        uStatusDotContainer.appendChild(uStatusDot);
-
-        uInfo.appendChild(uTitle);
-        uInfo.appendChild(uDesc);
-        uInfo.appendChild(uStatusDotContainer);
-        
-        const uSelectContainer = document.createElement("div");
-        Object.assign(uSelectContainer.style, { position: "relative", flexShrink: "0", zIndex: "100" });
-
-        const uSelectBtn = document.createElement("div");
-        Object.assign(uSelectBtn.style, {
-            backgroundColor: "#2e2742", color: "#f5f5f5", border: "1px solid #3d3554",
-            borderRadius: "6px", padding: "6px 10px", fontSize: "11px", cursor: "pointer",
-            display: "flex", alignItems: "center", gap: "6px"
-        });
-        
-        const uSelectDropdown = document.createElement("div");
-        Object.assign(uSelectDropdown.style, {
-            position: "absolute", top: "100%", right: "0", marginTop: "4px",
-            backgroundColor: "#1a1625", border: "1px solid #3d3554", borderRadius: "6px",
-            boxShadow: "0 4px 12px rgba(0,0,0,0.5)", display: "none",
-            flexDirection: "column", overflow: "hidden", minWidth: "100px"
-        });
-        
-        const updateULTRABcLabel = () => {
-            let activeOpt = ULTRABC_OPTIONS.find(o => o.url === uConfig) || ULTRABC_OPTIONS[0];
-            let rawText = activeOpt.label;
-            uSelectBtn.innerHTML = `<span>${rawText}</span> <span style="font-size:9px; color:#a59fb5;">▼</span>`;
-        };
-        updateULTRABcLabel();
-        
-        uSelectBtn.onclick = (e) => {
-            e.stopPropagation();
-            uSelectDropdown.style.display = uSelectDropdown.style.display === "none" ? "flex" : "none";
-        };
-        
-        ULTRABC_OPTIONS.forEach(opt => {
-            let item = document.createElement("div");
-            item.innerHTML = opt.label;
-            Object.assign(item.style, {
-                padding: "8px 12px", fontSize: "11px", color: "#f5f5f5", cursor: "pointer",
-                backgroundColor: uConfig === opt.url ? "#352d4d" : "transparent",
-                fontWeight: uConfig === opt.url ? "bold" : "normal",
-                whiteSpace: "nowrap"
-            });
-            item.onmouseenter = () => item.style.backgroundColor = "#2e2742";
-            item.onmouseleave = () => item.style.backgroundColor = uConfig === opt.url ? "#352d4d" : "transparent";
-            item.onclick = (e) => {
-                e.stopPropagation();
-                userConfig["ULTRABc"] = opt.url;
-                saveConfig();
-                renderList();
-            };
-            uSelectDropdown.appendChild(item);
-        });
-        
-        uSelectContainer.appendChild(uSelectBtn);
-        uSelectContainer.appendChild(uSelectDropdown);
-        
-        document.addEventListener("click", (e) => {
-            if (!uSelectContainer.contains(e.target) && uSelectDropdown.style.display !== "none") {
-                uSelectDropdown.style.display = "none";
-            }
-        });
-
-        const uChainBadge = document.createElement("div");
-        Object.assign(uChainBadge.style, {
-            position: "absolute", bottom: "0", right: "0", width: "24px", height: "24px",
-            backgroundColor: "#2e2742", borderTopLeftRadius: "8px", borderBottomRightRadius: "10px",
-            display: "flex", justifyContent: "center", alignItems: "center",
-            fontSize: "10px", color: "#a59fb5", cursor: "pointer", transition: "background-color 0.2s ease, color 0.2s"
-        });
-        uChainBadge.innerText = "🔗";
-        uChainBadge.title = "Open Repository";
-        uChainBadge.onmouseenter = () => { uChainBadge.style.backgroundColor = "#3d3554"; uChainBadge.style.color = "#fff"; };
-        uChainBadge.onmouseleave = () => { uChainBadge.style.backgroundColor = "#2e2742"; uChainBadge.style.color = "#a59fb5"; };
-        uChainBadge.onclick = () => window.open("https://github.com/tetris245/ultrabc.github.io", "_blank");
-        
-        ultrabcDiv.appendChild(uIcon);
-        ultrabcDiv.appendChild(uInfo);
-        ultrabcDiv.appendChild(uSelectContainer);
-        ultrabcDiv.appendChild(uChainBadge);
-        modalBody.appendChild(ultrabcDiv);
 
         // --- Render scripts ---
         scriptsList.forEach((scriptName) => {
@@ -694,13 +559,7 @@
                     return;
                 }
 
-                if (userConfig["ULTRABc"]) {
-                    let uScript = document.createElement("script");
-                    uScript.src = userConfig["ULTRABc"] + "?v=" + Date.now();
-                    uScript.async = false;
-                    target.appendChild(uScript);
-                    console.log("BC Desktop: Injected ULTRABc");
-                }
+
 
                 scriptsList.forEach((scriptName) => {
                     const isEnabled = userConfig[scriptName] !== false;
