@@ -1630,17 +1630,30 @@
                 index = 11;
             }
             if (index === -1) return;
-            let roster = window.ChatRoomCharacter;
-            if (!Array.isArray(roster)) return;
 
             let myNumber =
                 typeof Player !== "undefined" && Player
                     ? Player.MemberNumber
                     : null;
-            let otherChars = roster.filter(
-                (c) =>
-                    c && c.MemberNumber != null && c.MemberNumber !== myNumber,
-            );
+            // ponytail: prioritize drawlist (respects Echo reorder/current page), then append the rest of the room so blind players can still target everyone
+            let drawlist = Array.isArray(window.ChatRoomCharacterDrawlist) ? window.ChatRoomCharacterDrawlist : [];
+            let fullRoom = Array.isArray(window.ChatRoomCharacter) ? window.ChatRoomCharacter : [];
+            
+            let otherChars = [];
+            
+            drawlist.forEach(c => {
+                if (c && c.MemberNumber != null && c.MemberNumber !== myNumber) {
+                    otherChars.push(c);
+                }
+            });
+            
+            fullRoom.forEach(c => {
+                if (c && c.MemberNumber != null && c.MemberNumber !== myNumber) {
+                    if (!otherChars.some(added => added.MemberNumber === c.MemberNumber)) {
+                        otherChars.push(c);
+                    }
+                }
+            });
             if (index >= otherChars.length) return;
 
             let target = otherChars[index];
