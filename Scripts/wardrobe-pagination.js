@@ -27,7 +27,7 @@
         // Calculate visual grid coordinates
         function getVisualCoords(Left, Top, Width, Height) {
             // Target wardrobe item buttons based on dimensions and position
-            if (window.CurrentScreen === "Appearance" && Width >= 200 && Width <= 300 && Height >= 40 && Height <= 70 && Left >= 950 && Top >= 200) {
+            if ((window.CurrentScreen === "Appearance" || window.CurrentScreen === "Wardrobe") && Width >= 200 && Width <= 300 && Height >= 40 && Height <= 70 && Left >= 950 && Top >= 200) {
                 
                 let CenterX = Left + (Width / 2);
                 let CenterY = Top + (Height / 2);
@@ -67,7 +67,7 @@
 
         // Intercept DrawButton
         window.DrawButton = function(Left, Top, Width, Height, Label, Color, Image, HoveringText, Disabled) {
-            if (window.CurrentScreen === "Appearance" && Label === "<<< Back") {
+            if ((window.CurrentScreen === "Appearance" || window.CurrentScreen === "Wardrobe") && Label === "<<< Back") {
                 if (currentFrameMax > 0) maxItemIndex = currentFrameMax;
                 currentFrameMax = 0;
                 
@@ -121,7 +121,7 @@
 
         // Handle clicks for pagination
         window.addEventListener("mousedown", (e) => {
-            if (window.CurrentScreen === "Appearance") {
+            if (window.CurrentScreen === "Appearance" || window.CurrentScreen === "Wardrobe") {
                 let totalPages = Math.max(1, Math.ceil((maxItemIndex + 1) / itemsPerPage));
                 
                 if (origMouseIn(1600, 173, 100, 48) && currentPage > 0) {
