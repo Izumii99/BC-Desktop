@@ -99,8 +99,8 @@
         "fusam.js": { title: "FUSAM Loader", desc: "Fantastic Ultimate Solution to Addon Management.", icon: "🛠️", url: "https://gitlab.com/zahk3277/bc-addon-loader" },
         "LikoPlugin.js": { title: "Liko Plugin", desc: "Player customization and utility plugin.", icon: "https://cdn.jsdelivr.net/gh/awdrrawd/liko-Plugin-Repository@main/Images/PCM_ICON.png", url: "https://github.com/awdrrawd/liko-Plugin-Repository" },
         "neko-dark.js": { title: "Neko Dark Theme", desc: "A sleek dark theme for Bondage Club by Neko.", url: "https://github.com/Izumii99/BC-Desktop/blob/main/tester/Scripts/neko-dark.js" },
-        "translate.js": { title: "In-Game Translator", desc: "In-game translation tool for chat messages.", url: "https://github.com/Izumii99/BC-Desktop/blob/main/tester/Scripts/translate.js" },
-        "wardrobe-pagination.js": { title: "Wardrobe Pagination", desc: "Adds pagination to wardrobe items.", url: "https://github.com/Izumii99/BC-Desktop/blob/main/tester/Scripts/wardrobe-pagination.js" }
+        "translate.js": { title: "In-Game Translator", desc: "In-game translation tool for chat messages.", url: "https://github.com/Izumii99/BC-Desktop/blob/main/tester/Scripts/translate.js" }
+        // "wardrobe-pagination.js": { title: "Wardrobe Pagination", desc: "Adds pagination to wardrobe items.", url: "https://github.com/Izumii99/BC-Desktop/blob/main/tester/Scripts/wardrobe-pagination.js" } // Dinonaktifkan karena sudah Native di BCX
     };
 
 
