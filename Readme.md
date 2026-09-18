@@ -53,7 +53,8 @@ Because this is a theme for **Neko Chat Enhancer**, you must have the original a
 javascript: (function () {
     var script = document.createElement("script");
     script.src =
-        "https://cdn.jsdelivr.net/gh/Izumii99/BC-Desktop@main/Scripts/neko-dark.js?v=" + Date.now();
+        "https://cdn.jsdelivr.net/gh/Izumii99/BC-Desktop@main/Scripts/neko-dark.js?v=" +
+        Date.now();
     document.head.appendChild(script);
     console.log("Fetching Neko Dark from GitHub...");
 })();
@@ -88,6 +89,12 @@ javascript: (function () {
 
 ### 2. Wardrobe & Appearance Pagination (`wardrobe-pagination.js`)
 
+> [!NOTE]
+> **OFFICIALLY MERGED INTO BCX!**
+> This script was originally created as a standalone mod to fix the wardrobe overflow issue. We are incredibly proud to announce that the underlying logic has now been **natively integrated into the official Bondage Club Extended (BCX) repository!**
+>
+> You no longer need to install this script if you are using the latest version of BCX. The pagination is now a core feature! 🎉
+
 Fixes the issue where having too many clothing items (e.g. from using multiple mods) causes the item list to overflow beyond the right side of the screen, making them impossible to click.
 
 <p float="left">
@@ -95,53 +102,7 @@ Fixes the issue where having too many clothing items (e.g. from using multiple m
   <img src="Assets/wardrobe_page2.png" width="49%" alt="Wardrobe Page 2" />
 </p>
 
-**Features:**
-
-- Seamlessly paginates the Appearance grid into multiple manageable pages.
-- Native UI integration with Next/Prev and Page Indicator buttons.
-- Fully compatible with Wardrobe decorators and active item selection (pink borders).
-- Hooked securely into the game's render loop without altering DOM elements.
-
-**How to Install:**
-
-#### Bookmarklet (One-Click)
-
-```javascript
-javascript: (function () {
-    var script = document.createElement("script");
-    script.src =
-        "https://cdn.jsdelivr.net/gh/Izumii99/BC-Desktop@main/Scripts/wardrobe-pagination.js?v=" + Date.now();
-    document.head.appendChild(script);
-    console.log("Fetching Wardrobe Pagination from GitHub...");
-})();
-```
-
-#### Tampermonkey, ViolentMonkey, etc. (Auto-Loader)
-
-```javascript
-// ==UserScript==
-// @name         Wardrobe Pagination (Auto-Loader)
-// @namespace    http://tampermonkey.net/
-// @version      1.0
-// @description  Adds pagination to Bondage Club's appearance menu
-// @author       Izumii99
-// @match        https://*.bondageprojects.elementfx.com/*
-// @match        https://*.bondage-europe.com/*
-// @match        https://*.bondageprojects.com/*
-// @match        https://*.bondage-asia.com/*
-// @grant        none
-// ==/UserScript==
-
-(function () {
-    "use strict";
-    var script = document.createElement("script");
-    script.src =
-        "https://cdn.jsdelivr.net/gh/Izumii99/BC-Desktop@main/Scripts/wardrobe-pagination.js?v=" +
-        Date.now();
-    document.head.appendChild(script);
-    console.log("Wardrobe Pagination Loader: Injected successfully!");
-})();
-```
+_The standalone script remains in this repository as a historical backup/archive, but no manual installation is required anymore._
 
 ### 3. Chat QoL & Emoticons (`chat-qol.js`)
 
@@ -156,9 +117,9 @@ A massive quality-of-life upgrade for the chat system that seamlessly translates
 - **Force Ungarbled Messages:** Automatically enables the "Show Ungarbled Messages" immersion setting so you can always read what others are saying even through gags.
 - **Persistent Hide Icon:** Remembers if you clicked the eye icon to hide the chat UI and keeps it hidden even after the game reloads.
 - **Keyboard Shortcuts:**
-  - `Ctrl + Space`: Scroll chat to bottom.
-  - `Shift + Tab` / `Tab`: Navigate LianChat friends.
-  - `Alt + Number (1-9)`: Whisper to characters in the room based on their position.
+    - `Ctrl + Space`: Scroll chat to bottom.
+    - `Shift + Tab` / `Tab`: Navigate LianChat friends.
+    - `Alt + Number (1-9)`: Whisper to characters in the room based on their position.
 
 **How to Install:**
 
@@ -168,7 +129,8 @@ A massive quality-of-life upgrade for the chat system that seamlessly translates
 javascript: (function () {
     var script = document.createElement("script");
     script.src =
-        "https://cdn.jsdelivr.net/gh/Izumii99/BC-Desktop@main/Scripts/chat-qol.js?v=" + Date.now();
+        "https://cdn.jsdelivr.net/gh/Izumii99/BC-Desktop@main/Scripts/chat-qol.js?v=" +
+        Date.now();
     document.head.appendChild(script);
     console.log("Fetching Chat QoL from GitHub...");
 })();
@@ -221,7 +183,8 @@ A built-in GUI to manage all your installed BC Desktop addons and compatible com
 javascript: (function () {
     var script = document.createElement("script");
     script.src =
-        "https://cdn.jsdelivr.net/gh/Izumii99/BC-Desktop@main/Scripts/addon-manager.js?v=" + Date.now();
+        "https://cdn.jsdelivr.net/gh/Izumii99/BC-Desktop@main/Scripts/addon-manager.js?v=" +
+        Date.now();
     document.head.appendChild(script);
     console.log("Fetching Addon Manager from GitHub...");
 })();
@@ -264,6 +227,7 @@ A must-have utility for taking perfectly clean photos. Every screenshot taken in
 </p>
 
 **Features:**
+
 - Seamlessly drops every third-party button and addon overlay from the captured frame.
 - Keeps in-game photos limited strictly to the characters, their arousal meters, and the room.
 - Works securely at the canvas render level via `bcModSdk`.
@@ -271,17 +235,20 @@ A must-have utility for taking perfectly clean photos. Every screenshot taken in
 **How to Install:**
 
 #### Bookmarklet (One-Click)
+
 ```javascript
 javascript: (function () {
     var script = document.createElement("script");
     script.src =
-        "https://cdn.jsdelivr.net/gh/Izumii99/BC-Desktop@main/Scripts/screenshot-cleaner.js?v=" + Date.now();
+        "https://cdn.jsdelivr.net/gh/Izumii99/BC-Desktop@main/Scripts/screenshot-cleaner.js?v=" +
+        Date.now();
     document.head.appendChild(script);
     console.log("Fetching Screenshot Cleaner from GitHub...");
 })();
 ```
 
 #### Tampermonkey, ViolentMonkey, etc. (Auto-Loader)
+
 ```javascript
 // ==UserScript==
 // @name         Screenshot Cleaner
@@ -309,11 +276,12 @@ javascript: (function () {
 
 ### 6. Cheat Menu (`cheat-menu.js`)
 
-A lightweight floating cheat menu that provides various shortcuts and utilities for testing and fun. *(Please give me more cheat so I can add that doesn't exist at ULTRABC or even mine work)*
+A lightweight floating cheat menu that provides various shortcuts and utilities for testing and fun. _(Please give me more cheat so I can add that doesn't exist at ULTRABC or even mine work)_
 
 <img src="Assets/Cheat_menu.png" width="400" alt="Cheat Menu Preview" />
 
 **Features:**
+
 - Quick-access floating draggable menu.
 - Easily toggle invulnerability, instant escape, add money, and more.
 - Perfect for debugging, modding, or just playing around without grinding.
@@ -321,17 +289,20 @@ A lightweight floating cheat menu that provides various shortcuts and utilities 
 **How to Install:**
 
 #### Bookmarklet (One-Click)
+
 ```javascript
 javascript: (function () {
     var script = document.createElement("script");
     script.src =
-        "https://cdn.jsdelivr.net/gh/Izumii99/BC-Desktop@main/Scripts/cheat-menu.js?v=" + Date.now();
+        "https://cdn.jsdelivr.net/gh/Izumii99/BC-Desktop@main/Scripts/cheat-menu.js?v=" +
+        Date.now();
     document.head.appendChild(script);
     console.log("Fetching Cheat Menu from GitHub...");
 })();
 ```
 
 #### Tampermonkey, ViolentMonkey, etc. (Auto-Loader)
+
 ```javascript
 // ==UserScript==
 // @name         Cheat Menu
