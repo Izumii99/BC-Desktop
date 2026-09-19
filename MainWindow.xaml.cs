@@ -14,7 +14,7 @@ namespace BCDesktop;
 
 public partial class MainWindow : Window
 {
-    private const string FallbackUrl    = "https://www.bondage-asia.com/club/R130/";
+    private const string FallbackUrl    = "https://www.bondage-asia.com/club/R132/";
     private const string VersionApiBase = "https://www.bondage-asia.com/";
 
 
@@ -90,40 +90,65 @@ public partial class MainWindow : Window
 
     private static async Task<string> DetectLatestUrlAsync()
     {
-        int version = 130;
+        int baseVersion = 132;
+        
+        string localAppData = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
+        string versionFile = Path.Combine(localAppData, "BCClient", "version.txt");
+        
+        if (File.Exists(versionFile))
+        {
+            if (int.TryParse(File.ReadAllText(versionFile), out int savedVersion))
+                baseVersion = savedVersion;
+        }
+
         try
         {
-            using var http = new HttpClient { Timeout = TimeSpan.FromSeconds(10) };
+            using var http = new HttpClient { Timeout = TimeSpan.FromSeconds(8) };
             http.DefaultRequestHeaders.UserAgent.ParseAdd(
                 "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36");
 
-            while (true)
+            var tasks = new List<Task<(int version, bool isSuccess)>>();
+            
+            // Check up to 30 versions ahead in parallel
+            for (int i = 0; i <= 30; i++)
             {
-                string nextUrl = $"https://www.bondage-asia.com/club/R{version + 1}/";
-                HttpResponseMessage? response = null;
-                
-                try
+                int checkVersion = baseVersion + i;
+                tasks.Add(Task.Run(async () => 
                 {
-                    response = await http.SendAsync(new HttpRequestMessage(HttpMethod.Head, nextUrl));
-                }
-                catch
-                {
-                    if (version == 130) // Retry once on cold start
+                    try
                     {
-                        await Task.Delay(500);
-                        response = await http.SendAsync(new HttpRequestMessage(HttpMethod.Head, nextUrl));
+                        var req = new HttpRequestMessage(HttpMethod.Head, $"https://www.bondage-asia.com/club/R{checkVersion}/");
+                        var response = await http.SendAsync(req);
+                        return (checkVersion, response.IsSuccessStatusCode);
                     }
-                }
-                
-                if (response != null && response.IsSuccessStatusCode)
-                    version++;
-                else
-                    break;
+                    catch
+                    {
+                        return (checkVersion, false);
+                    }
+                }));
+            }
+
+            var results = await Task.WhenAll(tasks);
+            int maxFound = results.Where(r => r.isSuccess).Select(r => r.version).DefaultIfEmpty(0).Max();
+
+            if (maxFound > baseVersion)
+            {
+                baseVersion = maxFound;
+            }
+            
+            if (maxFound > 0) 
+            {
+                try 
+                { 
+                    Directory.CreateDirectory(Path.GetDirectoryName(versionFile)); 
+                    File.WriteAllText(versionFile, baseVersion.ToString()); 
+                } 
+                catch { }
             }
         }
         catch { }
 
-        return $"https://www.bondage-asia.com/club/R{version}/";
+        return $"https://www.bondage-asia.com/club/R{baseVersion}/";
     }
 
     private async void InitWebViewAsync()
