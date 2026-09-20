@@ -44,6 +44,7 @@
         animCount: 4,
         animDelay: 350,
         enableScreenshotCleaner: true,
+        enableWceEchoBridge: true,
     };
     try {
         const saved = localStorage.getItem("BCDesktop_ChatQoL_Config");
@@ -652,6 +653,13 @@
             "Hides UI elements when taking a screenshot (Photo Mode)."
         )
     );
+    qolBody.appendChild(
+        createToggle(
+            "enableWceEchoBridge",
+            "WCE Echo Animation Bridge",
+            "Triggers WCE animations for Echo Activity buttons (lick, kiss, cuddle, etc.)."
+        )
+    );
     
     const petContainer = document.createElement("div");
     const petMain = document.createElement("div");
@@ -815,7 +823,7 @@
             qolModal.style.display = "none";
         },
         true,
-    );
+    );
     const animBtn = document.createElement("div");
     animBtn.id = "bcd-qol-anim-btn";
     animBtn.title = "Fast Pose Animation";
@@ -851,17 +859,27 @@
         let domBtn = document.getElementById(btnId);
         if (domBtn) {
             domBtn.click();
-        } else {
-            if (typeof CharacterSetActivePose === "function" && typeof Player !== "undefined") {
-                let poseName = btnId.split("-").pop();
-                try {
-                    CharacterSetActivePose(Player, poseName);
-                    if (typeof ServerSend === "function") ServerSend("ChatRoomCharacterPoseUpdate", { Pose: Player.Pose });
-                    if (typeof ChatRoomCharacterUpdate === "function") ChatRoomCharacterUpdate(Player);
-                    if (typeof CharacterRefresh === "function") CharacterRefresh(Player);
-                } catch(e) {}
-            }
+        } else if (typeof CharacterSetActivePose === "function" && typeof Player !== "undefined") {
+            let poseName = btnId.split("-").pop();
+            try {
+                CharacterSetActivePose(Player, poseName);
+                if (typeof ServerSend === "function") ServerSend("ChatRoomCharacterPoseUpdate", { Pose: Player.Pose });
+                if (typeof ChatRoomCharacterUpdate === "function") ChatRoomCharacterUpdate(Player);
+                if (typeof CharacterRefresh === "function") CharacterRefresh(Player);
+            } catch(e) {}
         }
+    };
+
+    // Set eye expression with an optional timer (seconds), same as SetSafeExpression internals
+    const setEyeExpr = (expr, timer) => {
+        try {
+            if (typeof CharacterSetFacialExpression !== "function" || typeof Player === "undefined") return;
+            if (timer != null) {
+                CharacterSetFacialExpression(Player, "Eyes", expr, timer);
+            } else {
+                CharacterSetFacialExpression(Player, "Eyes", expr);
+            }
+        } catch(e) {}
     };
 
     animBtn.onclick = () => {
@@ -872,11 +890,25 @@
         let count = 0;
         const maxCycles = parseInt(qolConfig.animCount) || 4;
         const speed = parseInt(qolConfig.animDelay) || 350;
+
+        // Save current eye expression before changing it
+        let savedEyeExpr = null;
+        try {
+            if (typeof Player !== "undefined" && Player.Appearance) {
+                const eyeItem = Player.Appearance.find(a => a.Asset && a.Asset.Group && a.Asset.Group.Name === "Eyes");
+                savedEyeExpr = eyeItem && eyeItem.Property ? eyeItem.Property.Expression : null;
+            }
+        } catch(e) {}
         
+        // Set Daydream eyes - refresh timer every frame so it never expires mid-anim
+        const eyeRefreshSec = Math.ceil((parseInt(qolConfig.animDelay) || 350) / 1000) + 3;
+        setEyeExpr("Daydream", eyeRefreshSec);
+
         animInterval = setInterval(() => {
             try {
                 let btnId = animPoses[animFrame % animPoses.length];
                 triggerPose(btnId);
+                setEyeExpr("Daydream", eyeRefreshSec); // Refresh eye timer each tick
             } catch (e) {
                 console.error("Anim error", e);
             }
@@ -886,9 +918,11 @@
             if (count >= maxCycles) {
                 clearInterval(animInterval);
                 animInterval = null;
-                animBtn.style.backgroundColor = "#ffffff";
+                animBtn.style.backgroundColor = "#ffffff";
                 try {
                     triggerPose(animPoses[1]);
+                    // Only restore if there was a prior expression; null = let timer expire naturally
+                    if (savedEyeExpr) setEyeExpr(savedEyeExpr, null);
                 } catch (e) {}
             }
         }, speed);
@@ -1851,6 +1885,67 @@
                 scInstall();
             }
         }, 500);
+    })();
+
+    // --- WCE <-> Echo Activity Bridge ---
+    (function () {
+        const initBridge = () => {
+            if (!qolConfig.enableWceEchoBridge) return;
+            if (!globalThis.bce_ActivityTriggers || !Array.isArray(globalThis.bce_ActivityTriggers)) {
+                setTimeout(initBridge, 1500);
+                return;
+            }
+            if (globalThis._bcdWceEchoBridgeLoaded) return;
+            globalThis._bcdWceEchoBridgeLoaded = true;
+
+            const mappings = [
+                { Event: "Lick",       Keywords: "舔|Lick|吸吮|Suck|含住|舔弄|舔舐|舔舔|用嘴脱掉" },
+                { Event: "LongKiss",   Keywords: "深吻|Deep Kiss|DeepKiss" },
+                { Event: "KissOnLips", Keywords: "接吻|Kiss" },
+                { Event: "LipBite",    Keywords: "咬|Bite" },
+                { Event: "DroolSides", Keywords: "流口水|Drool" },
+                { Event: "OpenMouth",  Keywords: "张开嘴|Open Mouth|OpenMouth" },
+                { Event: "CloseMouth", Keywords: "闭上嘴|Close Mouth|CloseMouth|吞咽口水|Swallow" },
+                { Event: "Spank",      Keywords: "拍打|打屁股|Spank" },
+                { Event: "Cuddle",     Keywords: "拥抱|贴贴|抱|Cuddle|Hug" },
+                { Event: "Hit",        Keywords: "掐|拧|掐住|拧住|Hit|Pinch" },
+                { Event: "ShockLight", Keywords: "吓|Shock|Startle" },
+                { Event: "Smile",      Keywords: "微笑|Smile" },
+                { Event: "Giggle",     Keywords: "轻笑|Giggle" },
+                { Event: "Laugh",      Keywords: "大笑|Laugh|笑" },
+                { Event: "Blush",      Keywords: "脸红|害羞|Blush|Shy" },
+                { Event: "Sad",        Keywords: "委屈|伤心|Sad|Cry" },
+                { Event: "Angry",      Keywords: "生气|愤怒|Angry|Mad" }
+            ];
+
+            for (const m of mappings) {
+                const tagRegex  = new RegExp(`^Chat(Other|Self)-.*-.*(${m.Keywords}).*$`, "i");
+                const textRegex = new RegExp(`(${m.Keywords})`, "i");
+                globalThis.bce_ActivityTriggers.push({
+                    Event: m.Event,
+                    Type: "Activity",
+                    Matchers: [
+                        { Tester: { test(c) {
+                            if (tagRegex.test(c)) return true;
+                            if (c && c.includes("Luzi_") && typeof ActivityDictionaryText === "function") {
+                                const t = ActivityDictionaryText(c);
+                                return t && textRegex.test(t);
+                            }
+                            return false;
+                        }}, Criteria: { SenderIsPlayer: true } },
+                        { Tester: { test(c) {
+                            if (tagRegex.test(c)) return true;
+                            if (c && c.includes("Luzi_") && typeof ActivityDictionaryText === "function") {
+                                const t = ActivityDictionaryText(c);
+                                return t && textRegex.test(t);
+                            }
+                            return false;
+                        }}, Criteria: { TargetIsPlayer: true } }
+                    ]
+                });
+            }
+        };
+        setTimeout(initBridge, 1000);
     })();
 
 })();
