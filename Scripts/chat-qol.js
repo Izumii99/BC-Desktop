@@ -54,7 +54,7 @@
             qolConfig = Object.assign(qolConfig, parsed);
             qolConfig.emoticons = Object.assign(
                 defaultEmo,
-                parsed.emoticons || {}
+                parsed.emoticons || {},
             );
         }
     } catch (e) {}
@@ -88,7 +88,7 @@
         zIndex: "2147483646",
         transition: "transform 0.2s",
         userSelect: "none",
-        boxSizing: "border-box"
+        boxSizing: "border-box",
     });
     qolBtn.onmouseenter = () => {
         qolBtn.style.transform = "scale(1.1)";
@@ -279,7 +279,7 @@
         labelDesc = "",
         min = 1,
         max = 1000,
-        isSub = false
+        isSub = false,
     ) {
         const row = document.createElement("div");
         Object.assign(row.style, {
@@ -327,7 +327,8 @@
         numInput.type = "number";
         numInput.min = min;
         numInput.max = max;
-        numInput.value = typeof qolConfig[key] !== "undefined" ? qolConfig[key] : min;
+        numInput.value =
+            typeof qolConfig[key] !== "undefined" ? qolConfig[key] : min;
         Object.assign(numInput.style, {
             width: "60px",
             backgroundColor: "#1a1625",
@@ -337,7 +338,7 @@
             padding: "4px 8px",
             fontFamily: "inherit",
             fontSize: "14px",
-            outline: "none"
+            outline: "none",
         });
 
         numInput.onchange = (e) => {
@@ -346,7 +347,7 @@
             if (val < min) val = min;
             if (val > max) val = max;
             e.target.value = val;
-            
+
             qolConfig[key] = val;
             saveQolConfig();
         };
@@ -473,16 +474,22 @@
         createToggle(null, "Cat Face (Open)", ":3, ;3, :>", true, "emoCat"),
     );
     emoSubList.appendChild(
-        createToggle(null, "Cat Face (Horny)", "=w=, >w>, <w<, =////=", true, "emoCatW"),
+        createToggle(
+            null,
+            "Cat Face (Horny)",
+            "=w=, >w>, <w<, =////=",
+            true,
+            "emoCatW",
+        ),
     );
     emoSubList.appendChild(
-        createToggle(null, "Cat Face (Shy)", ">w<", true, "emoCatWClosed")
+        createToggle(null, "Cat Face (Shy)", ">w<", true, "emoCatWClosed"),
     );
     emoSubList.appendChild(
         createToggle(null, "V-Smile", "=v=, >v>, <v<", true, "emoVSmile"),
     );
     emoSubList.appendChild(
-        createToggle(null, "V-Smile (Shy)", ">v<", true, "emoVSmileClosed")
+        createToggle(null, "V-Smile (Shy)", ">v<", true, "emoVSmileClosed"),
     );
     emoSubList.appendChild(
         createToggle(null, "Happy / Smile", "^_^, ^^, ^~^", true, "emoHappy"),
@@ -587,80 +594,134 @@
     emoContainer.appendChild(emoMain);
     emoContainer.appendChild(emoSubList);
 
-    qolBody.appendChild(emoContainer);
-    
-    qolBody.appendChild(
-        createToggle(
-            "enableEchoMouthPull",
-            "Enable Pull to Side (Mouth)",
-            "Allows pulling to side with mouth if hands are tied (Echo Addon)."
-        )
-    );
+    function createCategory(title, defaultOpen = false) {
+        const container = document.createElement("div");
+        Object.assign(container.style, {
+            display: "flex",
+            flexDirection: "column",
+            backgroundColor: "#1a1625",
+        });
 
-    qolBody.appendChild(
-        createToggle(
-            "enableLianChatShortcut",
-            "Enable LianChat Nav",
-            "Use Shift+Tab or Tab to navigate LC menus.",
-        ),
-    );
-    qolBody.appendChild(
-        createToggle(
-            "enableWhisperShortcut",
-            "Enable Whisper Shortcut",
-            "Use Alt + 1-9, 0, -, = to whisper people in the room.",
-        ),
-    );
-    qolBody.appendChild(
-        createToggle(
-            "enableBcarShortcut",
-            "Enable BCAR+ Shortcuts",
-            "Use Alt + C/V/B to toggle ears, tail, and wings.",
-        ),
-    );
-    qolBody.appendChild(
+        const header = document.createElement("div");
+        Object.assign(header.style, {
+            display: "flex",
+            alignItems: "center",
+            padding: "14px 12px",
+            cursor: "pointer",
+            gap: "10px",
+            backgroundColor: "#211c2e",
+            transition: "background-color 0.2s",
+            borderTop: "1px solid #2e2640",
+            borderBottom: "1px solid #2e2640",
+            borderRadius: "4px",
+        });
+        header.onmouseenter = () => (header.style.backgroundColor = "#2a233b");
+        header.onmouseleave = () => (header.style.backgroundColor = "#211c2e");
+
+        const expand = document.createElement("span");
+        expand.innerHTML = "▼";
+        Object.assign(expand.style, {
+            color: "#a7a2b6",
+            fontSize: "12px",
+            width: "16px",
+            textAlign: "center",
+            transition: "transform 0.2s ease",
+            transform: defaultOpen ? "rotate(0deg)" : "rotate(-90deg)",
+        });
+
+        const lbl = document.createElement("div");
+        lbl.innerText = title;
+        Object.assign(lbl.style, {
+            fontSize: "15px",
+            color: "#f5f5f5",
+            fontWeight: "600",
+        });
+
+        header.appendChild(expand);
+        header.appendChild(lbl);
+
+        const body = document.createElement("div");
+        Object.assign(body.style, {
+            display: defaultOpen ? "flex" : "none",
+            flexDirection: "column",
+            padding: "0 12px",
+        });
+
+        header.onclick = () => {
+            const isHidden = body.style.display === "none";
+            body.style.display = isHidden ? "flex" : "none";
+            expand.style.transform = isHidden ? "rotate(0deg)" : "rotate(-90deg)";
+        };
+
+        container.appendChild(header);
+        container.appendChild(body);
+
+        return { container, body };
+    }
+
+    const cat1 = createCategory("Chat & Roleplay Enhancements", true);
+    cat1.body.appendChild(emoContainer);
+    cat1.body.appendChild(
         createToggle(
             "smartClosedEyes",
             "Smart Closed Eyes",
             "See everyone while your eyes are closed (bypasses expression blindness).",
         ),
     );
-    qolBody.appendChild(
-        createToggle(
-            "enableScrollShortcut",
-            "Enable Quick Scroll to Bottom",
-            "Use Ctrl + Space to quick scroll chat.",
-        ),
-    );
-    qolBody.appendChild(
+    cat1.body.appendChild(
         createToggle(
             "forceUngarbled",
             "Force Ungarbled Messages",
             "Forces the game to always show ungarbled text.",
         ),
     );
-    qolBody.appendChild(
+    cat1.body.appendChild(
         createToggle(
-            "persistIconState",
-            "Persist Chat Icon State",
-            "Remembers your hidden/squint icon preference.",
+            "enableEchoMouthPull",
+            "Enable Pull to Side (Mouth)",
+            "Allows pulling to side with mouth if hands are tied (Echo Addon).",
         ),
     );
-    qolBody.appendChild(
-        createToggle(
-            "enableScreenshotCleaner",
-            "Screenshot Cleaner",
-            "Hides UI elements when taking a screenshot (Photo Mode)."
-        )
-    );
-    qolBody.appendChild(
+    cat1.body.appendChild(
         createToggle(
             "enableWceEchoBridge",
             "WCE Echo Animation Bridge",
-            "Triggers WCE animations for Echo Activity buttons (lick, kiss, cuddle, etc.)."
-        )
+            "Triggers WCE animations for Echo Activity buttons (lick, kiss, cuddle, etc.).",
+        ),
     );
-    
+
+    const cat2 = createCategory("Keyboard Shortcuts & Navigation", false);
+    cat2.body.appendChild(
+        createToggle(
+            "enableWhisperShortcut",
+            "Enable Whisper Shortcut",
+            "Use Alt + 1-9, 0, -, = to whisper people in the room.",
+        ),
+    );
+    cat2.body.appendChild(
+        createToggle(
+            "enableScrollShortcut",
+            "Enable Quick Scroll to Bottom",
+            "Use Ctrl + Space to quick scroll chat.",
+        ),
+    );
+    cat2.body.appendChild(
+        createToggle(
+            "enableLianChatShortcut",
+            "Enable LianChat Nav",
+            "Use Shift+Tab or Tab to navigate LC menus.",
+        ),
+    );
+    cat2.body.appendChild(
+        createToggle(
+            "enableBcarShortcut",
+            "Enable BCAR+ Shortcuts",
+            "Use Alt + C/V/B to toggle ears, tail, and wings.",
+        ),
+    );
+
+    const cat3 = createCategory("Utilities & Animations", false);
+
     const petContainer = document.createElement("div");
     const petMain = document.createElement("div");
     Object.assign(petMain.style, {
@@ -688,7 +749,7 @@
         width: "16px",
         textAlign: "center",
         transition: "transform 0.2s ease",
-        transform: "rotate(-90deg)"
+        transform: "rotate(-90deg)",
     });
 
     const petLbl = document.createElement("div");
@@ -698,7 +759,7 @@
         color: "#f5f5f5",
         fontWeight: "500",
     });
-    
+
     petLeft.appendChild(petExpand);
     petLeft.appendChild(petLbl);
 
@@ -747,7 +808,9 @@
 
     petChk.onchange = (e) => {
         qolConfig.enablePetsuitAnim = e.target.checked;
-        petSlider.style.backgroundColor = e.target.checked ? "#a29bfe" : "#3d3554";
+        petSlider.style.backgroundColor = e.target.checked
+            ? "#a29bfe"
+            : "#3d3554";
         petSlider.style.boxShadow = e.target.checked
             ? "0 0 8px rgba(162, 155, 254, 0.5)"
             : "inset 0 2px 4px rgba(0,0,0,0.3)";
@@ -774,7 +837,9 @@
     petExpand.onclick = () => {
         const isHidden = petSubList.style.display === "none";
         petSubList.style.display = isHidden ? "flex" : "none";
-        petExpand.style.transform = isHidden ? "rotate(0deg)" : "rotate(-90deg)";
+        petExpand.style.transform = isHidden
+            ? "rotate(0deg)"
+            : "rotate(-90deg)";
     };
 
     petSubList.appendChild(
@@ -784,8 +849,8 @@
             "Number of animation cycles to play.",
             1,
             100,
-            true
-        )
+            true,
+        ),
     );
     petSubList.appendChild(
         createNumberInput(
@@ -794,13 +859,31 @@
             "Delay in milliseconds between pose changes (speed).",
             20,
             1000,
-            true
-        )
+            true,
+        ),
     );
 
     petContainer.appendChild(petMain);
     petContainer.appendChild(petSubList);
-    qolBody.appendChild(petContainer);
+    cat3.body.appendChild(petContainer);
+    cat3.body.appendChild(
+        createToggle(
+            "enableScreenshotCleaner",
+            "Screenshot Cleaner",
+            "Hides UI elements when taking a screenshot (Photo Mode).",
+        ),
+    );
+    cat3.body.appendChild(
+        createToggle(
+            "persistIconState",
+            "Persist Chat Icon State",
+            "Remembers your hidden/squint icon preference.",
+        ),
+    );
+
+    qolBody.appendChild(cat1.container);
+    qolBody.appendChild(cat2.container);
+    qolBody.appendChild(cat3.container);
 
     qolContent.appendChild(qolHeader);
     qolContent.appendChild(qolBody);
@@ -830,10 +913,11 @@
     Object.assign(animBtn.style, {
         position: "fixed",
         bottom: "60px",
-        left: "12px",   
+        left: "12px",
         width: "50px",
         height: "50px",
-        backgroundImage: "url('https://raw.githubusercontent.com/Izumii99/BC-Desktop/main/Assets/arm_logo_chat-qol.png')",
+        backgroundImage:
+            "url('https://raw.githubusercontent.com/Izumii99/BC-Desktop/main/Assets/arm_logo_chat-qol.png')",
         backgroundSize: "cover",
         backgroundPosition: "center",
         backgroundRepeat: "no-repeat",
@@ -845,41 +929,53 @@
         cursor: "pointer",
         border: "2px solid #000",
         userSelect: "none",
-        zIndex: "100"
+        zIndex: "100",
     });
 
     let animInterval = null;
     let animFrame = 0;
     const animPoses = [
         "dialog-pose-button-grid-BodyUpper-OverTheHead",
-        "dialog-pose-button-grid-BodyUpper-BackElbowTouch"
+        "dialog-pose-button-grid-BodyUpper-BackElbowTouch",
     ];
 
     const triggerPose = (btnId) => {
         let domBtn = document.getElementById(btnId);
         if (domBtn) {
             domBtn.click();
-        } else if (typeof CharacterSetActivePose === "function" && typeof Player !== "undefined") {
+        } else if (
+            typeof CharacterSetActivePose === "function" &&
+            typeof Player !== "undefined"
+        ) {
             let poseName = btnId.split("-").pop();
             try {
                 CharacterSetActivePose(Player, poseName);
-                if (typeof ServerSend === "function") ServerSend("ChatRoomCharacterPoseUpdate", { Pose: Player.Pose });
-                if (typeof ChatRoomCharacterUpdate === "function") ChatRoomCharacterUpdate(Player);
-                if (typeof CharacterRefresh === "function") CharacterRefresh(Player);
-            } catch(e) {}
+                if (typeof ServerSend === "function")
+                    ServerSend("ChatRoomCharacterPoseUpdate", {
+                        Pose: Player.Pose,
+                    });
+                if (typeof ChatRoomCharacterUpdate === "function")
+                    ChatRoomCharacterUpdate(Player);
+                if (typeof CharacterRefresh === "function")
+                    CharacterRefresh(Player);
+            } catch (e) {}
         }
     };
 
     // Set eye expression with an optional timer (seconds), same as SetSafeExpression internals
     const setEyeExpr = (expr, timer) => {
         try {
-            if (typeof CharacterSetFacialExpression !== "function" || typeof Player === "undefined") return;
+            if (
+                typeof CharacterSetFacialExpression !== "function" ||
+                typeof Player === "undefined"
+            )
+                return;
             if (timer != null) {
                 CharacterSetFacialExpression(Player, "Eyes", expr, timer);
             } else {
                 CharacterSetFacialExpression(Player, "Eyes", expr);
             }
-        } catch(e) {}
+        } catch (e) {}
     };
 
     animBtn.onclick = () => {
@@ -895,13 +991,22 @@
         let savedEyeExpr = null;
         try {
             if (typeof Player !== "undefined" && Player.Appearance) {
-                const eyeItem = Player.Appearance.find(a => a.Asset && a.Asset.Group && a.Asset.Group.Name === "Eyes");
-                savedEyeExpr = eyeItem && eyeItem.Property ? eyeItem.Property.Expression : null;
+                const eyeItem = Player.Appearance.find(
+                    (a) =>
+                        a.Asset &&
+                        a.Asset.Group &&
+                        a.Asset.Group.Name === "Eyes",
+                );
+                savedEyeExpr =
+                    eyeItem && eyeItem.Property
+                        ? eyeItem.Property.Expression
+                        : null;
             }
-        } catch(e) {}
-        
+        } catch (e) {}
+
         // Set Daydream eyes - refresh timer every frame so it never expires mid-anim
-        const eyeRefreshSec = Math.ceil((parseInt(qolConfig.animDelay) || 350) / 1000) + 3;
+        const eyeRefreshSec =
+            Math.ceil((parseInt(qolConfig.animDelay) || 350) / 1000) + 3;
         setEyeExpr("Daydream", eyeRefreshSec);
 
         animInterval = setInterval(() => {
@@ -912,7 +1017,7 @@
             } catch (e) {
                 console.error("Anim error", e);
             }
-            
+
             animFrame++;
             count++;
             if (count >= maxCycles) {
@@ -934,7 +1039,7 @@
                 typeof Player !== "undefined" &&
                 Player &&
                 Player.ImmersionSettings
-            ) {
+            ) {
                 if (
                     qolConfig.forceUngarbled &&
                     !Player.ImmersionSettings.ShowUngarbledMessages
@@ -946,7 +1051,8 @@
                     if (cb && !cb.checked) {
                         cb.checked = true;
                     }
-                }
+                }
+
                 if (
                     qolConfig.persistIconState &&
                     typeof window.qolSavedIconState === "undefined"
@@ -972,7 +1078,9 @@
                             typeof window.ChatRoomHideIconState !== "undefined"
                         ) {
                             window.ChatRoomHideIconState =
-                                typeof window.qolSavedIconState !== "undefined" ? window.qolSavedIconState : 1;
+                                typeof window.qolSavedIconState !== "undefined"
+                                    ? window.qolSavedIconState
+                                    : 1;
                         }
                     };
                     window.ChatRoomLoad.hasQolHook = true;
@@ -998,13 +1106,12 @@
                                 Player
                             ) {
                                 let hasEmoticon = false;
-
                                 const SetSafeExpression = (
                                     group,
                                     expr,
                                     timer = 5,
                                 ) => {
-                                    hasEmoticon = true;
+                                    hasEmoticon = true;
                                     let isWCEAnim =
                                         typeof window.bceAnimationEngineEnabled ===
                                             "function" &&
@@ -1031,7 +1138,7 @@
                                         if (
                                             group.startsWith("Eyes") ||
                                             group === "Mouth"
-                                        ) {
+                                        ) {
                                             setTimeout(() => {
                                                 if (
                                                     Player &&
@@ -1050,7 +1157,8 @@
                                             }, 500);
                                         }
                                     }, delay);
-                                };
+                                };
+
                                 if (
                                     qolConfig.emoticons.emoHappy &&
                                     msg.match(/(^|\s)\^([_^~.-]+)?\^/)
@@ -1063,7 +1171,9 @@
                                     SetSafeExpression("Eyes", "Surprised");
                                 } else if (
                                     qolConfig.emoticons.emoSurprisedO &&
-                                    msg.match(/(^|[\s,])(o\.o|o_o|oxo)(?=$|[\s,?!.])/i)
+                                    msg.match(
+                                        /(^|[\s,])(o\.o|o_o|oxo)(?=$|[\s,?!.])/i,
+                                    )
                                 ) {
                                     SetSafeExpression("Eyes", "Surprised");
                                 } else if (
@@ -1074,7 +1184,9 @@
                                 } else if (
                                     qolConfig.emoticons.emoDaydream &&
                                     (msg.match(/>[wWv_.,~x3]?<|>\/{2,5}</) ||
-                                        msg.match(/(^|[\s~*])([xX][dDpP3>\]\)])(?=$|[\s.,?!~*])/i) ||
+                                        msg.match(
+                                            /(^|[\s~*])([xX][dDpP3>\]\)])(?=$|[\s.,?!~*])/i,
+                                        ) ||
                                         msg.includes("><"))
                                 ) {
                                     SetSafeExpression("Eyes", "Daydream");
@@ -1091,18 +1203,28 @@
                                 ) {
                                     SetSafeExpression("Eyes", "Horny");
                                 } else if (
-                                    (qolConfig.emoticons.emoCatW && msg.match(/(^|[\s*~])(=w=|>w>|<w<|=\/{2,5}=)(?=$|[\s.,?!~*])/i)) ||
-                                    (qolConfig.emoticons.emoVSmile && msg.match(/(^|[\s*~])(=v=|>v>|<v<)(?=$|[\s.,?!~*])/i))
+                                    (qolConfig.emoticons.emoCatW &&
+                                        msg.match(
+                                            /(^|[\s*~])(=w=|>w>|<w<|=\/{2,5}=)(?=$|[\s.,?!~*])/i,
+                                        )) ||
+                                    (qolConfig.emoticons.emoVSmile &&
+                                        msg.match(
+                                            /(^|[\s*~])(=v=|>v>|<v<)(?=$|[\s.,?!~*])/i,
+                                        ))
                                 ) {
                                     SetSafeExpression("Eyes", "Horny");
                                 } else if (
                                     qolConfig.emoticons.emoCatWClosed &&
-                                    msg.match(/(^|[\s*~])(>w<)(?=$|[\s.,?!~*])/i)
+                                    msg.match(
+                                        /(^|[\s*~])(>w<)(?=$|[\s.,?!~*])/i,
+                                    )
                                 ) {
                                     SetSafeExpression("Eyes", "ShylyHappy");
                                 } else if (
                                     qolConfig.emoticons.emoVSmileClosed &&
-                                    msg.match(/(^|[\s*~])(>v<)(?=$|[\s.,?!~*])/i)
+                                    msg.match(
+                                        /(^|[\s*~])(>v<)(?=$|[\s.,?!~*])/i,
+                                    )
                                 ) {
                                     SetSafeExpression("Eyes", "ShylyHappy");
                                 } else if (
@@ -1124,7 +1246,9 @@
                                     SetSafeExpression("Eyes", "Dazed");
                                 } else if (
                                     qolConfig.emoticons.emoSad &&
-                                    msg.match(/(^|[\s*~])(T[xw_v-]T|TT)(?=$|[\s.,?!~*])/)
+                                    msg.match(
+                                        /(^|[\s*~])(T[xw_v-]T|TT)(?=$|[\s.,?!~*])/,
+                                    )
                                 ) {
                                     SetSafeExpression("Eyes", "Shy");
                                 } else if (
@@ -1145,10 +1269,13 @@
                                     SetSafeExpression("Eyes", "Closed");
                                 } else if (
                                     qolConfig.emoticons.emoQwq &&
-                                    msg.match(/(^|[\s*~])(qwq)(?=$|[\s.,?!~*])/i)
+                                    msg.match(
+                                        /(^|[\s*~])(qwq)(?=$|[\s.,?!~*])/i,
+                                    )
                                 ) {
                                     SetSafeExpression("Eyes", "Shy");
-                                }
+                                }
+
                                 if (
                                     qolConfig.emoticons.emoBlush &&
                                     msg.match(/(>|<)\/{2,5}(>|<)/)
@@ -1168,31 +1295,57 @@
                                     SetSafeExpression("Mouth", "Sad");
                                 } else if (
                                     qolConfig.emoticons.emoFrown &&
-                                    (msg.match(/=[_~^.-]=/i) || msg.match(/=~=/i) || msg.match(/(^|[\s*~])([x:;=]\()(?=$|[\s.,?!~*])/i))
+                                    (msg.match(/=[_~^.-]=/i) ||
+                                        msg.match(/=~=/i) ||
+                                        msg.match(
+                                            /(^|[\s*~])([x:;=]\()(?=$|[\s.,?!~*])/i,
+                                        ))
                                 ) {
                                     SetSafeExpression("Mouth", "Frown");
                                 } else if (
-                                    (qolConfig.emoticons.emoCat && msg.match(/(^|[\s*~])([x:;]3|[x:;]>)(?=$|[\s.,?!~*])/i)) ||
-                                    (qolConfig.emoticons.emoCatW && msg.match(/(^|[\s*~])(=w=|>w>|<w<)(?=$|[\s.,?!~*])/i)) ||
-                                    (qolConfig.emoticons.emoCatWClosed && msg.match(/(^|[\s*~])(>w<)(?=$|[\s.,?!~*])/i)) ||
+                                    (qolConfig.emoticons.emoCat &&
+                                        msg.match(
+                                            /(^|[\s*~])([x:;]3|[x:;]>)(?=$|[\s.,?!~*])/i,
+                                        )) ||
+                                    (qolConfig.emoticons.emoCatW &&
+                                        msg.match(
+                                            /(^|[\s*~])(=w=|>w>|<w<)(?=$|[\s.,?!~*])/i,
+                                        )) ||
+                                    (qolConfig.emoticons.emoCatWClosed &&
+                                        msg.match(
+                                            /(^|[\s*~])(>w<)(?=$|[\s.,?!~*])/i,
+                                        )) ||
                                     (qolConfig.emoticons.emoQwq &&
-                                        msg.match(/(^|[\s*~])(qwq)(?=$|[\s.,?!~*])/i))
+                                        msg.match(
+                                            /(^|[\s*~])(qwq)(?=$|[\s.,?!~*])/i,
+                                        ))
                                 ) {
                                     SetSafeExpression("Mouth", "Happy");
                                 } else if (
                                     qolConfig.emoticons.emoWink &&
-                                    msg.match(/(^|[\s*~])([x:;][pP])(?=$|[\s.,?!~*])/i)
+                                    msg.match(
+                                        /(^|[\s*~])([x:;][pP])(?=$|[\s.,?!~*])/i,
+                                    )
                                 ) {
                                     SetSafeExpression("Mouth", "Ahegao");
                                 } else if (
-                                    (qolConfig.emoticons.emoHappy && msg.match(/\^~?\^|TwT/i)) ||
-                                    (qolConfig.emoticons.emoVSmileClosed && msg.match(/(^|[\s*~])(>v<)(?=$|[\s.,?!~*])/i)) ||
-                                    (qolConfig.emoticons.emoSmile && msg.match(/(^|[\s*~])([x:;=]\))(?=$|[\s.,?!~*])/i))
+                                    (qolConfig.emoticons.emoHappy &&
+                                        msg.match(/\^~?\^|TwT/i)) ||
+                                    (qolConfig.emoticons.emoVSmileClosed &&
+                                        msg.match(
+                                            /(^|[\s*~])(>v<)(?=$|[\s.,?!~*])/i,
+                                        )) ||
+                                    (qolConfig.emoticons.emoSmile &&
+                                        msg.match(
+                                            /(^|[\s*~])([x:;=]\))(?=$|[\s.,?!~*])/i,
+                                        ))
                                 ) {
                                     SetSafeExpression("Mouth", "Smile");
                                 } else if (
                                     qolConfig.emoticons.emoVSmile &&
-                                    msg.match(/(^|[\s*~])(=v=|>v>|<v<)(?=$|[\s.,?!~*])/i)
+                                    msg.match(
+                                        /(^|[\s*~])(=v=|>v>|<v<)(?=$|[\s.,?!~*])/i,
+                                    )
                                 ) {
                                     SetSafeExpression("Mouth", "Smirk");
                                 } else if (
@@ -1209,12 +1362,17 @@
                                     SetSafeExpression("Mouth", "Pout");
                                 } else if (
                                     (qolConfig.emoticons.emoSurprisedZero &&
-                                        msg.match(/(^|[\s*~])(0\.0|0_0|0x0)(?=$|[\s.,?!~*])/)) ||
+                                        msg.match(
+                                            /(^|[\s*~])(0\.0|0_0|0x0)(?=$|[\s.,?!~*])/,
+                                        )) ||
                                     (qolConfig.emoticons.emoSurprisedO &&
-                                        msg.match(/(^|[\s*~])(o\.o|o_o|oxo)(?=$|[\s.,?!~*])/i))
+                                        msg.match(
+                                            /(^|[\s*~])(o\.o|o_o|oxo)(?=$|[\s.,?!~*])/i,
+                                        ))
                                 ) {
                                     SetSafeExpression("Mouth", "HalfOpen");
-                                }
+                                }
+
                                 if (
                                     qolConfig.emoticons.emoBlush &&
                                     msg.match(/(>|<)\/{2,5}(>|<)/)
@@ -1222,13 +1380,19 @@
                                     SetSafeExpression("Eyebrows", "Lowered");
                                 } else if (
                                     qolConfig.emoticons.emoAngry &&
-                                    msg.match(/(^|[\s*~])(>[:;xX=]|[:;xX=]<)(?=$|[\s.,?!~*])/)
+                                    msg.match(
+                                        /(^|[\s*~])(>[:;xX=]|[:;xX=]<)(?=$|[\s.,?!~*])/,
+                                    )
                                 ) {
                                     SetSafeExpression("Eyebrows", "Angry");
                                 } else if (
                                     qolConfig.emoticons.emoSad &&
-                                    (msg.match(/(^|[\s*~])(TT|T[xw]T)(?=$|[\s.,?!~*])/) ||
-                                        msg.match(/(^|[\s*~])(><|T_T)(?=$|[\s.,?!~*])/))
+                                    (msg.match(
+                                        /(^|[\s*~])(TT|T[xw]T)(?=$|[\s.,?!~*])/,
+                                    ) ||
+                                        msg.match(
+                                            /(^|[\s*~])(><|T_T)(?=$|[\s.,?!~*])/,
+                                        ))
                                 ) {
                                     SetSafeExpression("Eyebrows", "Sad");
                                 } else if (
@@ -1238,19 +1402,28 @@
                                     SetSafeExpression("Eyebrows", "Harsh");
                                 } else if (
                                     (qolConfig.emoticons.emoSurprisedZero &&
-                                        msg.match(/(^|[\s*~])(0\.0|0_0|0x0)(?=$|[\s.,?!~*])/)) ||
+                                        msg.match(
+                                            /(^|[\s*~])(0\.0|0_0|0x0)(?=$|[\s.,?!~*])/,
+                                        )) ||
                                     (qolConfig.emoticons.emoSurprisedO &&
-                                        msg.match(/(^|[\s*~])(o\.o|o_o|oxo)(?=$|[\s.,?!~*])/i))
+                                        msg.match(
+                                            /(^|[\s*~])(o\.o|o_o|oxo)(?=$|[\s.,?!~*])/i,
+                                        ))
                                 ) {
                                     SetSafeExpression("Eyebrows", "Raised");
                                 }
                                 if (
                                     qolConfig.emoticons.emoSad &&
-                                    (msg.match(/(^|[\s*~])(T[xw_v-]T|TT)(?=$|[\s.,?!~*])/) ||
-                                        msg.match(/(^|[\s*~])(qwq)(?=$|[\s.,?!~*])/i))
+                                    (msg.match(
+                                        /(^|[\s*~])(T[xw_v-]T|TT)(?=$|[\s.,?!~*])/,
+                                    ) ||
+                                        msg.match(
+                                            /(^|[\s*~])(qwq)(?=$|[\s.,?!~*])/i,
+                                        ))
                                 ) {
                                     SetSafeExpression("Fluids", "TearsMedium");
-                                }
+                                }
+
                                 if (
                                     qolConfig.emoticons.emoSweat &&
                                     (msg.match(/;\s*$/) ||
@@ -1260,7 +1433,8 @@
                                         ))
                                 ) {
                                     SetSafeExpression("Emoticon", "Tear");
-                                }
+                                }
+
                                 if (hasEmoticon) {
                                     if (
                                         qolConfig.emoticons.emoFloating &&
@@ -1288,7 +1462,8 @@
                                             "Annoyed",
                                         );
                                     }
-                                }
+                                }
+
                                 let slashMatch = msg.match(/\/{2,5}/);
                                 if (
                                     qolConfig.emoticons.emoBlush &&
@@ -1309,8 +1484,15 @@
                                     /(^|\s)\(?(afk|brb)\)?~?(\s|$)/i,
                                 );
                                 let isOOC = msg.trim().startsWith("(");
-                                let hasParentheses = afkMatch && (afkMatch[0].includes("(") || afkMatch[0].includes(")"));
-                                if (qolConfig.emoticons.emoAfk && afkMatch && (isOOC || hasParentheses)) {
+                                let hasParentheses =
+                                    afkMatch &&
+                                    (afkMatch[0].includes("(") ||
+                                        afkMatch[0].includes(")"));
+                                if (
+                                    qolConfig.emoticons.emoAfk &&
+                                    afkMatch &&
+                                    (isOOC || hasParentheses)
+                                ) {
                                     let type = afkMatch[2].toLowerCase();
                                     type =
                                         type.charAt(0).toUpperCase() +
@@ -1350,38 +1532,94 @@
                             doQolLogic();
                             return origChatRoomSendChat.apply(this, arguments);
                         };
-                    }
+                    }
+
                     if (
                         typeof CurrentScreen !== "undefined" &&
                         CurrentScreen === "ChatRoom" &&
                         typeof window.ChatRoomHideIconState !== "undefined"
                     ) {
                         if (qolConfig.persistIconState) {
-                            window.qolSavedIconState = window.ChatRoomHideIconState;
+                            window.qolSavedIconState =
+                                window.ChatRoomHideIconState;
                         }
-                    }
+                    }
+
                     if (!window.smartClosedEyesHooked) {
-                        window.smartClosedEyesHooked = true;
+                        window.smartClosedEyesHooked = true;
+
                         const TARGET = "拉到身边";
                         const doActivityCheckPrerequisite = (args, next) => {
-                            const prereq = args[0], acting = args[1], acted = args[2], group = args[3];
-                            if (qolConfig.enableEchoMouthPull && window._pullToSideActive) {
-                                if (prereq === "UseHands") return !acting.IsMouthBlocked() || next(args);
-                                if (typeof prereq === 'string' && prereq.startsWith('Luzi_')) return true;
+                            const prereq = args[0],
+                                acting = args[1],
+                                acted = args[2],
+                                group = args[3];
+                            if (
+                                qolConfig.enableEchoMouthPull &&
+                                window._pullToSideActive
+                            ) {
+                                if (prereq === "UseHands")
+                                    return (
+                                        !acting.IsMouthBlocked() || next(args)
+                                    );
+                                if (
+                                    typeof prereq === "string" &&
+                                    prereq.startsWith("Luzi_")
+                                )
+                                    return true;
                             }
                             return next(args);
                         };
 
+
                         const doActivityCheckPrerequisites = (args, next) => {
-                            const activity = args[0], acting = args[1], acted = args[2], group = args[3];
-                            if (qolConfig.enableEchoMouthPull && activity.Name === TARGET) {
+                            const activity = args[0],
+                                acting = args[1],
+                                acted = args[2],
+                                group = args[3];
+
+                            // FORCE ALLOW ONLY "PULL TO ONE SIDE" FOR ANY NECK RESTRAINT
+                            if (
+                                activity.Name === TARGET ||
+                                activity.Name === "拉到身边" ||
+                                activity.Name === "PullToSide" ||
+                                (activity.Name &&
+                                    activity.Name.includes("拉到"))
+                            ) {
+                                if (
+                                    acting.CanInteract() &&
+                                    !acting.Effect.includes("MergedFingers")
+                                ) {
+                                    if (qolConfig.enableEchoMouthPull) {
+                                        window._pullToSideActive = true;
+                                        // Wait a tiny bit and disable it so it only affects this check
+                                        setTimeout(() => {
+                                            window._pullToSideActive = false;
+                                        }, 0);
+                                    }
+                                    return true; // Bypass all checks and allow ONLY Pull To Side!
+                                }
+                            }
+
+                            if (
+                                qolConfig.enableEchoMouthPull &&
+                                activity.Name === TARGET
+                            ) {
                                 window._pullToSideActive = true;
                                 try {
                                     if (!activity.Prerequisite) return true;
-                                    return activity.Prerequisite.every(pre => {
-                                        if (typeof pre === 'function') return true;
-                                        return window.ActivityCheckPrerequisite(pre, acting, acted, group);
-                                    });
+                                    return activity.Prerequisite.every(
+                                        (pre) => {
+                                            if (typeof pre === "function")
+                                                return true;
+                                            return window.ActivityCheckPrerequisite(
+                                                pre,
+                                                acting,
+                                                acted,
+                                                group,
+                                            );
+                                        },
+                                    );
                                 } finally {
                                     window._pullToSideActive = false;
                                 }
@@ -1390,48 +1628,121 @@
                         };
 
                         const doServerSend = (args, next) => {
-                            const Message = args[0], Data = args[1];
-                            if (qolConfig.enableEchoMouthPull && Message === "ChatRoomChat" && Data && Data.Type === "Activity" && Data.Dictionary) {
-                                const isPullToSide = Data.Dictionary.some(d => 
-                                    d.ActivityName === TARGET || 
-                                    (d.Tag === "ActivityName" && typeof d.Text === 'string' && (d.Text === "Activity拉到身边" || d.Text === TARGET || d.Text.includes(TARGET)))
+                            const Message = args[0],
+                                Data = args[1];
+                            if (
+                                qolConfig.enableEchoMouthPull &&
+                                Message === "ChatRoomChat" &&
+                                Data &&
+                                Data.Type === "Activity" &&
+                                Data.Dictionary
+                            ) {
+                                const isPullToSide = Data.Dictionary.some(
+                                    (d) =>
+                                        d.ActivityName === TARGET ||
+                                        (d.Tag === "ActivityName" &&
+                                            typeof d.Text === "string" &&
+                                            (d.Text === "Activity" + TARGET ||
+                                                d.Text === TARGET ||
+                                                d.Text.includes(TARGET))),
                                 );
 
-                                if (isPullToSide && typeof Player !== 'undefined' && !Player.CanInteract() && !Player.IsMouthBlocked()) {
+                                if (
+                                    isPullToSide &&
+                                    typeof Player !== "undefined" &&
+                                    !Player.CanInteract() &&
+                                    !Player.IsMouthBlocked()
+                                ) {
                                     let targetName = "them";
-                                    if (typeof CurrentCharacter !== 'undefined' && CurrentCharacter) {
+                                    if (
+                                        typeof CurrentCharacter !==
+                                            "undefined" &&
+                                        CurrentCharacter
+                                    ) {
                                         targetName = CurrentCharacter.Name;
                                     } else {
-                                        const otherEntry = Data.Dictionary.find(d => (d.TargetCharacter && d.TargetCharacter !== Player.MemberNumber) || (d.SourceCharacter && d.SourceCharacter !== Player.MemberNumber));
-                                        const otherId = otherEntry ? (otherEntry.TargetCharacter || otherEntry.SourceCharacter) : null;
-                                        if (otherId && typeof ChatRoomCharacter !== 'undefined') {
-                                            const target = ChatRoomCharacter.find(c => c.MemberNumber === otherId);
-                                            if (target) targetName = target.Name;
+                                        const otherEntry = Data.Dictionary.find(
+                                            (d) =>
+                                                (d.TargetCharacter &&
+                                                    d.TargetCharacter !==
+                                                        Player.MemberNumber) ||
+                                                (d.SourceCharacter &&
+                                                    d.SourceCharacter !==
+                                                        Player.MemberNumber),
+                                        );
+                                        const otherId = otherEntry
+                                            ? otherEntry.TargetCharacter ||
+                                              otherEntry.SourceCharacter
+                                            : null;
+                                        if (
+                                            otherId &&
+                                            typeof ChatRoomCharacter !==
+                                                "undefined"
+                                        ) {
+                                            const target =
+                                                ChatRoomCharacter.find(
+                                                    (c) =>
+                                                        c.MemberNumber ===
+                                                        otherId,
+                                                );
+                                            if (target)
+                                                targetName = target.Name;
                                         }
                                     }
 
                                     let pronoun = "her";
                                     if (Player.Pronoun) {
-                                        const p = String(Player.Pronoun).toLowerCase();
-                                        if (p.includes("he") || p.includes("him")) pronoun = "his";
-                                        else if (p.includes("they") || p.includes("them")) pronoun = "their";
+                                        const p = String(
+                                            Player.Pronoun,
+                                        ).toLowerCase();
+                                        if (
+                                            p.includes("he") ||
+                                            p.includes("him")
+                                        )
+                                            pronoun = "his";
+                                        else if (
+                                            p.includes("they") ||
+                                            p.includes("them")
+                                        )
+                                            pronoun = "their";
                                     }
-                                    
+
                                     setTimeout(() => {
-                                        if (typeof ServerSend === 'function') {
-                                            const sender = window._origServerSend_QoL || window.ServerSend;
-                                            sender.call(window, "ChatRoomChat", {
-                                                Content: `bites onto the leash and pulls ${targetName} with ${pronoun} mouth`,
-                                                Type: "Emote",
-                                                Dictionary: []
-                                            });
+                                        if (typeof ServerSend === "function") {
+                                            const sender =
+                                                window._origServerSend_QoL ||
+                                                window.ServerSend;
+                                            sender.call(
+                                                window,
+                                                "ChatRoomChat",
+                                                {
+                                                    Content: `bites onto the leash and pulls ${targetName} with ${pronoun} mouth`,
+                                                    Type: "Emote",
+                                                    Dictionary: [],
+                                                },
+                                            );
                                         }
                                     }, 150);
 
-                                    if (typeof CharacterSetFacialExpression === 'function') {
-                                        CharacterSetFacialExpression(Player, "Mouth", "LipBite");
-                                        if (typeof CharacterRefresh === 'function') CharacterRefresh(Player);
-                                        if (typeof ChatRoomCharacterUpdate === 'function') ChatRoomCharacterUpdate(Player);
+                                    if (
+                                        typeof CharacterSetFacialExpression ===
+                                        "function"
+                                    ) {
+                                        CharacterSetFacialExpression(
+                                            Player,
+                                            "Mouth",
+                                            "LipBite",
+                                        );
+                                        if (
+                                            typeof CharacterRefresh ===
+                                            "function"
+                                        )
+                                            CharacterRefresh(Player);
+                                        if (
+                                            typeof ChatRoomCharacterUpdate ===
+                                            "function"
+                                        )
+                                            ChatRoomCharacterUpdate(Player);
                                     }
                                 }
                             }
@@ -1439,50 +1750,104 @@
                         };
 
                         const doChatRoomCanBeLeashed = (args, next) => {
-                            if (qolConfig.enableEchoMouthPull && window._pullToSideActive) return true;
+                            if (
+                                qolConfig.enableEchoMouthPull &&
+                                window._pullToSideActive
+                            )
+                                return true;
                             return next(args);
                         };
 
+
                         if (modApi) {
-                            modApi.hookFunction("ActivityCheckPrerequisite", 0, doActivityCheckPrerequisite);
-                            modApi.hookFunction("ActivityCheckPrerequisites", 0, doActivityCheckPrerequisites);
+                            modApi.hookFunction(
+                                "ActivityCheckPrerequisite",
+                                0,
+                                doActivityCheckPrerequisite,
+                            );
+                            modApi.hookFunction(
+                                "ActivityCheckPrerequisites",
+                                0,
+                                doActivityCheckPrerequisites,
+                            );
                             modApi.hookFunction("ServerSend", 0, doServerSend);
-                            if (typeof ChatRoomCanBeLeashed === 'function') {
-                                modApi.hookFunction("ChatRoomCanBeLeashed", 0, doChatRoomCanBeLeashed);
+                            if (typeof ChatRoomCanBeLeashed === "function") {
+                                modApi.hookFunction(
+                                    "ChatRoomCanBeLeashed",
+                                    0,
+                                    doChatRoomCanBeLeashed,
+                                );
                             }
                         } else {
                             const origCheck = window.ActivityCheckPrerequisite;
-                            window.ActivityCheckPrerequisite = function() { return doActivityCheckPrerequisite(arguments, origCheck.bind(this)); };
-                            
-                            const origChecks = window.ActivityCheckPrerequisites;
-                            window.ActivityCheckPrerequisites = function() { return doActivityCheckPrerequisites(arguments, origChecks.bind(this)); };
-                            
-                            if (!window._origServerSend_QoL) window._origServerSend_QoL = window.ServerSend;
-                            window.ServerSend = function() { return doServerSend(arguments, window._origServerSend_QoL.bind(this)); };
+                            window.ActivityCheckPrerequisite = function () {
+                                return doActivityCheckPrerequisite(
+                                    arguments,
+                                    origCheck.bind(this),
+                                );
+                            };
 
-                            if (typeof ChatRoomCanBeLeashed === 'function') {
+                            const origChecks =
+                                window.ActivityCheckPrerequisites;
+                            window.ActivityCheckPrerequisites = function () {
+                                return doActivityCheckPrerequisites(
+                                    arguments,
+                                    origChecks.bind(this),
+                                );
+                            };
+
+                            if (!window._origServerSend_QoL)
+                                window._origServerSend_QoL = window.ServerSend;
+                            window.ServerSend = function () {
+                                return doServerSend(
+                                    arguments,
+                                    window._origServerSend_QoL.bind(this),
+                                );
+                            };
+
+                            if (typeof ChatRoomCanBeLeashed === "function") {
                                 const origLeash = window.ChatRoomCanBeLeashed;
-                                window.ChatRoomCanBeLeashed = function() { return doChatRoomCanBeLeashed(arguments, origLeash.bind(this)); };
+                                window.ChatRoomCanBeLeashed = function () {
+                                    return doChatRoomCanBeLeashed(
+                                        arguments,
+                                        origLeash.bind(this),
+                                    );
+                                };
                             }
-                        }
-                        
+                        }
+
                         const sceWrapper = (args, next) => {
                             let shouldBypass = false;
-                            if (qolConfig.smartClosedEyes && typeof Player !== "undefined" && typeof Player.GetBlindLevel === "function") {
-                                const hasBlindItem = Player.Effect && (Player.Effect.includes("BlindHeavy") || Player.Effect.includes("BlindNormal") || Player.Effect.includes("BlindLight"));
-                                if (!hasBlindItem && Player.GetBlindLevel() > 0) {
+                            if (
+                                qolConfig.smartClosedEyes &&
+                                typeof Player !== "undefined" &&
+                                typeof Player.GetBlindLevel === "function"
+                            ) {
+                                const hasBlindItem =
+                                    Player.Effect &&
+                                    (Player.Effect.includes("BlindHeavy") ||
+                                        Player.Effect.includes("BlindNormal") ||
+                                        Player.Effect.includes("BlindLight"));
+                                if (
+                                    !hasBlindItem &&
+                                    Player.GetBlindLevel() > 0
+                                ) {
                                     shouldBypass = true;
                                 }
                             }
-                            
+
                             let origGetBlindLevel = null;
                             if (shouldBypass) {
                                 origGetBlindLevel = Player.GetBlindLevel;
-                                Player.GetBlindLevel = function() { return 0; };
+                                Player.GetBlindLevel = function () {
+                                    return 0;
+                                };
                             }
-                            
+
                             try {
-                                return next ? next(args) : args.origFn.apply(args.ctx, args.args);
+                                return next
+                                    ? next(args)
+                                    : args.origFn.apply(args.ctx, args.args);
                             } finally {
                                 if (shouldBypass && origGetBlindLevel) {
                                     Player.GetBlindLevel = origGetBlindLevel;
@@ -1491,15 +1856,28 @@
                         };
 
                         if (modApi) {
-                            modApi.hookFunction("ChatRoomUpdateDisplay", 0, sceWrapper);
+                            modApi.hookFunction(
+                                "ChatRoomUpdateDisplay",
+                                0,
+                                sceWrapper,
+                            );
                             modApi.hookFunction("ChatRoomClick", 0, sceWrapper);
-                            if (typeof window.ChatRoomSync === "function") modApi.hookFunction("ChatRoomSync", 0, sceWrapper);
+                            if (typeof window.ChatRoomSync === "function")
+                                modApi.hookFunction(
+                                    "ChatRoomSync",
+                                    0,
+                                    sceWrapper,
+                                );
                         } else {
                             const hookManual = (fnName) => {
                                 if (typeof window[fnName] === "function") {
                                     const orig = window[fnName];
-                                    window[fnName] = function() {
-                                        return sceWrapper({ origFn: orig, ctx: this, args: arguments });
+                                    window[fnName] = function () {
+                                        return sceWrapper({
+                                            origFn: orig,
+                                            ctx: this,
+                                            args: arguments,
+                                        });
                                     };
                                 }
                             };
@@ -1515,7 +1893,8 @@
                 document.body.appendChild(qolBtn);
                 document.body.appendChild(qolModal);
                 uiAppended = true;
-            }
+            }
+
             if (
                 typeof CurrentScreen !== "undefined" &&
                 (CurrentScreen === "Login" ||
@@ -1525,22 +1904,31 @@
             } else {
                 qolBtn.style.display = "none";
                 qolModal.style.display = "none";
-            }
+            }
+
             let isRestricted = false;
             if (typeof Player !== "undefined" && Player.Appearance) {
-                isRestricted = Player.Appearance.some(a => {
+                isRestricted = Player.Appearance.some((a) => {
                     if (!a.Asset) return false;
                     let name = a.Asset.Name.toLowerCase();
-                    let group = a.Asset.Group.Name;
-                    return name.includes("petsuit") || 
-                           name.includes("pet suit") ||
-                           name.includes("straitjacket") ||
-                           name.includes("armbinder") ||
-                           (group === "ItemArms" && a.Asset.IsRestraint);
+                    let group = a.Asset.Group.Name;
+
+                    return (
+                        name.includes("petsuit") ||
+                        name.includes("pet suit") ||
+                        name.includes("straitjacket") ||
+                        name.includes("armbinder") ||
+                        (group === "ItemArms" && a.Asset.IsRestraint)
+                    );
                 });
             }
 
-            if (typeof CurrentScreen !== "undefined" && CurrentScreen === "ChatRoom" && isRestricted && qolConfig.enablePetsuitAnim) {
+            if (
+                typeof CurrentScreen !== "undefined" &&
+                CurrentScreen === "ChatRoom" &&
+                isRestricted &&
+                qolConfig.enablePetsuitAnim
+            ) {
                 if (!animBtn.parentNode) {
                     document.body.appendChild(animBtn);
                 }
@@ -1554,7 +1942,8 @@
                 }
             }
         } catch (e) {}
-    }, 2000);
+    }, 2000);
+
     document.addEventListener(
         "keydown",
         (e) => {
@@ -1565,7 +1954,7 @@
                 if (!qolConfig.enableLianChatShortcut) return;
                 e.preventDefault();
 
-                if (isLianChatOpen) {
+                if (isLianChatOpen) {
                     let items = Array.from(
                         senderList.querySelectorAll(".lc-conv-item"),
                     ).filter((item) => {
@@ -1612,7 +2001,7 @@
                             );
                         }
                     }
-                } else if (e.shiftKey) {
+                } else if (e.shiftKey) {
                     let lianFab = document.getElementById(
                         "floatingMessageButton",
                     );
@@ -1641,17 +2030,20 @@
             }
         },
         true,
-    );
+    );
+
     document.addEventListener(
         "keydown",
         (e) => {
-            if (!qolConfig.enableWhisperShortcut) return;
+            if (!qolConfig.enableWhisperShortcut) return;
+
             if (!e.altKey || e.ctrlKey || e.shiftKey) return;
             if (
                 typeof CurrentScreen === "undefined" ||
                 CurrentScreen !== "ChatRoom"
             )
-                return;
+                return;
+
             let index = -1;
             let code = e.code || "";
             let digitMatch = /^(?:Digit|Numpad)([0-9])$/.exec(code);
@@ -1670,20 +2062,36 @@
                     ? Player.MemberNumber
                     : null;
             // ponytail: prioritize drawlist (respects Echo reorder/current page), then append the rest of the room so blind players can still target everyone
-            let drawlist = Array.isArray(window.ChatRoomCharacterDrawlist) ? window.ChatRoomCharacterDrawlist : [];
-            let fullRoom = Array.isArray(window.ChatRoomCharacter) ? window.ChatRoomCharacter : [];
-            
+            let drawlist = Array.isArray(window.ChatRoomCharacterDrawlist)
+                ? window.ChatRoomCharacterDrawlist
+                : [];
+            let fullRoom = Array.isArray(window.ChatRoomCharacter)
+                ? window.ChatRoomCharacter
+                : [];
+
             let otherChars = [];
-            
-            drawlist.forEach(c => {
-                if (c && c.MemberNumber != null && c.MemberNumber !== myNumber) {
+
+            drawlist.forEach((c) => {
+                if (
+                    c &&
+                    c.MemberNumber != null &&
+                    c.MemberNumber !== myNumber
+                ) {
                     otherChars.push(c);
                 }
             });
-            
-            fullRoom.forEach(c => {
-                if (c && c.MemberNumber != null && c.MemberNumber !== myNumber) {
-                    if (!otherChars.some(added => added.MemberNumber === c.MemberNumber)) {
+
+            fullRoom.forEach((c) => {
+                if (
+                    c &&
+                    c.MemberNumber != null &&
+                    c.MemberNumber !== myNumber
+                ) {
+                    if (
+                        !otherChars.some(
+                            (added) => added.MemberNumber === c.MemberNumber,
+                        )
+                    ) {
                         otherChars.push(c);
                     }
                 }
@@ -1694,11 +2102,13 @@
             if (!target || target.MemberNumber == null) return;
 
             e.preventDefault();
-            e.stopPropagation();
+            e.stopPropagation();
+
             let isToggleOff =
                 window.ChatRoomTargetMemberNumber != null &&
                 window.ChatRoomTargetMemberNumber == target.MemberNumber;
-            let newTarget = isToggleOff ? null : target.MemberNumber;
+            let newTarget = isToggleOff ? null : target.MemberNumber;
+
             if (typeof window.ChatRoomSetTarget === "function") {
                 window.ChatRoomSetTarget(newTarget);
             } else {
@@ -1709,7 +2119,8 @@
             if (chatInput) chatInput.focus();
         },
         true,
-    );
+    );
+
     document.addEventListener(
         "keydown",
         (e) => {
@@ -1730,7 +2141,8 @@
 
                             let type = "ear";
                             if (e.code === "KeyV") type = "tail";
-                            if (e.code === "KeyB") type = "wings";
+                            if (e.code === "KeyB") type = "wings";
+
                             let btnPos = "lowerleft";
                             if (
                                 Player.BCAR &&
@@ -1770,7 +2182,7 @@
                                         : type === "tail"
                                           ? 202
                                           : 247;
-                            } else {
+                            } else {
                                 MouseX = 22;
                                 MouseY =
                                     type === "ear"
@@ -1790,7 +2202,8 @@
             }
         },
         true,
-    );
+    );
+
     document.addEventListener(
         "keydown",
         (e) => {
@@ -1819,34 +2232,67 @@
 
         const SC_PASSTHROUGH = ["DrawCharacter", "ChatRoomDrawBackground"];
         const SC_UI = [
-            "DrawButton", "DrawButtonHover", "DrawCheckbox",
-            "DrawBackNextButton", "DrawText", "DrawTextFit",
-            "DrawTextWrap", "DrawEmptyRect", "DrawCircle", "DrawProgressBar",
+            "DrawButton",
+            "DrawButtonHover",
+            "DrawCheckbox",
+            "DrawBackNextButton",
+            "DrawText",
+            "DrawTextFit",
+            "DrawTextWrap",
+            "DrawEmptyRect",
+            "DrawCircle",
+            "DrawProgressBar",
         ];
-        const SC_IMG = ["DrawImage", "DrawImageEx", "DrawImageResize", "DrawImageZoomCanvas"];
+        const SC_IMG = [
+            "DrawImage",
+            "DrawImageEx",
+            "DrawImageResize",
+            "DrawImageZoomCanvas",
+        ];
         let ptDepth = 0;
 
         function scSuppressed() {
             if (ptDepth > 0) return false;
-            if (qolConfig.enableScreenshotCleaner && window.CommonPhotoMode === true) return true;
-            if (typeof CurrentScreen !== "undefined" && CurrentScreen === "ChatRoom" &&
-                typeof window.ChatRoomHideIconState !== "undefined" && window.ChatRoomHideIconState >= 2) return true;
+            if (
+                qolConfig.enableScreenshotCleaner &&
+                window.CommonPhotoMode === true
+            )
+                return true;
+            if (
+                typeof CurrentScreen !== "undefined" &&
+                CurrentScreen === "ChatRoom" &&
+                typeof window.ChatRoomHideIconState !== "undefined" &&
+                window.ChatRoomHideIconState >= 2
+            )
+                return true;
             return false;
         }
 
-        function isBg(s) { return typeof s === "string" && s.indexOf("Backgrounds/") === 0; }
+        function isBg(s) {
+            return typeof s === "string" && s.indexOf("Backgrounds/") === 0;
+        }
 
         function scInstall() {
-            const sdk = typeof window.bcModSdk !== "undefined"
-                ? window.bcModSdk.registerMod(
-                    { name: "BCD Screenshot Cleaner", fullName: "BC Desktop Screenshot Cleaner",
-                      version: "2.1.0", repository: "https://github.com/Izumii99/BC-Desktop" },
-                    { allowReplace: false })
-                : null;
+            const sdk =
+                typeof window.bcModSdk !== "undefined"
+                    ? window.bcModSdk.registerMod(
+                          {
+                              name: "BCD Screenshot Cleaner",
+                              fullName: "BC Desktop Screenshot Cleaner",
+                              version: "2.1.0",
+                              repository:
+                                  "https://github.com/Izumii99/BC-Desktop",
+                          },
+                          { allowReplace: false },
+                      )
+                    : null;
 
             function scHook(name, handler) {
                 if (typeof window[name] !== "function") return;
-                if (sdk) { sdk.hookFunction(name, 11, handler); return; }
+                if (sdk) {
+                    sdk.hookFunction(name, 11, handler);
+                    return;
+                }
                 const orig = window[name];
                 window[name] = function () {
                     const a = Array.prototype.slice.call(arguments);
@@ -1854,33 +2300,50 @@
                 };
             }
 
-            SC_PASSTHROUGH.forEach(n => scHook(n, (a, next) => {
-                ptDepth++; try { return next(a); } finally { ptDepth--; }
-            }));
+            SC_PASSTHROUGH.forEach((n) =>
+                scHook(n, (a, next) => {
+                    ptDepth++;
+                    try {
+                        return next(a);
+                    } finally {
+                        ptDepth--;
+                    }
+                }),
+            );
 
-            SC_UI.forEach(n => scHook(n, (a, next) => {
-                if (scSuppressed()) return;
-                return next(a);
-            }));
+            SC_UI.forEach((n) =>
+                scHook(n, (a, next) => {
+                    if (scSuppressed()) return;
+                    return next(a);
+                }),
+            );
 
-            SC_IMG.forEach(n => scHook(n, (a, next) => {
-                if (scSuppressed() && !isBg(a[0])) return true;
-                return next(a);
-            }));
+            SC_IMG.forEach((n) =>
+                scHook(n, (a, next) => {
+                    if (scSuppressed() && !isBg(a[0])) return true;
+                    return next(a);
+                }),
+            );
 
             scHook("DrawRect", (a, next) => {
-                const isFullCanvas = a[0] <= 0 && a[1] <= 0 && a[2] >= 2000 && a[3] >= 1000;
+                const isFullCanvas =
+                    a[0] <= 0 && a[1] <= 0 && a[2] >= 2000 && a[3] >= 1000;
                 if (scSuppressed() && !isFullCanvas) return;
                 return next(a);
             });
 
-            console.log("BC Desktop: Screenshot Cleaner + Icon Hide armed" + (sdk ? " via bcModSdk." : "."));
+            console.log(
+                "BC Desktop: Screenshot Cleaner + Icon Hide armed" +
+                    (sdk ? " via bcModSdk." : "."),
+            );
         }
 
         const waitForGame = setInterval(() => {
-            if (typeof window.DrawButton === "function" &&
+            if (
+                typeof window.DrawButton === "function" &&
                 typeof window.DrawCharacter === "function" &&
-                typeof window.CommonTakePhoto === "function") {
+                typeof window.CommonTakePhoto === "function"
+            ) {
                 clearInterval(waitForGame);
                 scInstall();
             }
@@ -1891,7 +2354,10 @@
     (function () {
         const initBridge = () => {
             if (!qolConfig.enableWceEchoBridge) return;
-            if (!globalThis.bce_ActivityTriggers || !Array.isArray(globalThis.bce_ActivityTriggers)) {
+            if (
+                !globalThis.bce_ActivityTriggers ||
+                !Array.isArray(globalThis.bce_ActivityTriggers)
+            ) {
                 setTimeout(initBridge, 1500);
                 return;
             }
@@ -1899,53 +2365,81 @@
             globalThis._bcdWceEchoBridgeLoaded = true;
 
             const mappings = [
-                { Event: "Lick",       Keywords: "舔|Lick|吸吮|Suck|含住|舔弄|舔舐|舔舔|用嘴脱掉" },
-                { Event: "LongKiss",   Keywords: "深吻|Deep Kiss|DeepKiss" },
+                {
+                    Event: "Lick",
+                    Keywords: "舔|Lick|吸吮|Suck|含住|舔弄|舔舐|舔舔|用嘴脱掉",
+                },
+                { Event: "LongKiss", Keywords: "深吻|Deep Kiss|DeepKiss" },
                 { Event: "KissOnLips", Keywords: "接吻|Kiss" },
-                { Event: "LipBite",    Keywords: "咬|Bite" },
+                { Event: "LipBite", Keywords: "咬|Bite" },
                 { Event: "DroolSides", Keywords: "流口水|Drool" },
-                { Event: "OpenMouth",  Keywords: "张开嘴|Open Mouth|OpenMouth" },
-                { Event: "CloseMouth", Keywords: "闭上嘴|Close Mouth|CloseMouth|吞咽口水|Swallow" },
-                { Event: "Spank",      Keywords: "拍打|打屁股|Spank" },
-                { Event: "Cuddle",     Keywords: "拥抱|贴贴|抱|Cuddle|Hug" },
-                { Event: "Hit",        Keywords: "掐|拧|掐住|拧住|Hit|Pinch" },
+                { Event: "OpenMouth", Keywords: "张开嘴|Open Mouth|OpenMouth" },
+                {
+                    Event: "CloseMouth",
+                    Keywords: "闭上嘴|Close Mouth|CloseMouth|吞咽口水|Swallow",
+                },
+                { Event: "Spank", Keywords: "拍打|打屁股|Spank" },
+                { Event: "Cuddle", Keywords: "拥抱|贴贴|抱|Cuddle|Hug" },
+                { Event: "Hit", Keywords: "掐|拧|掐住|拧住|Hit|Pinch" },
                 { Event: "ShockLight", Keywords: "吓|Shock|Startle" },
-                { Event: "Smile",      Keywords: "微笑|Smile" },
-                { Event: "Giggle",     Keywords: "轻笑|Giggle" },
-                { Event: "Laugh",      Keywords: "大笑|Laugh|笑" },
-                { Event: "Blush",      Keywords: "脸红|害羞|Blush|Shy" },
-                { Event: "Sad",        Keywords: "委屈|伤心|Sad|Cry" },
-                { Event: "Angry",      Keywords: "生气|愤怒|Angry|Mad" }
+                { Event: "Smile", Keywords: "微笑|Smile" },
+                { Event: "Giggle", Keywords: "轻笑|Giggle" },
+                { Event: "Laugh", Keywords: "大笑|Laugh|笑" },
+                { Event: "Blush", Keywords: "脸红|害羞|Blush|Shy" },
+                { Event: "Sad", Keywords: "委屈|伤心|Sad|Cry" },
+                { Event: "Angry", Keywords: "生气|愤怒|Angry|Mad" },
             ];
 
             for (const m of mappings) {
-                const tagRegex  = new RegExp(`^Chat(Other|Self)-.*-.*(${m.Keywords}).*$`, "i");
+                const tagRegex = new RegExp(
+                    `^Chat(Other|Self)-.*-.*(${m.Keywords}).*$`,
+                    "i",
+                );
                 const textRegex = new RegExp(`(${m.Keywords})`, "i");
                 globalThis.bce_ActivityTriggers.push({
                     Event: m.Event,
                     Type: "Activity",
                     Matchers: [
-                        { Tester: { test(c) {
-                            if (tagRegex.test(c)) return true;
-                            if (c && c.includes("Luzi_") && typeof ActivityDictionaryText === "function") {
-                                const t = ActivityDictionaryText(c);
-                                return t && textRegex.test(t);
-                            }
-                            return false;
-                        }}, Criteria: { SenderIsPlayer: true } },
-                        { Tester: { test(c) {
-                            if (tagRegex.test(c)) return true;
-                            if (c && c.includes("Luzi_") && typeof ActivityDictionaryText === "function") {
-                                const t = ActivityDictionaryText(c);
-                                return t && textRegex.test(t);
-                            }
-                            return false;
-                        }}, Criteria: { TargetIsPlayer: true } }
-                    ]
+                        {
+                            Tester: {
+                                test(c) {
+                                    if (tagRegex.test(c)) return true;
+                                    if (
+                                        c &&
+                                        c.includes("Luzi_") &&
+                                        typeof ActivityDictionaryText ===
+                                            "function"
+                                    ) {
+                                        const t = ActivityDictionaryText(c);
+                                        return t && textRegex.test(t);
+                                    }
+                                    return false;
+                                },
+                            },
+                            Criteria: { SenderIsPlayer: true },
+                        },
+                        {
+                            Tester: {
+                                test(c) {
+                                    if (tagRegex.test(c)) return true;
+                                    if (
+                                        c &&
+                                        c.includes("Luzi_") &&
+                                        typeof ActivityDictionaryText ===
+                                            "function"
+                                    ) {
+                                        const t = ActivityDictionaryText(c);
+                                        return t && textRegex.test(t);
+                                    }
+                                    return false;
+                                },
+                            },
+                            Criteria: { TargetIsPlayer: true },
+                        },
+                    ],
                 });
             }
         };
         setTimeout(initBridge, 1000);
     })();
-
 })();
