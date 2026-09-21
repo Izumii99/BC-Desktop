@@ -650,7 +650,9 @@
         header.onclick = () => {
             const isHidden = body.style.display === "none";
             body.style.display = isHidden ? "flex" : "none";
-            expand.style.transform = isHidden ? "rotate(0deg)" : "rotate(-90deg)";
+            expand.style.transform = isHidden
+                ? "rotate(0deg)"
+                : "rotate(-90deg)";
         };
 
         container.appendChild(header);
@@ -1571,7 +1573,6 @@
                             return next(args);
                         };
 
-
                         const doActivityCheckPrerequisites = (args, next) => {
                             const activity = args[0],
                                 acting = args[1],
@@ -1757,7 +1758,6 @@
                                 return true;
                             return next(args);
                         };
-
 
                         if (modApi) {
                             modApi.hookFunction(
@@ -2391,53 +2391,60 @@
                 { Event: "Angry", Keywords: "生气|愤怒|Angry|Mad" },
             ];
 
+            const aggressiveEvents = ["Spank", "Hit", "Pinch", "ShockLight", "DroolSides", "LipBite"];
             for (const m of mappings) {
                 const tagRegex = new RegExp(
                     `^Chat(Other|Self)-.*-.*(${m.Keywords}).*$`,
                     "i",
                 );
                 const textRegex = new RegExp(`(${m.Keywords})`, "i");
+                
+                const matchers = [
+                    {
+                        Tester: {
+                            test(c) {
+                                if (tagRegex.test(c)) return true;
+                                if (
+                                    c &&
+                                    c.includes("Luzi_") &&
+                                    typeof ActivityDictionaryText ===
+                                        "function"
+                                ) {
+                                    const t = ActivityDictionaryText(c);
+                                    return t && textRegex.test(t);
+                                }
+                                return false;
+                            },
+                        },
+                        Criteria: { TargetIsPlayer: true },
+                    }
+                ];
+
+                if (!aggressiveEvents.includes(m.Event)) {
+                    matchers.unshift({
+                        Tester: {
+                            test(c) {
+                                if (tagRegex.test(c)) return true;
+                                if (
+                                    c &&
+                                    c.includes("Luzi_") &&
+                                    typeof ActivityDictionaryText ===
+                                        "function"
+                                ) {
+                                    const t = ActivityDictionaryText(c);
+                                    return t && textRegex.test(t);
+                                }
+                                return false;
+                            },
+                        },
+                        Criteria: { SenderIsPlayer: true },
+                    });
+                }
+
                 globalThis.bce_ActivityTriggers.push({
                     Event: m.Event,
                     Type: "Activity",
-                    Matchers: [
-                        {
-                            Tester: {
-                                test(c) {
-                                    if (tagRegex.test(c)) return true;
-                                    if (
-                                        c &&
-                                        c.includes("Luzi_") &&
-                                        typeof ActivityDictionaryText ===
-                                            "function"
-                                    ) {
-                                        const t = ActivityDictionaryText(c);
-                                        return t && textRegex.test(t);
-                                    }
-                                    return false;
-                                },
-                            },
-                            Criteria: { SenderIsPlayer: true },
-                        },
-                        {
-                            Tester: {
-                                test(c) {
-                                    if (tagRegex.test(c)) return true;
-                                    if (
-                                        c &&
-                                        c.includes("Luzi_") &&
-                                        typeof ActivityDictionaryText ===
-                                            "function"
-                                    ) {
-                                        const t = ActivityDictionaryText(c);
-                                        return t && textRegex.test(t);
-                                    }
-                                    return false;
-                                },
-                            },
-                            Criteria: { TargetIsPlayer: true },
-                        },
-                    ],
+                    Matchers: matchers,
                 });
             }
         };
