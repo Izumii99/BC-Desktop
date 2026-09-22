@@ -98,52 +98,45 @@ public partial class MainWindow : Window
         if (File.Exists(versionFile))
         {
             if (int.TryParse(File.ReadAllText(versionFile), out int savedVersion))
-                baseVersion = savedVersion;
+            {
+                // Ignore fake versions (e.g. 252, 282) saved by the previous LiteSpeed bug
+                if (savedVersion < 200) baseVersion = savedVersion;
+            }
         }
 
         try
         {
-            using var http = new HttpClient { Timeout = TimeSpan.FromSeconds(8) };
+            using var http = new HttpClient { Timeout = TimeSpan.FromSeconds(5) };
             http.DefaultRequestHeaders.UserAgent.ParseAdd(
                 "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36");
 
-            var tasks = new List<Task<(int version, bool isSuccess)>>();
-            
-            // Check up to 30 versions ahead in parallel
-            for (int i = 0; i <= 30; i++)
+            // Fetch the CHANGELOG.md directly from GitGud to find the latest release
+            var response = await http.GetAsync("https://gitgud.io/BondageProjects/Bondage-College/-/raw/master/BondageClub/CHANGELOG.md", HttpCompletionOption.ResponseHeadersRead);
+            if (response.IsSuccessStatusCode)
             {
-                int checkVersion = baseVersion + i;
-                tasks.Add(Task.Run(async () => 
+                using var stream = await response.Content.ReadAsStreamAsync();
+                using var reader = new StreamReader(stream);
+                string line;
+                int lineCount = 0;
+                while ((line = await reader.ReadLineAsync()) != null && lineCount < 100)
                 {
-                    try
+                    lineCount++;
+                    var match = Regex.Match(line, @"^## \[R(\d+)\]");
+                    if (match.Success && int.TryParse(match.Groups[1].Value, out int latestVersion))
                     {
-                        var req = new HttpRequestMessage(HttpMethod.Head, $"https://www.bondage-asia.com/club/R{checkVersion}/");
-                        var response = await http.SendAsync(req);
-                        return (checkVersion, response.IsSuccessStatusCode);
+                        if (latestVersion >= 132)
+                        {
+                            baseVersion = latestVersion;
+                            try 
+                            { 
+                                Directory.CreateDirectory(Path.GetDirectoryName(versionFile)); 
+                                File.WriteAllText(versionFile, baseVersion.ToString()); 
+                            } 
+                            catch { }
+                        }
+                        break; // Found the latest version, no need to read further
                     }
-                    catch
-                    {
-                        return (checkVersion, false);
-                    }
-                }));
-            }
-
-            var results = await Task.WhenAll(tasks);
-            int maxFound = results.Where(r => r.isSuccess).Select(r => r.version).DefaultIfEmpty(0).Max();
-
-            if (maxFound > baseVersion)
-            {
-                baseVersion = maxFound;
-            }
-            
-            if (maxFound > 0) 
-            {
-                try 
-                { 
-                    Directory.CreateDirectory(Path.GetDirectoryName(versionFile)); 
-                    File.WriteAllText(versionFile, baseVersion.ToString()); 
-                } 
-                catch { }
+                }
             }
         }
         catch { }
