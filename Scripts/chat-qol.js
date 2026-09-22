@@ -2378,7 +2378,7 @@
                     Event: "CloseMouth",
                     Keywords: "闭上嘴|Close Mouth|CloseMouth|吞咽口水|Swallow",
                 },
-                { Event: "Spank", Keywords: "拍打|打屁股|Spank" },
+                { Event: "Spank", Keywords: "拍打|打屁股|Spank|Flick|Bap" },
                 { Event: "Cuddle", Keywords: "拥抱|贴贴|抱|Cuddle|Hug" },
                 { Event: "Pinch", Keywords: "掐|拧|掐住|拧住|Pinch" },
                 { Event: "Hit", Keywords: "Hit" },
@@ -2393,11 +2393,18 @@
 
             const aggressiveEvents = ["Spank", "Hit", "Pinch", "ShockLight", "DroolSides", "LipBite"];
             for (const m of mappings) {
+                const processedKeywords = m.Keywords.split('|').map(k => {
+                    if (/^[a-z\s]+$/i.test(k)) {
+                        return `(?<=^|[^a-z])(?:${k})(?:s|es|ed|ing)?(?=$|[^a-z])`;
+                    }
+                    return k;
+                }).join('|');
+
                 const tagRegex = new RegExp(
-                    `^Chat(Other|Self)-.*-.*(${m.Keywords}).*$`,
+                    `^Chat(Other|Self)-.*-.*(${processedKeywords}).*$`,
                     "i",
                 );
-                const textRegex = new RegExp(`(${m.Keywords})`, "i");
+                const textRegex = new RegExp(`(${processedKeywords})`, "i");
                 
                 const matchers = [
                     {
