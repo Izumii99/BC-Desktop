@@ -2410,17 +2410,33 @@
                     {
                         Tester: {
                             test(c) {
-                                if (tagRegex.test(c)) return true;
-                                if (
-                                    c &&
-                                    c.includes("Luzi_") &&
-                                    typeof ActivityDictionaryText ===
-                                        "function"
-                                ) {
-                                    const t = ActivityDictionaryText(c);
-                                    return t && textRegex.test(t);
+                                let matched = false;
+                                let t = "";
+                                if (tagRegex.test(c)) {
+                                    matched = true;
+                                } else if (c && c.includes("Luzi_") && typeof ActivityDictionaryText === "function") {
+                                    t = ActivityDictionaryText(c);
+                                    if (t && textRegex.test(t)) matched = true;
                                 }
-                                return false;
+
+                                if (!matched) return false;
+
+                                if (m.Event === "KissOnLips" || m.Event === "LongKiss") {
+                                    if (c && /^Chat(Other|Self)-Item[A-Za-z]+-/i.test(c)) {
+                                        if (!c.includes("ItemMouth")) return false;
+                                    }
+                                    if (!t && typeof ActivityDictionaryText === "function") {
+                                        t = ActivityDictionaryText(c) || "";
+                                    }
+                                    if (t) {
+                                        const nonMouthParts = /(nose|cheek|forehead|neck|ear|hand|foot|arm|leg|chest|breast|belly|stomach|toe|finger|shoulder|back|butt|ass|pussy|dick|cock|vulva|boob|nipple|鼻子|脸颊|脸|额头|脖子|耳朵|手|脚|胳膊|腿|胸|肚子|脚趾|手指|肩膀|背|屁股|阴部|肉棒|阴茎|乳房|乳头)/i;
+                                        if (nonMouthParts.test(t) && !/(lip|mouth|嘴|唇)/i.test(t)) {
+                                            return false;
+                                        }
+                                    }
+                                }
+
+                                return true;
                             },
                         },
                         Criteria: { TargetIsPlayer: true },
