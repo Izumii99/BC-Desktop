@@ -45,6 +45,7 @@
         animDelay: 350,
         enableScreenshotCleaner: true,
         enableWceEchoBridge: true,
+        enableEchoSoundBridge: true,
     };
     try {
         const saved = localStorage.getItem("BCDesktop_ChatQoL_Config");
@@ -689,6 +690,13 @@
             "enableWceEchoBridge",
             "WCE Echo Animation Bridge",
             "Triggers WCE animations for Echo Activity buttons (lick, kiss, cuddle, etc.).",
+        ),
+    );
+    cat1.body.appendChild(
+        createToggle(
+            "enableEchoSoundBridge",
+            "Echo Sound Bridge",
+            "Triggers game audio for Echo Activity and LSCG actions (spank, whip, etc.).",
         ),
     );
 
@@ -2472,5 +2480,77 @@
             }
         };
         setTimeout(initBridge, 1000);
+    })();
+
+    // --- Echo & LSCG Sound Bridge ---
+    (function () {
+        const initSoundBridge = () => {
+            if (!qolConfig.enableEchoSoundBridge) return;
+            if (typeof AudioActions === "undefined" || !Array.isArray(AudioActions)) {
+                setTimeout(initSoundBridge, 1500);
+                return;
+            }
+
+            if (globalThis._bcdEchoSoundBridgeLoaded) return;
+            globalThis._bcdEchoSoundBridgeLoaded = true;
+
+            const soundMappings = [
+                {
+                    Keywords: "拍打|打屁股|Spank|Flick|Bap|Slap|扇耳光",
+                    Sound: "SpankSkin"
+                },
+                {
+                    Keywords: "Whip|鞭打",
+                    Sound: "WhipCrack"
+                },
+                {
+                    Keywords: "Pinch|掐|拧",
+                    Sound: "LeatherStretchingShort"
+                },
+                {
+                    Keywords: "Hit|打",
+                    Sound: "SmackCrop"
+                }
+            ];
+
+            for (const m of soundMappings) {
+                const processedKeywords = m.Keywords.split('|').map(k => {
+                    if (/^[a-z\s]+$/i.test(k)) {
+                        return `(?<=^|[^a-z])(?:${k})(?:s|es|ed|ing)?(?=$|[^a-z])`;
+                    }
+                    return k;
+                }).join('|');
+
+                const tagRegex = new RegExp(`^Chat(Other|Self)-.*-.*(${processedKeywords}).*$`, "i");
+                const textRegex = new RegExp(`(${processedKeywords})`, "i");
+
+                AudioActions.unshift({
+                    IsAction: (data) => {
+                        if (data.Type !== "Activity") return false;
+                        
+                        // Safety Check: Only intercept if it's an Echo Activity or LSCG action.
+                        // This ensures we NEVER override native item sounds (like crops, floggers, etc).
+                        let isEcho = false;
+                        if (Array.isArray(data.Dictionary)) {
+                            isEcho = data.Dictionary.some(d => typeof d.Tag === "string" && d.Tag.includes("Luzi_"));
+                        }
+                        let isLSCG = typeof data.Content === "string" && data.Content.includes("Luzi");
+                        
+                        if (!isEcho && !isLSCG) return false;
+
+                        let c = data.Content;
+                        if (tagRegex.test(c)) return true;
+                        if (c && c.includes("Luzi_") && typeof ActivityDictionaryText === "function") {
+                            const t = ActivityDictionaryText(c);
+                            return t && textRegex.test(t);
+                        }
+                        return false;
+                    },
+                    GetSoundEffect: () => m.Sound
+                });
+            }
+            console.log("BC Desktop: Echo Sound Bridge Loaded (Added " + soundMappings.length + " sound triggers)");
+        };
+        setTimeout(initSoundBridge, 1000);
     })();
 })();
