@@ -96,6 +96,7 @@
         "autofocus.js": { title: "Autofocus", desc: "Automatically focuses the chat input box.", url: "https://github.com/Izumii99/BC-Desktop/blob/main/tester/Scripts/autofocus.js" },
         "chat-qol.js": { title: "Chat QoL", desc: "Quality of Life features for the chat window.", url: "https://github.com/Izumii99/BC-Desktop/blob/main/tester/Scripts/chat-qol.js" },
         "cheat-menu.js": { title: "Cheat Menu", desc: "Quick access cheats for restraints, wardrobe, and NPCs.", icon: "https://cdn.jsdelivr.net/gh/Izumii99/BC-Desktop@main/Assets/cheat_ui.png", url: "https://github.com/Izumii99/BC-Desktop/blob/main/tester/Scripts/cheat-menu.js" },
+        "fluid-color.js": { title: "Fluid Color Enforcer", desc: "Forces fluid expressions (drool, tears, etc.) to a specific color.", url: "https://github.com/Izumii99/BC-Desktop/blob/main/tester/Scripts/fluid-color.js" },
         "fusam.js": { title: "FUSAM Loader", desc: "Fantastic Ultimate Solution to Addon Management.", icon: "🛠️", url: "https://gitlab.com/zahk3277/bc-addon-loader" },
         "LikoPlugin.js": { title: "Liko Plugin", desc: "Player customization and utility plugin.", icon: "https://cdn.jsdelivr.net/gh/awdrrawd/liko-Plugin-Repository@main/Images/PCM_ICON.png", url: "https://github.com/awdrrawd/liko-Plugin-Repository" },
         "neko-dark.js": { title: "Neko Dark Theme", desc: "A sleek dark theme for Bondage Club by Neko.", url: "https://github.com/Izumii99/BC-Desktop/blob/main/tester/Scripts/neko-dark.js" },
