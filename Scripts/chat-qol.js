@@ -384,7 +384,7 @@
         transition: "transform 0.2s",
     });
     const emoLbl = document.createElement("div");
-    emoLbl.innerText = "Enable Chat Emoticons";
+    emoLbl.innerText = "Enable Chat Emoticons (Merged with LCE)";
     Object.assign(emoLbl.style, {
         fontSize: "15px",
         color: "#f5f5f5",
@@ -667,35 +667,35 @@
     cat1.body.appendChild(
         createToggle(
             "smartClosedEyes",
-            "Smart Closed Eyes",
+            "Smart Closed Eyes (Merged with LCE)",
             "See everyone while your eyes are closed (bypasses expression blindness).",
         ),
     );
     cat1.body.appendChild(
         createToggle(
             "forceUngarbled",
-            "Force Ungarbled Messages",
+            "Force Ungarbled Messages (Merged with LCE)",
             "Forces the game to always show ungarbled text.",
         ),
     );
     cat1.body.appendChild(
         createToggle(
             "enableEchoMouthPull",
-            "Enable Pull to Side (Mouth)",
+            "Enable Pull to Side (Mouth) (Merged with LCE)",
             "Allows pulling to side with mouth if hands are tied (Echo Addon).",
         ),
     );
     cat1.body.appendChild(
         createToggle(
             "enableWceEchoBridge",
-            "WCE Echo Animation Bridge",
+            "WCE Echo Animation Bridge (Merged with LCE)",
             "Triggers WCE animations for Echo Activity buttons (lick, kiss, cuddle, etc.).",
         ),
     );
     cat1.body.appendChild(
         createToggle(
             "enableEchoSoundBridge",
-            "Echo Sound Bridge",
+            "Echo Sound Bridge (Merged with LCE)",
             "Triggers game audio for Echo Activity and LSCG actions (spank, whip, etc.).",
         ),
     );
@@ -725,8 +725,8 @@
     cat2.body.appendChild(
         createToggle(
             "enableBcarShortcut",
-            "Enable BCAR+ Shortcuts",
-            "Use Alt + C/V/B to toggle ears, tail, and wings.",
+            "Shortcut Immersion",
+            "Alt + C/V/B: ears, tail, wings (BCAR+). Alt + D: petsuit animation (Chat QoL or LCE).",
         ),
     );
 
@@ -763,7 +763,7 @@
     });
 
     const petLbl = document.createElement("div");
-    petLbl.innerText = "Petsuit Animation";
+    petLbl.innerText = "Petsuit Animation (Merged with LCE)";
     Object.assign(petLbl.style, {
         fontSize: "15px",
         color: "#f5f5f5",
@@ -1903,6 +1903,8 @@
                 uiAppended = true;
             }
 
+            hookLcePetIcon();
+
             if (
                 typeof CurrentScreen !== "undefined" &&
                 (CurrentScreen === "Login" ||
@@ -1951,6 +1953,71 @@
             }
         } catch (e) {}
     }, 2000);
+
+    // ponytail: LCE keeps its petsuit toggle and position private, so the button is located
+    // by the 37x37 OverTheHead icon it draws each frame (button rect = icon - 4px).
+    // Breaks if LCE changes that icon/size; upgrade path is an exposed LCE API.
+    let lcePetBtn = null;
+    function hookLcePetIcon() {
+        if (hookLcePetIcon.done || typeof window.DrawImageResize !== "function") return;
+        hookLcePetIcon.done = true;
+        const spy = (a) => {
+            if (a[0] === "Icons/Poses/OverTheHead.png" && a[3] === 37 && a[4] === 37)
+                lcePetBtn = { x: a[1] - 4, y: a[2] - 4, t: Date.now() };
+        };
+        try {
+            window.bcModSdk
+                .registerMod({
+                    name: "BCDesktop_ShortcutImmersion",
+                    fullName: "Shortcut Immersion",
+                    version: "1.0.0",
+                    repository: "https://github.com/Izumii99/BC-Desktop",
+                })
+                .hookFunction("DrawImageResize", 0, (args, next) => {
+                    spy(args);
+                    return next(args);
+                });
+        } catch {
+            const orig = window.DrawImageResize;
+            window.DrawImageResize = function () {
+                spy(arguments);
+                return orig.apply(this, arguments);
+            };
+        }
+    }
+
+    document.addEventListener(
+        "keydown",
+        (e) => {
+            if (!qolConfig.enableBcarShortcut) return;
+            if (!e.altKey || e.ctrlKey || e.shiftKey || e.code !== "KeyD") return;
+            if (qolConfig.enablePetsuitAnim) {
+                if (animBtn && animBtn.style.display === "flex") {
+                    e.preventDefault();
+                    animBtn.onclick();
+                }
+                return;
+            }
+            if (
+                !lcePetBtn ||
+                Date.now() - lcePetBtn.t > 500 ||
+                typeof ChatRoomClick !== "function" ||
+                CurrentScreen !== "ChatRoom"
+            )
+                return;
+            e.preventDefault();
+            const ox = MouseX, oy = MouseY;
+            MouseX = lcePetBtn.x + 22;
+            MouseY = lcePetBtn.y + 22;
+            try {
+                ChatRoomClick();
+            } finally {
+                MouseX = ox;
+                MouseY = oy;
+            }
+        },
+        true,
+    );
 
     document.addEventListener(
         "keydown",
