@@ -1151,8 +1151,27 @@
                                     [/^>~<$/i, { Eyes: 'Daydream', Mouth: 'Smirk' }, 'emoDaydream'],
                                     [/^(?:>[wv._x3]?<|><)$/i, { Eyes: 'Daydream' }, 'emoDaydream']
                                 ];
+                                const getPunctuationEffect = (str) => {
+                                    if (str.match(/\?{2,}/) || str.match(/(?:\?!|!\?)/)) {
+                                        return {
+                                            Emoticon: 'Confusion',
+                                            Eyebrows: str.match(/(?:\?!|!\?)/) ? 'Angry' : 'OneRaised'
+                                        };
+                                    } else if (str.includes('!')) {
+                                        let brows = null;
+                                        if (str.match(/!{3,}/)) brows = 'Angry';
+                                        else if (str.match(/!{2}/)) brows = 'Harsh';
+                                        return { Emoticon: 'Exclamation', Eyebrows: brows };
+                                    } else if (str.includes('#')) {
+                                        return { Emoticon: 'Annoyed' };
+                                    }
+                                    return null;
+                                };
 
-                                const textmojiMatches = [];
+                                let finalFace = {};
+                                let lastPunctuation = null;
+                                let hasTextmojiEyebrows = false;
+
                                 for (const token of String(msg).split(/\s+/)) {
                                     if (/https?:\/\//i.test(token)) continue;
                                     
@@ -1192,40 +1211,40 @@
                                     }
 
                                     if (match) {
-                                        const faceObj = Object.assign({}, match);
+                                        Object.assign(finalFace, match);
+                                        if (match.Eyebrows !== undefined) hasTextmojiEyebrows = true;
+
                                         const slashMatch = token.match(/([/\\]{2,})/);
                                         if (slashMatch && qolConfig.emoticons.emoBlush) {
                                             const count = slashMatch[1].length;
-                                            if (count >= 5) faceObj.Blush = 'VeryHigh';
-                                            else if (count === 4) faceObj.Blush = 'High';
-                                            else if (count === 3) faceObj.Blush = 'Medium';
-                                            else faceObj.Blush = 'Low';
+                                            if (count >= 5) finalFace.Blush = 'VeryHigh';
+                                            else if (count === 4) finalFace.Blush = 'High';
+                                            else if (count === 3) finalFace.Blush = 'Medium';
+                                            else finalFace.Blush = 'Low';
                                         }
                                         if (qolConfig.emoticons.emoSweat && /['";]/.test(strippedMarks)) {
-                                            faceObj.Fluids = faceObj.Fluids || 'TearsLow';
-                                            faceObj.Emoticon = 'Tear';
+                                            finalFace.Fluids = finalFace.Fluids || 'TearsLow';
+                                            finalFace.Emoticon = 'Tear';
                                         }
                                         if (qolConfig.emoticons.emoFloating) {
                                             const allMarks = token.replace(baseToken, '');
-                                            if (allMarks.match(/\?{2,}/) || allMarks.match(/(?:\?!|!\?)/)) {
-                                                faceObj.Emoticon = 'Confusion';
-                                                if (allMarks.match(/(?:\?!|!\?)/)) faceObj.Eyebrows = faceObj.Eyebrows || 'Angry';
-                                                else faceObj.Eyebrows = faceObj.Eyebrows || 'OneRaised';
-                                            } else if (allMarks.includes('!')) {
-                                                faceObj.Emoticon = 'Exclamation';
-                                                if (allMarks.match(/!{3,}/)) faceObj.Eyebrows = faceObj.Eyebrows || 'Angry';
-                                                else if (allMarks.match(/!{2}/)) faceObj.Eyebrows = faceObj.Eyebrows || 'Harsh';
-                                            } else if (allMarks.includes('#')) {
-                                                faceObj.Emoticon = 'Annoyed';
-                                            }
+                                            const effect = getPunctuationEffect(allMarks);
+                                            if (effect) lastPunctuation = effect;
                                         }
-                                        textmojiMatches.push(faceObj);
+                                    } else if (qolConfig.emoticons.emoFloating) {
+                                        const marksOnly = token.replace(/[^?!#]/g, '');
+                                        if (marksOnly === token && marksOnly.length > 0) {
+                                            const effect = getPunctuationEffect(token);
+                                            if (effect) lastPunctuation = effect;
+                                        }
                                     }
                                 }
 
-                                let finalFace = {};
-                                for (const face of textmojiMatches) {
-                                    Object.assign(finalFace, face);
+                                if (lastPunctuation) {
+                                    finalFace.Emoticon = lastPunctuation.Emoticon;
+                                    if (lastPunctuation.Eyebrows && !hasTextmojiEyebrows) {
+                                        finalFace.Eyebrows = lastPunctuation.Eyebrows;
+                                    }
                                 }
 
                                 // AFK / BRB / Back / Zzz logic
