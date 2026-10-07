@@ -1116,9 +1116,11 @@
                                 const QOL_FACES = [
                                     // Explicit slash faces
                                     [/^>[\\/]{2,}<$/, { Eyes: 'Daydream', Mouth: 'Pout', Eyebrows: 'Lowered' }, 'emoBlush'],
-                                    [/^(?:>[\\/]{2,}>|<[\\/]{2,}<)$/, { Eyes: 'Shy', Mouth: null, Eyebrows: 'Lowered' }, 'emoBlush'],
+                                    [/^(?:>\/{2,5}>|<\/{2,5}<)$/i, { Eyes: 'Shy', Mouth: null, Eyebrows: 'Lowered' }, 'emoBlush'],
                                     [/^=[\\/]{2,}=$/, { Eyes: 'Horny', Mouth: 'Pout' }, 'emoBlush'],
                                     [/^(?:o|0)[\\/]{2,}(?:o|0)$/i, { Eyes: 'Surprised', Mouth: 'HalfOpen', Eyebrows: 'Raised' }, 'emoBlush'],
+                                    // Floating faces
+                                    [/^<3+$/i, { Emoticon: 'Hearts' }, 'emoFloating'],
                                     // Classic faces
                                     [/^(?:0[uuv]0|o[uuv]o)$/i, { Eyes: 'Happy', Mouth: 'Open' }, 'emoSmile'],
                                     [/^(?:[x:;=]3|[x:;=]>)$/i, { Mouth: 'Happy' }, 'emoCat'],
@@ -1215,14 +1217,49 @@
                                     Object.assign(finalFace, face);
                                 }
 
-                                // AFK / BRB logic (preserved)
-                                let afkMatch = msg.match(/(^|\s)\(?(afk|brb)\)?~?(\s|$)/i);
+                                // AFK / BRB / Back / Zzz logic
                                 let isOOC = msg.trim().startsWith("(");
-                                let hasParentheses = afkMatch && (afkMatch[0].includes("(") || afkMatch[0].includes(")"));
-                                if (qolConfig.emoticons.emoAfk && afkMatch && (isOOC || hasParentheses)) {
-                                    let type = afkMatch[2].toLowerCase();
-                                    type = type.charAt(0).toUpperCase() + type.slice(1);
-                                    finalFace._afkType = type;
+                                if (qolConfig.emoticons.emoAfk && isOOC) {
+                                    let afkMatch = msg.match(/\b(afk|brb|back)\b/i);
+                                    if (afkMatch) {
+                                        let type = afkMatch[1].toLowerCase();
+                                        if (type === "back") {
+                                            finalFace._afkType = null;
+                                            if (typeof CharacterSetFacialExpression === 'function') CharacterSetFacialExpression(Player, 'Eyes', null, null);
+                                        } else {
+                                            finalFace._afkType = type.charAt(0).toUpperCase() + type.slice(1);
+                                        }
+                                        delete finalFace.Emoticon;
+                                    }
+                                }
+
+                                // Global floating marks (fallback)
+                                if (qolConfig.emoticons.emoFloating && !/https?:\/\//i.test(msg)) {
+                                    if (!finalFace.Emoticon && !finalFace._afkType) {
+                                        if (msg.match(/\?{2,}/) || msg.includes("?!") || msg.includes("!?")) {
+                                            finalFace.Emoticon = 'Confusion';
+                                            if (msg.includes("?!") || msg.includes("!?")) {
+                                                finalFace.Eyebrows = finalFace.Eyebrows || 'Angry';
+                                            } else {
+                                                finalFace.Eyebrows = finalFace.Eyebrows || 'OneRaised';
+                                            }
+                                        }
+                                        else if (msg.includes("!")) {
+                                            finalFace.Emoticon = 'Exclamation';
+                                            if (msg.match(/!{3,}/)) {
+                                                finalFace.Eyebrows = finalFace.Eyebrows || 'Angry';
+                                            } else if (msg.match(/!{2}/)) {
+                                                finalFace.Eyebrows = finalFace.Eyebrows || 'Harsh';
+                                            }
+                                        }
+                                        else if (msg.includes("#")) finalFace.Emoticon = 'Annoyed';
+                                    }
+                                }
+
+                                // Sleep (zzz) logic (permanent)
+                                if (qolConfig.emoticons.emoFloating && /\bzzz+\b/i.test(msg)) {
+                                    finalFace._afkType = "Sleep";
+                                    if (typeof CharacterSetFacialExpression === 'function') CharacterSetFacialExpression(Player, 'Eyes', 'Closed', null);
                                     delete finalFace.Emoticon;
                                 }
 
