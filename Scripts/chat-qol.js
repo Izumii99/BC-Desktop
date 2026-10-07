@@ -662,40 +662,26 @@
         return { container, body };
     }
 
-    const cat1 = createCategory("Chat & Roleplay Enhancements", true);
+    const cat1 = createCategory("Legacy (Merged to LCE)", false);
     cat1.body.appendChild(emoContainer);
     cat1.body.appendChild(
         createToggle(
-            "smartClosedEyes",
-            "Smart Closed Eyes (Merged with LCE)",
-            "See everyone while your eyes are closed (bypasses expression blindness).",
-        ),
-    );
-    cat1.body.appendChild(
-        createToggle(
-            "forceUngarbled",
-            "Force Ungarbled Messages (Merged with LCE)",
-            "Forces the game to always show ungarbled text.",
-        ),
-    );
-    cat1.body.appendChild(
-        createToggle(
             "enableEchoMouthPull",
-            "Enable Pull to Side (Mouth) (Merged with LCE)",
+            "Enable Pull to Side (Mouth)",
             "Allows pulling to side with mouth if hands are tied (Echo Addon).",
         ),
     );
     cat1.body.appendChild(
         createToggle(
             "enableWceEchoBridge",
-            "WCE Echo Animation Bridge (Merged with LCE)",
+            "WCE Echo Animation Bridge",
             "Triggers WCE animations for Echo Activity buttons (lick, kiss, cuddle, etc.).",
         ),
     );
     cat1.body.appendChild(
         createToggle(
             "enableEchoSoundBridge",
-            "Echo Sound Bridge (Merged with LCE)",
+            "Echo Sound Bridge",
             "Triggers game audio for Echo Activity and LSCG actions (spank, whip, etc.).",
         ),
     );
@@ -732,6 +718,21 @@
 
     const cat3 = createCategory("Utilities & Animations", false);
 
+    cat3.body.appendChild(
+        createToggle(
+            "smartClosedEyes",
+            "Smart Closed Eyes",
+            "See everyone while your eyes are closed (bypasses expression blindness).",
+        ),
+    );
+    cat3.body.appendChild(
+        createToggle(
+            "forceUngarbled",
+            "Force Ungarbled Messages",
+            "Forces the game to always show ungarbled text.",
+        ),
+    );
+
     const petContainer = document.createElement("div");
     const petMain = document.createElement("div");
     Object.assign(petMain.style, {
@@ -763,7 +764,7 @@
     });
 
     const petLbl = document.createElement("div");
-    petLbl.innerText = "Petsuit Animation (Merged with LCE)";
+    petLbl.innerText = "Petsuit Animation";
     Object.assign(petLbl.style, {
         fontSize: "15px",
         color: "#f5f5f5",
@@ -875,7 +876,7 @@
 
     petContainer.appendChild(petMain);
     petContainer.appendChild(petSubList);
-    cat3.body.appendChild(petContainer);
+    cat1.body.appendChild(petContainer);
     cat3.body.appendChild(
         createToggle(
             "enableScreenshotCleaner",
@@ -1147,7 +1148,8 @@
                                     [/^(?:[x:;=]\()$/i, { Mouth: 'Frown' }, 'emoFrown'],
                                     [/^(?:=\/{2,5}=|>\/{2,5}<|=3=|>3<|>3>|<3<)$/i, { Mouth: 'Pout' }, 'emoPout'],
                                     [/^(?:>[:;x=]|[:;x=]<)$/i, { Eyebrows: 'Angry' }, 'emoAngry'],
-                                    [/^(?:>[wv._~x3]?<|><)$/i, { Eyes: 'Daydream' }, 'emoDaydream']
+                                    [/^>~<$/i, { Eyes: 'Daydream', Mouth: 'Smirk' }, 'emoDaydream'],
+                                    [/^(?:>[wv._x3]?<|><)$/i, { Eyes: 'Daydream' }, 'emoDaydream']
                                 ];
 
                                 const textmojiMatches = [];
@@ -1204,9 +1206,18 @@
                                             faceObj.Emoticon = 'Tear';
                                         }
                                         if (qolConfig.emoticons.emoFloating) {
-                                            if (token.includes('?')) faceObj.Emoticon = 'Confusion';
-                                            else if (token.includes('!')) faceObj.Emoticon = 'Exclamation';
-                                            else if (token.includes('#')) faceObj.Emoticon = 'Annoyed';
+                                            const allMarks = token.replace(baseToken, '');
+                                            if (allMarks.match(/\?{2,}/) || allMarks.match(/(?:\?!|!\?)/)) {
+                                                faceObj.Emoticon = 'Confusion';
+                                                if (allMarks.match(/(?:\?!|!\?)/)) faceObj.Eyebrows = faceObj.Eyebrows || 'Angry';
+                                                else faceObj.Eyebrows = faceObj.Eyebrows || 'OneRaised';
+                                            } else if (allMarks.includes('!')) {
+                                                faceObj.Emoticon = 'Exclamation';
+                                                if (allMarks.match(/!{3,}/)) faceObj.Eyebrows = faceObj.Eyebrows || 'Angry';
+                                                else if (allMarks.match(/!{2}/)) faceObj.Eyebrows = faceObj.Eyebrows || 'Harsh';
+                                            } else if (allMarks.includes('#')) {
+                                                faceObj.Emoticon = 'Annoyed';
+                                            }
                                         }
                                         textmojiMatches.push(faceObj);
                                     }
@@ -1233,28 +1244,7 @@
                                     }
                                 }
 
-                                // Global floating marks (fallback)
-                                if (qolConfig.emoticons.emoFloating && !/https?:\/\//i.test(msg)) {
-                                    if (!finalFace.Emoticon && !finalFace._afkType) {
-                                        if (msg.match(/\?{2,}/) || msg.includes("?!") || msg.includes("!?")) {
-                                            finalFace.Emoticon = 'Confusion';
-                                            if (msg.includes("?!") || msg.includes("!?")) {
-                                                finalFace.Eyebrows = finalFace.Eyebrows || 'Angry';
-                                            } else {
-                                                finalFace.Eyebrows = finalFace.Eyebrows || 'OneRaised';
-                                            }
-                                        }
-                                        else if (msg.includes("!")) {
-                                            finalFace.Emoticon = 'Exclamation';
-                                            if (msg.match(/!{3,}/)) {
-                                                finalFace.Eyebrows = finalFace.Eyebrows || 'Angry';
-                                            } else if (msg.match(/!{2}/)) {
-                                                finalFace.Eyebrows = finalFace.Eyebrows || 'Harsh';
-                                            }
-                                        }
-                                        else if (msg.includes("#")) finalFace.Emoticon = 'Annoyed';
-                                    }
-                                }
+
 
                                 // Sleep (zzz) logic (permanent)
                                 if (qolConfig.emoticons.emoFloating && /\bzzz+\b/i.test(msg)) {
