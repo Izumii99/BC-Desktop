@@ -43,6 +43,7 @@
         enableEchoMouthPull: true,
         animCount: 4,
         animDelay: 350,
+        petsuitAlternate: false,
         enableScreenshotCleaner: true,
         enableWceEchoBridge: true,
         enableEchoSoundBridge: true,
@@ -59,7 +60,6 @@
             );
         }
     } catch (e) {}
-
     function saveQolConfig() {
         try {
             localStorage.setItem(
@@ -68,6 +68,8 @@
             );
         } catch (e) {}
     }
+    
+    // 
 
     const qolBtn = document.createElement("div");
     qolBtn.innerHTML = `<img src="https://raw.githubusercontent.com/Izumii99/BC-Desktop/main/Assets/gear_small.png" style="width: 100%; height: 100%; object-fit: contain;">`;
@@ -864,6 +866,13 @@
         ),
     );
     petSubList.appendChild(
+        createToggle(
+            "petsuitAlternate",
+            "Alternating arm swing",
+            "Alternates left and right arm swinging for a crawling look.",
+        ),
+    );
+    petSubList.appendChild(
         createNumberInput(
             "animDelay",
             "Petsuit Animation Delay (ms)",
@@ -921,6 +930,7 @@
     const animBtn = document.createElement("div");
     animBtn.id = "bcd-qol-anim-btn";
     animBtn.title = "Fast Pose Animation";
+    
     Object.assign(animBtn.style, {
         position: "fixed",
         bottom: "60px",
@@ -945,6 +955,48 @@
 
     let animInterval = null;
     let animFrame = 0;
+    let petsuitRaisedLeft = false;
+
+    function drawAlternatingPetsuit(character, raisedLeft, draw) {
+        const original = {
+            DrawPoseMapping: character.DrawPoseMapping,
+            AppearanceLayers: character.AppearanceLayers,
+            AppearanceMasks: character.AppearanceMasks,
+        };
+        const copies = [];
+        try {
+            for (const pose of ['OverTheHead', 'BackElbowTouch']) {
+                character.DrawPoseMapping = { ...original.DrawPoseMapping, BodyUpper: pose };
+                character.AppearanceLayers = window.CharacterAppearanceSortLayers ? window.CharacterAppearanceSortLayers(character) : character.AppearanceLayers;
+                character.AppearanceMasks = window.CharacterAppearanceBuildMasks ? window.CharacterAppearanceBuildMasks(character) : character.AppearanceMasks;
+                draw();
+                copies.push(['Canvas', 'CanvasBlink'].map(key => {
+                    const source = character[key];
+                    if (!source) return null;
+                    const copy = document.createElement('canvas');
+                    copy.width = source.width;
+                    copy.height = source.height;
+                    copy.getContext('2d').drawImage(source, 0, 0);
+                    return copy;
+                }));
+            }
+            for (const [index, key] of ['Canvas', 'CanvasBlink'].entries()) {
+                const canvas = character[key];
+                if (!canvas) continue;
+                const ctx = canvas.getContext('2d');
+                const width = canvas.width, height = canvas.height, half = width / 2;
+                ctx.clearRect(0, 0, width, height);
+                for (const side of [0, 1]) {
+                    const srcArr = copies[(side === 0) === raisedLeft ? 0 : 1];
+                    const source = srcArr ? srcArr[index] : null;
+                    if (source) ctx.drawImage(source, side * half, 0, half, height, side * half, 0, half, height);
+                }
+            }
+        } finally {
+            Object.assign(character, original);
+        }
+    }
+
     const animPoses = [
         "dialog-pose-button-grid-BodyUpper-OverTheHead",
         "dialog-pose-button-grid-BodyUpper-BackElbowTouch",
@@ -983,8 +1035,10 @@
                 return;
             if (timer != null) {
                 CharacterSetFacialExpression(Player, "Eyes", expr, timer);
+                CharacterSetFacialExpression(Player, "Eyes2", expr, timer);
             } else {
                 CharacterSetFacialExpression(Player, "Eyes", expr);
+                CharacterSetFacialExpression(Player, "Eyes2", expr);
             }
         } catch (e) {}
     };
@@ -1022,8 +1076,8 @@
 
         animInterval = setInterval(() => {
             try {
-                let btnId = animPoses[animFrame % animPoses.length];
-                triggerPose(btnId);
+                // Purely local rendering, bypass CharacterSetActivePose
+                if (typeof CharacterRefresh === "function") CharacterRefresh(Player, false);
                 setEyeExpr("Daydream", eyeRefreshSec); // Refresh eye timer each tick
             } catch (e) {
                 console.error("Anim error", e);
@@ -1031,12 +1085,14 @@
 
             animFrame++;
             count++;
+            petsuitRaisedLeft = !petsuitRaisedLeft;
+            
             if (count >= maxCycles) {
                 clearInterval(animInterval);
                 animInterval = null;
                 animBtn.style.backgroundColor = "#ffffff";
                 try {
-                    triggerPose(animPoses[1]);
+                    if (typeof CharacterRefresh === "function") CharacterRefresh(Player, false);
                     // Only restore if there was a prior expression; null = let timer expire naturally
                     if (savedEyeExpr) setEyeExpr(savedEyeExpr, null);
                 } catch (e) {}
@@ -1098,6 +1154,40 @@
                 }
 
                 if (
+                    !window._chatQol_BuildCanvasHooked &&
+                    typeof window.CharacterAppearanceBuildCanvas === "function"
+                ) {
+                    window._chatQol_BuildCanvasHooked = true;
+                    const origBuildCanvas = window.CharacterAppearanceBuildCanvas;
+                    window.CharacterAppearanceBuildCanvas = function (C) {
+                        if (C === Player && animInterval) {
+                            if (qolConfig.petsuitAlternate) {
+                                drawAlternatingPetsuit(C, petsuitRaisedLeft, () => {
+                                    origBuildCanvas(C);
+                                });
+                            } else {
+                                const pose = animPoses[animFrame % animPoses.length].split("-").pop();
+                                const original = {
+                                    DrawPoseMapping: C.DrawPoseMapping,
+                                    AppearanceLayers: C.AppearanceLayers,
+                                    AppearanceMasks: C.AppearanceMasks,
+                                };
+                                try {
+                                    C.DrawPoseMapping = { ...original.DrawPoseMapping, BodyUpper: pose };
+                                    C.AppearanceLayers = window.CharacterAppearanceSortLayers ? window.CharacterAppearanceSortLayers(C) : C.AppearanceLayers;
+                                    C.AppearanceMasks = window.CharacterAppearanceBuildMasks ? window.CharacterAppearanceBuildMasks(C) : C.AppearanceMasks;
+                                    origBuildCanvas(C);
+                                } finally {
+                                    Object.assign(C, original);
+                                }
+                            }
+                            return;
+                        }
+                        origBuildCanvas(C);
+                    };
+                }
+
+                if (
                     typeof window.ChatRoomSendChat === "function" &&
                     !window._qolHasEmoticonHook
                 ) {
@@ -1115,7 +1205,6 @@
                             if (msg && typeof CharacterSetFacialExpression === "function" && typeof Player !== "undefined" && Player) {
                                 
                                 const QOL_FACES = [
-                                    // Explicit slash faces
                                     [/^>[\\/]{2,}<$/, { Eyes: 'Daydream', Mouth: 'Pout', Eyebrows: 'Lowered' }, 'emoBlush'],
                                     [/^(?:>\/{2,5}>|<\/{2,5}<)$/i, { Eyes: 'Shy', Mouth: null, Eyebrows: 'Lowered' }, 'emoBlush'],
                                     [/^=[\\/]{2,}=$/, { Eyes: 'Horny', Mouth: 'Pout' }, 'emoBlush'],
@@ -1215,13 +1304,16 @@
                                         Object.assign(finalFace, match);
                                         if (match.Eyebrows !== undefined) hasTextmojiEyebrows = true;
 
-                                        const slashMatch = token.match(/([/\\]{2,})/);
-                                        if (slashMatch && qolConfig.emoticons.emoBlush) {
-                                            const count = slashMatch[1].length;
-                                            if (count >= 5) finalFace.Blush = 'VeryHigh';
-                                            else if (count === 4) finalFace.Blush = 'High';
-                                            else if (count === 3) finalFace.Blush = 'Medium';
-                                            else finalFace.Blush = 'Low';
+                                        const slashMatch = token.match(/[/\\]{2,}/);
+                                        if (slashMatch) {
+                                            const count = slashMatch[0].length;
+                                            if (qolConfig.emoticons.emoBlush) {
+                                                const levels = { 2: 'Low', 3: 'Medium', 4: 'High', 5: 'VeryHigh', 6: 'Extreme' };
+                                                finalFace.Blush = levels[count] || 'Extreme';
+                                                if (count >= 5) {
+                                                    finalFace.Emoticon = 'Hearts';
+                                                }
+                                            }
                                         }
                                         if (qolConfig.emoticons.emoSweat && /['";]/.test(strippedMarks)) {
                                             finalFace.Fluids = finalFace.Fluids || 'TearsLow';
@@ -1279,7 +1371,17 @@
                                     
                                     let delay = 0;
                                     if (isChat) {
-                                        if (isWCEAnim) {
+                                        // Calculate slash duration
+                                        let slashDuration = 0;
+                                        for (const token of String(msg).split(/\s+/)) {
+                                            if (/https?:\/\//i.test(token)) continue;
+                                            const count = token.match(/[/\\]{2,}/)?.[0].length ?? 0;
+                                            if (count) slashDuration = Math.max(slashDuration, count * 1000);
+                                        }
+                                        
+                                        if (slashDuration > 0) {
+                                            delay = Math.min(Math.max(slashDuration, 5000), 30000);
+                                        } else if (isWCEAnim) {
                                             delay = Math.min(msg.length * 65, 5000);
                                         } else {
                                             let time = 0;

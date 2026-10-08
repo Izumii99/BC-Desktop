@@ -90,6 +90,7 @@
 
         <wv2:WebView2 x:Name="WebView"
                       Grid.Row="1"
+                      Margin="4,0,4,4"
                       CoreWebView2InitializationCompleted="WebView_Initialized"/>
         </Grid>
     </Border>
