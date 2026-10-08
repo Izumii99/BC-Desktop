@@ -222,64 +222,7 @@ javascript: (function () {
 })();
 ```
 
-### 5. Screenshot Cleaner (`screenshot-cleaner.js`)
-
-A must-have utility for taking perfectly clean photos. Every screenshot taken in-game will automatically remove all addon buttons, sliders, and overlays, so there's no need to hide them manually!
-
-<p float="left">
-  <img src="Assets/cleaner_addon_before.png" width="49%" alt="Before Screenshot Cleaner" />
-  <img src="Assets/cleaner_addon_after.png" width="49%" alt="After Screenshot Cleaner" />
-</p>
-
-**Features:**
-
-- Seamlessly drops every third-party button and addon overlay from the captured frame.
-- Keeps in-game photos limited strictly to the characters, their arousal meters, and the room.
-- Works securely at the canvas render level via `bcModSdk`.
-
-**How to Install:**
-
-#### Bookmarklet (One-Click)
-
-```javascript
-javascript: (function () {
-    var script = document.createElement("script");
-    script.src =
-        "https://cdn.jsdelivr.net/gh/Izumii99/BC-Desktop@main/Scripts/screenshot-cleaner.js?v=" +
-        Date.now();
-    document.head.appendChild(script);
-    console.log("Fetching Screenshot Cleaner from GitHub...");
-})();
-```
-
-#### Tampermonkey, ViolentMonkey, etc. (Auto-Loader)
-
-```javascript
-// ==UserScript==
-// @name         Screenshot Cleaner
-// @namespace    http://tampermonkey.net/
-// @version      2.0
-// @description  Keeps in-game photos limited to the characters, their arousal meters and the room.
-// @author       Izumii99
-// @match        https://*.bondageprojects.elementfx.com/*
-// @match        https://*.bondage-europe.com/*
-// @match        https://*.bondageprojects.com/*
-// @match        https://*.bondage-asia.com/*
-// @grant        none
-// ==/UserScript==
-
-(function () {
-    "use strict";
-    var script = document.createElement("script");
-    script.src =
-        "https://cdn.jsdelivr.net/gh/Izumii99/BC-Desktop@main/Scripts/screenshot-cleaner.js?v=" +
-        Date.now();
-    document.head.appendChild(script);
-    console.log("Screenshot Cleaner Loader: Injected successfully!");
-})();
-```
-
-### 6. Cheat Menu (`cheat-menu.js`)
+### 5. Cheat Menu (`cheat-menu.js`)
 
 A lightweight floating cheat menu that provides various shortcuts and utilities for testing and fun. _(Please give me more cheat so I can add that doesn't exist at ULTRABC or even mine work)_
 
@@ -339,10 +282,12 @@ javascript: (function () {
 | -------------------------- | ---------------------- | ----------------------------------- |
 | **Bundled Browser**        | Chromium (~150 MB)     | OS native (WebView2)                |
 | **CPU (Active Playing)**   | ~3% – 15%              | ~1% – 5%                            |
-| **RAM (Active Playing)**   | ~700 MB – 1.2 GB       | ~500 MB – 650 MB                    |
-| **RAM (Idle/Background)**  | ~300 MB – 500 MB       | ~100 MB – 250 MB (Sleeping Tabs)    |
-| **App Size (Lightweight)** | ~100–200 MB            | ~4 MB                               |
-| **App Size (Standalone)**  | ~100–200 MB            | ~160 MB (Contains .NET, no Browser) |
+| **RAM (Active Playing)**   | ~700 MB – 1.2 GB       | ~400 MB – 700 MB                    |
+| **RAM (Idle/Background)**  | ~300 MB – 500 MB       | ~200 MB – 400 MB (Sleeping Tabs)    |
+| **App Size (Lightweight)** | ~100–200 MB            | ~10 MB                              |
+| **App Size (Standalone)**  | ~100–200 MB            | ~172 MB (Contains .NET, no Browser) |
+
+*Note: The RAM usage above was benchmarked under heavy load (running the game with a total of **40+ addons**, including more than 10 major/heavy addons). Vanilla usage without addons will be significantly lower.*
 
 ## Requirements
 
@@ -363,13 +308,13 @@ dotnet build -c Release
 
 ## Publishing (Lightweight vs Standalone)
 
-**Option 1: Lightweight (~3MB, requires .NET 8 Runtime installed)**
+**Option 1: Lightweight (~10MB, requires .NET 8 Runtime installed)**
 
 ```powershell
 dotnet publish -c Release -r win-x64 --self-contained false -p:PublishSingleFile=true -o .\publish\Lightweight
 ```
 
-**Option 2: Standalone (~162MB, fully self-contained)**
+**Option 2: Standalone (~172MB, fully self-contained)**
 
 ```powershell
 dotnet publish -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -o .\publish\Standalone
