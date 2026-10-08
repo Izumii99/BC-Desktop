@@ -91,7 +91,7 @@ javascript: (function () {
 
 > [!NOTE]
 > **OFFICIALLY MERGED INTO BCX!**
-> This script was originally created as a standalone mod to fix the wardrobe overflow issue. We are incredibly proud to announce that the underlying logic has now been **natively integrated into the official Bondage Club Extended (BCX) repository!**
+> This script was originally created as a standalone mod to fix the wardrobe overflow issue. We are incredibly proud to announce that the underlying logic has now been **natively integrated into the official [Bondage Club Extended (BCX)](https://github.com/Jomshir98/bondage-club-extended) repository!**
 >
 > You no longer need to install this script if you are using the latest version of BCX. The pagination is now a core feature! 🎉
 
@@ -109,6 +109,11 @@ _The standalone script remains in this repository as a historical backup/archive
 A massive quality-of-life upgrade for the chat system that seamlessly translates text emoticons into actual 3D character facial expressions, and more.
 
 <img src="Assets/chat_qol_ui.png" width="350" alt="Chat QoL Settings" />
+
+> [!NOTE]
+> **FEATURES MIGRATED TO BC-LCE!**
+> Some features originally developed as part of this script (such as the **Petsuit/Animal Animations** and Alternate Arm Swings) have now been officially merged into the **[BC-LCE (Liko's Chat Enhancer)](https://github.com/awdrrawd/BC-LCE)** repository for better integration! 
+> If you are looking for those specific features, please install the latest version of BC-LCE.
 
 **Features:**
 

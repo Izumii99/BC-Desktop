@@ -248,6 +248,15 @@ public partial class MainWindow : Window
 
         string copyScript = @"
             document.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter' || e.keyCode === 13) {
+                    try {
+                        if (window.getSelection) {
+                            window.getSelection().removeAllRanges();
+                            if (window.getSelection().empty) window.getSelection().empty();
+                        }
+                    } catch (err) {}
+                }
+                
                 if (e.ctrlKey && (e.key === 'c' || e.key === 'C')) {
                     let text = '';
                     let activeEl = document.activeElement;
@@ -696,42 +705,75 @@ public partial class MainWindow : Window
             {
                 var mmi = Marshal.PtrToStructure<MINMAXINFO>(lParam);
                 
-                // AllowsTransparency="True" removes DWM borders. No need to subtract SM_CXFRAME.
                 mmi.ptMaxPosition.X = (mi.rcWork.Left - mi.rcMonitor.Left);
                 mmi.ptMaxPosition.Y = (mi.rcWork.Top - mi.rcMonitor.Top);
                 mmi.ptMaxSize.X = (mi.rcWork.Right - mi.rcWork.Left);
                 mmi.ptMaxSize.Y = (mi.rcWork.Bottom - mi.rcWork.Top);
-                
                 Marshal.StructureToPtr(mmi, lParam, true);
                 handled = true;
             }
         }
-        else if (msg == WM_WINDOWPOSCHANGING)
+        else if (msg == 0x0214) // WM_SIZING
         {
-            var wp = Marshal.PtrToStructure<WINDOWPOS>(lParam);
-            if ((wp.flags & 0x0001) == 0) // SWP_NOSIZE = 0x0001
+            var rect = Marshal.PtrToStructure<RECT>(lParam);
+            double dpi = VisualTreeHelper.GetDpi(this).DpiScaleY;
+            int titleBarHeight = (int)(32 * dpi);
+
+            int width = rect.Right - rect.Left;
+            int height = rect.Bottom - rect.Top;
+            int edge = wParam.ToInt32();
+            
+            // Enforce a strict 2:1 aspect ratio during manual resizing.
+            // WMSZ_TOP (3) or WMSZ_BOTTOM (6) -> Aspect ratio is driven by height
+            if (edge == 3 || edge == 6)
             {
-                var monitor = MonitorFromWindow(hwnd, MONITOR_DEFAULTTONEAREST);
-                var mi = new MONITORINFO { cbSize = Marshal.SizeOf<MONITORINFO>() };
-                GetMonitorInfo(monitor, ref mi);
-
-                bool isMaximized = (wp.cx >= (mi.rcWork.Right - mi.rcWork.Left)) && (wp.cy >= (mi.rcWork.Bottom - mi.rcWork.Top));
-
-                if (!isMaximized)
+                int expectedWidth = (height - titleBarHeight) * 2;
+                rect.Right = rect.Left + expectedWidth;
+            }
+            // All other edges (Left, Right, Corners) -> Aspect ratio is driven by width
+            else
+            {
+                int expectedHeight = (width / 2) + titleBarHeight;
+                if (edge == 4 || edge == 5) // WMSZ_TOPLEFT or WMSZ_TOPRIGHT
                 {
-                    double dpi = VisualTreeHelper.GetDpi(this).DpiScaleY;
-                    int titleBarHeight = (int)(32 * dpi);
-                    
-                    wp.cy = (wp.cx / 2) + titleBarHeight;
-                    Marshal.StructureToPtr(wp, lParam, true);
+                    rect.Top = rect.Bottom - expectedHeight;
+                }
+                else
+                {
+                    rect.Bottom = rect.Top + expectedHeight;
                 }
             }
+
+            Marshal.StructureToPtr(rect, lParam, true);
+            handled = true;
+        }
+        else if (msg == 0x0084) // WM_NCHITTEST
+        {
+            int x = (short)(lParam.ToInt64() & 0xFFFF);
+            int y = (short)((lParam.ToInt64() >> 16) & 0xFFFF);
+            var p = PointFromScreen(new Point(x, y));
+
+            // Define hit-test border thickness (matches WebView margin to expose WPF background)
+            int resizeBorder = 4;
+            bool onLeft = p.X <= resizeBorder;
+            bool onRight = p.X >= ActualWidth - resizeBorder;
+            bool onTop = p.Y <= resizeBorder;
+            bool onBottom = p.Y >= ActualHeight - resizeBorder;
+
+            // Map edge coordinates to Win32 hit-test constants to enable native resizing over AllowsTransparency
+            if (onTop && onLeft) { handled = true; return (IntPtr)13; }    // HTTOPLEFT
+            if (onTop && onRight) { handled = true; return (IntPtr)14; }   // HTTOPRIGHT
+            if (onBottom && onLeft) { handled = true; return (IntPtr)16; } // HTBOTTOMLEFT
+            if (onBottom && onRight) { handled = true; return (IntPtr)17; }// HTBOTTOMRIGHT
+            if (onTop) { handled = true; return (IntPtr)12; }              // HTTOP
+            if (onBottom) { handled = true; return (IntPtr)15; }           // HTBOTTOM
+            if (onLeft) { handled = true; return (IntPtr)10; }             // HTLEFT
+            if (onRight) { handled = true; return (IntPtr)11; }            // HTRIGHT
         }
         return IntPtr.Zero;
     }
 
     private const int WM_GETMINMAXINFO       = 0x0024;
-    private const int WM_WINDOWPOSCHANGING   = 0x0046;
     private const uint MONITOR_DEFAULTTONEAREST = 0x00000002;
 
     [DllImport("user32.dll")] private static extern IntPtr MonitorFromWindow(IntPtr hwnd, uint flags);
