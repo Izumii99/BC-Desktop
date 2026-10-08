@@ -1142,9 +1142,10 @@
                                     [/^:[pd3>\]]$/i, { Eyes: null, Mouth: 'Ahegao' }, 'emoWink'],
                                     [/^(?:t[_wv.-]?t|tt)$/i, { Eyes: 'Shy', Mouth: 'Sad', Fluids: 'TearsHigh', Eyebrows: 'Sad' }, 'emoSad'],
                                     [/^qwq$/i, { Eyes: 'Shy', Mouth: 'Happy', Fluids: 'TearsHigh' }, 'emoQwq'],
-                                    [/^=~=$/i, { Eyes: 'Horny', Mouth: 'Frown', Blush: null }, 'emoFrown'],
+                                    [/^(?:=~=|=.=|=,=)$/i, { Eyes: 'Horny', Mouth: 'Frown', Blush: null }, 'emoFrown'],
                                     [/^d:$/i, { Eyes: 'Dazed', Mouth: 'Sad' }, 'emoFrown'],
-                                    [/^=[_~^.-]=$/i, { Eyes: 'Closed', Mouth: 'Frown' }, 'emoFrown'],
+                                    [/^=[_~^-]=$/i, { Eyes: 'Closed', Mouth: 'Frown' }, 'emoFrown'],
+                                    [/^-_-$/i, { Eyes: 'Dazed', Eyebrows: 'Harsh', Mouth: 'Frown' }, 'emoFrown'],
                                     [/^(?:[x:;=]\()$/i, { Mouth: 'Frown' }, 'emoFrown'],
                                     [/^(?:=\/{2,5}=|>\/{2,5}<|=3=|>3<|>3>|<3<)$/i, { Mouth: 'Pout' }, 'emoPout'],
                                     [/^(?:>[:;x=]|[:;x=]<)$/i, { Eyebrows: 'Angry' }, 'emoAngry'],
@@ -1152,7 +1153,7 @@
                                     [/^(?:>[wv._x3]?<|><)$/i, { Eyes: 'Daydream' }, 'emoDaydream']
                                 ];
                                 const getPunctuationEffect = (str) => {
-                                    if (str.match(/\?{2,}/) || str.match(/(?:\?!|!\?)/)) {
+                                    if (str.includes('?')) {
                                         return {
                                             Emoticon: 'Confusion',
                                             Eyebrows: str.match(/(?:\?!|!\?)/) ? 'Angry' : 'OneRaised'
