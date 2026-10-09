@@ -39,7 +39,10 @@
         forceUngarbled: true,
         persistIconState: true,
         smartClosedEyes: true,
+        enablePetsuitAnim: false,
         enableEchoMouthPull: true,
+        animCount: 4,
+        animDelay: 350,
         enableScreenshotCleaner: true,
         enableWceEchoBridge: true,
         enableEchoSoundBridge: true,
@@ -710,7 +713,7 @@
         createToggle(
             "enableBcarShortcut",
             "Shortcut Immersion",
-            "Alt + C/V/B: ears, tail, wings (BCAR+).",
+            "Alt + C/V/B: ears, tail, wings (BCAR+). Alt + D: petsuit animation (Chat QoL or LCE).",
         ),
     );
 
@@ -731,6 +734,150 @@
         ),
     );
 
+    const petContainer = document.createElement("div");
+    const petMain = document.createElement("div");
+    Object.assign(petMain.style, {
+        display: "flex",
+        justifyContent: "space-between",
+        alignItems: "center",
+        padding: "14px 0",
+        borderBottom: "1px solid #2e2640",
+    });
+
+    const petLeft = document.createElement("div");
+    Object.assign(petLeft.style, {
+        display: "flex",
+        alignItems: "center",
+        gap: "12px",
+        cursor: "pointer",
+        flex: "1",
+    });
+
+    const petExpand = document.createElement("span");
+    petExpand.innerHTML = "▼";
+    Object.assign(petExpand.style, {
+        color: "#a7a2b6",
+        fontSize: "12px",
+        width: "16px",
+        textAlign: "center",
+        transition: "transform 0.2s ease",
+        transform: "rotate(-90deg)",
+    });
+
+    const petLbl = document.createElement("div");
+    petLbl.innerText = "Petsuit Animation";
+    Object.assign(petLbl.style, {
+        fontSize: "15px",
+        color: "#f5f5f5",
+        fontWeight: "500",
+    });
+
+    petLeft.appendChild(petExpand);
+    petLeft.appendChild(petLbl);
+
+    const petChk = document.createElement("input");
+    petChk.type = "checkbox";
+    petChk.checked = qolConfig.enablePetsuitAnim;
+    Object.assign(petChk.style, { opacity: "0", width: "0", height: "0" });
+
+    const petSwitchLabel = document.createElement("label");
+    Object.assign(petSwitchLabel.style, {
+        position: "relative",
+        display: "inline-block",
+        width: "38px",
+        height: "22px",
+        flexShrink: "0",
+        cursor: "pointer",
+    });
+
+    const petSlider = document.createElement("span");
+    Object.assign(petSlider.style, {
+        position: "absolute",
+        top: "0",
+        left: "0",
+        right: "0",
+        bottom: "0",
+        backgroundColor: petChk.checked ? "#a29bfe" : "#3d3554",
+        transition: "0.3s",
+        borderRadius: "22px",
+        boxShadow: petChk.checked
+            ? "0 0 8px rgba(162, 155, 254, 0.5)"
+            : "inset 0 2px 4px rgba(0,0,0,0.3)",
+    });
+
+    const petKnob = document.createElement("span");
+    Object.assign(petKnob.style, {
+        position: "absolute",
+        height: "16px",
+        width: "16px",
+        left: petChk.checked ? "19px" : "3px",
+        bottom: "3px",
+        backgroundColor: "#ffffff",
+        transition: "0.3s",
+        borderRadius: "50%",
+        boxShadow: "0 2px 4px rgba(0,0,0,0.2)",
+    });
+
+    petChk.onchange = (e) => {
+        qolConfig.enablePetsuitAnim = e.target.checked;
+        petSlider.style.backgroundColor = e.target.checked
+            ? "#a29bfe"
+            : "#3d3554";
+        petSlider.style.boxShadow = e.target.checked
+            ? "0 0 8px rgba(162, 155, 254, 0.5)"
+            : "inset 0 2px 4px rgba(0,0,0,0.3)";
+        petKnob.style.left = e.target.checked ? "19px" : "3px";
+        saveQolConfig();
+    };
+
+    petSlider.appendChild(petKnob);
+    petSwitchLabel.appendChild(petChk);
+    petSwitchLabel.appendChild(petSlider);
+
+    petMain.appendChild(petLeft);
+    petMain.appendChild(petSwitchLabel);
+
+    const petSubList = document.createElement("div");
+    Object.assign(petSubList.style, {
+        display: "none",
+        flexDirection: "column",
+        paddingLeft: "8px",
+        borderBottom: "1px solid #2e2640",
+        backgroundColor: "#161320",
+    });
+
+    petExpand.onclick = () => {
+        const isHidden = petSubList.style.display === "none";
+        petSubList.style.display = isHidden ? "flex" : "none";
+        petExpand.style.transform = isHidden
+            ? "rotate(0deg)"
+            : "rotate(-90deg)";
+    };
+
+    petSubList.appendChild(
+        createNumberInput(
+            "animCount",
+            "Petsuit Animation Count",
+            "Number of animation cycles to play.",
+            1,
+            100,
+            true,
+        ),
+    );
+    petSubList.appendChild(
+        createNumberInput(
+            "animDelay",
+            "Petsuit Animation Delay (ms)",
+            "Delay in milliseconds between pose changes (speed).",
+            20,
+            1000,
+            true,
+        ),
+    );
+
+    petContainer.appendChild(petMain);
+    petContainer.appendChild(petSubList);
+    cat1.body.appendChild(petContainer);
     cat3.body.appendChild(
         createToggle(
             "enableScreenshotCleaner",
@@ -772,6 +919,137 @@
         },
         true,
     );
+    const animBtn = document.createElement("div");
+    animBtn.id = "bcd-qol-anim-btn";
+    animBtn.title = "Fast Pose Animation";
+    
+    Object.assign(animBtn.style, {
+        position: "fixed",
+        bottom: "60px",
+        left: "12px",
+        width: "50px",
+        height: "50px",
+        backgroundImage:
+            "url('https://raw.githubusercontent.com/Izumii99/BC-Desktop/main/Assets/arm_logo_chat-qol.png')",
+        backgroundSize: "cover",
+        backgroundPosition: "center",
+        backgroundRepeat: "no-repeat",
+        backgroundColor: "#ffffff",
+        borderRadius: "4px",
+        display: "none",
+        alignItems: "center",
+        justifyContent: "center",
+        cursor: "pointer",
+        border: "2px solid #000",
+        userSelect: "none",
+        zIndex: "100",
+    });
+
+    let animInterval = null;
+    let animFrame = 0;
+
+    const animPoses = [
+        "dialog-pose-button-grid-BodyUpper-OverTheHead",
+        "dialog-pose-button-grid-BodyUpper-BackElbowTouch",
+    ];
+
+    const triggerPose = (btnId) => {
+        let domBtn = document.getElementById(btnId);
+        if (domBtn) {
+            domBtn.click();
+        } else if (
+            typeof CharacterSetActivePose === "function" &&
+            typeof Player !== "undefined"
+        ) {
+            let poseName = btnId.split("-").pop();
+            try {
+                CharacterSetActivePose(Player, poseName);
+                if (typeof ServerSend === "function")
+                    ServerSend("ChatRoomCharacterPoseUpdate", {
+                        Pose: Player.Pose,
+                    });
+                if (typeof ChatRoomCharacterUpdate === "function")
+                    ChatRoomCharacterUpdate(Player);
+                if (typeof CharacterRefresh === "function")
+                    CharacterRefresh(Player);
+            } catch (e) {}
+        }
+    };
+
+    // Set eye expression with an optional timer (seconds), same as SetSafeExpression internals
+    const setEyeExpr = (expr, timer) => {
+        try {
+            if (
+                typeof CharacterSetFacialExpression !== "function" ||
+                typeof Player === "undefined"
+            )
+                return;
+            if (timer != null) {
+                CharacterSetFacialExpression(Player, "Eyes", expr, timer);
+                CharacterSetFacialExpression(Player, "Eyes2", expr, timer);
+            } else {
+                CharacterSetFacialExpression(Player, "Eyes", expr);
+                CharacterSetFacialExpression(Player, "Eyes2", expr);
+            }
+        } catch (e) {}
+    };
+
+    animBtn.onclick = () => {
+        if (animInterval) return; // Ignore if animation is already running
+
+        animBtn.style.backgroundColor = "rgba(100,200,100,0.8)";
+        animFrame = 0;
+        let count = 0;
+        const maxCycles = parseInt(qolConfig.animCount) || 4;
+        const speed = parseInt(qolConfig.animDelay) || 350;
+
+        // Save current eye expression before changing it
+        let savedEyeExpr = null;
+        try {
+            if (typeof Player !== "undefined" && Player.Appearance) {
+                const eyeItem = Player.Appearance.find(
+                    (a) =>
+                        a.Asset &&
+                        a.Asset.Group &&
+                        a.Asset.Group.Name === "Eyes",
+                );
+                savedEyeExpr =
+                    eyeItem && eyeItem.Property
+                        ? eyeItem.Property.Expression
+                        : null;
+            }
+        } catch (e) {}
+
+        // Set Daydream eyes - refresh timer every frame so it never expires mid-anim
+        const eyeRefreshSec =
+            Math.ceil((parseInt(qolConfig.animDelay) || 350) / 1000) + 3;
+        setEyeExpr("Daydream", eyeRefreshSec);
+
+        animInterval = setInterval(() => {
+            try {
+                // Purely local rendering, bypass CharacterSetActivePose
+                if (typeof CharacterRefresh === "function") CharacterRefresh(Player, false);
+                setEyeExpr("Daydream", eyeRefreshSec); // Refresh eye timer each tick
+            } catch (e) {
+                console.error("Anim error", e);
+            }
+
+            animFrame++;
+            count++;
+            
+            if (count >= maxCycles) {
+                clearInterval(animInterval);
+                animInterval = null;
+                animBtn.style.backgroundColor = "#ffffff";
+                try {
+                    if (typeof CharacterRefresh === "function") CharacterRefresh(Player, false);
+                    // Only restore if there was a prior expression; null = let timer expire naturally
+                    if (savedEyeExpr) setEyeExpr(savedEyeExpr, null);
+                } catch (e) {}
+            }
+        }, speed);
+    };
+
     setInterval(() => {
         try {
             if (
@@ -935,6 +1213,44 @@
                             
                             step();
                         }
+                    };
+                }
+
+                if (
+                    !window._chatQol_BuildCanvasHooked &&
+                    typeof window.CharacterAppearanceBuildCanvas === "function"
+                ) {
+                    window._chatQol_BuildCanvasHooked = true;
+                    const origBuildCanvas = window.CharacterAppearanceBuildCanvas;
+                    window.CharacterAppearanceBuildCanvas = function (C) {
+                        if (C === Player && animInterval) {
+                                const pose = animPoses[animFrame % animPoses.length].split("-").pop();
+                                const original = {
+                                    DrawPoseMapping: C.DrawPoseMapping,
+                                    AppearanceLayers: C.AppearanceLayers,
+                                    AppearanceMasks: C.AppearanceMasks,
+                                    Pose: C.Pose,
+                                    ActivePose: C.ActivePose
+                                };
+                                try {
+                                    C.Pose = [pose];
+                                    if (C.ActivePose) C.ActivePose = [pose];
+                                    C.DrawPoseMapping = { ...original.DrawPoseMapping, BodyUpper: pose };
+                                    if (typeof window.CharacterAppearanceUpdateOverrides === 'function') {
+                                        window.CharacterAppearanceUpdateOverrides(C);
+                                    } else {
+                                        C.AppearanceLayers = window.CharacterAppearanceSortLayers ? window.CharacterAppearanceSortLayers(C) : C.AppearanceLayers;
+                                        C.AppearanceMasks = window.CharacterAppearanceBuildMasks ? window.CharacterAppearanceBuildMasks(C) : C.AppearanceMasks;
+                                    }
+                                    origBuildCanvas(C);
+                                } finally {
+                                    Object.assign(C, original);
+                                    if (original.Pose) C.Pose = original.Pose;
+                                    if (original.ActivePose) C.ActivePose = original.ActivePose;
+                                }
+                            return;
+                        }
+                        origBuildCanvas(C);
                     };
                 }
 
@@ -1565,9 +1881,108 @@
                 qolModal.style.display = "none";
             }
 
-        
+            let isRestricted = false;
+            if (typeof Player !== "undefined" && Player.Appearance) {
+                isRestricted = Player.Appearance.some((a) => {
+                    if (!a.Asset) return false;
+                    let name = a.Asset.Name.toLowerCase();
+                    let group = a.Asset.Group.Name;
+
+                    return (
+                        name.includes("petsuit") ||
+                        name.includes("pet suit") ||
+                        name.includes("straitjacket") ||
+                        name.includes("armbinder") ||
+                        (group === "ItemArms" && a.Asset.IsRestraint)
+                    );
+                });
+            }
+
+            if (
+                typeof CurrentScreen !== "undefined" &&
+                CurrentScreen === "ChatRoom" &&
+                isRestricted &&
+                qolConfig.enablePetsuitAnim
+            ) {
+                if (!animBtn.parentNode) {
+                    document.body.appendChild(animBtn);
+                }
+                animBtn.style.display = "flex";
+            } else {
+                animBtn.style.display = "none";
+                if (animInterval) {
+                    clearInterval(animInterval);
+                    animInterval = null;
+                    animBtn.style.backgroundColor = "#ffffff";
+                }
+            }
         } catch (e) {}
     }, 2000);
+
+    // ponytail: LCE keeps its petsuit toggle and position private, so the button is located
+    // by the 37x37 OverTheHead icon it draws each frame (button rect = icon - 4px).
+    // Breaks if LCE changes that icon/size; upgrade path is an exposed LCE API.
+    let lcePetBtn = null;
+    function hookLcePetIcon() {
+        if (hookLcePetIcon.done || typeof window.DrawImageResize !== "function") return;
+        hookLcePetIcon.done = true;
+        const spy = (a) => {
+            if (a[0] === "Icons/Poses/OverTheHead.png" && a[3] === 37 && a[4] === 37)
+                lcePetBtn = { x: a[1] - 4, y: a[2] - 4, t: Date.now() };
+        };
+        try {
+            window.bcModSdk
+                .registerMod({
+                    name: "BCDesktop_ShortcutImmersion",
+                    fullName: "Shortcut Immersion",
+                    version: "1.0.0",
+                    repository: "https://github.com/Izumii99/BC-Desktop",
+                })
+                .hookFunction("DrawImageResize", 0, (args, next) => {
+                    spy(args);
+                    return next(args);
+                });
+        } catch {
+            const orig = window.DrawImageResize;
+            window.DrawImageResize = function () {
+                spy(arguments);
+                return orig.apply(this, arguments);
+            };
+        }
+    }
+
+    document.addEventListener(
+        "keydown",
+        (e) => {
+            if (!qolConfig.enableBcarShortcut) return;
+            if (!e.altKey || e.ctrlKey || e.shiftKey || e.code !== "KeyD") return;
+            if (qolConfig.enablePetsuitAnim) {
+                if (animBtn && animBtn.style.display === "flex") {
+                    e.preventDefault();
+                    animBtn.onclick();
+                }
+                return;
+            }
+            if (
+                !lcePetBtn ||
+                Date.now() - lcePetBtn.t > 500 ||
+                typeof ChatRoomClick !== "function" ||
+                CurrentScreen !== "ChatRoom"
+            )
+                return;
+            e.preventDefault();
+            const ox = MouseX, oy = MouseY;
+            MouseX = lcePetBtn.x + 22;
+            MouseY = lcePetBtn.y + 22;
+            try {
+                ChatRoomClick();
+            } finally {
+                MouseX = ox;
+                MouseY = oy;
+            }
+        },
+        true,
+    );
 
     document.addEventListener(
         "keydown",
