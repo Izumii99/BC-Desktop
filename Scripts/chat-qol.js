@@ -47,6 +47,7 @@
         enableScreenshotCleaner: true,
         enableWceEchoBridge: true,
         enableEchoSoundBridge: true,
+        enableLceModLoader: false,
     };
     try {
         const saved = localStorage.getItem("BCDesktop_ChatQoL_Config");
@@ -60,6 +61,15 @@
             );
         }
     } catch (e) {}
+    
+    if (qolConfig.enableLceModLoader) {
+        const s = document.createElement("script");
+        s.src = "https://likosoftware.github.io/BC-LCE/app.js";
+        s.type = "module";
+        document.head.appendChild(s);
+        console.log("BC Desktop: Injected official BC-LCE mod loader.");
+    }
+
     function saveQolConfig() {
         try {
             localStorage.setItem(
@@ -386,7 +396,7 @@
         transition: "transform 0.2s",
     });
     const emoLbl = document.createElement("div");
-    emoLbl.innerText = "Enable Chat Emoticons (Merged with LCE)";
+    emoLbl.innerText = "Enable Chat Emoticons";
     Object.assign(emoLbl.style, {
         fontSize: "15px",
         color: "#f5f5f5",
@@ -665,6 +675,13 @@
     }
 
     const cat1 = createCategory("Legacy (Merged to LCE)", false);
+    cat1.body.appendChild(
+        createToggle(
+            "enableLceModLoader",
+            "Enable LCE Mod Loader",
+            "Automatically injects the official BC-LCE mod into the game.",
+        ),
+    );
     cat1.body.appendChild(emoContainer);
     cat1.body.appendChild(
         createToggle(
@@ -1470,7 +1487,8 @@
                                     [/^<3+$/i, { Emoticon: 'Hearts' }, 'emoFloating'],
                                     // Classic faces
                                     [/^(?:0[uuv]0|o[uuv]o)$/i, { Eyes: 'Happy', Mouth: 'Open' }, 'emoSmile'],
-                                    [/^(?:[x:;=]3|[x:;=]>)$/i, { Mouth: 'Happy' }, 'emoCat'],
+                                    [/^(?:[x:=]3|[x:=]>)$/i, { Mouth: 'Happy' }, 'emoCat'],
+                                    [/^(?:;3|;>)$/i, { Eyes: null, Eyes1: 'Closed', Mouth: 'Happy' }, 'emoCat'],
                                     [/^(?:=w=|>w>|<w<|=\/{2,5}=)$/i, { Eyes: 'Horny', Mouth: 'Happy' }, 'emoCatW'],
                                     [/^>w<$/i, { Eyes: 'ShylyHappy', Mouth: 'Happy' }, 'emoCatWClosed'],
                                     [/^(?:=v=|>v>|<v<)$/i, { Eyes: 'Horny', Mouth: 'Smirk' }, 'emoVSmile'],
@@ -1535,7 +1553,7 @@
                                     
                                     match = evaluate(baseToken);
                                     if (!match) {
-                                        const markMatch = baseToken.match(/([?!#~;'"]+)$/);
+                                        const markMatch = baseToken.match(/([?!#~;'",.]+)$/);
                                         if (markMatch) {
                                             strippedMarks = markMatch[1];
                                             baseToken = baseToken.slice(0, -strippedMarks.length);
