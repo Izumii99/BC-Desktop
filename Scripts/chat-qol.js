@@ -966,9 +966,15 @@
         const copies = [];
         try {
             for (const pose of ['OverTheHead', 'BackElbowTouch']) {
+                character.Pose = [pose];
+                if (character.ActivePose) character.ActivePose = [pose];
                 character.DrawPoseMapping = { ...original.DrawPoseMapping, BodyUpper: pose };
-                character.AppearanceLayers = window.CharacterAppearanceSortLayers ? window.CharacterAppearanceSortLayers(character) : character.AppearanceLayers;
-                character.AppearanceMasks = window.CharacterAppearanceBuildMasks ? window.CharacterAppearanceBuildMasks(character) : character.AppearanceMasks;
+                if (typeof window.CharacterAppearanceUpdateOverrides === 'function') {
+                    window.CharacterAppearanceUpdateOverrides(character);
+                } else {
+                    character.AppearanceLayers = window.CharacterAppearanceSortLayers ? window.CharacterAppearanceSortLayers(character) : character.AppearanceLayers;
+                    character.AppearanceMasks = window.CharacterAppearanceBuildMasks ? window.CharacterAppearanceBuildMasks(character) : character.AppearanceMasks;
+                }
                 draw();
                 copies.push(['Canvas', 'CanvasBlink'].map(key => {
                     const source = character[key];
@@ -994,6 +1000,8 @@
             }
         } finally {
             Object.assign(character, original);
+            if (original.Pose) character.Pose = original.Pose;
+            if (original.ActivePose) character.ActivePose = original.ActivePose;
         }
     }
 
@@ -1153,6 +1161,119 @@
                     window.ChatRoomLoad.hasQolHook = true;
                 }
 
+                if (!window._chatQol_AnimalReceiverHooked && typeof window.ChatRoomMessage === "function") {
+                    window._chatQol_AnimalReceiverHooked = true;
+                    
+                    const HIDDEN_MSG_PREFIX = 'LCEAnimalAnim_';
+                    const SLOTS = { Ears: 'ItemHead', Tails: 'ItemPelvis', Wings: 'ItemTorso' };
+                    const renderers = new Map();
+                    
+                    const origChatRoomMessage = window.ChatRoomMessage;
+                    window.ChatRoomMessage = function (data) {
+                        origChatRoomMessage(data);
+                        
+                        if (data && data.Type === 'Hidden' && data.Content && data.Content.startsWith(HIDDEN_MSG_PREFIX)) {
+                            const id = data.Sender;
+                            if (typeof id !== 'number' || id === window.Player?.MemberNumber) return;
+                            
+                            const dict = Array.isArray(data.Dictionary) ? data.Dictionary[0] : data.Dictionary;
+                            if (!dict || !dict.type || !dict.state1 || !dict.state2) return;
+                            if (!SLOTS[dict.type]) return;
+                            
+                            const char = (window.ChatRoomCharacter || []).find(c => c.MemberNumber === id);
+                            if (!char) return;
+                            
+                            const delay = typeof dict.delay === 'number' ? Math.max(10, Math.min(2000, dict.delay)) : 250;
+                            const cycles = typeof dict.cycles === 'number' ? Math.max(1, Math.min(40, dict.cycles)) : 2;
+                            
+                            const buildState = s => {
+                                if (!s || typeof s !== 'object' || typeof s.Name !== 'string') return null;
+                                let color = s.Color;
+                                if (typeof color !== 'string' && typeof color !== 'undefined' && !Array.isArray(color)) color = 'Default';
+                                if (Array.isArray(color)) color = color.filter(c => typeof c === 'string');
+                                const state = {
+                                    Name: s.Name,
+                                    Color: color
+                                };
+                                for (const key of Object.keys(s)) {
+                                    if (['Name', 'Color', 'Asset', 'Model', 'ModelLoad'].includes(key) || typeof s[key] === 'function') continue;
+                                    state[key] = structuredClone(s[key]);
+                                }
+                                return state;
+                            };
+                            
+                            const applyState = (char, slot, state) => {
+                                let item = char.Appearance.find(i => i.Asset && i.Asset.Group.Name === slot);
+                                if (!item || item.Asset.Name !== state.Name) {
+                                    item = window.InventoryWear(char, state.Name, slot, state.Color, undefined, undefined, undefined, false);
+                                    if (!item) return;
+                                } else {
+                                    item.Color = Array.isArray(state.Color) ? structuredClone(state.Color) : state.Color;
+                                }
+                                for (const key of Object.keys(state)) {
+                                    if (['Name', 'Color'].includes(key)) continue;
+                                    if (key === 'Property' && item.Property) {
+                                        item.Property = Object.assign({}, item.Property, structuredClone(state[key]));
+                                    } else {
+                                        item[key] = structuredClone(state[key]);
+                                    }
+                                }
+                            };
+                            
+                            const state1 = buildState(dict.state1);
+                            const state2 = buildState(dict.state2);
+                            if (!state1 || !state2) return;
+                            
+                            const slot = SLOTS[dict.type];
+                            let originalState;
+                            if (renderers.has(id + dict.type)) {
+                                const r = renderers.get(id + dict.type);
+                                clearTimeout(r.timer);
+                                originalState = r.originalState;
+                            } else {
+                                const currentItem = char.Appearance.find(item => item.Asset && item.Asset.Group.Name === slot);
+                                if (!currentItem) return;
+                                originalState = { Name: currentItem.Asset.Name, Color: Array.isArray(currentItem.Color) ? structuredClone(currentItem.Color) : currentItem.Color };
+                                for (const key of Object.keys(currentItem)) {
+                                    if (['Asset', 'Model', 'ModelLoad', 'Name', 'Color'].includes(key) || typeof currentItem[key] === 'function') continue;
+                                    originalState[key] = structuredClone(currentItem[key]);
+                                }
+                            }
+                            
+                            const states = [state2, state1];
+                            let i = 0;
+                            
+                            function step() {
+                                if (window.CurrentScreen !== 'ChatRoom') {
+                                    renderers.delete(id + dict.type);
+                                    return;
+                                }
+                                const currentItemNow = char.Appearance.find(item => item.Asset && item.Asset.Group.Name === slot);
+                                if (!currentItemNow || (currentItemNow.Asset.Name !== state1.Name && currentItemNow.Asset.Name !== state2.Name && currentItemNow.Asset.Name !== originalState.Name)) {
+                                    renderers.delete(id + dict.type);
+                                    return;
+                                }
+                                
+                                if (i >= cycles * 2) {
+                                    applyState(char, slot, originalState);
+                                    if (typeof window.CharacterRefresh === 'function') window.CharacterRefresh(char, false, false);
+                                    renderers.delete(id + dict.type);
+                                    return;
+                                }
+                                
+                                const state = states[i % 2];
+                                applyState(char, slot, state);
+                                if (typeof window.CharacterRefresh === 'function') window.CharacterRefresh(char, false, false);
+                                
+                                i++;
+                                renderers.set(id + dict.type, { timer: setTimeout(step, delay), originalState });
+                            }
+                            
+                            step();
+                        }
+                    };
+                }
+
                 if (
                     !window._chatQol_BuildCanvasHooked &&
                     typeof window.CharacterAppearanceBuildCanvas === "function"
@@ -1171,14 +1292,24 @@
                                     DrawPoseMapping: C.DrawPoseMapping,
                                     AppearanceLayers: C.AppearanceLayers,
                                     AppearanceMasks: C.AppearanceMasks,
+                                    Pose: C.Pose,
+                                    ActivePose: C.ActivePose
                                 };
                                 try {
+                                    C.Pose = [pose];
+                                    if (C.ActivePose) C.ActivePose = [pose];
                                     C.DrawPoseMapping = { ...original.DrawPoseMapping, BodyUpper: pose };
-                                    C.AppearanceLayers = window.CharacterAppearanceSortLayers ? window.CharacterAppearanceSortLayers(C) : C.AppearanceLayers;
-                                    C.AppearanceMasks = window.CharacterAppearanceBuildMasks ? window.CharacterAppearanceBuildMasks(C) : C.AppearanceMasks;
+                                    if (typeof window.CharacterAppearanceUpdateOverrides === 'function') {
+                                        window.CharacterAppearanceUpdateOverrides(C);
+                                    } else {
+                                        C.AppearanceLayers = window.CharacterAppearanceSortLayers ? window.CharacterAppearanceSortLayers(C) : C.AppearanceLayers;
+                                        C.AppearanceMasks = window.CharacterAppearanceBuildMasks ? window.CharacterAppearanceBuildMasks(C) : C.AppearanceMasks;
+                                    }
                                     origBuildCanvas(C);
                                 } finally {
                                     Object.assign(C, original);
+                                    if (original.Pose) C.Pose = original.Pose;
+                                    if (original.ActivePose) C.ActivePose = original.ActivePose;
                                 }
                             }
                             return;
