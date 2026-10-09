@@ -43,6 +43,7 @@
         enableEchoMouthPull: true,
         animCount: 4,
         animDelay: 350,
+        petsuitAlternate: false,
         enableScreenshotCleaner: true,
         enableWceEchoBridge: true,
         enableEchoSoundBridge: true,
@@ -874,6 +875,13 @@
             true,
         ),
     );
+    petSubList.appendChild(
+        createToggle(
+            "petsuitAlternate",
+            "Alternating arm swing",
+            "Alternates left and right arm swinging for a crawling look. (Visible to other BC-Desktop users!)",
+        ),
+    );
 
     petContainer.appendChild(petMain);
     petContainer.appendChild(petSubList);
@@ -947,6 +955,95 @@
 
     let animInterval = null;
     let animFrame = 0;
+
+    function drawAlternatingPetsuit(character, raisedLeft, draw) {
+        const original = {
+            DrawPoseMapping: character.DrawPoseMapping,
+            AppearanceLayers: character.AppearanceLayers,
+            AppearanceMasks: character.AppearanceMasks,
+            Pose: character.Pose,
+            ActivePose: character.ActivePose
+        };
+        const copies = [];
+        try {
+            for (const pose of ['OverTheHead', 'BackElbowTouch']) {
+                character.Pose = [pose];
+                character.ActivePose = [pose];
+                character.DrawPoseMapping = { ...original.DrawPoseMapping, BodyUpper: pose };
+                
+                const origOverrides = window.CharacterAppearanceUpdateOverrides;
+                if (typeof origOverrides === 'function') {
+                    window.CharacterAppearanceUpdateOverrides = function(C) {
+                        origOverrides(C);
+                        C.Pose = [pose];
+                        C.ActivePose = [pose];
+                        if (C.DrawPoseMapping) C.DrawPoseMapping.BodyUpper = pose;
+                    };
+                }
+                
+                const backups = [];
+                for (let i = 0; i < character.Appearance.length; i++) {
+                    const a = character.Appearance[i];
+                    if (!a.Asset) continue;
+                    const bp = { a, assetSetPose: a.Asset.SetPose, propSetPose: a.Property?.SetPose };
+                    if (a.Asset.SetPose) a.Asset.SetPose = null;
+                    if (a.Property && a.Property.SetPose) a.Property.SetPose = null;
+                    backups.push(bp);
+                }
+                
+                const origDrawGetImage = window.DrawGetImage;
+                if (typeof origDrawGetImage === 'function') {
+                    window.DrawGetImage = function(src) {
+                        const img = origDrawGetImage(src);
+                        if (!img) {
+                            if (!window._chatQol_DummyImg) {
+                                window._chatQol_DummyImg = new Image();
+                                window._chatQol_DummyImg.src = "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7";
+                            }
+                            return window._chatQol_DummyImg;
+                        }
+                        return img;
+                    };
+                }
+                
+                try {
+                    draw();
+                } finally {
+                    if (typeof origDrawGetImage === 'function') window.DrawGetImage = origDrawGetImage;
+                    window.CharacterAppearanceUpdateOverrides = origOverrides;
+                    for (const bp of backups) {
+                        if (bp.assetSetPose !== undefined) bp.a.Asset.SetPose = bp.assetSetPose;
+                        if (bp.propSetPose !== undefined && bp.a.Property) bp.a.Property.SetPose = bp.propSetPose;
+                    }
+                }
+                copies.push(['Canvas', 'CanvasBlink'].map(key => {
+                    const source = character[key];
+                    if (!source) return null;
+                    const copy = document.createElement('canvas');
+                    copy.width = source.width;
+                    copy.height = source.height;
+                    copy.getContext('2d').drawImage(source, 0, 0);
+                    return copy;
+                }));
+            }
+            for (const [index, key] of ['Canvas', 'CanvasBlink'].entries()) {
+                const canvas = character[key];
+                if (!canvas) continue;
+                const ctx = canvas.getContext('2d');
+                const width = canvas.width, height = canvas.height, half = width / 2;
+                ctx.clearRect(0, 0, width, height);
+                for (const side of [0, 1]) {
+                    const srcArr = copies[(side === 0) === raisedLeft ? 0 : 1];
+                    const source = srcArr ? srcArr[index] : null;
+                    if (source) ctx.drawImage(source, side * half, 0, half, height, side * half, 0, half, height);
+                }
+            }
+        } finally {
+            Object.assign(character, original);
+            character.Pose = original.Pose || [];
+            character.ActivePose = original.ActivePose || null;
+        }
+    }
 
     const animPoses = [
         "dialog-pose-button-grid-BodyUpper-OverTheHead",
@@ -1025,6 +1122,14 @@
             Math.ceil((parseInt(qolConfig.animDelay) || 350) / 1000) + 3;
         setEyeExpr("Daydream", eyeRefreshSec);
 
+        if (typeof ServerSend === "function" && qolConfig.petsuitAlternate) {
+            ServerSend("ChatRoomChat", {
+                Type: "Hidden",
+                Content: "ChatQol_PetsuitAnim",
+                Dictionary: [{ delay: speed, cycles: maxCycles }]
+            });
+        }
+
         animInterval = setInterval(() => {
             try {
                 // Purely local rendering, bypass CharacterSetActivePose
@@ -1036,6 +1141,7 @@
 
             animFrame++;
             count++;
+            let petsuitRaisedLeft = (animFrame % 2 === 0);
             
             if (count >= maxCycles) {
                 clearInterval(animInterval);
@@ -1114,7 +1220,40 @@
                     window.ChatRoomMessage = function (data) {
                         origChatRoomMessage(data);
                         
-                        if (data && data.Type === 'Hidden' && data.Content && data.Content.startsWith(HIDDEN_MSG_PREFIX)) {
+                        if (data && data.Type === 'Hidden' && data.Content === 'ChatQol_PetsuitAnim') {
+                    const id = data.Sender;
+                    if (typeof id !== 'number' || id === window.Player?.MemberNumber) return;
+                    
+                    const dict = Array.isArray(data.Dictionary) ? data.Dictionary[0] : data.Dictionary;
+                    if (!dict || typeof dict.delay !== 'number' || typeof dict.cycles !== 'number') return;
+                    
+                    const char = (window.ChatRoomCharacter || []).find(c => c.MemberNumber === id);
+                    if (!char) return;
+                    
+                    const delay = Math.max(20, Math.min(2000, dict.delay));
+                    const cycles = Math.max(1, Math.min(100, dict.cycles));
+                    
+                    if (!window._chatQol_PetsuitRemoteAnims) window._chatQol_PetsuitRemoteAnims = new Map();
+                    const remoteAnims = window._chatQol_PetsuitRemoteAnims;
+                    
+                    if (remoteAnims.has(id)) clearTimeout(remoteAnims.get(id).timer);
+                    
+                    let frame = 0;
+                    function step() {
+                        if (window.CurrentScreen !== 'ChatRoom' || frame >= cycles * 2) {
+                            remoteAnims.delete(id);
+                            if (typeof window.CharacterRefresh === 'function') window.CharacterRefresh(char, false);
+                            return;
+                        }
+                        
+                        frame++;
+                        remoteAnims.set(id, { frame, timer: setTimeout(step, delay) });
+                        if (typeof window.CharacterRefresh === 'function') window.CharacterRefresh(char, false);
+                    }
+                    step();
+                }
+
+                if (data && data.Type === 'Hidden' && data.Content && data.Content.startsWith(HIDDEN_MSG_PREFIX)) {
                             const id = data.Sender;
                             if (typeof id !== 'number' || id === window.Player?.MemberNumber) return;
                             
@@ -1223,8 +1362,20 @@
                     window._chatQol_BuildCanvasHooked = true;
                     const origBuildCanvas = window.CharacterAppearanceBuildCanvas;
                     window.CharacterAppearanceBuildCanvas = function (C) {
-                        if (C === Player && animInterval) {
-                                const pose = animPoses[animFrame % animPoses.length].split("-").pop();
+                        const isLocal = (C === Player && animInterval);
+                        const remoteAnim = window._chatQol_PetsuitRemoteAnims ? window._chatQol_PetsuitRemoteAnims.get(C.MemberNumber) : null;
+                        
+                        if (isLocal || remoteAnim) {
+                            const frameToUse = isLocal ? animFrame : remoteAnim.frame;
+                            const isAlternate = isLocal ? qolConfig.petsuitAlternate : true; // remote anim is always alternate
+                            const raisedLeft = (frameToUse % 2 === 0);
+                            
+                            if (isAlternate) {
+                                drawAlternatingPetsuit(C, raisedLeft, () => {
+                                    origBuildCanvas(C);
+                                });
+                            } else {
+                                const pose = animPoses[frameToUse % animPoses.length].split("-").pop();
                                 const original = {
                                     DrawPoseMapping: C.DrawPoseMapping,
                                     AppearanceLayers: C.AppearanceLayers,
@@ -1236,18 +1387,57 @@
                                     C.Pose = [pose];
                                     if (C.ActivePose) C.ActivePose = [pose];
                                     C.DrawPoseMapping = { ...original.DrawPoseMapping, BodyUpper: pose };
-                                    if (typeof window.CharacterAppearanceUpdateOverrides === 'function') {
-                                        window.CharacterAppearanceUpdateOverrides(C);
-                                    } else {
-                                        C.AppearanceLayers = window.CharacterAppearanceSortLayers ? window.CharacterAppearanceSortLayers(C) : C.AppearanceLayers;
-                                        C.AppearanceMasks = window.CharacterAppearanceBuildMasks ? window.CharacterAppearanceBuildMasks(C) : C.AppearanceMasks;
+                                    const origOverrides = window.CharacterAppearanceUpdateOverrides;
+                                    if (typeof origOverrides === 'function') {
+                                        window.CharacterAppearanceUpdateOverrides = function(char) {
+                                            origOverrides(char);
+                                            char.Pose = [pose];
+                                            char.ActivePose = [pose];
+                                            if (char.DrawPoseMapping) char.DrawPoseMapping.BodyUpper = pose;
+                                        };
                                     }
-                                    origBuildCanvas(C);
+                                    
+                                    const backups = [];
+                                    for (let i = 0; i < C.Appearance.length; i++) {
+                                        const a = C.Appearance[i];
+                                        if (!a.Asset) continue;
+                                        const bp = { a, assetSetPose: a.Asset.SetPose, propSetPose: a.Property?.SetPose };
+                                        if (a.Asset.SetPose) a.Asset.SetPose = null;
+                                        if (a.Property && a.Property.SetPose) a.Property.SetPose = null;
+                                        backups.push(bp);
+                                    }
+                                    
+                                    const origDrawGetImage = window.DrawGetImage;
+                                    if (typeof origDrawGetImage === 'function') {
+                                        window.DrawGetImage = function(src) {
+                                            const img = origDrawGetImage(src);
+                                            if (!img) {
+                                                if (!window._chatQol_DummyImg) {
+                                                    window._chatQol_DummyImg = new Image();
+                                                    window._chatQol_DummyImg.src = "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7";
+                                                }
+                                                return window._chatQol_DummyImg;
+                                            }
+                                            return img;
+                                        };
+                                    }
+                                    
+                                    try {
+                                        origBuildCanvas(C);
+                                    } finally {
+                                        if (typeof origDrawGetImage === 'function') window.DrawGetImage = origDrawGetImage;
+                                        window.CharacterAppearanceUpdateOverrides = origOverrides;
+                                        for (const bp of backups) {
+                                            if (bp.assetSetPose !== undefined) bp.a.Asset.SetPose = bp.assetSetPose;
+                                            if (bp.propSetPose !== undefined && bp.a.Property) bp.a.Property.SetPose = bp.propSetPose;
+                                        }
+                                    }
                                 } finally {
                                     Object.assign(C, original);
-                                    if (original.Pose) C.Pose = original.Pose;
-                                    if (original.ActivePose) C.ActivePose = original.ActivePose;
+                                    C.Pose = original.Pose || [];
+                                    C.ActivePose = original.ActivePose || null;
                                 }
+                            }
                             return;
                         }
                         origBuildCanvas(C);
