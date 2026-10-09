@@ -1165,7 +1165,7 @@
                     window._chatQol_AnimalReceiverHooked = true;
                     
                     const HIDDEN_MSG_PREFIX = 'LCEAnimalAnim_';
-                    const SLOTS = { Ears: 'ItemHead', Tails: 'ItemPelvis', Wings: 'ItemTorso' };
+                    const SLOTS = { Ears: 'HairAccessory2', Tails: 'TailStraps', Wings: 'Wings' };
                     const renderers = new Map();
                     
                     const origChatRoomMessage = window.ChatRoomMessage;
