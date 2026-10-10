@@ -14,7 +14,8 @@ namespace BCDesktop;
 
 public partial class MainWindow : Window
 {
-    private const string FallbackUrl    = "https://www.bondage-asia.com/club/R132/";
+    private static string _lastKnownGoodUrl = "https://www.bondage-asia.com/club/R132/";
+    private static string FallbackUrl => _lastKnownGoodUrl;
     private const string VersionApiBase = "https://www.bondage-asia.com/";
 
 
@@ -88,60 +89,109 @@ public partial class MainWindow : Window
         }
     }
 
+    private static async Task<bool> IsVersionLiveAsync(HttpClient http, int version)
+    {
+        try
+        {
+            using var req = new HttpRequestMessage(HttpMethod.Head, $"https://www.bondage-asia.com/club/R{version}/");
+            using var res = await http.SendAsync(req);
+            return res.IsSuccessStatusCode;
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
     private static async Task<string> DetectLatestUrlAsync()
     {
-        int baseVersion = 132;
+        int activeVersion = 132;
         
         string localAppData = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
         string versionFile = Path.Combine(localAppData, "BCClient", "version.txt");
         
-        if (File.Exists(versionFile))
+        if (File.Exists(versionFile) && int.TryParse(File.ReadAllText(versionFile), out int savedVersion))
         {
-            if (int.TryParse(File.ReadAllText(versionFile), out int savedVersion))
+            if (savedVersion >= 132 && savedVersion < 500)
             {
-                // Ignore fake versions (e.g. 252, 282) saved by the previous LiteSpeed bug
-                if (savedVersion < 200) baseVersion = savedVersion;
+                activeVersion = savedVersion;
             }
         }
 
         try
         {
-            using var http = new HttpClient { Timeout = TimeSpan.FromSeconds(5) };
+            using var http = new HttpClient { Timeout = TimeSpan.FromSeconds(4) };
             http.DefaultRequestHeaders.UserAgent.ParseAdd(
                 "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36");
 
-            // Fetch the CHANGELOG.md directly from GitGud to find the latest release
-            var response = await http.GetAsync("https://gitgud.io/BondageProjects/Bondage-College/-/raw/master/BondageClub/CHANGELOG.md", HttpCompletionOption.ResponseHeadersRead);
-            if (response.IsSuccessStatusCode)
+            // 1. Always probe upcoming and nearby versions directly against the server.
+            // This guarantees the game auto-updates even if GitGud CHANGELOG is never updated, delayed, or unreachable.
+            var candidates = new HashSet<int>();
+            for (int i = 0; i <= 8; i++)
             {
-                using var stream = await response.Content.ReadAsStreamAsync();
-                using var reader = new StreamReader(stream);
-                string line;
-                int lineCount = 0;
-                while ((line = await reader.ReadLineAsync()) != null && lineCount < 100)
+                candidates.Add(activeVersion + i);
+            }
+            for (int i = 1; i <= 3; i++)
+            {
+                if (activeVersion - i >= 132) candidates.Add(activeVersion - i);
+            }
+
+            // Optional bonus: read GitGud CHANGELOG to fast-forward any large multi-version jumps
+            try
+            {
+                var response = await http.GetAsync(
+                    "https://gitgud.io/BondageProjects/Bondage-College/-/raw/master/BondageClub/CHANGELOG.md",
+                    HttpCompletionOption.ResponseHeadersRead);
+
+                if (response.IsSuccessStatusCode)
                 {
-                    lineCount++;
-                    var match = Regex.Match(line, @"^## \[R(\d+)\]");
-                    if (match.Success && int.TryParse(match.Groups[1].Value, out int latestVersion))
+                    using var stream = await response.Content.ReadAsStreamAsync();
+                    using var reader = new StreamReader(stream);
+                    string? line;
+                    int lineCount = 0;
+                    while ((line = await reader.ReadLineAsync()) != null && lineCount < 100)
                     {
-                        if (latestVersion >= 132)
+                        lineCount++;
+                        var match = Regex.Match(line, @"^## \[R(\d+)\]");
+                        if (match.Success && int.TryParse(match.Groups[1].Value, out int ver))
                         {
-                            baseVersion = latestVersion;
-                            try 
-                            { 
-                                Directory.CreateDirectory(Path.GetDirectoryName(versionFile)); 
-                                File.WriteAllText(versionFile, baseVersion.ToString()); 
-                            } 
-                            catch { }
+                            if (ver >= 132 && ver < 500)
+                            {
+                                candidates.Add(ver);
+                            }
                         }
-                        break; // Found the latest version, no need to read further
                     }
                 }
+            }
+            catch { }
+
+            // 2. Probe all candidates concurrently in parallel (~100ms total)
+            var probeTasks = candidates.Select(async v => (Version: v, IsLive: await IsVersionLiveAsync(http, v)));
+            var probeResults = await Task.WhenAll(probeTasks);
+
+            // 3. Select the HIGHEST confirmed live release
+            int bestLiveVersion = probeResults
+                .Where(r => r.IsLive)
+                .OrderByDescending(r => r.Version)
+                .Select(r => r.Version)
+                .FirstOrDefault();
+
+            if (bestLiveVersion > 0)
+            {
+                activeVersion = bestLiveVersion;
+                _lastKnownGoodUrl = $"https://www.bondage-asia.com/club/R{activeVersion}/";
+                try 
+                { 
+                    Directory.CreateDirectory(Path.GetDirectoryName(versionFile)!); 
+                    File.WriteAllText(versionFile, activeVersion.ToString()); 
+                } 
+                catch { }
             }
         }
         catch { }
 
-        return $"https://www.bondage-asia.com/club/R{baseVersion}/";
+        _lastKnownGoodUrl = $"https://www.bondage-asia.com/club/R{activeVersion}/";
+        return _lastKnownGoodUrl;
     }
 
     private async void InitWebViewAsync()
@@ -156,8 +206,8 @@ public partial class MainWindow : Window
             browserExecutableFolder: null,
             userDataFolder: userDataFolder);
 
-        await WebView.EnsureCoreWebView2Async(env);
         _resolvedUrl = await urlTask;
+        await WebView.EnsureCoreWebView2Async(env);
     }
 
     private string _resolvedUrl = FallbackUrl;
@@ -351,7 +401,7 @@ public partial class MainWindow : Window
                     let lastVal = window.bcInputChatLastValue || '';
                     if (ic.value.startsWith(lastVal) && ic.value.length > lastVal.length) {
                         let leaked = ic.value.substring(lastVal.length);
-                        // Jangan corrupt number input dengan leaked text non-numerik
+                        // Avoid corrupting numeric inputs with non-numeric leaked text
                         if ((best.tagName === 'INPUT' && best.type !== 'number') || best.tagName === 'TEXTAREA') {
                             best.value = (best.value || '') + leaked;
                             try { best.selectionStart = best.value.length; best.selectionEnd = best.value.length; } catch(e) {}
@@ -434,7 +484,7 @@ public partial class MainWindow : Window
                     let isLayeringInput = this.id && this.id.startsWith('layering-input-');
                     if (window.bcIsMouseDown && !isLayeringInput) return;
 
-                    // Anti-steal: jika layering input sedang aktif, blok SEMUA focus programmatic ke elemen lain
+                    // Anti-steal: when layering input is active, block all programmatic focus shifts to other elements
                     let currentActive = document.activeElement;
                     let currentIsLayering = currentActive && currentActive.id && currentActive.id.startsWith('layering-input-');
                     if (currentIsLayering && !isLayeringInput) return;
@@ -570,6 +620,12 @@ public partial class MainWindow : Window
         
         core.NavigationCompleted += async (sender, args) =>
         {
+            if (args.HttpStatusCode == 404 && core.Source != FallbackUrl)
+            {
+                core.Navigate(FallbackUrl);
+                return;
+            }
+
             if (args.IsSuccess)
             {
                 await core.ExecuteScriptAsync(copyScript);
