@@ -5,7 +5,7 @@
     let defaultIconStateApplied = false;
 
     let qolConfig = {
-        enableEmoticons: true,
+        enableEmoticons: false,
         emoticons: {
             emoCat: true,
             emoCatW: true,
@@ -40,14 +40,16 @@
         persistIconState: true,
         smartClosedEyes: true,
         enablePetsuitAnim: false,
-        enableEchoMouthPull: true,
+        enableEchoMouthPull: false,
         animCount: 4,
         animDelay: 350,
         petsuitAlternate: false,
         enableScreenshotCleaner: true,
-        enableWceEchoBridge: true,
-        enableEchoSoundBridge: true,
-        enableLceModLoader: false,
+        enableWceEchoBridge: false,
+        enableEchoSoundBridge: false,
+        enableLceModLoader: true,
+        enableFluidColor: false,
+        fluidColor: "#547A82",
     };
     try {
         const saved = localStorage.getItem("BCDesktop_ChatQoL_Config");
@@ -749,6 +751,13 @@
             "forceUngarbled",
             "Force Ungarbled Messages",
             "Forces the game to always show ungarbled text.",
+        ),
+    );
+    cat3.body.appendChild(
+        createToggle(
+            "enableFluidColor",
+            "Fluid Color Enforcer",
+            "Forces fluids & tears to stay colored (#547A82). Turned off by default.",
         ),
     );
 
@@ -2792,5 +2801,47 @@
             console.log("BC Desktop: Echo Sound Bridge Loaded (Added " + soundMappings.length + " sound triggers)");
         };
         setTimeout(initSoundBridge, 1000);
+    })();
+
+    // Fluid Color Enforcer
+    (function () {
+        function applyFluidsColor() {
+            if (!qolConfig.enableFluidColor) return;
+            if (typeof Player !== 'undefined' && Player && Player.Appearance && Player.MemberNumber) {
+                let target = qolConfig.fluidColor || "#547A82";
+                let fluidsItem = Player.Appearance.find(a => a.Asset && a.Asset.Group && a.Asset.Group.Name === "Fluids");
+                if (fluidsItem) {
+                    if (fluidsItem.Color !== target && fluidsItem.Color !== target.toLowerCase()) {
+                        fluidsItem.Color = target;
+                        if (typeof CharacterRefresh === "function") CharacterRefresh(Player);
+                        if (typeof ServerPlayerAppearanceSync === "function") ServerPlayerAppearanceSync();
+                        console.log(`[ChatQoL] Fluids color enforced to ${target}`);
+                    }
+                }
+            }
+        }
+
+        let origLoginResponse = window.LoginResponse;
+        if (typeof origLoginResponse === "function") {
+            window.LoginResponse = function (...args) {
+                origLoginResponse(...args);
+                setTimeout(applyFluidsColor, 2000);
+            };
+        } else {
+            let fluidInitInterval = setInterval(() => {
+                if (typeof Player !== 'undefined' && Player && Player.MemberNumber) {
+                    applyFluidsColor();
+                    clearInterval(fluidInitInterval);
+                }
+            }, 1000);
+        }
+
+        let origReturnScreen = window.CharacterAppearanceReturnToPreviousScreen;
+        if (typeof origReturnScreen === "function") {
+            window.CharacterAppearanceReturnToPreviousScreen = function (...args) {
+                applyFluidsColor();
+                origReturnScreen(...args);
+            };
+        }
     })();
 })();

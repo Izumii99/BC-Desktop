@@ -93,15 +93,13 @@
     }
 
     const SCRIPT_INFO = {
-        "autofocus.js": { title: "Autofocus", desc: "Automatically focuses the chat input box.", url: "https://github.com/Izumii99/BC-Desktop/blob/main/tester/Scripts/autofocus.js" },
-        "chat-qol.js": { title: "Chat QoL", desc: "Quality of Life features for the chat window.", url: "https://github.com/Izumii99/BC-Desktop/blob/main/tester/Scripts/chat-qol.js" },
-        "cheat-menu.js": { title: "Cheat Menu", desc: "Quick access cheats for restraints, wardrobe, and NPCs.", icon: "https://cdn.jsdelivr.net/gh/Izumii99/BC-Desktop@main/Assets/cheat_ui.png", url: "https://github.com/Izumii99/BC-Desktop/blob/main/tester/Scripts/cheat-menu.js" },
-        "fluid-color.js": { title: "Fluid Color Enforcer", desc: "Forces fluid expressions (drool, tears, etc.) to a specific color.", url: "https://github.com/Izumii99/BC-Desktop/blob/main/tester/Scripts/fluid-color.js" },
-        "fusam.js": { title: "FUSAM Loader", desc: "Fantastic Ultimate Solution to Addon Management.", icon: "🛠️", url: "https://gitlab.com/zahk3277/bc-addon-loader" },
-        "LikoPlugin.js": { title: "Liko Plugin", desc: "Player customization and utility plugin.", icon: "https://cdn.jsdelivr.net/gh/awdrrawd/liko-Plugin-Repository@main/Images/PCM_ICON.png", url: "https://github.com/awdrrawd/liko-Plugin-Repository" },
-        "neko-dark.js": { title: "Neko Dark Theme", desc: "A sleek dark theme for Bondage Club by Neko.", url: "https://github.com/Izumii99/BC-Desktop/blob/main/tester/Scripts/neko-dark.js" },
-        "translate.js": { title: "In-Game Translator", desc: "In-game translation tool for chat messages.", url: "https://github.com/Izumii99/BC-Desktop/blob/main/tester/Scripts/translate.js" }
-        // "wardrobe-pagination.js": { title: "Wardrobe Pagination", desc: "Adds pagination to wardrobe items.", url: "https://github.com/Izumii99/BC-Desktop/blob/main/tester/Scripts/wardrobe-pagination.js" } // Dinonaktifkan karena sudah Native di BCX
+        "chat-qol.js": { title: "Chat QoL", desc: "Quality of Life features for chat window, textmojis & fluid color enforcer.", url: "https://github.com/Izumii99/BC-Desktop/blob/main/Scripts/chat-qol.js" },
+        "cheat-menu.js": { title: "Cheat Menu", desc: "Quick access cheats for restraints, wardrobe, and NPCs.", icon: "https://cdn.jsdelivr.net/gh/Izumii99/BC-Desktop@main/Assets/cheat_ui.png", url: "https://github.com/Izumii99/BC-Desktop/blob/main/Scripts/cheat-menu.js" },
+        "neko-dark.js": { title: "Neko Dark Theme", desc: "A sleek dark theme for Bondage Club by Neko.", url: "https://github.com/Izumii99/BC-Desktop/blob/main/Scripts/neko-dark.js" },
+        "translate.js": { title: "In-Game Translator", desc: "In-game translation tool for chat messages.", url: "https://github.com/Izumii99/BC-Desktop/blob/main/Scripts/translate.js" },
+        "FUSAM": { title: "FUSAM Loader", desc: "Fantastic Ultimate Solution to Addon Management (External Loader).", icon: "🛠️", url: "https://gitlab.com/zahk3277/bc-addon-loader", externalUrl: "https://sidiousious.gitlab.io/bc-addon-loader/fusam.js", isModule: true },
+        "LikoPlugin": { title: "Liko Plugin", desc: "Liko's Plugin Collection Manager (External Loader).", icon: "https://cdn.jsdelivr.net/gh/awdrrawd/liko-Plugin-Repository@main/Images/PCM_ICON.png", url: "https://github.com/awdrrawd/liko-Plugin-Repository", externalUrl: "https://awdrrawd.github.io/liko-Plugin-Repository/PCM_Loader.user.js" }
+        // "wardrobe-pagination.js": { title: "Wardrobe Pagination", desc: "Adds pagination to wardrobe items.", url: "https://github.com/Izumii99/BC-Desktop/blob/main/Scripts/wardrobe-pagination.js" } // Native in BCX
     };
 
 
@@ -550,7 +548,7 @@
                 console.warn("BC Desktop: Could not find Scripts directory from API. Falling back to known scripts.");
             }
 
-            let knownScripts = Object.keys(SCRIPT_INFO).filter(name => name.endsWith(".js") && name !== "addon-manager.js");
+            let knownScripts = Object.keys(SCRIPT_INFO).filter(name => name !== "addon-manager.js");
             scriptsList = [...new Set([...apiScripts, ...knownScripts])];
 
             function injectTargetScripts() {
@@ -559,8 +557,6 @@
                     setTimeout(injectTargetScripts, 10);
                     return;
                 }
-
-
 
                 scriptsList.forEach((scriptName) => {
                     const isEnabled = userConfig[scriptName] !== false;
@@ -572,9 +568,10 @@
 
                     scriptStatuses[scriptName] = "loading";
 
+                    const info = SCRIPT_INFO[scriptName] || {};
                     let script = document.createElement("script");
-                    script.src =
-                        SCRIPT_BASE_URL + scriptName + "?v=" + Date.now();
+                    if (info.isModule) script.type = "module";
+                    script.src = info.externalUrl ? (info.externalUrl + "?v=" + Date.now()) : (SCRIPT_BASE_URL + scriptName + "?v=" + Date.now());
                     script.async = false;
 
                     script.onload = () => {
