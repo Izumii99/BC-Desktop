@@ -4,10 +4,14 @@
   <p>Lightweight, native desktop client for BC</p>
 
   <p>
-    <img src="https://img.shields.io/badge/.NET-8.0-blue?logo=dotnet" />
-    <img src="https://img.shields.io/badge/C%23-WPF-purple?logo=csharp" />
-    <img src="https://img.shields.io/badge/platform-Windows%2010%20%7C%2011-lightgrey" />
-    <img src="https://img.shields.io/badge/license-MIT-green" />
+    <a href="https://github.com/Izumii99/BC-Desktop/releases"><img src="https://img.shields.io/github/v/release/Izumii99/BC-Desktop?color=A855F7&style=for-the-badge&logo=github" alt="Latest Release" /></a>
+    <a href="https://github.com/Izumii99/BC-Desktop/releases"><img src="https://img.shields.io/github/downloads/Izumii99/BC-Desktop/total?color=A855F7&style=for-the-badge&logo=github" alt="Total Downloads" /></a>
+  </p>
+  <p>
+    <img src="https://img.shields.io/badge/.NET-8.0-blue?logo=dotnet" alt=".NET 8.0" />
+    <img src="https://img.shields.io/badge/C%23-WPF-purple?logo=csharp" alt="C# WPF" />
+    <img src="https://img.shields.io/badge/platform-Windows%2010%20%7C%2011-lightgrey" alt="Windows" />
+    <img src="https://img.shields.io/badge/license-MIT-green" alt="MIT License" />
   </p>
 </div>
 

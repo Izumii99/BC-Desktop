@@ -25,6 +25,11 @@ desktop.ini
 agent.md
 Scripts/neko-devtools*.js
 Scripts/*debug*.js
+*.html
+jsdelivr_response.json
+Scripts/fusam-liko-loader.js
+*fusam-liko*
+tester/
 
 ## Addons og
 addons_og/
