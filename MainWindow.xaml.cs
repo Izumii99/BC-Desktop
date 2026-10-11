@@ -345,13 +345,20 @@ public partial class MainWindow : Window
 
         string copyScript = @"
             document.addEventListener('keydown', (e) => {
-                if (e.key === 'Enter' || e.keyCode === 13) {
+                if ((e.key === 'Enter' || e.keyCode === 13) && !e.shiftKey) {
                     try {
                         if (window.getSelection) {
                             window.getSelection().removeAllRanges();
                             if (window.getSelection().empty) window.getSelection().empty();
                         }
                     } catch (err) {}
+                }
+
+                if ((e.key === 'Enter' || e.keyCode === 13) && e.shiftKey) {
+                    let ic = document.getElementById('InputChat');
+                    if (ic && (document.activeElement === ic || e.target === ic)) {
+                        window.bcFocusMemory = ic;
+                    }
                 }
                 
                 if (e.ctrlKey && (e.key === 'c' || e.key === 'C')) {
@@ -429,7 +436,7 @@ public partial class MainWindow : Window
                 if (window.bcSelectionTimeout) clearTimeout(window.bcSelectionTimeout);
                 window.bcSelectionTimeout = setTimeout(() => {
                     let active = document.activeElement;
-                    if (active && (active.tagName === 'INPUT' || active.tagName === 'TEXTAREA' || active.isContentEditable) && active.id !== 'InputChat') return;
+                    if (active && (active.tagName === 'INPUT' || active.tagName === 'TEXTAREA' || active.isContentEditable)) return;
                     if (window.getSelection().toString().length > 0) return;
                     
                     let best = window.bcRunFocusCrawler ? window.bcRunFocusCrawler() : null;

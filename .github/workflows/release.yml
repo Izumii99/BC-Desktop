@@ -1,17 +1,21 @@
 name: 'Build and Release'
 
 'on':
+  push:
+    tags:
+      - '[0-9]+.[0-9]+'
+      - 'v[0-9]+.[0-9]+'
   workflow_dispatch:
     inputs:
       version:
-        description: 'Release version / tag (e.g., 5.5)'
-        required: true
-        default: '5.5'
+        description: 'Release version / tag (e.g., 5.6)'
+        required: false
+        default: '5.6'
         type: string
       title:
         description: 'Release Title Highlight (Title Case)'
-        required: true
-        default: 'Chromium Background Optimization & Smart Memory Trimming'
+        required: false
+        default: 'Shift-Enter Multiline Preservation & Focus Steal Mitigation'
         type: string
       notes:
         description: 'Custom Release Notes (leave empty to use standard template)'
@@ -59,8 +63,13 @@ jobs:
           INPUT_TITLE: ${{ inputs.title }}
           INPUT_NOTES: ${{ inputs.notes }}
         run: |
-          $ver = $env:INPUT_VERSION.Trim()
-          $title = $env:INPUT_TITLE.Trim()
+          $inputVer = if ($env:INPUT_VERSION) { $env:INPUT_VERSION.Trim() } else { "" }
+          $refTag = if ($env:GITHUB_REF_NAME) { $env:GITHUB_REF_NAME.Trim().TrimStart('v') } else { "" }
+          $ver = if ($inputVer.Length -gt 0) { $inputVer } elseif ($refTag.Length -gt 0) { $refTag } else { "5.6" }
+
+          $inputTitle = if ($env:INPUT_TITLE) { $env:INPUT_TITLE.Trim() } else { "" }
+          $title = if ($inputTitle.Length -gt 0) { $inputTitle } else { "Shift-Enter Multiline Preservation & Focus Steal Mitigation" }
+
           $customNotes = if ($env:INPUT_NOTES) { $env:INPUT_NOTES.Trim() } else { "" }
 
           git config user.name "github-actions[bot]"
@@ -96,8 +105,12 @@ jobs:
           INPUT_VERSION: ${{ inputs.version }}
           INPUT_TITLE: ${{ inputs.title }}
         run: |
-          $ver = $env:INPUT_VERSION.Trim()
-          $title = $env:INPUT_TITLE.Trim()
+          $inputVer = if ($env:INPUT_VERSION) { $env:INPUT_VERSION.Trim() } else { "" }
+          $refTag = if ($env:GITHUB_REF_NAME) { $env:GITHUB_REF_NAME.Trim().TrimStart('v') } else { "" }
+          $ver = if ($inputVer.Length -gt 0) { $inputVer } elseif ($refTag.Length -gt 0) { $refTag } else { "5.6" }
+
+          $inputTitle = if ($env:INPUT_TITLE) { $env:INPUT_TITLE.Trim() } else { "" }
+          $title = if ($inputTitle.Length -gt 0) { $inputTitle } else { "Shift-Enter Multiline Preservation & Focus Steal Mitigation" }
           $releaseTitle = if ($title.Length -gt 0) { "v$ver - $title" } else { "v$ver" }
 
           $existingTags = gh release list -L 100 --json tagName -q ".[].tagName"
