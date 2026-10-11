@@ -102,6 +102,16 @@
         // "wardrobe-pagination.js": { title: "Wardrobe Pagination", desc: "Adds pagination to wardrobe items.", url: "https://github.com/Izumii99/BC-Desktop/blob/main/Scripts/wardrobe-pagination.js" } // Native in BCX
     };
 
+    const IGNORED_SCRIPTS = [
+        "addon-manager.js",
+        "echo-activity.js",
+        "autofocus.js",
+        "fluid-color.js",
+        "fusam.js",
+        "LikoPlugin.js",
+        "wardrobe-pagination.js"
+    ];
+
 
 
     let isModalOpen = false;
@@ -514,10 +524,55 @@
         } catch (e) {}
     }, 1000);
 
+    function injectTargetScripts() {
+        let target = document.head || document.documentElement;
+        if (!target) {
+            setTimeout(injectTargetScripts, 10);
+            return;
+        }
+
+        scriptsList.forEach((scriptName) => {
+            const isEnabled = userConfig[scriptName] !== false;
+
+            if (!isEnabled) {
+                scriptStatuses[scriptName] = "disabled";
+                return;
+            }
+
+            scriptStatuses[scriptName] = "loading";
+
+            const info = SCRIPT_INFO[scriptName] || {};
+            let script = document.createElement("script");
+            if (info.isModule) script.type = "module";
+            script.src = info.externalUrl ? (info.externalUrl + "?v=" + Date.now()) : (SCRIPT_BASE_URL + scriptName + "?v=" + Date.now());
+            script.async = false;
+
+            script.onload = () => {
+                scriptStatuses[scriptName] = "loaded";
+                console.log(
+                    `BC Desktop: Successfully loaded ${scriptName}`,
+                );
+                if (isModalOpen) renderList();
+            };
+
+            script.onerror = () => {
+                scriptStatuses[scriptName] = "failed";
+                console.error(
+                    `BC Desktop: Failed to load ${scriptName}`,
+                );
+                if (isModalOpen) renderList();
+            };
+
+            target.appendChild(script);
+        });
+    }
+
     if (window.bcLocalScripts) {
         scriptsList = window.bcLocalScripts.filter(
-            (f) => !f.toLowerCase().includes("debug") && f !== "addon-manager.js" && f !== "echo-activity.js" && f.endsWith(".js")
+            (f) => !f.toLowerCase().includes("debug") && !IGNORED_SCRIPTS.includes(f) && f.endsWith(".js")
         );
+        let knownExternal = Object.keys(SCRIPT_INFO).filter(name => SCRIPT_INFO[name].externalUrl);
+        scriptsList = [...new Set([...scriptsList, ...knownExternal])];
         injectTargetScripts();
         return;
     }
@@ -540,59 +595,15 @@
                             f.type === "file" &&
                             f.name.endsWith(".js") &&
                             !f.name.toLowerCase().includes("debug") &&
-                            f.name !== "addon-manager.js" &&
-                            f.name !== "echo-activity.js"
+                            !IGNORED_SCRIPTS.includes(f.name)
                     )
                     .map((f) => f.name);
             } else {
                 console.warn("BC Desktop: Could not find Scripts directory from API. Falling back to known scripts.");
             }
 
-            let knownScripts = Object.keys(SCRIPT_INFO).filter(name => name !== "addon-manager.js");
+            let knownScripts = Object.keys(SCRIPT_INFO).filter(name => !IGNORED_SCRIPTS.includes(name));
             scriptsList = [...new Set([...apiScripts, ...knownScripts])];
-
-            function injectTargetScripts() {
-                let target = document.head || document.documentElement;
-                if (!target) {
-                    setTimeout(injectTargetScripts, 10);
-                    return;
-                }
-
-                scriptsList.forEach((scriptName) => {
-                    const isEnabled = userConfig[scriptName] !== false;
-
-                    if (!isEnabled) {
-                        scriptStatuses[scriptName] = "disabled";
-                        return;
-                    }
-
-                    scriptStatuses[scriptName] = "loading";
-
-                    const info = SCRIPT_INFO[scriptName] || {};
-                    let script = document.createElement("script");
-                    if (info.isModule) script.type = "module";
-                    script.src = info.externalUrl ? (info.externalUrl + "?v=" + Date.now()) : (SCRIPT_BASE_URL + scriptName + "?v=" + Date.now());
-                    script.async = false;
-
-                    script.onload = () => {
-                        scriptStatuses[scriptName] = "loaded";
-                        console.log(
-                            `BC Desktop: Successfully loaded ${scriptName}`,
-                        );
-                        if (isModalOpen) renderList();
-                    };
-
-                    script.onerror = () => {
-                        scriptStatuses[scriptName] = "failed";
-                        console.error(
-                            `BC Desktop: Failed to load ${scriptName}`,
-                        );
-                        if (isModalOpen) renderList();
-                    };
-
-                    target.appendChild(script);
-                });
-            }
 
             injectTargetScripts();
         })
