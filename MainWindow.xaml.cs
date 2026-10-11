@@ -20,6 +20,7 @@ public partial class MainWindow : Window
 
 
     private string _originalTitleLabel;
+    private CancellationTokenSource? _deactivationCts;
 
     public MainWindow()
     {
@@ -31,16 +32,30 @@ public partial class MainWindow : Window
         InitWebViewAsync();
     }
 
-    private void MainWindow_Deactivated(object? sender, EventArgs e)
+    private async void MainWindow_Deactivated(object? sender, EventArgs e)
     {
-        if (WindowState != WindowState.Minimized && WebView.CoreWebView2 is { } core)
+        _deactivationCts?.Cancel();
+        _deactivationCts = new CancellationTokenSource();
+        var token = _deactivationCts.Token;
+
+        try
         {
-            core.MemoryUsageTargetLevel = CoreWebView2MemoryUsageTargetLevel.Low;
+            await Task.Delay(3000, token);
+            if (!token.IsCancellationRequested && WindowState != WindowState.Minimized && WebView.CoreWebView2 is { } core)
+            {
+                core.MemoryUsageTargetLevel = CoreWebView2MemoryUsageTargetLevel.Low;
+            }
+        }
+        catch (OperationCanceledException)
+        {
         }
     }
 
     private async void MainWindow_Activated(object? sender, EventArgs e)
     {
+        _deactivationCts?.Cancel();
+        _deactivationCts = null;
+
         if (WebView.CoreWebView2 is { } core)
         {
             core.MemoryUsageTargetLevel = CoreWebView2MemoryUsageTargetLevel.Normal;
@@ -74,6 +89,8 @@ public partial class MainWindow : Window
         {
             if (WindowState == WindowState.Minimized)
             {
+                _deactivationCts?.Cancel();
+                _deactivationCts = null;
                 core.MemoryUsageTargetLevel = CoreWebView2MemoryUsageTargetLevel.Low;
                 await core.TrySuspendAsync();
             }
