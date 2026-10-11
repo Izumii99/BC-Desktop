@@ -202,9 +202,20 @@ public partial class MainWindow : Window
             Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
             "BCClient", "WebView2Data");
 
+        var options = new CoreWebView2EnvironmentOptions
+        {
+            AdditionalBrowserArguments =
+                "--disable-features=Translate,OptimizationHints,MediaRouter,DialMediaRouteProvider " +
+                "--disable-background-networking " +
+                "--disable-component-update " +
+                "--disable-domain-reliability " +
+                "--disable-sync"
+        };
+
         var env = await CoreWebView2Environment.CreateAsync(
             browserExecutableFolder: null,
-            userDataFolder: userDataFolder);
+            userDataFolder: userDataFolder,
+            options: options);
 
         _resolvedUrl = await urlTask;
         await WebView.EnsureCoreWebView2Async(env);
@@ -226,6 +237,10 @@ public partial class MainWindow : Window
         core.Settings.AreDefaultContextMenusEnabled = false;
         core.Settings.IsStatusBarEnabled            = false;
         core.Settings.IsZoomControlEnabled          = false;
+        core.Settings.IsPinchZoomEnabled            = false;
+        core.Settings.IsSwipeNavigationEnabled      = false;
+        core.Settings.IsGeneralAutofillEnabled      = false;
+        core.Settings.IsPasswordAutosaveEnabled     = false;
 
         core.DocumentTitleChanged += Core_DocumentTitleChanged;
         core.PermissionRequested += (s, args) =>
