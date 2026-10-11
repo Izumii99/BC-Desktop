@@ -108,14 +108,26 @@ jobs:
           $title = "${{ inputs.title }}".Trim()
           $releaseTitle = if ($title.Length -gt 0) { "v$ver - $title" } else { "v$ver" }
 
-          gh release create $ver `
-            --title $releaseTitle `
-            --notes-file release_notes.md `
-            publish/BC-Desktop-Standalone.zip `
-            publish/BC-Desktop-Lightweight.zip `
-            publish/BC-Desktop-Standalone-Hidden.zip `
-            publish/BC-Desktop-Lightweight-Hidden.zip `
-            --clobber
+          gh release view $ver 2>&1 | Out-Null
+          if ($LASTEXITCODE -eq 0) {
+            Write-Host "Release $ver already exists. Updating release notes and re-uploading assets..."
+            gh release edit $ver --title $releaseTitle --notes-file release_notes.md
+            gh release upload $ver `
+              publish/BC-Desktop-Standalone.zip `
+              publish/BC-Desktop-Lightweight.zip `
+              publish/BC-Desktop-Standalone-Hidden.zip `
+              publish/BC-Desktop-Lightweight-Hidden.zip `
+              --clobber
+          } else {
+            Write-Host "Creating new release for $ver..."
+            gh release create $ver `
+              --title $releaseTitle `
+              --notes-file release_notes.md `
+              publish/BC-Desktop-Standalone.zip `
+              publish/BC-Desktop-Lightweight.zip `
+              publish/BC-Desktop-Standalone-Hidden.zip `
+              publish/BC-Desktop-Lightweight-Hidden.zip
+          }
 
       - name: Clean up Workspace
         if: always()
