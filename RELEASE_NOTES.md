@@ -3,7 +3,7 @@
 - **Fix (Chat Multiline & Shift+Enter):** Pressing Shift+Enter while typing in the chat box now creates a new line normally without kicking you out or losing focus.
 - **Fix (Chat Log Selection & Pull-Down):** If you highlight/select text in the chat history, pressing Enter or Shift+Enter now immediately unselects the text and moves your typing cursor straight back into the chat box.
 - **Fix (Addon & Main Chat Switching):** Clicking between the game's main chat box and addon chat boxes now switches smoothly. You can freely click into the main chat box without your selection getting cancelled or lost.
-- **Improvement (Addon Chat Box Opening):** Opening an addon chat window now automatically places your cursor into its text box on open, without trapping your focus permanently.
+- **Improvement (Addon Chat Box Opening):** Opening an addon chat window or selecting a friend to message now smoothly and automatically puts your typing cursor into the chat box without any aggressive focus fighting.
 - **Fix (Window Resizing & Shrinking):** Making the game window very small no longer cuts off the game screen or makes the resize borders disappear, allowing you to grab and resize window edges and corners easily at any size.
 
 ### Downloads:

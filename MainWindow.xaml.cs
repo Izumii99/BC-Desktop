@@ -425,9 +425,45 @@ public partial class MainWindow : Window
                 return false;
             }
 
+            function getAddonContainer(el) {
+                if (!el || el === document.body || el === document.documentElement) return null;
+                let curr = el;
+                while (curr && curr !== document.body && curr !== document.documentElement) {
+                    if (curr.id === 'chat-room-bot' || curr.id === 'chat-room-div' || curr.id === 'chat-room-main') return null;
+                    if (curr.id === 'InputChat' || curr.id === 'TextAreaChatLog') return null;
+                    if (curr.id === 'MainCanvas') return null;
+                    
+                    let id = (curr.id || '').toLowerCase();
+                    let cls = (typeof curr.className === 'string' ? curr.className : '').toLowerCase();
+                    
+                    if (id.startsWith('lce-') || cls.includes('lce-') ||
+                        id.includes('bcx') || cls.includes('bcx') ||
+                        id.includes('fusam') || cls.includes('fusam') ||
+                        id.includes('bcom') || cls.includes('bcom') ||
+                        id.includes('modal') || cls.includes('modal') ||
+                        id.includes('dialog') || cls.includes('dialog') ||
+                        id.includes('im') || cls.includes('im')) {
+                        return curr;
+                    }
+                    
+                    let z = parseInt(window.getComputedStyle(curr).zIndex, 10);
+                    let pos = window.getComputedStyle(curr).position;
+                    if (!isNaN(z) && z >= 1 && (pos === 'fixed' || pos === 'absolute')) {
+                        return curr;
+                    }
+                    curr = curr.parentElement;
+                }
+                return null;
+            }
+
             document.addEventListener('focusin', (e) => {
                 if (isEditable(e.target)) {
                     window.bcFocusMemory = e.target;
+                    if (isChatArea(e.target)) {
+                        window.bcUserPrefersGameChat = true;
+                    } else if (getAddonContainer(e.target)) {
+                        window.bcUserPrefersGameChat = false;
+                    }
                 }
             }, true);
             
@@ -437,9 +473,33 @@ public partial class MainWindow : Window
                 window.bcLastMousedownTime = Date.now();
                 
                 let ic = document.getElementById('InputChat');
+                let addonBox = getAddonContainer(e.target);
+                
                 if (ic && isChatArea(e.target)) {
+                    // User explicitly clicked the game chat area: prioritize game chat!
+                    window.bcUserPrefersGameChat = true;
                     window.bcFocusMemory = ic;
                     window.bcForceUnfocusSearch = false;
+                } else if (addonBox) {
+                    // User clicked inside an addon dialog/container: switch preference to addon!
+                    window.bcUserPrefersGameChat = false;
+                    window.bcForceUnfocusSearch = false;
+                    if (isEditable(e.target)) {
+                        window.bcFocusMemory = e.target;
+                    } else {
+                        // Softly resolve the best input inside this clicked addon container (e.g. selecting friend in LianChat)
+                        setTimeout(() => {
+                            if (!window.bcUserPrefersGameChat) {
+                                let ta = addonBox.querySelector('textarea:not([disabled]):not([readonly])');
+                                let inp = addonBox.querySelector('input:not([type=button]):not([type=submit]):not([disabled]):not([readonly])');
+                                let targetInput = ta || inp;
+                                if (targetInput && !targetInput.disabled) {
+                                    window.bcFocusMemory = targetInput;
+                                    origFocus.call(targetInput);
+                                }
+                            }
+                        }, 40);
+                    }
                 } else if (isEditable(e.target)) {
                     window.bcFocusMemory = e.target;
                     window.bcForceUnfocusSearch = false;
@@ -511,6 +571,12 @@ public partial class MainWindow : Window
             };
 
             window.bcRunFocusCrawler = function() {
+                // If user prefers the main game chat, return InputChat softly without forcing overlays
+                if (window.bcUserPrefersGameChat) {
+                    let ic = document.getElementById('InputChat');
+                    if (ic) return ic;
+                }
+
                 function getHighestZ(el) {
                     let max = 0;
                     while (el && el !== document.documentElement) {
@@ -527,7 +593,7 @@ public partial class MainWindow : Window
                 
                 for (let i = 0; i < inputs.length; i++) {
                     let el = inputs[i];
-                    if (el.disabled) continue;
+                    if (el.disabled || el.readOnly) continue;
                     
                     let rect = el.getBoundingClientRect();
                     if (rect.width === 0 || rect.height === 0) continue;
@@ -540,7 +606,8 @@ public partial class MainWindow : Window
                     
                     if (el.id === 'InputChat' || el.id === 'TextAreaChatLog') score -= 500000;
                     
-                    if (el.tagName === 'TEXTAREA') score += 1000;
+                    // Strongly prioritize chat textareas over search boxes
+                    if (el.tagName === 'TEXTAREA') score += 5000;
                     
                     let isSearch = false;
                     if (el.id && el.id.toLowerCase().indexOf('search') !== -1) isSearch = true;
@@ -548,7 +615,7 @@ public partial class MainWindow : Window
                     
                     if (isSearch) {
                         if (window.bcForceUnfocusSearch) continue;
-                        score -= 2000;
+                        score -= 10000;
                     }
                     
                     if (score > maxScore) { maxScore = score; bestInput = el; }
@@ -641,12 +708,7 @@ public partial class MainWindow : Window
                             }
                         }
                         if (m.removedNodes.length > 0) {
-                            for (let i = 0; i < m.removedNodes.length; i++) {
-                                let n = m.removedNodes[i];
-                                if (n.tagName === 'INPUT' || n.tagName === 'TEXTAREA' || (n.querySelector && n.querySelector('input, textarea'))) {
-                                    shouldCheck = true;
-                                }
-                            }
+                            shouldCheck = true;
                         }
                     } else if (m.type === 'attributes') {
                         if (m.target && (m.target.tagName === 'INPUT' || m.target.tagName === 'TEXTAREA' || (m.target.querySelector && m.target.querySelector('input, textarea')))) {
@@ -664,9 +726,11 @@ public partial class MainWindow : Window
                         if (window.getSelection().toString().length > 0) return;
                         if (window.bcForceUnfocusSearch) return;
 
+                        // Soft guard: do not steal focus if user currently chose game chat
+                        if (window.bcUserPrefersGameChat) return;
+
                         let best = window.bcRunFocusCrawler ? window.bcRunFocusCrawler() : null;
                         if (best && best.id !== 'InputChat') {
-                            // Only transition ONCE when a new layer is opened/mounted
                             if (window.bcLastFocusedLayer !== best) {
                                 window.bcLastFocusedLayer = best;
                                 window.bcFocusMemory = best;
@@ -686,7 +750,7 @@ public partial class MainWindow : Window
                 childList: true, 
                 subtree: true, 
                 attributes: true, 
-                attributeFilter: ['style', 'class', 'hidden'] 
+                attributeFilter: ['style', 'class', 'hidden', 'disabled'] 
             });
 
             let origClipboard = navigator.clipboard;
