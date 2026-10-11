@@ -40,3 +40,8 @@ scripts_beta/
 ## rules agent
 .agents/
 unused-script/
+
+## Local build scripts
+build-local.ps1
+build-local*.ps1
+
