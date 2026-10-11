@@ -1,27 +1,29 @@
-name: Build & Release
+name: 'Build and Release'
 
-on:
+'on':
   workflow_dispatch:
     inputs:
       version:
         description: 'Release version / tag (e.g., 5.5)'
         required: true
         default: '5.5'
+        type: string
       title:
         description: 'Release Title Highlight (Title Case)'
         required: true
         default: 'Chromium Background Optimization & Smart Memory Trimming'
+        type: string
       notes:
         description: 'Custom Release Notes (leave empty to use standard template)'
         required: false
         default: ''
+        type: string
 
 permissions:
   contents: write
 
 jobs:
   build-and-release:
-    if: github.event_name == 'workflow_dispatch'
     runs-on: windows-latest
 
     steps:
@@ -52,12 +54,14 @@ jobs:
 
       - name: Prepare Tag and Release Notes
         shell: powershell
+        env:
+          INPUT_VERSION: ${{ inputs.version }}
+          INPUT_TITLE: ${{ inputs.title }}
+          INPUT_NOTES: ${{ inputs.notes }}
         run: |
-          $ver = "${{ inputs.version }}".Trim()
-          $title = "${{ inputs.title }}".Trim()
-          $customNotes = @"
-          ${{ inputs.notes }}
-          "@.Trim()
+          $ver = $env:INPUT_VERSION.Trim()
+          $title = $env:INPUT_TITLE.Trim()
+          $customNotes = if ($env:INPUT_NOTES) { $env:INPUT_NOTES.Trim() } else { "" }
 
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
@@ -69,19 +73,19 @@ jobs:
           } elseif (Test-Path "RELEASE_NOTES.md") {
             Copy-Item "RELEASE_NOTES.md" "release_notes.md"
           } else {
-            $defaultNotes = @"
-### Fixes & Improvements:
-
-- **Highlight ($ver):** $title.
-- **Internal Cleanliness & Maintenance:** Regular maintenance, performance enhancements, and dependency updates.
-
-### Downloads:
-
-- **Standalone (~160MB):** Self-contained executable. No .NET runtime required. Just download and run.
-- **Lightweight (~3MB):** Extremely small footprint. Requires the [.NET 8 Desktop Runtime](https://dotnet.microsoft.com/en-us/download/dotnet/8.0).
-- **Standalone-hidden (~160MB):** Same as Standalone, but with no icon and a blank app name (Discreet mode).
-- **Lightweight-hidden (~3MB):** Same as Lightweight, but with no icon and a blank app name (Discreet mode).
-"@
+            $defaultNotes = @(
+              "### Fixes & Improvements:",
+              "",
+              "- **Highlight ($ver):** $title.",
+              "- **Internal Cleanliness & Maintenance:** Regular maintenance, performance enhancements, and dependency updates.",
+              "",
+              "### Downloads:",
+              "",
+              "- **Standalone (~160MB):** Self-contained executable. No .NET runtime required. Just download and run.",
+              "- **Lightweight (~3MB):** Extremely small footprint. Requires the [.NET 8 Desktop Runtime](https://dotnet.microsoft.com/en-us/download/dotnet/8.0).",
+              "- **Standalone-hidden (~160MB):** Same as Standalone, but with no icon and a blank app name (Discreet mode).",
+              "- **Lightweight-hidden (~3MB):** Same as Lightweight, but with no icon and a blank app name (Discreet mode)."
+            )
             Set-Content -Path "release_notes.md" -Value $defaultNotes -Encoding UTF8
           }
 
@@ -89,9 +93,11 @@ jobs:
         shell: powershell
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          INPUT_VERSION: ${{ inputs.version }}
+          INPUT_TITLE: ${{ inputs.title }}
         run: |
-          $ver = "${{ inputs.version }}".Trim()
-          $title = "${{ inputs.title }}".Trim()
+          $ver = $env:INPUT_VERSION.Trim()
+          $title = $env:INPUT_TITLE.Trim()
           $releaseTitle = if ($title.Length -gt 0) { "v$ver - $title" } else { "v$ver" }
 
           $existingTags = gh release list -L 100 --json tagName -q ".[].tagName"
