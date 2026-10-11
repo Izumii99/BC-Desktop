@@ -78,10 +78,8 @@ jobs:
           git push origin $ver --force
 
           if ($customNotes.Length -gt 0) {
-            Set-Content -Path "release_notes.md" -Value $customNotes -Encoding UTF8
-          } elseif (Test-Path "RELEASE_NOTES.md") {
-            Copy-Item "RELEASE_NOTES.md" "release_notes.md"
-          } else {
+            Set-Content -Path "RELEASE_NOTES.md" -Value $customNotes -Encoding UTF8
+          } elseif (-not (Test-Path "RELEASE_NOTES.md")) {
             $defaultNotes = @(
               "### Fixes & Improvements:",
               "",
@@ -95,7 +93,7 @@ jobs:
               "- **Standalone-hidden (~160MB):** Same as Standalone, but with no icon and a blank app name (Discreet mode).",
               "- **Lightweight-hidden (~3MB):** Same as Lightweight, but with no icon and a blank app name (Discreet mode)."
             )
-            Set-Content -Path "release_notes.md" -Value $defaultNotes -Encoding UTF8
+            Set-Content -Path "RELEASE_NOTES.md" -Value $defaultNotes -Encoding UTF8
           }
 
       - name: Create or Update GitHub Release
@@ -118,7 +116,7 @@ jobs:
 
           if ($releaseExists -contains $ver) {
             Write-Host "Release $ver already exists. Updating release notes and re-uploading assets..."
-            gh release edit $ver --title $releaseTitle --notes-file release_notes.md
+            gh release edit $ver --title $releaseTitle --notes-file RELEASE_NOTES.md
             gh release upload $ver `
               publish/BC-Desktop-Standalone.zip `
               publish/BC-Desktop-Lightweight.zip `
@@ -129,7 +127,7 @@ jobs:
             Write-Host "Creating new release for $ver..."
             gh release create $ver `
               --title $releaseTitle `
-              --notes-file release_notes.md `
+              --notes-file RELEASE_NOTES.md `
               publish/BC-Desktop-Standalone.zip `
               publish/BC-Desktop-Lightweight.zip `
               publish/BC-Desktop-Standalone-Hidden.zip `
@@ -142,5 +140,4 @@ jobs:
         run: |
           Write-Host "Cleaning up build artifacts and temporary files..."
           Remove-Item "publish" -Recurse -Force -ErrorAction SilentlyContinue
-          Remove-Item "release_notes.md" -Force -ErrorAction SilentlyContinue
           Write-Host "Cleanup completed!"
