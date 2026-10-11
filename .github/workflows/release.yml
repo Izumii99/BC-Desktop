@@ -1,0 +1,112 @@
+name: Build & Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Release version / tag (e.g., 5.5)'
+        required: true
+        default: '5.5'
+      title:
+        description: 'Release Title Highlight (Title Case)'
+        required: true
+        default: 'Chromium Background Optimization & Smart Memory Trimming'
+      notes:
+        description: 'Custom Release Notes (leave empty to use standard template)'
+        required: false
+        default: ''
+
+permissions:
+  contents: write
+
+jobs:
+  build-and-release:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup .NET 8 SDK
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Run Build Script (build_all.ps1)
+        shell: powershell
+        run: |
+          powershell -ExecutionPolicy Bypass -File .\build_all.ps1
+
+      - name: Verify Zip Artifacts
+        shell: powershell
+        run: |
+          $zips = Get-ChildItem "publish/*.zip"
+          if ($zips.Count -lt 4) {
+            Write-Error "Expected 4 zip packages in publish/, but found $($zips.Count)!"
+            exit 1
+          }
+          $zips | Select-Object Name, Length | Format-Table
+
+      - name: Prepare Tag and Release Notes
+        shell: powershell
+        run: |
+          $ver = "${{ inputs.version }}".Trim()
+          $title = "${{ inputs.title }}".Trim()
+          $customNotes = @"
+          ${{ inputs.notes }}
+          "@.Trim()
+
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git tag -f $ver
+          git push origin $ver --force
+
+          if ($customNotes.Length -gt 0) {
+            Set-Content -Path "release_notes.md" -Value $customNotes -Encoding UTF8
+          } else {
+            $defaultNotes = @"
+          ### Fixes & Improvements:
+
+          - **Improvement (WebView2 / Background Footprint):** Configured `CoreWebView2EnvironmentOptions` to disable redundant Chromium background tasks (`Translate`, `OptimizationHints`, `MediaRouter`, `DialMediaRouteProvider`, background networking, and component updates) and capped JavaScript heap space (`--max-old-space-size=768`) to eliminate background thread and I/O overhead.
+          - **Improvement (Memory Management & Deactivation Trimming):** Implemented native WPF `Deactivated` lifecycle hooks to dynamically throttle memory targets to `Low` during application unfocus (alt-tab) and restore `Normal` upon window focus, purging GPU and native working sets automatically.
+          - **Improvement (Addon Manager Resiliency):** Filtered out legacy and merged scripts (`autofocus.js`, `fluid-color.js`, `fusam.js`, `LikoPlugin.js`, `wardrobe-pagination.js`) and ensured external loaders resolve reliably.
+          - **Internal Cleanliness & Maintenance:** Standardized documentation and ensured full preservation of all battle-tested native window hooks.
+
+          ### Downloads:
+
+          - **Standalone (~160MB):** Self-contained executable. No .NET runtime required. Just download and run.
+          - **Lightweight (~3MB):** Extremely small footprint. Requires the [.NET 8 Desktop Runtime](https://dotnet.microsoft.com/en-us/download/dotnet/8.0).
+          - **Standalone-hidden (~160MB):** Same as Standalone, but with no icon and a blank app name (Discreet mode).
+          - **Lightweight-hidden (~3MB):** Same as Lightweight, but with no icon and a blank app name (Discreet mode).
+          "@
+            Set-Content -Path "release_notes.md" -Value $defaultNotes -Encoding UTF8
+          }
+
+      - name: Create or Update GitHub Release
+        shell: powershell
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          $ver = "${{ inputs.version }}".Trim()
+          $title = "${{ inputs.title }}".Trim()
+          $releaseTitle = if ($title.Length -gt 0) { "v$ver - $title" } else { "v$ver" }
+
+          gh release create $ver `
+            --title $releaseTitle `
+            --notes-file release_notes.md `
+            publish/BC-Desktop-Standalone.zip `
+            publish/BC-Desktop-Lightweight.zip `
+            publish/BC-Desktop-Standalone-Hidden.zip `
+            publish/BC-Desktop-Lightweight-Hidden.zip `
+            --clobber
+
+      - name: Clean up Workspace
+        if: always()
+        shell: powershell
+        run: |
+          Write-Host "Cleaning up build artifacts and temporary files..."
+          Remove-Item "publish" -Recurse -Force -ErrorAction SilentlyContinue
+          Remove-Item "release_notes.md" -Force -ErrorAction SilentlyContinue
+          Write-Host "Cleanup completed!"
