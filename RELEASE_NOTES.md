@@ -1,11 +1,10 @@
 ### Fixes & Improvements:
 
-- **Critical Fix (Chat Input & Selection Pull-Down):** Resolved an issue where pressing Shift+Enter while highlighting text in the chat log remained trapped in the selection block; both Enter and Shift+Enter now cleanly clear text ranges and transition active focus down into `InputChat`.
-- **Critical Fix (Addon Layer vs. Game Chat Focus):** Eliminated focus cancellation and fighting between addon chat box overlays and the native game chat box (`InputChat`). Clicks on `InputChat` and surrounding chat room containers are immediately honored without mouse-down cancellation, and background game loops are prevented from resetting active focus to undefined states.
-- **Critical Fix (Window Scaling & Viewport Clipping):** Eliminated canvas clipping when resizing windows down to compact viewports, and resolved an issue where window resize handles became unreachable due to unaligned Win32 `WM_GETMINMAXINFO` minimum tracking sizes.
-- **Improvement (Hit-Testing & Corner Resizing):** Overhauled `WM_NCHITTEST` with expanded corner tolerances and synchronized margins to ensure smooth, responsive native window resizing down to `360x212`.
-- **Improvement (Focus Crawler & Dynamic Layers):** Refined the DOM mutation observer with attribute tracking (`style`, `class`, `hidden`) and removed score bias, ensuring reopened addon layers are reliably detected without locking focus permanently to any single element.
-- **Internal Cleanliness & Maintenance:** Standardized key event interception and streamlined local build automation pipelines (`build-local.ps1`).
+- **Fix (Chat Multiline & Shift+Enter):** Pressing Shift+Enter while typing in the chat box now creates a new line normally without kicking you out or losing focus.
+- **Fix (Chat Log Selection & Pull-Down):** If you highlight/select text in the chat history, pressing Enter or Shift+Enter now immediately unselects the text and moves your typing cursor straight back into the chat box.
+- **Fix (Addon & Main Chat Switching):** Clicking between the game's main chat box and addon chat boxes now switches smoothly. You can freely click into the main chat box without your selection getting cancelled or lost.
+- **Improvement (Addon Chat Box Opening):** Opening an addon chat window now automatically places your cursor into its text box on open, without trapping your focus permanently.
+- **Fix (Window Resizing & Shrinking):** Making the game window very small no longer cuts off the game screen or makes the resize borders disappear, allowing you to grab and resize window edges and corners easily at any size.
 
 ### Downloads:
 
