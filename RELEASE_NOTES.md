@@ -1,10 +1,10 @@
 ### Fixes & Improvements:
 
-- **Critical Fix (Chat Input / Focus Lifecycle):** Resolved an issue where pressing Shift+Enter inside the chat box inadvertently cleared selection ranges and triggered programmatic focus transitions to background elements, causing the text cursor to exit the chat box.
+- **Critical Fix (Chat Input & Selection Pull-Down):** Resolved an issue where pressing Shift+Enter while highlighting text in the chat log remained trapped in the selection block; both Enter and Shift+Enter now cleanly clear text ranges and transition active focus down into `InputChat`.
+- **Critical Fix (Addon Layer vs. Game Chat Focus):** Eliminated focus fighting between addon chat box overlays and the native game chat box (`InputChat`). Addon layers now receive a single initial focus transition upon mounting/visibility changes, while user clicks and typing inside the base game chat box are strictly respected without continuous background refocus hijacking.
 - **Critical Fix (Window Scaling & Viewport Clipping):** Eliminated canvas clipping when resizing windows down to compact viewports, and resolved an issue where window resize handles became unreachable due to unaligned Win32 `WM_GETMINMAXINFO` minimum tracking sizes.
 - **Improvement (Hit-Testing & Corner Resizing):** Overhauled `WM_NCHITTEST` with expanded corner tolerances and synchronized margins to ensure smooth, responsive native window resizing down to `360x212`.
-- **Improvement (Selection Change Guard):** Refined the document `selectionchange` listener to strictly respect active typing across all text and input fields (`InputChat`, textareas, and contenteditables), preventing background crawlers from stealing user focus during caret repositioning.
-- **Improvement (Chat Log Selection):** Maintained seamless deselection of chat log text blocks upon standard `Enter` keypress while preserving modifier keys for multiline entry.
+- **Improvement (Focus Crawler & Dynamic Layers):** Refined the DOM mutation observer with attribute tracking (`style`, `class`, `hidden`) and removed score bias, ensuring reopened addon layers are reliably detected without locking focus permanently to any single element.
 - **Internal Cleanliness & Maintenance:** Standardized key event interception and streamlined local build automation pipelines (`build-local.ps1`).
 
 ### Downloads:

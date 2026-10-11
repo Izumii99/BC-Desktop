@@ -344,20 +344,47 @@ public partial class MainWindow : Window
         };
 
         string copyScript = @"
-            document.addEventListener('keydown', (e) => {
-                if ((e.key === 'Enter' || e.keyCode === 13) && !e.shiftKey) {
-                    try {
-                        if (window.getSelection) {
-                            window.getSelection().removeAllRanges();
-                            if (window.getSelection().empty) window.getSelection().empty();
-                        }
-                    } catch (err) {}
-                }
+            let origFocus = HTMLElement.prototype.focus;
 
-                if ((e.key === 'Enter' || e.keyCode === 13) && e.shiftKey) {
+            document.addEventListener('keydown', (e) => {
+                let isEnter = (e.key === 'Enter' || e.keyCode === 13);
+                if (isEnter) {
                     let ic = document.getElementById('InputChat');
-                    if (ic && (document.activeElement === ic || e.target === ic)) {
-                        window.bcFocusMemory = ic;
+                    let active = document.activeElement;
+                    let isInsideInputChat = ic && (active === ic || e.target === ic);
+
+                    if (isInsideInputChat) {
+                        if (e.shiftKey) {
+                            window.bcFocusMemory = ic;
+                        }
+                    } else {
+                        // User is OUTSIDE InputChat (e.g. text in chat log or elsewhere is selected / blocked)
+                        // Both Enter and Shift+Enter MUST clear any selection block and pull focus down into InputChat!
+                        e.preventDefault();
+
+                        try {
+                            let sel = window.getSelection ? window.getSelection() : null;
+                            if (sel) {
+                                if (sel.removeAllRanges) sel.removeAllRanges();
+                                if (sel.empty) sel.empty();
+                            }
+                        } catch (err) {}
+
+                        if (active && (active.tagName === 'INPUT' || active.tagName === 'TEXTAREA')) {
+                            try {
+                                active.selectionStart = active.selectionEnd;
+                                if (active !== ic && active.blur) active.blur();
+                            } catch(err) {}
+                        }
+
+                        if (ic) {
+                            window.bcFocusMemory = ic;
+                            origFocus.call(ic);
+                            try {
+                                let len = ic.value ? ic.value.length : 0;
+                                ic.setSelectionRange(len, len);
+                            } catch(err) {}
+                        }
                     }
                 }
                 
@@ -401,13 +428,11 @@ public partial class MainWindow : Window
                 window.bcIsMouseDown = true;
                 window.bcLastMousedown = e.target;
                 window.bcLastMousedownTime = Date.now();
-                if (!isEditable(e.target)) {
-                    window.bcFocusMemory = null;
-                }
-                
                 if (isEditable(e.target)) {
+                    window.bcFocusMemory = e.target;
                     window.bcForceUnfocusSearch = false;
                 } else {
+                    window.bcFocusMemory = null;
                     window.bcForceUnfocusSearch = true;
                 }
                 
@@ -420,14 +445,19 @@ public partial class MainWindow : Window
                 setTimeout(() => {
                     if (window.bcIsMouseDown) return;
                     let active = document.activeElement;
-                    if (active && (active.tagName === 'INPUT' || active.tagName === 'TEXTAREA' || active.isContentEditable) && active.id !== 'InputChat') return;
+                    if (active && isEditable(active)) {
+                        window.bcFocusMemory = active;
+                        return;
+                    }
                     if (window.getSelection().toString().length > 0) return;
                     
                     if (window.bcForceUnfocusSearch) return;
                     
-                    let best = window.bcRunFocusCrawler ? window.bcRunFocusCrawler() : null;
-                    if (best && document.activeElement !== best) {
-                        if (window.bcFocusAndTeleport) window.bcFocusAndTeleport(best);
+                    let target = (window.bcFocusMemory && isEditable(window.bcFocusMemory)) 
+                        ? window.bcFocusMemory 
+                        : (window.bcRunFocusCrawler ? window.bcRunFocusCrawler() : null);
+                    if (target && document.activeElement !== target) {
+                        origFocus.call(target);
                     }
                 }, 50);
             });
@@ -438,15 +468,16 @@ public partial class MainWindow : Window
                     let active = document.activeElement;
                     if (active && (active.tagName === 'INPUT' || active.tagName === 'TEXTAREA' || active.isContentEditable)) return;
                     if (window.getSelection().toString().length > 0) return;
+                    if (window.bcForceUnfocusSearch) return;
                     
-                    let best = window.bcRunFocusCrawler ? window.bcRunFocusCrawler() : null;
-                    if (best && document.activeElement !== best) {
-                        if (window.bcFocusAndTeleport) window.bcFocusAndTeleport(best);
+                    let target = (window.bcFocusMemory && isEditable(window.bcFocusMemory)) 
+                        ? window.bcFocusMemory 
+                        : (window.bcRunFocusCrawler ? window.bcRunFocusCrawler() : null);
+                    if (target && document.activeElement !== target) {
+                        origFocus.call(target);
                     }
                 }, 200);
             });
-
-            let origFocus = HTMLElement.prototype.focus;
             
             window.bcFocusAndTeleport = function(best) {
                 let ic = document.getElementById('InputChat');
@@ -494,7 +525,7 @@ public partial class MainWindow : Window
                     if (style.visibility === 'hidden' || style.opacity === '0' || style.display === 'none') continue;
                     
                     let z = getHighestZ(el);
-                    let score = z * 1000;
+                    let score = z * 1000 + i;
                     
                     if (el.id === 'InputChat' || el.id === 'TextAreaChatLog') score -= 500000;
                     
@@ -508,8 +539,6 @@ public partial class MainWindow : Window
                         if (window.bcForceUnfocusSearch) continue;
                         score -= 2000;
                     }
-                    
-                    if (window.bcFocusMemory === el) score += 1000000000;
                     
                     if (score > maxScore) { maxScore = score; bestInput = el; }
                 }
@@ -543,6 +572,12 @@ public partial class MainWindow : Window
                     let currentIsLayering = currentActive && currentActive.id && currentActive.id.startsWith('layering-input-');
                     if (currentIsLayering && !isLayeringInput) return;
 
+                    // If user explicitly clicked this element or this is our active focus memory, allow focus natively
+                    if (window.bcFocusMemory === this || window.bcLastMousedown === this) {
+                        origFocus.call(this);
+                        return;
+                    }
+
                     let active = document.activeElement;
                     let isUserTyping = active && (active.tagName === 'INPUT' || active.tagName === 'TEXTAREA' || active.isContentEditable);
                     
@@ -559,16 +594,6 @@ public partial class MainWindow : Window
                         
                         if (window.bcForceUnfocusSearch && this.id !== 'InputChat') {
                             return;
-                        }
-                    }
-
-                    if (this.id === 'InputChat') {
-                        let best = window.bcRunFocusCrawler ? window.bcRunFocusCrawler() : null;
-                        if (best && best !== this) {
-                            if (window.bcFocusAndTeleport) {
-                                window.bcFocusAndTeleport(best);
-                                return;
-                            }
                         }
                     }
                 } catch(e) {}
@@ -597,6 +622,10 @@ public partial class MainWindow : Window
                                 }
                             }
                         }
+                    } else if (m.type === 'attributes') {
+                        if (m.target && (m.target.tagName === 'INPUT' || m.target.tagName === 'TEXTAREA' || (m.target.querySelector && m.target.querySelector('input, textarea')))) {
+                            shouldCheck = true;
+                        }
                     }
                 }
                 
@@ -606,25 +635,33 @@ public partial class MainWindow : Window
                     if (window.bcFocusTimeout) clearTimeout(window.bcFocusTimeout);
                     window.bcFocusTimeout = setTimeout(() => {
                         if (window.bcIsMouseDown) return;
-                        
-                        let active = document.activeElement;
-                        if (active && (active.tagName === 'INPUT' || active.tagName === 'TEXTAREA' || active.isContentEditable) && active.id !== 'InputChat') {
-                            return;
-                        }
-                        if (window.getSelection().toString().length > 0) {
-                            return;
-                        }
-                        
+                        if (window.getSelection().toString().length > 0) return;
                         if (window.bcForceUnfocusSearch) return;
 
                         let best = window.bcRunFocusCrawler ? window.bcRunFocusCrawler() : null;
-                        if (best && best.id !== 'InputChat' && document.activeElement !== best) {
-                            if (window.bcFocusAndTeleport) window.bcFocusAndTeleport(best);
+                        if (best && best.id !== 'InputChat') {
+                            // Only transition ONCE when a new layer is opened/mounted
+                            if (window.bcLastFocusedLayer !== best) {
+                                window.bcLastFocusedLayer = best;
+                                window.bcFocusMemory = best;
+                                if (window.bcFocusAndTeleport) {
+                                    window.bcFocusAndTeleport(best);
+                                } else {
+                                    origFocus.call(best);
+                                }
+                            }
+                        } else {
+                            window.bcLastFocusedLayer = null;
                         }
                     }, 50);
                 }
             });
-            focusObserver.observe(document.body, { childList: true, subtree: true });
+            focusObserver.observe(document.body, { 
+                childList: true, 
+                subtree: true, 
+                attributes: true, 
+                attributeFilter: ['style', 'class', 'hidden'] 
+            });
 
             let origClipboard = navigator.clipboard;
             let mockClipboard = {
