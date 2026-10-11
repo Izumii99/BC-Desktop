@@ -36,7 +36,7 @@ This repository also hosts standalone scripts in the `Scripts/` folder. You can 
 
 A custom dark mode theme designed specifically for **Neko Chat Enhancer**.
 
-<img src="Assets/neko_dark_preview.png" width="700" alt="Neko Dark Mode Preview" />
+<img src="Assets/neko_dark_preview.png" width="500" alt="Neko Dark Mode Preview" />
 
 **Design Highlights:**
 
