@@ -27,11 +27,25 @@ public partial class MainWindow : Window
         _originalTitleLabel = TitleLabel.Text;
         StateChanged += OnWindowStateChanged;
         Activated += MainWindow_Activated;
+        Deactivated += MainWindow_Deactivated;
         InitWebViewAsync();
+    }
+
+    private void MainWindow_Deactivated(object? sender, EventArgs e)
+    {
+        if (WindowState != WindowState.Minimized && WebView.CoreWebView2 is { } core)
+        {
+            core.MemoryUsageTargetLevel = CoreWebView2MemoryUsageTargetLevel.Low;
+        }
     }
 
     private async void MainWindow_Activated(object? sender, EventArgs e)
     {
+        if (WebView.CoreWebView2 is { } core)
+        {
+            core.MemoryUsageTargetLevel = CoreWebView2MemoryUsageTargetLevel.Normal;
+        }
+
         await Task.Delay(100);
         WebView.Focus();
         if (WebView.CoreWebView2 != null)
@@ -209,7 +223,8 @@ public partial class MainWindow : Window
                 "--disable-background-networking " +
                 "--disable-component-update " +
                 "--disable-domain-reliability " +
-                "--disable-sync"
+                "--disable-sync " +
+                "--js-flags=\"--max-old-space-size=768\""
         };
 
         var env = await CoreWebView2Environment.CreateAsync(
