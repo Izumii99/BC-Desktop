@@ -108,8 +108,10 @@ jobs:
           $title = "${{ inputs.title }}".Trim()
           $releaseTitle = if ($title.Length -gt 0) { "v$ver - $title" } else { "v$ver" }
 
-          gh release view $ver 2>&1 | Out-Null
-          if ($LASTEXITCODE -eq 0) {
+          $existingTags = gh release list -L 100 --json tagName -q ".[].tagName"
+          $releaseExists = if ($existingTags) { @($existingTags -split "\r?\n" | ForEach-Object { $_.Trim() }) } else { @() }
+
+          if ($releaseExists -contains $ver) {
             Write-Host "Release $ver already exists. Updating release notes and re-uploading assets..."
             gh release edit $ver --title $releaseTitle --notes-file release_notes.md
             gh release upload $ver `
