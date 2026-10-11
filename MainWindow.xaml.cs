@@ -819,6 +819,11 @@ public partial class MainWindow : Window
                 mmi.ptMaxPosition.Y = (mi.rcWork.Top - mi.rcMonitor.Top);
                 mmi.ptMaxSize.X = (mi.rcWork.Right - mi.rcWork.Left);
                 mmi.ptMaxSize.Y = (mi.rcWork.Bottom - mi.rcWork.Top);
+
+                double dpi = VisualTreeHelper.GetDpi(this).DpiScaleY;
+                mmi.ptMinTrackSize.X = (int)(MinWidth * dpi);
+                mmi.ptMinTrackSize.Y = (int)(MinHeight * dpi);
+
                 Marshal.StructureToPtr(mmi, lParam, true);
                 handled = true;
             }
@@ -828,6 +833,8 @@ public partial class MainWindow : Window
             var rect = Marshal.PtrToStructure<RECT>(lParam);
             double dpi = VisualTreeHelper.GetDpi(this).DpiScaleY;
             int titleBarHeight = (int)(32 * dpi);
+            int minPhysicalWidth = (int)(MinWidth * dpi);
+            int minPhysicalHeight = (int)(MinHeight * dpi);
 
             int width = rect.Right - rect.Left;
             int height = rect.Bottom - rect.Top;
@@ -837,13 +844,36 @@ public partial class MainWindow : Window
             // WMSZ_TOP (3) or WMSZ_BOTTOM (6) -> Aspect ratio is driven by height
             if (edge == 3 || edge == 6)
             {
+                if (height < minPhysicalHeight) height = minPhysicalHeight;
                 int expectedWidth = (height - titleBarHeight) * 2;
+                if (expectedWidth < minPhysicalWidth) expectedWidth = minPhysicalWidth;
+
+                if (edge == 3)
+                {
+                    rect.Top = rect.Bottom - height;
+                }
+                else
+                {
+                    rect.Bottom = rect.Top + height;
+                }
                 rect.Right = rect.Left + expectedWidth;
             }
             // All other edges (Left, Right, Corners) -> Aspect ratio is driven by width
             else
             {
+                if (width < minPhysicalWidth) width = minPhysicalWidth;
                 int expectedHeight = (width / 2) + titleBarHeight;
+                if (expectedHeight < minPhysicalHeight) expectedHeight = minPhysicalHeight;
+
+                if (edge == 1 || edge == 4 || edge == 7) // WMSZ_LEFT, WMSZ_TOPLEFT, WMSZ_BOTTOMLEFT
+                {
+                    rect.Left = rect.Right - width;
+                }
+                else
+                {
+                    rect.Right = rect.Left + width;
+                }
+
                 if (edge == 4 || edge == 5) // WMSZ_TOPLEFT or WMSZ_TOPRIGHT
                 {
                     rect.Top = rect.Bottom - expectedHeight;
@@ -863,18 +893,23 @@ public partial class MainWindow : Window
             int y = (short)((lParam.ToInt64() >> 16) & 0xFFFF);
             var p = PointFromScreen(new Point(x, y));
 
-            // Define hit-test border thickness (matches WebView margin to expose WPF background)
-            int resizeBorder = 4;
-            bool onLeft = p.X <= resizeBorder;
-            bool onRight = p.X >= ActualWidth - resizeBorder;
-            bool onTop = p.Y <= resizeBorder;
-            bool onBottom = p.Y >= ActualHeight - resizeBorder;
+            int border = 5;
+            int corner = 16;
 
-            // Map edge coordinates to Win32 hit-test constants to enable native resizing over AllowsTransparency
-            if (onTop && onLeft) { handled = true; return (IntPtr)13; }    // HTTOPLEFT
-            if (onTop && onRight) { handled = true; return (IntPtr)14; }   // HTTOPRIGHT
-            if (onBottom && onLeft) { handled = true; return (IntPtr)16; } // HTBOTTOMLEFT
-            if (onBottom && onRight) { handled = true; return (IntPtr)17; }// HTBOTTOMRIGHT
+            bool onLeft = p.X <= border;
+            bool onRight = p.X >= ActualWidth - border;
+            bool onTop = p.Y <= border;
+            bool onBottom = p.Y >= ActualHeight - border;
+
+            bool inLeftCorner = p.X <= corner;
+            bool inRightCorner = p.X >= ActualWidth - corner;
+            bool inTopCorner = p.Y <= corner;
+            bool inBottomCorner = p.Y >= ActualHeight - corner;
+
+            if ((onTop && inLeftCorner) || (onLeft && inTopCorner)) { handled = true; return (IntPtr)13; }    // HTTOPLEFT
+            if ((onTop && inRightCorner) || (onRight && inTopCorner)) { handled = true; return (IntPtr)14; }   // HTTOPRIGHT
+            if ((onBottom && inLeftCorner) || (onLeft && inBottomCorner)) { handled = true; return (IntPtr)16; } // HTBOTTOMLEFT
+            if ((onBottom && inRightCorner) || (onRight && inBottomCorner)) { handled = true; return (IntPtr)17; }// HTBOTTOMRIGHT
             if (onTop) { handled = true; return (IntPtr)12; }              // HTTOP
             if (onBottom) { handled = true; return (IntPtr)15; }           // HTBOTTOM
             if (onLeft) { handled = true; return (IntPtr)10; }             // HTLEFT

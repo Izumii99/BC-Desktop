@@ -4,7 +4,7 @@
         xmlns:wv2="clr-namespace:Microsoft.Web.WebView2.Wpf;assembly=Microsoft.Web.WebView2.Wpf"
         Title="BC"
         Height="608" Width="1152"
-        MinHeight="482" MinWidth="900"
+        MinHeight="212" MinWidth="360"
         WindowStyle="None"
         AllowsTransparency="True"
         Background="Transparent"
@@ -90,7 +90,7 @@
 
         <wv2:WebView2 x:Name="WebView"
                       Grid.Row="1"
-                      Margin="4,0,4,4"
+                      Margin="5,0,5,5"
                       CoreWebView2InitializationCompleted="WebView_Initialized"/>
         </Grid>
     </Border>
