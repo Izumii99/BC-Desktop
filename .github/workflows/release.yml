@@ -66,7 +66,7 @@ jobs:
           if ($customNotes.Length -gt 0) {
             Set-Content -Path "release_notes.md" -Value $customNotes -Encoding UTF8
           } elseif ($ver -eq "5.5") {
-            $defaultNotes = @"
+            $defaultNotes = @'
           ### Fixes & Improvements:
 
           - **Improvement (WebView2 / Background Footprint):** Configured `CoreWebView2EnvironmentOptions` to disable redundant Chromium background tasks (`Translate`, `OptimizationHints`, `MediaRouter`, `DialMediaRouteProvider`, background networking, and component updates) and capped JavaScript heap space (`--max-old-space-size=768`) to eliminate background thread and I/O overhead.
@@ -80,7 +80,7 @@ jobs:
           - **Lightweight (~3MB):** Extremely small footprint. Requires the [.NET 8 Desktop Runtime](https://dotnet.microsoft.com/en-us/download/dotnet/8.0).
           - **Standalone-hidden (~160MB):** Same as Standalone, but with no icon and a blank app name (Discreet mode).
           - **Lightweight-hidden (~3MB):** Same as Lightweight, but with no icon and a blank app name (Discreet mode).
-          "@
+'@
             Set-Content -Path "release_notes.md" -Value $defaultNotes -Encoding UTF8
           } else {
             $defaultNotes = @"
