@@ -418,6 +418,13 @@ public partial class MainWindow : Window
                 return false;
             }
 
+            function isChatArea(el) {
+                if (!el) return false;
+                if (el.id === 'InputChat') return true;
+                if (el.closest && el.closest('#chat-room-bot, #chat-room-div, #chat-room-main')) return true;
+                return false;
+            }
+
             document.addEventListener('focusin', (e) => {
                 if (isEditable(e.target)) {
                     window.bcFocusMemory = e.target;
@@ -428,7 +435,12 @@ public partial class MainWindow : Window
                 window.bcIsMouseDown = true;
                 window.bcLastMousedown = e.target;
                 window.bcLastMousedownTime = Date.now();
-                if (isEditable(e.target)) {
+                
+                let ic = document.getElementById('InputChat');
+                if (ic && isChatArea(e.target)) {
+                    window.bcFocusMemory = ic;
+                    window.bcForceUnfocusSearch = false;
+                } else if (isEditable(e.target)) {
                     window.bcFocusMemory = e.target;
                     window.bcForceUnfocusSearch = false;
                 } else {
@@ -436,7 +448,6 @@ public partial class MainWindow : Window
                     window.bcForceUnfocusSearch = true;
                 }
                 
-                let ic = document.getElementById('InputChat');
                 if (ic) window.bcInputChatLastValue = ic.value;
             }, true);
 
@@ -550,6 +561,17 @@ public partial class MainWindow : Window
                     let origElementFocus = window.ElementFocus;
                     window.ElementFocus = function(ID) {
                         let isLayeringInput = typeof ID === 'string' && ID.startsWith('layering-input-');
+                        let targetEl = typeof ID === 'string' ? document.getElementById(ID) : ID;
+                        let wasClicked = targetEl && (
+                            window.bcLastMousedown === targetEl || 
+                            window.bcFocusMemory === targetEl ||
+                            (ID === 'InputChat' && window.bcLastMousedown && isChatArea(window.bcLastMousedown))
+                        );
+                        if (wasClicked) {
+                            origElementFocus(ID);
+                            return;
+                        }
+
                         if (window.bcIsMouseDown && !isLayeringInput) return;
                         let active = document.activeElement;
                         let isUserTyping = active && (active.tagName === 'INPUT' || active.tagName === 'TEXTAREA' || active.isContentEditable);
@@ -565,18 +587,22 @@ public partial class MainWindow : Window
             HTMLElement.prototype.focus = function() {
                 try {
                     let isLayeringInput = this.id && this.id.startsWith('layering-input-');
+
+                    // If user explicitly clicked this element or clicked in the chat area, allow focus immediately!
+                    let wasClicked = (window.bcFocusMemory === this || 
+                                      window.bcLastMousedown === this ||
+                                      (this.id === 'InputChat' && window.bcLastMousedown && isChatArea(window.bcLastMousedown)));
+                    if (wasClicked) {
+                        origFocus.call(this);
+                        return;
+                    }
+
                     if (window.bcIsMouseDown && !isLayeringInput) return;
 
                     // Anti-steal: when layering input is active, block all programmatic focus shifts to other elements
                     let currentActive = document.activeElement;
                     let currentIsLayering = currentActive && currentActive.id && currentActive.id.startsWith('layering-input-');
                     if (currentIsLayering && !isLayeringInput) return;
-
-                    // If user explicitly clicked this element or this is our active focus memory, allow focus natively
-                    if (window.bcFocusMemory === this || window.bcLastMousedown === this) {
-                        origFocus.call(this);
-                        return;
-                    }
 
                     let active = document.activeElement;
                     let isUserTyping = active && (active.tagName === 'INPUT' || active.tagName === 'TEXTAREA' || active.isContentEditable);
@@ -589,7 +615,7 @@ public partial class MainWindow : Window
                                             (this.id && this.id.toLowerCase().includes('search'));
 
                     if (isAggressiveInput) {
-                        if (isUserTyping && active !== this && active.id !== 'InputChat') return;
+                        if (isUserTyping && active !== this) return;
                         if (window.getSelection().toString().length > 0) return;
                         
                         if (window.bcForceUnfocusSearch && this.id !== 'InputChat') {
