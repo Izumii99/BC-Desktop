@@ -333,4 +333,5 @@ MainWindow.xaml     — Borderless window layout
 MainWindow.xaml.cs  — WebView2 init, version detection, memory management
 Assets/             — Contains app_logo.png and app.ico
 Scripts/            — Mod/addon scripts directory
+PublishLoader/      — Remote loader bundle for OTA distribution
 ```
