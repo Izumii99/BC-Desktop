@@ -120,19 +120,50 @@ public partial class MainWindow : Window
         }
     }
 
+    private bool _isFullscreen;
+    private WindowState _previousWindowState = WindowState.Normal;
+
+    private void ToggleFullscreen()
+    {
+        _isFullscreen = !_isFullscreen;
+        if (_isFullscreen)
+        {
+            _previousWindowState = WindowState;
+            TitleBarRow.Height = new GridLength(0);
+            TitleBarGrid.Visibility = Visibility.Collapsed;
+            if (WindowState != WindowState.Maximized)
+            {
+                WindowState = WindowState.Maximized;
+            }
+            WebView.Margin = new Thickness(0);
+            if (WindowBorder != null) WindowBorder.BorderThickness = new Thickness(0);
+        }
+        else
+        {
+            TitleBarRow.Height = new GridLength(32);
+            TitleBarGrid.Visibility = Visibility.Visible;
+            WindowState = _previousWindowState;
+            UpdateWindowStateUI();
+        }
+    }
+
     private void UpdateWindowStateUI()
     {
+        if (_isFullscreen) return;
+
         if (WindowState == WindowState.Maximized)
         {
             MaxRestoreBtn.Content = "\uE923";
             MaxRestoreBtn.ToolTip = "Restore";
             WebView.Margin = new Thickness(0);
+            if (WindowBorder != null) WindowBorder.BorderThickness = new Thickness(0);
         }
         else if (WindowState == WindowState.Normal)
         {
             MaxRestoreBtn.Content = "\uE922";
             MaxRestoreBtn.ToolTip = "Maximize";
             WebView.Margin = new Thickness(5, 0, 5, 5);
+            if (WindowBorder != null) WindowBorder.BorderThickness = new Thickness(1);
         }
     }
 
@@ -432,6 +463,10 @@ public partial class MainWindow : Window
                         }
                     });
                 }
+                else if (msg == "TOGGLE_FULLSCREEN")
+                {
+                    _ = Application.Current.Dispatcher.InvokeAsync(ToggleFullscreen);
+                }
             }
             catch { }
         };
@@ -440,6 +475,12 @@ public partial class MainWindow : Window
             let origFocus = HTMLElement.prototype.focus;
 
             document.addEventListener('keydown', (e) => {
+                if (e.key === 'F11' || e.keyCode === 122) {
+                    window.chrome.webview.postMessage('TOGGLE_FULLSCREEN');
+                    e.preventDefault();
+                    return;
+                }
+
                 let isEnter = (e.key === 'Enter' || e.keyCode === 13);
                 if (isEnter) {
                     let ic = document.getElementById('InputChat');
@@ -1009,6 +1050,16 @@ public partial class MainWindow : Window
     private void ToggleMaximize()
     {
         WindowState = WindowState == WindowState.Maximized ? WindowState.Normal : WindowState.Maximized;
+    }
+
+    protected override void OnPreviewKeyDown(KeyEventArgs e)
+    {
+        base.OnPreviewKeyDown(e);
+        if (e.Key == Key.F11)
+        {
+            ToggleFullscreen();
+            e.Handled = true;
+        }
     }
 
     protected override void OnSourceInitialized(EventArgs e)

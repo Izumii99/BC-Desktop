@@ -272,4 +272,23 @@ public class MainWindowTests
         // Physical KeyC code must be checked for cross-layout clipboard support
         StringAssert.Contains(code, "KeyC", "Physical KeyC code must be checked for cross-layout clipboard support.");
     }
+
+    [TestMethod]
+    public void VisualPresentationAndFullscreen_ConfigurationIsEnforced()
+    {
+        string xamlPath = Path.Combine(ProjectRoot, "MainWindow.xaml");
+        string xaml = File.ReadAllText(xamlPath);
+
+        StringAssert.Contains(xaml, "SnapsToDevicePixels=\"True\"", "Window must enable SnapsToDevicePixels for pixel crispness.");
+        StringAssert.Contains(xaml, "TextOptions.TextFormattingMode=\"Display\"", "Text formatting mode must be Display for sharp text.");
+        StringAssert.Contains(xaml, "RenderOptions.ClearTypeHint=\"Enabled\"", "ClearType hint must be Enabled.");
+        StringAssert.Contains(xaml, "x:Name=\"WindowBorder\"", "WindowBorder container must be defined.");
+
+        string csPath = Path.Combine(ProjectRoot, "MainWindow.xaml.cs");
+        string cs = File.ReadAllText(csPath);
+
+        StringAssert.Contains(cs, "ToggleFullscreen()", "Fullscreen toggle method must be implemented.");
+        StringAssert.Contains(cs, "TOGGLE_FULLSCREEN", "Fullscreen message bridge must be connected.");
+        StringAssert.Contains(cs, "Key.F11", "F11 keyboard handler must be hooked.");
+    }
 }

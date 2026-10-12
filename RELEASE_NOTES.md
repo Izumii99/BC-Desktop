@@ -16,6 +16,9 @@
 - **Improvement (Busy Chat Rooms):** Fast-moving chat rooms with lots of incoming messages now run significantly smoother and lighter on your computer.
 - **Improvement (Crash Auto-Recovery):** If the internal game page ever freezes or encounters an unexpected error, the application now automatically detects it and recovers smoothly with built-in crash-loop protection to prevent endless reload cycles.
 - **Fix (Addon Manager Icons):** Fixed an issue where the In-Game Translator button in the Addon Manager menu showed broken text fragments instead of the translation logo.
+- **Feature (Immersive Fullscreen with F11):** Pressing `F11` now toggles immersive borderless fullscreen mode instantly, hiding the title bar and expanding the game to fill your entire display for distraction-free gameplay. Press `F11` again at any time to return to windowed mode.
+- **Improvement (Window Border & Contrast in Windowed Mode):** Added a subtle 1-pixel dark border around the window when running in windowed mode, making the game cleanly stand out against dark desktops or background applications without blending in. The border seamlessly disappears when maximized or in fullscreen.
+- **Improvement (Crisp Text & Title Bar Rendering):** Enabled ClearType display text formatting and device pixel snapping across the application window, ensuring title labels and window icons remain sharp, clean, and crystal-clear on all monitors and display scaling settings.
 - **Feature (Built-in Quality & Safety Checks):** Added automated tests that verify window dimensions, native 2:1 game canvas ratio, and performance rules before any new updates are built.
 
 ### Downloads:
