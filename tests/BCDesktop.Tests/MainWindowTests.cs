@@ -199,13 +199,21 @@ public class MainWindowTests
         string addonManagerPath = Path.Combine(ProjectRoot, "Scripts", "addon-manager.js");
         Assert.IsTrue(File.Exists(addonManagerPath), "Scripts/addon-manager.js must exist.");
         string addonManagerContent = File.ReadAllText(addonManagerPath);
-        string[] ignoredScripts = ["autofocus.js", "fluid-color.js", "fusam.js", "LikoPlugin.js", "wardrobe-pagination.js"];
+        string[] ignoredScripts = ["autofocus.js", "fluid-color.js", "fusam.js", "LikoPlugin.js", "fusam-liko-loader.js", "wardrobe-pagination.js"];
         foreach (var ignored in ignoredScripts)
         {
             StringAssert.Contains(addonManagerContent, ignored, $"Addon Manager must include '{ignored}' in IGNORED_SCRIPTS.");
         }
 
-        // 3. If tester scripts directory exists, enforce whitelist rule strictly
+        // 3. Verify neko-dark.js integrity and duplicate protection
+        string nekoDarkPath = Path.Combine(ProjectRoot, "Scripts", "neko-dark.js");
+        Assert.IsTrue(File.Exists(nekoDarkPath), "Scripts/neko-dark.js must exist.");
+        string nekoDarkContent = File.ReadAllText(nekoDarkPath);
+        StringAssert.Contains(nekoDarkContent, "_bcNekoDarkInjected", "neko-dark.js must contain singleton guard.");
+        StringAssert.Contains(nekoDarkContent, "hookBcModSdk", "neko-dark.js must guard bcModSdk against duplicate unloading.");
+        StringAssert.Contains(nekoDarkContent, "isNekoModLoaded", "neko-dark.js must verify existing Neko mod state before injecting runtime.");
+
+        // 4. If tester scripts directory exists, enforce whitelist rule strictly
         string testerScripts = Path.Combine(ProjectRoot, "publish", "tester", "Scripts");
         if (Directory.Exists(testerScripts))
         {

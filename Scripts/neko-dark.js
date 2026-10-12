@@ -1,6 +1,8 @@
 (function () {
     "use strict";
     if (window !== window.top) return;
+    if (window._bcNekoDarkInjected) return;
+    window._bcNekoDarkInjected = true;
 
     // Palette: Kawaii Midnight Purple
     const P = {
@@ -394,8 +396,58 @@
         }
     }, 800);
 
-    // Runtime Injector
+    // Runtime Injector & Duplicate Guard
     const RUNTIME_URL = "https://cdn.jsdelivr.net/gh/QAQMOON/meow-@main/dist/bondage-club-neko.runtime.full.js?v=2.13.1";
+
+    function hookBcModSdk(sdk) {
+        if (!sdk || sdk._nekoGuardHooked) return;
+        const origRegister = sdk.registerMod;
+        if (typeof origRegister !== "function") return;
+
+        // ponytail: wrap registerMod to return existing modApi on duplicate registration instead of unloading
+        sdk.registerMod = function (info) {
+            if (info && (info.name === "Bondage Club Neko Chat Enhancer (BCNekoEnhancer)" || info.name?.includes("BCNekoEnhancer"))) {
+                try {
+                    const existing = sdk.getMod ? sdk.getMod(info.name) : null;
+                    if (existing) {
+                        return existing;
+                    }
+                } catch (e) {}
+            }
+            return origRegister.apply(this, arguments);
+        };
+        sdk._nekoGuardHooked = true;
+    }
+
+    if (window.bcModSdk) {
+        hookBcModSdk(window.bcModSdk);
+    } else {
+        let sdkVal = window.bcModSdk;
+        try {
+            Object.defineProperty(window, "bcModSdk", {
+                configurable: true,
+                enumerable: true,
+                get: () => sdkVal,
+                set: (val) => {
+                    sdkVal = val;
+                    hookBcModSdk(val);
+                }
+            });
+        } catch (e) {}
+    }
+
+    function isNekoModLoaded() {
+        if (window._nekoRuntimeLoaded) return true;
+        if (document.querySelector("script[src*='bondage-club-neko']")) return true;
+        if (document.body?.classList?.contains("bcn-enabled")) return true;
+        if (window.bcModSdk) {
+            try {
+                if (typeof window.bcModSdk.getMod === "function" && window.bcModSdk.getMod("Bondage Club Neko Chat Enhancer (BCNekoEnhancer)")) return true;
+                if (typeof window.bcModSdk.getModsInfo === "function" && window.bcModSdk.getModsInfo().some(m => m.name && m.name.includes("BCNekoEnhancer"))) return true;
+            } catch (e) {}
+        }
+        return false;
+    }
 
     function requestText(url) {
         return fetch(`${url}${url.includes("?") ? "&" : "?"}t=${Date.now()}`, { cache: "no-store" })
@@ -406,7 +458,8 @@
     }
 
     function runRuntime(code) {
-        if (!code?.trim()) return;
+        if (!code?.trim() || isNekoModLoaded()) return;
+        window._nekoRuntimeLoaded = true;
 
         // Theme patches
         code = code.replace(/rgba\(\s*255\s*,\s*255\s*,\s*255\s*,/g, "rgba(30, 24, 41,");
@@ -428,5 +481,7 @@
         new Function(code)();
     }
 
-    requestText(RUNTIME_URL).then(runRuntime).catch(() => {});
+    if (!isNekoModLoaded()) {
+        requestText(RUNTIME_URL).then(runRuntime).catch(() => {});
+    }
 })();

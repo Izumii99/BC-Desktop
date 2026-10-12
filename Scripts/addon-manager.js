@@ -128,6 +128,7 @@
         "fluid-color.js",
         "fusam.js",
         "LikoPlugin.js",
+        "fusam-liko-loader.js",
         "wardrobe-pagination.js"
     ];
 
