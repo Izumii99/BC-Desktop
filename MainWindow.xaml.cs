@@ -114,7 +114,7 @@ public partial class MainWindow : Window
                         }
                     })();
                 ";
-            WebView.CoreWebView2.ExecuteScriptAsync(smartFocusScript);
+            _ = WebView.CoreWebView2.ExecuteScriptAsync(smartFocusScript);
         }
     }
 
@@ -149,7 +149,7 @@ public partial class MainWindow : Window
                         }
                     })();
                 ";
-                core.ExecuteScriptAsync(smartFocusScript);
+                _ = core.ExecuteScriptAsync(smartFocusScript);
             }
         }
         catch
@@ -329,13 +329,13 @@ public partial class MainWindow : Window
             }
         };
 
-        core.WebMessageReceived += async (s, args) =>
+        core.WebMessageReceived += (s, args) =>
         {
             try
             {
-                string rawJson = args.WebMessageAsJson;
+                string? rawJson = args.WebMessageAsJson;
 
-                string msg = null;
+                string? msg = null;
                 if (rawJson != null && rawJson.StartsWith("\"") && rawJson.EndsWith("\""))
                 {
                     msg = System.Text.Json.JsonSerializer.Deserialize<string>(rawJson);
@@ -344,7 +344,7 @@ public partial class MainWindow : Window
                 if (msg != null && msg.StartsWith("COPY_TEXT:"))
                 {
                     string textToCopy = msg.Substring(10);
-                    Application.Current.Dispatcher.InvokeAsync(async () =>
+                    _ = Application.Current.Dispatcher.InvokeAsync(async () =>
                     {
                         IntPtr hwnd = new WindowInteropHelper(this).Handle;
                         for (int i = 0; i < 10; i++)
