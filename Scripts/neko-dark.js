@@ -27,20 +27,24 @@
     function injectDarkTheme() {
         if (!document.head) return;
 
-        const existing = document.getElementById("neko-enhancer-dark-theme");
-        if (existing) existing.remove();
+        let style = document.getElementById("neko-enhancer-dark-theme");
+        if (!style) {
+            style = document.createElement("style");
+            style.id = "neko-enhancer-dark-theme";
+            document.head.appendChild(style);
+        }
 
-        const style = document.createElement("style");
-        style.id = "neko-enhancer-dark-theme";
         style.textContent = `
             /* Variables */
-            body {
+            :root, body, body.bcn-enabled {
                 --bcn-panel:  ${P.panel}  !important;
                 --bcn-soft:   ${P.soft}   !important;
                 --bcn-border: ${P.border} !important;
                 --bcn-text:   ${P.text}   !important;
                 --bcn-muted:  ${P.muted}  !important;
                 --bcn-icon:   ${P.icon}   !important;
+                --bcn-accent: ${P.borderAcc} !important;
+                --bcn-glow:   rgba(107, 80, 144, 0.35) !important;
             }
 
             /* Container */
@@ -166,20 +170,55 @@
                 border: 2px solid ${P.borderAcc} !important;
             }
 
-            /* Chat Input Area */
+            /* Chat Input Area & Bot Container */
+            html body #chat-room-bot,
+            html body.bcn-enabled #chat-room-bot,
+            html body [id*="chat-room-bot"],
+            html body #chat-room-bottom,
             html body div#chat-room-bottom,
-            html body div[id^="chat-room-bot"] {
-                background: ${P.base} !important;
-                border-color: ${P.borderAcc} !important;
+            html body #chat-room-reply-indicator > * {
+                background: ${P.panel} !important;
+                background-color: ${P.panel} !important;
+                border: 2px solid ${P.borderAcc} !important;
+                color: ${P.text} !important;
+                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.45) !important;
+            }
+
+            /* Chat Input Element */
+            html body #InputChat,
+            html body textarea#InputChat,
+            html body input#InputChat,
+            html body.bcn-enabled #InputChat,
+            html body.bcn-enabled textarea#InputChat,
+            html body.bcn-enabled input#InputChat,
+            html body #chat-room-bot #InputChat,
+            html body #chat-room-bot textarea,
+            html body #chat-room-bot input {
+                background: transparent !important;
+                background-color: transparent !important;
+                color: ${P.text} !important;
+                border: none !important;
+                box-shadow: none !important;
+            }
+
+            html body #InputChat::placeholder,
+            html body.bcn-enabled #InputChat::placeholder {
+                color: ${P.muted} !important;
             }
 
             /* Send Buttons */
             html body #chat-room-buttons,
             html body #chat-room-buttons button,
-            html body button#chat-room-buttons-collapse {
+            html body button#chat-room-buttons-collapse,
+            html body #chat-room-send,
+            html body button#chat-room-send {
                 background: ${P.panel} !important;
                 color: ${P.text} !important;
                 border: 2px solid ${P.borderAcc} !important;
+            }
+
+            html body #chat-room-send::before {
+                color: ${P.icon} !important;
             }
 
             /* Toasts */
@@ -220,6 +259,11 @@
                 overflow: hidden !important;
                 pointer-events: none !important;
             }
+            html body #bcn-soft-paws span {
+                color: ${P.icon} !important;
+                text-shadow: 0 4px 12px rgba(107, 80, 144, 0.35) !important;
+                opacity: 0.12 !important;
+            }
 
             /* Top Menu */
             html body .chat-room-top-menu-btn {
@@ -239,8 +283,8 @@
             }
 
             /* Base inputs reset */
-            html body textarea:not(#InputChat),
-            html body input:not(#InputChat):not([type="radio"]):not([type="checkbox"]):not([type="color"]):not([type="range"]),
+            html body textarea:not(#InputChat):not(#chat-room-bot textarea),
+            html body input:not(#InputChat):not(#chat-room-bot input):not([type="radio"]):not([type="checkbox"]):not([type="color"]):not([type="range"]),
             html body select:not(#chat-garble):not(.wce-chat-room-select) {
                 color: #333333 !important;
                 background: rgba(255, 255, 255, 0.95) !important;
@@ -308,12 +352,14 @@
                 text-shadow: none !important;
             }
         `;
-        document.head.appendChild(style);
+        if (document.head.lastElementChild !== style) {
+            document.head.appendChild(style);
+        }
     }
 
     injectDarkTheme();
     setInterval(() => {
-        if (document.head && !document.getElementById("neko-enhancer-dark-theme")) injectDarkTheme();
+        if (document.head) injectDarkTheme();
     }, 1000);
 
     // Chat Observer
