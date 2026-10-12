@@ -96,7 +96,7 @@
         "FUSAM": { title: "FUSAM Loader", desc: "Fantastic Ultimate Solution to Addon Management (External Loader).", icon: "🛠️", url: "https://gitlab.com/zahk3277/bc-addon-loader", externalUrl: "https://sidiousious.gitlab.io/bc-addon-loader/fusam.js", isModule: true },
         "LikoPlugin": { title: "Liko Plugin", desc: "Liko's Plugin Collection Manager (External Loader).", icon: "https://cdn.jsdelivr.net/gh/awdrrawd/liko-Plugin-Repository@main/Images/PCM_ICON.png", url: "https://github.com/awdrrawd/liko-Plugin-Repository", externalUrl: "https://awdrrawd.github.io/liko-Plugin-Repository/PCM_Loader.user.js" },
         "chat-qol.js": { title: "Chat QoL", desc: "Quality of Life features for chat window, textmojis & fluid color enforcer.", icon: "https://cdn.jsdelivr.net/gh/Izumii99/BC-Desktop@main/Assets/gear_small.png", url: "https://github.com/Izumii99/BC-Desktop/blob/main/Scripts/chat-qol.js" },
-        "translate.js": { title: "In-Game Translator", desc: "In-game translation tool for chat messages.", icon: `data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="48" height="48"><defs><linearGradient id="g" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="%234f46e5"/><stop offset="50%" stop-color="%237c3aed"/><stop offset="100%" stop-color="%239333ea"/></linearGradient></defs><rect width="48" height="48" rx="11" fill="url(%23g)"/><g fill="none" stroke="%23ffffff" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round" transform="translate(10, 10) scale(1.16)"><path d="M3 5h12M9 3v2m1.048 9.5A18.022 18.022 0 016.412 9m6.088 9h7M11 21l5-10 5 10M12.751 5C11.783 10.77 8.07 15.61 3 18.129"/></g></svg>`, url: "https://github.com/Izumii99/BC-Desktop/blob/main/Scripts/translate.js" },
+        "translate.js": { title: "In-Game Translator", desc: "In-game translation tool for chat messages.", icon: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="48" height="48" style="width: 100%; height: 100%; display: block;"><defs><linearGradient id="g" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#4f46e5"/><stop offset="50%" stop-color="#7c3aed"/><stop offset="100%" stop-color="#9333ea"/></linearGradient></defs><rect width="48" height="48" rx="11" fill="url(#g)"/><g fill="none" stroke="#ffffff" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round" transform="translate(10, 10) scale(1.16)"><path d="M3 5h12M9 3v2m1.048 9.5A18.022 18.022 0 016.412 9m6.088 9h7M11 21l5-10 5 10M12.751 5C11.783 10.77 8.07 15.61 3 18.129"/></g></svg>`, url: "https://github.com/Izumii99/BC-Desktop/blob/main/Scripts/translate.js" },
         "cheat-menu.js": { title: "Cheat Menu", desc: "Quick access cheats for restraints, wardrobe, and NPCs.", icon: "https://cdn.jsdelivr.net/gh/Izumii99/BC-Desktop@main/Assets/cheat_ui.png", url: "https://github.com/Izumii99/BC-Desktop/blob/main/Scripts/cheat-menu.js" },
         "neko-dark.js": { title: "Neko Dark Theme", desc: "A sleek dark theme for Bondage Club by Neko.", url: "https://github.com/Izumii99/BC-Desktop/blob/main/Scripts/neko-dark.js" }
         // "wardrobe-pagination.js": { title: "Wardrobe Pagination", desc: "Adds pagination to wardrobe items.", url: "https://github.com/Izumii99/BC-Desktop/blob/main/Scripts/wardrobe-pagination.js" } // Native in BCX
@@ -349,11 +349,11 @@
             const info = SCRIPT_INFO[scriptName] || { title: scriptName.replace(".js", ""), desc: "Local Addon Script" };
 
             if (info.icon) {
-                if (info.icon.startsWith("http") || info.icon.startsWith("data:")) {
+                if (info.icon.startsWith("<svg") || info.icon.startsWith("<div")) {
+                    sIcon.innerHTML = info.icon;
+                } else if (info.icon.startsWith("http") || info.icon.startsWith("data:")) {
                     const isSmall = info.icon.includes("gear_small");
                     sIcon.innerHTML = `<img src="${info.icon}" style="${isSmall ? 'width: 26px; height: 26px;' : 'width: 100%; height: 100%;'} object-fit: contain;" />`;
-                } else if (info.icon.startsWith("<svg") || info.icon.startsWith("<div")) {
-                    sIcon.innerHTML = info.icon;
                 } else {
                     sIcon.innerText = info.icon;
                 }

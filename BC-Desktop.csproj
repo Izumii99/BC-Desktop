@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
@@ -32,11 +32,17 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Compile Remove="tests\**" />
+    <None Remove="tests\**" />
     <None Remove="Scripts\**\*" />
     <None Include="PublishLoader\inject-all.js" Link="Scripts\inject-all.js" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
-
+  <ItemGroup>
+    <AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleTo">
+      <_Parameter1>BCDesktop.Tests</_Parameter1>
+    </AssemblyAttribute>
+  </ItemGroup>
 
 </Project>
 

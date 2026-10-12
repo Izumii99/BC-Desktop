@@ -22,21 +22,50 @@ public partial class MainWindow : Window
     private string _originalTitleLabel;
     private CancellationTokenSource? _deactivationCts;
 
-    public MainWindow()
+    private void CancelDeactivation()
+    {
+        if (_deactivationCts is { } cts)
+        {
+            _deactivationCts = null;
+            cts.Cancel();
+            cts.Dispose();
+        }
+    }
+
+    private static void TrimWorkingSet()
+    {
+        try
+        {
+            SetProcessWorkingSetSize(GetCurrentProcess(), (IntPtr)(-1), (IntPtr)(-1));
+        }
+        catch
+        {
+        }
+    }
+
+    public MainWindow() : this(initializeWebView: true)
+    {
+    }
+
+    internal MainWindow(bool initializeWebView)
     {
         InitializeComponent();
         _originalTitleLabel = TitleLabel.Text;
         StateChanged += OnWindowStateChanged;
         Activated += MainWindow_Activated;
         Deactivated += MainWindow_Deactivated;
-        InitWebViewAsync();
+        if (initializeWebView)
+        {
+            InitWebViewAsync();
+        }
     }
 
     private async void MainWindow_Deactivated(object? sender, EventArgs e)
     {
-        _deactivationCts?.Cancel();
-        _deactivationCts = new CancellationTokenSource();
-        var token = _deactivationCts.Token;
+        CancelDeactivation();
+        var cts = new CancellationTokenSource();
+        _deactivationCts = cts;
+        var token = cts.Token;
 
         try
         {
@@ -44,6 +73,7 @@ public partial class MainWindow : Window
             if (!token.IsCancellationRequested && WindowState != WindowState.Minimized && WebView.CoreWebView2 is { } core)
             {
                 core.MemoryUsageTargetLevel = CoreWebView2MemoryUsageTargetLevel.Low;
+                TrimWorkingSet();
             }
         }
         catch (OperationCanceledException)
@@ -53,8 +83,7 @@ public partial class MainWindow : Window
 
     private async void MainWindow_Activated(object? sender, EventArgs e)
     {
-        _deactivationCts?.Cancel();
-        _deactivationCts = null;
+        CancelDeactivation();
 
         if (WebView.CoreWebView2 is { } core)
         {
@@ -89,10 +118,10 @@ public partial class MainWindow : Window
         {
             if (WindowState == WindowState.Minimized)
             {
-                _deactivationCts?.Cancel();
-                _deactivationCts = null;
+                CancelDeactivation();
                 core.MemoryUsageTargetLevel = CoreWebView2MemoryUsageTargetLevel.Low;
                 await core.TrySuspendAsync();
+                TrimWorkingSet();
             }
             else
             {
@@ -241,6 +270,7 @@ public partial class MainWindow : Window
                 "--disable-component-update " +
                 "--disable-domain-reliability " +
                 "--disable-sync " +
+                "--enable-features=CalculateNativeWinOcclusion " +
                 "--js-flags=\"--max-old-space-size=768\""
         };
 
@@ -275,6 +305,14 @@ public partial class MainWindow : Window
         core.Settings.IsPasswordAutosaveEnabled     = false;
 
         core.DocumentTitleChanged += Core_DocumentTitleChanged;
+        core.ProcessFailed += (s, args) =>
+        {
+            if (args.ProcessFailedKind == CoreWebView2ProcessFailedKind.RenderProcessExited ||
+                args.ProcessFailedKind == CoreWebView2ProcessFailedKind.RenderProcessUnresponsive)
+            {
+                core.Reload();
+            }
+        };
         core.PermissionRequested += (s, args) =>
         {
             if (args.PermissionKind == CoreWebView2PermissionKind.ClipboardRead)
@@ -1067,6 +1105,10 @@ public partial class MainWindow : Window
     private static extern bool GlobalUnlock(IntPtr hMem);
     [DllImport("kernel32.dll")]
     private static extern IntPtr GlobalFree(IntPtr hMem);
+    [DllImport("kernel32.dll")]
+    private static extern IntPtr GetCurrentProcess();
+    [DllImport("kernel32.dll")]
+    private static extern bool SetProcessWorkingSetSize(IntPtr hProcess, IntPtr dwMinimumWorkingSetSize, IntPtr dwMaximumWorkingSetSize);
 
 
     [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Auto)]

@@ -1,3 +1,10 @@
+Write-Host "Running automated tests before build..."
+dotnet test --verbosity minimal
+if ($LASTEXITCODE -ne 0) {
+    Write-Error "Automated tests failed! Build process aborted."
+    exit 1
+}
+
 Write-Host "Cleaning previous publish folders..."
 Remove-Item "publish/lightweight" -Recurse -Force -ErrorAction SilentlyContinue
 Remove-Item "publish/standalone" -Recurse -Force -ErrorAction SilentlyContinue
