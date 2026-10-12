@@ -1,0 +1,72 @@
+name: Bug Report
+description: Report an issue or unexpected behavior in BC Desktop
+title: "[Bug]: "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to report an issue! Please verify that you are running the latest version before submitting.
+  - type: dropdown
+    id: build-variant
+    attributes:
+      label: Build Variant
+      description: Which build of BC Desktop are you running?
+      options:
+        - Standalone
+        - Lightweight (.NET 8 Runtime)
+        - Standalone-Hidden (Discreet)
+        - Lightweight-Hidden (Discreet)
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: App Version
+      description: What version are you using (e.g. v6.0)?
+      placeholder: v6.0
+    validations:
+      required: true
+  - type: dropdown
+    id: os-version
+    attributes:
+      label: Operating System
+      options:
+        - Windows 11
+        - Windows 10
+        - Other / Windows Server
+    validations:
+      required: true
+  - type: textarea
+    id: description
+    attributes:
+      label: Describe the Bug
+      description: A clear and concise description of what the problem is.
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Steps to Reproduce
+      description: How can we reproduce this behavior?
+      placeholder: |
+        1. Open BC Desktop
+        2. Go to ...
+        3. Click on ...
+        4. See error or unexpected focus behavior
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected Behavior
+      description: A clear and concise description of what you expected to happen.
+  - type: checkboxes
+    id: checklist
+    attributes:
+      label: Verification Checklist
+      options:
+        - label: I have searched existing issues to ensure this is not a duplicate.
+          required: true
+        - label: I am using the latest released version of BC Desktop.
+          required: false

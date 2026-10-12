@@ -1,0 +1,5 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Release Downloads
+    url: https://github.com/Izumii99/BC-Desktop/releases
+    about: Download the latest pre-compiled binaries and updates.

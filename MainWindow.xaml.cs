@@ -21,6 +21,8 @@ public partial class MainWindow : Window
 
     private string _originalTitleLabel;
     private CancellationTokenSource? _deactivationCts;
+    private int _recentCrashCount;
+    private DateTime _lastCrashTime = DateTime.MinValue;
 
     // In-memory only: the game persists GraphicsSettings solely when leaving the Preference screen, which is skipped here.
     internal const string CapUnfocusedFpsScript =
@@ -349,7 +351,21 @@ public partial class MainWindow : Window
             if (args.ProcessFailedKind == CoreWebView2ProcessFailedKind.RenderProcessExited ||
                 args.ProcessFailedKind == CoreWebView2ProcessFailedKind.RenderProcessUnresponsive)
             {
-                core.Reload();
+                var now = DateTime.UtcNow;
+                if ((now - _lastCrashTime).TotalSeconds < 30)
+                {
+                    _recentCrashCount++;
+                }
+                else
+                {
+                    _recentCrashCount = 1;
+                }
+                _lastCrashTime = now;
+
+                if (_recentCrashCount <= 3)
+                {
+                    core.Reload();
+                }
             }
         };
         core.PermissionRequested += (s, args) =>
@@ -465,7 +481,7 @@ public partial class MainWindow : Window
                     }
                 }
                 
-                if (e.ctrlKey && (e.key === 'c' || e.key === 'C')) {
+                if (e.ctrlKey && (e.key === 'c' || e.key === 'C' || e.code === 'KeyC')) {
                     let text = '';
                     let activeEl = document.activeElement;
                     if (activeEl && (activeEl.tagName === 'INPUT' || activeEl.tagName === 'TEXTAREA')) {
@@ -538,8 +554,9 @@ public partial class MainWindow : Window
                     window.bcFocusMemory = e.target;
                     if (isChatArea(e.target)) {
                         window.bcUserPrefersGameChat = true;
-                    } else if (getAddonContainer(e.target)) {
+                    } else {
                         window.bcUserPrefersGameChat = false;
+                        window.bcForceUnfocusSearch = false;
                     }
                 }
             }, true);
@@ -580,9 +597,10 @@ public partial class MainWindow : Window
                 } else if (isEditable(e.target)) {
                     window.bcFocusMemory = e.target;
                     window.bcForceUnfocusSearch = false;
+                    window.bcUserPrefersGameChat = false;
                 } else {
                     window.bcFocusMemory = null;
-                    window.bcForceUnfocusSearch = true;
+                    window.bcForceUnfocusSearch = false;
                 }
                 
                 if (ic) window.bcInputChatLastValue = ic.value;
@@ -648,12 +666,6 @@ public partial class MainWindow : Window
             };
 
             window.bcRunFocusCrawler = function() {
-                // If user prefers the main game chat, return InputChat softly without forcing overlays
-                if (window.bcUserPrefersGameChat) {
-                    let ic = document.getElementById('InputChat');
-                    if (ic) return ic;
-                }
-
                 function getHighestZ(el) {
                     let max = 0;
                     while (el && el !== document.documentElement) {
@@ -683,21 +695,24 @@ public partial class MainWindow : Window
                     
                     if (el.id === 'InputChat' || el.id === 'TextAreaChatLog') score -= 500000;
                     
-                    // Strongly prioritize chat textareas over search boxes
+                    // Prioritize textareas and search/dialog inputs
                     if (el.tagName === 'TEXTAREA') score += 5000;
-                    
-                    let isSearch = false;
-                    if (el.id && el.id.toLowerCase().indexOf('search') !== -1) isSearch = true;
-                    if (el.className && typeof el.className === 'string' && el.className.toLowerCase().indexOf('search') !== -1) isSearch = true;
-                    
-                    if (isSearch) {
-                        if (window.bcForceUnfocusSearch) continue;
-                        score -= 10000;
-                    }
+                    if (el.id && el.id.toLowerCase().indexOf('search') !== -1) score += 2000;
                     
                     if (score > maxScore) { maxScore = score; bestInput = el; }
                 }
-                return bestInput;
+
+                // If an active search, menu, or dialog input is open, return it!
+                if (bestInput && bestInput.id !== 'InputChat') {
+                    return bestInput;
+                }
+
+                if (window.bcUserPrefersGameChat) {
+                    let ic = document.getElementById('InputChat');
+                    if (ic) return ic;
+                }
+
+                return document.getElementById('InputChat');
             };
 
             let patchInterval = setInterval(() => {
@@ -717,10 +732,22 @@ public partial class MainWindow : Window
                         }
 
                         if (window.bcIsMouseDown && !isLayeringInput) return;
+                        
                         let active = document.activeElement;
-                        let isUserTyping = active && (active.tagName === 'INPUT' || active.tagName === 'TEXTAREA' || active.isContentEditable);
-                        if (!isLayeringInput && isUserTyping && active.id !== ID) return;
+                        let isUserInAnotherInput = active && (active.tagName === 'INPUT' || active.tagName === 'TEXTAREA' || active.isContentEditable) && active !== targetEl;
+
+                        // Only prevent background InputChat refocusing from hijacking user away from active inputs/search boxes
+                        if (ID === 'InputChat' && isUserInAnotherInput) {
+                            return;
+                        }
+
                         if (!isLayeringInput && window.getSelection().toString().length > 0) return;
+
+                        if (targetEl && targetEl !== document.getElementById('InputChat')) {
+                            window.bcFocusMemory = targetEl;
+                            window.bcUserPrefersGameChat = false;
+                        }
+
                         origElementFocus(ID);
                     };
                     window.ElementFocus._isHooked = true;
@@ -749,23 +776,14 @@ public partial class MainWindow : Window
                     if (currentIsLayering && !isLayeringInput) return;
 
                     let active = document.activeElement;
-                    let isUserTyping = active && (active.tagName === 'INPUT' || active.tagName === 'TEXTAREA' || active.isContentEditable);
-                    
-                    let isAggressiveInput = this.id === 'InputChat' || 
-                                            this.id === 'FriendListSearch' || 
-                                            this.id === 'friend-list-search-input' || 
-                                            this.id === 'LogSearch' || 
-                                            this.id === 'preference-search' ||
-                                            (this.id && this.id.toLowerCase().includes('search'));
+                    let isUserInAnotherInput = active && (active.tagName === 'INPUT' || active.tagName === 'TEXTAREA' || active.isContentEditable) && active !== this;
 
-                    if (isAggressiveInput) {
-                        if (isUserTyping && active !== this) return;
-                        if (window.getSelection().toString().length > 0) return;
-                        
-                        if (window.bcForceUnfocusSearch && this.id !== 'InputChat') {
-                            return;
-                        }
+                    // Only prevent InputChat from stealing focus away from an active search box, dialog, or addon
+                    if (this.id === 'InputChat' && isUserInAnotherInput) {
+                        return;
                     }
+
+                    if (window.getSelection().toString().length > 0) return;
                 } catch(e) {}
                 origFocus.call(this);
             };
@@ -796,23 +814,23 @@ public partial class MainWindow : Window
                     }
                 }
                 
-                if (addedInputs) window.bcForceUnfocusSearch = false;
+                if (addedInputs) {
+                    window.bcForceUnfocusSearch = false;
+                    window.bcUserPrefersGameChat = false;
+                }
 
-                if (shouldCheck && !window.bcUserPrefersGameChat && document.hasFocus()) {
+                if (shouldCheck && document.hasFocus()) {
                     if (window.bcFocusTimeout) clearTimeout(window.bcFocusTimeout);
                     window.bcFocusTimeout = setTimeout(() => {
                         if (window.bcIsMouseDown) return;
                         if (window.getSelection().toString().length > 0) return;
-                        if (window.bcForceUnfocusSearch) return;
-
-                        // Soft guard: do not steal focus if user currently chose game chat
-                        if (window.bcUserPrefersGameChat) return;
 
                         let best = window.bcRunFocusCrawler ? window.bcRunFocusCrawler() : null;
                         if (best && best.id !== 'InputChat') {
                             if (window.bcLastFocusedLayer !== best) {
                                 window.bcLastFocusedLayer = best;
                                 window.bcFocusMemory = best;
+                                window.bcUserPrefersGameChat = false;
                                 if (window.bcFocusAndTeleport) {
                                     window.bcFocusAndTeleport(best);
                                 } else {
@@ -943,10 +961,11 @@ public partial class MainWindow : Window
                 double dipScreenY = screenPos.Y / dpi.DpiScaleY;
                 double percentHorizontal = currentPos.X / ActualWidth;
                 
+                double restoreWidth = (!RestoreBounds.IsEmpty && RestoreBounds.Width > 0) ? RestoreBounds.Width : Width;
                 _dragStart = null;
                 WindowState = WindowState.Normal;
                 
-                Left = dipScreenX - (Width * percentHorizontal);
+                Left = dipScreenX - (restoreWidth * percentHorizontal);
                 Top = dipScreenY - currentPos.Y;
                 
                 try { DragMove(); } catch { }

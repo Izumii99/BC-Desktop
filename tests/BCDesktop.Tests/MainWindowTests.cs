@@ -110,6 +110,7 @@ public class MainWindowTests
         StringAssert.Contains(code, "core.ProcessFailed +=", "ProcessFailed event must be hooked for auto-recovery.");
         StringAssert.Contains(code, "CoreWebView2ProcessFailedKind.RenderProcessExited");
         StringAssert.Contains(code, "core.Reload()", "Automatic reload must be invoked on renderer exit.");
+        StringAssert.Contains(code, "_recentCrashCount <= 3", "Crash loop protection must throttle repeated reloads.");
     }
 
     [TestMethod]
@@ -262,9 +263,13 @@ public class MainWindowTests
         StringAssert.Contains(code, "if (WindowState == WindowState.Maximized)\r\n            {\r\n                return IntPtr.Zero;\r\n            }",
             "WM_NCHITTEST must return IntPtr.Zero when maximized to prevent cursor distortion and resize glitches.");
 
-        // DPI scaling must be applied during un-maximize dragging
+        // DPI scaling and RestoreBounds must be applied during un-maximize dragging
+        StringAssert.Contains(code, "RestoreBounds.Width", "RestoreBounds must be used during un-maximize dragging.");
         StringAssert.Contains(code, "VisualTreeHelper.GetDpi(this)", "DPI scale must be queried during dragging.");
         StringAssert.Contains(code, "screenPos.X / dpi.DpiScaleX", "X coordinate must be converted from physical pixels to DIPs.");
         StringAssert.Contains(code, "screenPos.Y / dpi.DpiScaleY", "Y coordinate must be converted from physical pixels to DIPs.");
+
+        // Physical KeyC code must be checked for cross-layout clipboard support
+        StringAssert.Contains(code, "KeyC", "Physical KeyC code must be checked for cross-layout clipboard support.");
     }
 }
