@@ -47,7 +47,7 @@
         enableScreenshotCleaner: true,
         enableWceEchoBridge: false,
         enableEchoSoundBridge: false,
-        enableLceModLoader: true,
+        enableLceModLoader: false,
         enableFluidColor: false,
         fluidColor: "#547A82",
     };
