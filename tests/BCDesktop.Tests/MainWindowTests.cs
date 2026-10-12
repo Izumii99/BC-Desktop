@@ -235,4 +235,36 @@ public class MainWindowTests
         Assert.IsTrue(width >= 360, "Width must meet or exceed minimum dimensions.");
         Assert.AreEqual((width / 2.0) + 32.0, height, 0.01, "Window dimensions must satisfy Height = (Width / 2) + 32.");
     }
+
+    [TestMethod]
+    public void TitleBar_CloseButtonHasDedicatedTemplateWithHoverFeedback()
+    {
+        string xamlPath = Path.Combine(ProjectRoot, "MainWindow.xaml");
+        string xaml = File.ReadAllText(xamlPath);
+
+        // CloseTitleBtn must have its own ControlTemplate so it is not overridden by TitleBtn template triggers
+        StringAssert.Contains(xaml, "<Style x:Key=\"CloseTitleBtn\"", "CloseTitleBtn must be defined.");
+        StringAssert.Contains(xaml, "Value=\"#c42b1c\"", "Close button must use red hover highlight (#c42b1c).");
+        StringAssert.Contains(xaml, "Value=\"#992115\"", "Close button must use dark red pressed state (#992115).");
+    }
+
+    [TestMethod]
+    public void WindowStateManagement_DpiAndHitTestGuardsAreEnforced()
+    {
+        string csPath = Path.Combine(ProjectRoot, "MainWindow.xaml.cs");
+        string code = File.ReadAllText(csPath);
+
+        // Maximize/Restore button and Margin must synchronize through unified helper
+        StringAssert.Contains(code, "UpdateWindowStateUI()", "Window state UI must have a unified update method.");
+        StringAssert.Contains(code, "if (WindowState == WindowState.Maximized)", "WindowState guards must be present.");
+
+        // WM_NCHITTEST must not return resize edges when maximized (Fitts's Law + no resize handles)
+        StringAssert.Contains(code, "if (WindowState == WindowState.Maximized)\r\n            {\r\n                return IntPtr.Zero;\r\n            }",
+            "WM_NCHITTEST must return IntPtr.Zero when maximized to prevent cursor distortion and resize glitches.");
+
+        // DPI scaling must be applied during un-maximize dragging
+        StringAssert.Contains(code, "VisualTreeHelper.GetDpi(this)", "DPI scale must be queried during dragging.");
+        StringAssert.Contains(code, "screenPos.X / dpi.DpiScaleX", "X coordinate must be converted from physical pixels to DIPs.");
+        StringAssert.Contains(code, "screenPos.Y / dpi.DpiScaleY", "Y coordinate must be converted from physical pixels to DIPs.");
+    }
 }

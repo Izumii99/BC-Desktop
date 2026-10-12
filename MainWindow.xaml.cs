@@ -118,8 +118,26 @@ public partial class MainWindow : Window
         }
     }
 
+    private void UpdateWindowStateUI()
+    {
+        if (WindowState == WindowState.Maximized)
+        {
+            MaxRestoreBtn.Content = "\uE923";
+            MaxRestoreBtn.ToolTip = "Restore";
+            WebView.Margin = new Thickness(0);
+        }
+        else if (WindowState == WindowState.Normal)
+        {
+            MaxRestoreBtn.Content = "\uE922";
+            MaxRestoreBtn.ToolTip = "Maximize";
+            WebView.Margin = new Thickness(5, 0, 5, 5);
+        }
+    }
+
     private async void OnWindowStateChanged(object? sender, EventArgs e)
     {
+        UpdateWindowStateUI();
+
         if (WebView.CoreWebView2 is not { } core) return;
 
         try
@@ -905,7 +923,7 @@ public partial class MainWindow : Window
         }
         else
         {
-            DragMove();
+            try { DragMove(); } catch { }
         }
     }
 
@@ -920,15 +938,18 @@ public partial class MainWindow : Window
                 Math.Abs(diff.Y) > SystemParameters.MinimumVerticalDragDistance)
             {
                 var screenPos = PointToScreen(currentPos);
+                var dpi = VisualTreeHelper.GetDpi(this);
+                double dipScreenX = screenPos.X / dpi.DpiScaleX;
+                double dipScreenY = screenPos.Y / dpi.DpiScaleY;
                 double percentHorizontal = currentPos.X / ActualWidth;
                 
                 _dragStart = null;
                 WindowState = WindowState.Normal;
                 
-                Left = screenPos.X - (Width * percentHorizontal);
-                Top = screenPos.Y - currentPos.Y;
+                Left = dipScreenX - (Width * percentHorizontal);
+                Top = dipScreenY - currentPos.Y;
                 
-                DragMove();
+                try { DragMove(); } catch { }
             }
         }
     }
@@ -968,18 +989,7 @@ public partial class MainWindow : Window
 
     private void ToggleMaximize()
     {
-        if (WindowState == WindowState.Maximized)
-        {
-            WindowState = WindowState.Normal;
-            MaxRestoreBtn.Content = "\uE922";
-            MaxRestoreBtn.ToolTip = "Maximize";
-        }
-        else
-        {
-            WindowState = WindowState.Maximized;
-            MaxRestoreBtn.Content = "\uE923";
-            MaxRestoreBtn.ToolTip = "Restore";
-        }
+        WindowState = WindowState == WindowState.Maximized ? WindowState.Normal : WindowState.Maximized;
     }
 
     protected override void OnSourceInitialized(EventArgs e)
@@ -989,8 +999,7 @@ public partial class MainWindow : Window
                   .AddHook(WndProc);
 
         WindowState = WindowState.Maximized;
-        MaxRestoreBtn.Content = "\uE923";
-        MaxRestoreBtn.ToolTip = "Restore";
+        UpdateWindowStateUI();
     }
 
     private IntPtr WndProc(IntPtr hwnd, int msg, IntPtr wParam, IntPtr lParam, ref bool handled)
@@ -1077,6 +1086,11 @@ public partial class MainWindow : Window
         }
         else if (msg == 0x0084) // WM_NCHITTEST
         {
+            if (WindowState == WindowState.Maximized)
+            {
+                return IntPtr.Zero;
+            }
+
             int x = (short)(lParam.ToInt64() & 0xFFFF);
             int y = (short)((lParam.ToInt64() >> 16) & 0xFFFF);
             var p = PointFromScreen(new Point(x, y));
