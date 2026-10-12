@@ -270,6 +270,19 @@ public partial class MainWindow : Window
             Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
             "BCClient", "WebView2Data");
 
+        try
+        {
+            string crashReportsDir = Path.Combine(userDataFolder, "EBWebView", "Crashpad", "reports");
+            if (Directory.Exists(crashReportsDir))
+            {
+                foreach (var file in Directory.GetFiles(crashReportsDir, "*.dmp"))
+                {
+                    File.Delete(file);
+                }
+            }
+        }
+        catch { }
+
         var options = new CoreWebView2EnvironmentOptions
         {
             AdditionalBrowserArguments =
