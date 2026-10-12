@@ -87,6 +87,7 @@ public class MainWindowTests
 
         // Required background reduction and occlusion flags
         StringAssert.Contains(code, "--disable-features=Translate,OptimizationHints,MediaRouter,DialMediaRouteProvider");
+        StringAssert.Contains(code, "SpareRendererForSitePerProcess");
         StringAssert.Contains(code, "--disable-background-networking");
         StringAssert.Contains(code, "--disable-component-update");
         StringAssert.Contains(code, "--disable-domain-reliability");
@@ -109,6 +110,16 @@ public class MainWindowTests
         StringAssert.Contains(code, "core.ProcessFailed +=", "ProcessFailed event must be hooked for auto-recovery.");
         StringAssert.Contains(code, "CoreWebView2ProcessFailedKind.RenderProcessExited");
         StringAssert.Contains(code, "core.Reload()", "Automatic reload must be invoked on renderer exit.");
+    }
+
+    [TestMethod]
+    public void UnfocusedFpsCap_IsInMemoryAndRestored()
+    {
+        StringAssert.Contains(MainWindow.CapUnfocusedFpsScript, "MaxUnfocusedFPS=15");
+        StringAssert.Contains(MainWindow.CapUnfocusedFpsScript, "!g.MaxUnfocusedFPS", "Must never override a user-chosen limit.");
+        StringAssert.Contains(MainWindow.CapUnfocusedFpsScript, "'Preference'", "Must skip the Preference screen so the cap is never saved.");
+        StringAssert.Contains(MainWindow.RestoreUnfocusedFpsScript, "MaxUnfocusedFPS=0");
+        Assert.IsFalse(MainWindow.CapUnfocusedFpsScript.Contains("ServerAccountUpdate"), "Cap must stay in memory only.");
     }
 
     [TestMethod]

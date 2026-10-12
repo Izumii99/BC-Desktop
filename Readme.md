@@ -310,6 +310,14 @@ dotnet restore
 dotnet build -c Release
 ```
 
+## Running Tests
+
+To run the automated unit test suite locally before pushing or submitting a pull request:
+
+```powershell
+dotnet test
+```
+
 ## Publishing (Lightweight vs Standalone)
 
 **Option 1: Lightweight (~10MB, requires .NET 8 Runtime installed)**
@@ -327,11 +335,14 @@ dotnet publish -c Release -r win-x64 --self-contained true -p:PublishSingleFile=
 ## Project Structure
 
 ```text
-BC-Desktop.csproj   — Build configuration
+BC-Desktop.sln      — Solution file uniting application and test projects
+BC-Desktop.csproj   — Main client build configuration
 App.xaml / .cs      — Entry point & global settings
 MainWindow.xaml     — Borderless window layout
 MainWindow.xaml.cs  — WebView2 init, version detection, memory management
-Assets/             — Contains app_logo.png and app.ico
+Assets/             — Application icons and visual assets
 Scripts/            — Mod/addon scripts directory
 PublishLoader/      — Remote loader bundle for OTA distribution
+tests/              — Automated unit test suite (MSTest)
+.github/workflows/  — CI PR validation & Release automation workflows
 ```

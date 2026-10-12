@@ -22,6 +22,12 @@ public partial class MainWindow : Window
     private string _originalTitleLabel;
     private CancellationTokenSource? _deactivationCts;
 
+    // In-memory only: the game persists GraphicsSettings solely when leaving the Preference screen, which is skipped here.
+    internal const string CapUnfocusedFpsScript =
+        "(()=>{const g=window.Player&&Player.GraphicsSettings;if(g&&!g.MaxUnfocusedFPS&&window.CurrentScreen!=='Preference'){g.MaxUnfocusedFPS=15;window.bcFpsCap=g;}})()";
+    internal const string RestoreUnfocusedFpsScript =
+        "(()=>{const g=window.bcFpsCap;if(g){if(g.MaxUnfocusedFPS===15)g.MaxUnfocusedFPS=0;window.bcFpsCap=null;}})()";
+
     private void CancelDeactivation()
     {
         if (_deactivationCts is { } cts)
@@ -73,6 +79,7 @@ public partial class MainWindow : Window
             if (!token.IsCancellationRequested && WindowState != WindowState.Minimized && WebView.CoreWebView2 is { } core)
             {
                 core.MemoryUsageTargetLevel = CoreWebView2MemoryUsageTargetLevel.Low;
+                _ = core.ExecuteScriptAsync(CapUnfocusedFpsScript);
                 TrimWorkingSet();
             }
         }
@@ -88,6 +95,7 @@ public partial class MainWindow : Window
         if (WebView.CoreWebView2 is { } core)
         {
             core.MemoryUsageTargetLevel = CoreWebView2MemoryUsageTargetLevel.Normal;
+            _ = core.ExecuteScriptAsync(RestoreUnfocusedFpsScript);
         }
 
         await Task.Delay(100);
@@ -265,7 +273,7 @@ public partial class MainWindow : Window
         var options = new CoreWebView2EnvironmentOptions
         {
             AdditionalBrowserArguments =
-                "--disable-features=Translate,OptimizationHints,MediaRouter,DialMediaRouteProvider " +
+                "--disable-features=Translate,OptimizationHints,MediaRouter,DialMediaRouteProvider,SpareRendererForSitePerProcess " +
                 "--disable-background-networking " +
                 "--disable-component-update " +
                 "--disable-domain-reliability " +
@@ -732,9 +740,11 @@ public partial class MainWindow : Window
             };
 
             let focusObserver = new MutationObserver((mutations) => {
+                let chatLog = document.getElementById('TextAreaChatLog');
                 let shouldCheck = false;
                 let addedInputs = false;
                 for (let m of mutations) {
+                    if (chatLog && chatLog.contains(m.target)) continue;
                     if (m.type === 'childList') {
                         if (m.addedNodes.length > 0) {
                             for (let i = 0; i < m.addedNodes.length; i++) {
@@ -757,7 +767,7 @@ public partial class MainWindow : Window
                 
                 if (addedInputs) window.bcForceUnfocusSearch = false;
 
-                if (shouldCheck) {
+                if (shouldCheck && !window.bcUserPrefersGameChat && document.hasFocus()) {
                     if (window.bcFocusTimeout) clearTimeout(window.bcFocusTimeout);
                     window.bcFocusTimeout = setTimeout(() => {
                         if (window.bcIsMouseDown) return;

@@ -10,12 +10,12 @@ name: 'Build and Release'
       version:
         description: 'Release version / tag (e.g., 5.6)'
         required: false
-        default: '5.6'
+        default: '5.7'
         type: string
       title:
         description: 'Release Title Highlight (Title Case)'
         required: false
-        default: 'Shift-Enter Multiline Preservation & Focus Steal Mitigation'
+        default: 'Background CPU Throttling, Self-Healing Recovery & Memory Optimization'
         type: string
       notes:
         description: 'Custom Release Notes (leave empty to use standard template)'

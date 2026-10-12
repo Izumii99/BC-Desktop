@@ -1,10 +1,12 @@
 ### Fixes & Improvements:
 
-- **Fix (Chat Multiline & Shift+Enter):** Pressing Shift+Enter while typing in the chat box now creates a new line normally without kicking you out or losing focus.
-- **Fix (Chat Log Selection & Pull-Down):** If you highlight/select text in the chat history, pressing Enter or Shift+Enter now immediately unselects the text and moves your typing cursor straight back into the chat box.
-- **Fix (Addon & Main Chat Switching):** Clicking between the game's main chat box and addon chat boxes now switches smoothly. You can freely click into the main chat box without your selection getting cancelled or lost.
-- **Improvement (Addon Chat Box Opening):** Opening an addon chat window or selecting a friend to message now smoothly and automatically puts your typing cursor into the chat box without any aggressive focus fighting.
-- **Fix (Window Resizing & Shrinking):** Making the game window very small no longer cuts off the game screen or makes the resize borders disappear, allowing you to grab and resize window edges and corners easily at any size.
+- **Improvement (Background CPU Usage):** When the game window is in the background (alt-tabbed), the game now redraws at a gentle 15 FPS instead of full speed. CPU and power usage drop sharply while idling, and full graphics come back instantly as soon as the window is focused again. If a custom "Max FPS when unfocused" value has already been chosen in the game's Graphics settings, that choice is always respected and never changed.
+- **Improvement (Background Memory & Alt-Tab):** When switching away from or minimizing the game, system memory is cleaned up after a short idle period. This keeps the background RAM footprint small while chat connections and timers stay alive, and no longer causes CPU spikes while the game sits in the background.
+- **Improvement (Busy Chat Rooms):** Fast-moving chat rooms no longer trigger unnecessary background work in the input focus helper, so long sessions in crowded rooms stay smoother and lighter.
+- **Improvement (Lower Idle Footprint):** The built-in web engine no longer keeps an extra idle background process running, which saves memory without affecting the game.
+- **Improvement (Crash Auto-Recovery):** If the game page or internal web engine ever encounters an unexpected failure or freezes, the application now automatically detects it and reloads the game smoothly instead of hanging on a frozen screen.
+- **Fix (Addon Manager Translator Icon):** Fixed a display issue where the In-Game Translator icon in the Addon Manager menu showed broken text fragments instead of the translation logo.
+- **Feature (Automated Quality & Integrity Checks):** Added an automated test suite and pre-build safety checks that verify window layouts, 2:1 canvas aspect ratio, and core performance rules across all future builds and contributions.
 
 ### Downloads:
 
