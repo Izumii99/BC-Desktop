@@ -8,14 +8,14 @@ name: 'Build and Release'
   workflow_dispatch:
     inputs:
       version:
-        description: 'Release version / tag (e.g., 5.6)'
+        description: 'Release version / tag (e.g., 6.0)'
         required: false
-        default: '5.7'
+        default: '6.0'
         type: string
       title:
         description: 'Release Title Highlight (Title Case)'
         required: false
-        default: 'Background CPU Throttling, Self-Healing Recovery & Memory Optimization'
+        default: 'Immersive Fullscreen, UI Polish & Enhanced Quality Checks'
         type: string
       notes:
         description: 'Custom Release Notes (leave empty to use standard template)'
