@@ -12,10 +12,10 @@ Remove-Item "publish/lightweight-hidden" -Recurse -Force -ErrorAction SilentlyCo
 Remove-Item "publish/standalone-hidden" -Recurse -Force -ErrorAction SilentlyContinue
 
 Write-Host "Building Lightweight..."
-dotnet publish -c Release -r win-x64 --self-contained false -o publish/lightweight
+dotnet publish BC-Desktop.csproj -c Release -r win-x64 --self-contained false -o publish/lightweight
 
 Write-Host "Building Standalone..."
-dotnet publish -c Release -r win-x64 --self-contained true -o publish/standalone
+dotnet publish BC-Desktop.csproj -c Release -r win-x64 --self-contained true -o publish/standalone
 
 Write-Host "Applying Hidden Changes..."
 $hiddenName = [string][char]0x3164
@@ -37,10 +37,10 @@ Remove-Item -Path "obj" -Recurse -Force -ErrorAction SilentlyContinue
 Remove-Item -Path "bin" -Recurse -Force -ErrorAction SilentlyContinue
 
 Write-Host "Building Lightweight-Hidden..."
-dotnet publish -c Release -r win-x64 --self-contained false -o publish/lightweight-hidden
+dotnet publish BC-Desktop.csproj -c Release -r win-x64 --self-contained false -o publish/lightweight-hidden
 
 Write-Host "Building Standalone-Hidden..."
-dotnet publish -c Release -r win-x64 --self-contained true -o publish/standalone-hidden
+dotnet publish BC-Desktop.csproj -c Release -r win-x64 --self-contained true -o publish/standalone-hidden
 
 Write-Host "Reverting Hidden Changes..."
 $csproj = Get-Content "BC-Desktop.csproj" -Encoding UTF8
