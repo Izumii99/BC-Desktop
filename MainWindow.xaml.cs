@@ -1066,6 +1066,11 @@ public partial class MainWindow : Window
             ToggleFullscreen();
             e.Handled = true;
         }
+        else if (e.Key == Key.F12)
+        {
+            WebView.CoreWebView2?.OpenDevToolsWindow();
+            e.Handled = true;
+        }
         else if (e.Key == Key.System && e.SystemKey == Key.Space)
         {
             Point screenPoint = PointToScreen(new Point(0, TitleBarRow.ActualHeight));

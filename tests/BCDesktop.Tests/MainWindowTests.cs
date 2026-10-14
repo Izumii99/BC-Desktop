@@ -299,6 +299,7 @@ public class MainWindowTests
         StringAssert.Contains(cs, "ToggleFullscreen()", "Fullscreen toggle method must be implemented.");
         StringAssert.Contains(cs, "TOGGLE_FULLSCREEN", "Fullscreen message bridge must be connected.");
         StringAssert.Contains(cs, "Key.F11", "F11 keyboard handler must be hooked.");
+        StringAssert.Contains(cs, "Key.F12", "F12 keyboard handler must be hooked for DevTools.");
     }
 
     private static void RunInSTA(Action action)

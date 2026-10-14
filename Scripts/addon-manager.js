@@ -631,10 +631,13 @@
             injectTargetScripts();
         })
         .catch((err) => {
-            console.error(
-                "BC Desktop: Failed to fetch remote script list.",
+            console.warn(
+                "BC Desktop: Failed to fetch remote script list from jsDelivr, falling back to known scripts.",
                 err,
             );
-            modalBody.innerHTML = `<div style="text-align: center; color: #f44336;">Failed to fetch script list from jsDelivr.</div>`;
+            modalBody.innerHTML = `<div style="text-align: center; color: #f44336;">Failed to fetch script list from jsDelivr. Running fallback list.</div>`;
+            let knownScripts = Object.keys(SCRIPT_INFO).filter(name => !IGNORED_SCRIPTS.includes(name));
+            scriptsList = sortScripts(knownScripts);
+            injectTargetScripts();
         });
 })();
