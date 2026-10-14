@@ -268,7 +268,7 @@ public class MainWindowTests
         StringAssert.Contains(code, "if (WindowState == WindowState.Maximized)", "WindowState guards must be present.");
 
         // WM_NCHITTEST must not return resize edges when maximized (Fitts's Law + no resize handles)
-        StringAssert.Contains(code, "if (WindowState == WindowState.Maximized)\r\n            {\r\n                return IntPtr.Zero;\r\n            }",
+        Assert.IsTrue(Regex.IsMatch(code, @"if\s*\(\s*WindowState\s*==\s*WindowState\.Maximized\s*\)\s*\{\s*return\s*IntPtr\.Zero;\s*\}"),
             "WM_NCHITTEST must return IntPtr.Zero when maximized to prevent cursor distortion and resize glitches.");
 
         // DPI scaling and RestoreBounds must be applied during un-maximize dragging
@@ -299,4 +299,76 @@ public class MainWindowTests
         StringAssert.Contains(cs, "TOGGLE_FULLSCREEN", "Fullscreen message bridge must be connected.");
         StringAssert.Contains(cs, "Key.F11", "F11 keyboard handler must be hooked.");
     }
+
+    private static void RunInSTA(Action action)
+    {
+        Exception? ex = null;
+        var thread = new System.Threading.Thread(() =>
+        {
+            try
+            {
+                action();
+            }
+            catch (Exception e)
+            {
+                ex = e;
+            }
+        });
+        thread.SetApartmentState(System.Threading.ApartmentState.STA);
+        thread.Start();
+        thread.Join();
+        if (ex != null)
+        {
+            System.Runtime.ExceptionServices.ExceptionDispatchInfo.Capture(ex).Throw();
+        }
+    }
+
+    [TestMethod]
+    public void MainWindow_RuntimeInstance_InitializesPropertiesAndDynamicStateTransitions()
+    {
+        RunInSTA(() =>
+        {
+            var window = new MainWindow(initializeWebView: false);
+            Assert.IsNotNull(window, "MainWindow instance must be created successfully.");
+            Assert.AreEqual(WindowStyle.None, window.WindowStyle);
+            Assert.IsTrue(window.AllowsTransparency);
+            Assert.AreEqual("BC", window.Title);
+            Assert.AreEqual("Bondage Club", window.TitleLabel.Text);
+            Assert.AreEqual(WindowState.Normal, window.WindowState);
+
+            // Verify live instantiated visual tree elements
+            Assert.IsNotNull(window.WebView, "WebView must exist in the visual tree.");
+            Assert.IsNotNull(window.TitleLabel, "TitleLabel must exist in the visual tree.");
+            Assert.IsNotNull(window.MaxRestoreBtn, "MaxRestoreBtn must exist in the visual tree.");
+            Assert.IsNotNull(window.WindowBorder, "WindowBorder must exist in the visual tree.");
+
+            // Verify grid placement
+            Assert.AreEqual(0, System.Windows.Controls.Grid.GetRow(window.TitleBarGrid), "TitleBarGrid must be in Grid.Row 0.");
+            Assert.AreEqual(1, System.Windows.Controls.Grid.GetRow(window.WebView), "WebView must be in Grid.Row 1.");
+
+            // Ensure window handle (HWND) is created so WPF window messaging and StateChanged events are active
+            var helper = new System.Windows.Interop.WindowInteropHelper(window);
+            helper.EnsureHandle();
+
+            // Initial normal state margin and border
+            Assert.AreEqual(new Thickness(5, 0, 5, 5), window.WebView.Margin);
+            Assert.AreEqual(new Thickness(1), window.WindowBorder.BorderThickness);
+            Assert.AreEqual("\uE922", window.MaxRestoreBtn.Content);
+
+            // Trigger dynamic runtime state transition to Maximized
+            window.WindowState = WindowState.Maximized;
+            Assert.AreEqual(new Thickness(0), window.WebView.Margin, "WebView margin must dynamically collapse to 0 on maximize.");
+            Assert.AreEqual(new Thickness(0), window.WindowBorder.BorderThickness, "WindowBorder thickness must dynamically collapse to 0 on maximize.");
+            Assert.AreEqual("\uE923", window.MaxRestoreBtn.Content, "MaxRestore button glyph must switch to Restore icon on maximize.");
+
+            // Trigger dynamic runtime state transition back to Normal
+            window.WindowState = WindowState.Normal;
+            Assert.AreEqual(new Thickness(5, 0, 5, 5), window.WebView.Margin, "WebView margin must restore to 5,0,5,5 on restore.");
+            Assert.AreEqual(new Thickness(1), window.WindowBorder.BorderThickness, "WindowBorder thickness must restore to 1 on restore.");
+            Assert.AreEqual("\uE922", window.MaxRestoreBtn.Content, "MaxRestore button glyph must switch back to Maximize icon on restore.");
+
+            window.Close();
+        });
+    }
 }
+

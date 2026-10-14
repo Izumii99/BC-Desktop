@@ -16,6 +16,10 @@
                 
                 if (window._autoMirrorActive) {
                     window._autoMirrorActive = false;
+                    if (window._autoMirrorInterval) {
+                        clearInterval(window._autoMirrorInterval);
+                        window._autoMirrorInterval = null;
+                    }
                     alert("Auto Mirror Restraints: OFF");
                     console.log("Cheat applied: Auto Mirror OFF");
                     return;
@@ -60,7 +64,7 @@
                     // Monitor Appearance changes
                     window._lastAppearance = window.Player.Appearance.map(a => a.Asset.Name + a.Asset.Group.Name);
                     
-                    setInterval(() => {
+                    window._runAutoMirror = function() {
                         if (!window._autoMirrorActive || !window.Player || !window.Player.Appearance) return;
                         
                         const currentAppearance = window.Player.Appearance;
@@ -120,7 +124,11 @@
                         
                         // Update our baseline
                         window._lastAppearance = currentItems;
-                    }, 200);
+                    };
+                }
+
+                if (window._autoMirrorActive && !window._autoMirrorInterval && window._runAutoMirror) {
+                    window._autoMirrorInterval = setInterval(window._runAutoMirror, 500);
                 }
             }
         },

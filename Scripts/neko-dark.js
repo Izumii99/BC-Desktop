@@ -358,9 +358,14 @@
     }
 
     injectDarkTheme();
-    setInterval(() => {
-        if (document.head) injectDarkTheme();
-    }, 1000);
+    if (document.head) {
+        new MutationObserver(() => {
+            const style = document.getElementById("neko-enhancer-dark-theme");
+            if (!style || document.head.lastElementChild !== style) {
+                injectDarkTheme();
+            }
+        }).observe(document.head, { childList: true });
+    }
 
     // Chat Observer
     const PATTERNS = [

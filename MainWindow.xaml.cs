@@ -1047,6 +1047,12 @@ public partial class MainWindow : Window
     }
 
 
+    private void TitleBar_MouseRightButtonUp(object sender, MouseButtonEventArgs e)
+    {
+        Point screenPoint = PointToScreen(e.GetPosition(this));
+        SystemCommands.ShowSystemMenu(this, screenPoint);
+    }
+
     private void ToggleMaximize()
     {
         WindowState = WindowState == WindowState.Maximized ? WindowState.Normal : WindowState.Maximized;
@@ -1058,6 +1064,12 @@ public partial class MainWindow : Window
         if (e.Key == Key.F11)
         {
             ToggleFullscreen();
+            e.Handled = true;
+        }
+        else if (e.Key == Key.System && e.SystemKey == Key.Space)
+        {
+            Point screenPoint = PointToScreen(new Point(0, TitleBarRow.ActualHeight));
+            SystemCommands.ShowSystemMenu(this, screenPoint);
             e.Handled = true;
         }
     }

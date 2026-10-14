@@ -525,8 +525,7 @@
             };
 
             const tryMyMemory = async () => {
-                const randomEmail = `translate_bypass_${Math.floor(Math.random() * 99999)}@gmail.com`;
-                const r = await fetch(`https://api.mymemory.translated.net/get?q=${q}&langpair=${sl}|${tl}&de=${randomEmail}`);
+                const r = await fetch(`https://api.mymemory.translated.net/get?q=${q}&langpair=${sl}|${tl}`);
                 if (!r.ok) throw new Error(`HTTP ${r.status}`);
                 const mm = await r.json();
                 if (mm.responseStatus !== 200) throw new Error("MyMemory: " + mm.responseStatus);

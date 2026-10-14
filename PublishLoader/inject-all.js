@@ -29,6 +29,9 @@
         let script = document.createElement("script");
         script.src = managerURL + "?v=" + Date.now();
         script.async = false;
+        script.onerror = () => {
+            console.warn("BC Desktop: Remote Addon Manager could not be reached. Continuing in standalone mode.");
+        };
         target.appendChild(script);
         console.log("BC Desktop: Loaded Addon Manager remotely");
     }
