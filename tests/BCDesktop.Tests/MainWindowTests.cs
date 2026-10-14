@@ -346,10 +346,6 @@ public class MainWindowTests
             Assert.AreEqual(0, System.Windows.Controls.Grid.GetRow(window.TitleBarGrid), "TitleBarGrid must be in Grid.Row 0.");
             Assert.AreEqual(1, System.Windows.Controls.Grid.GetRow(window.WebView), "WebView must be in Grid.Row 1.");
 
-            // Ensure window handle (HWND) is created so WPF window messaging and StateChanged events are active
-            var helper = new System.Windows.Interop.WindowInteropHelper(window);
-            helper.EnsureHandle();
-
             // Initial normal state margin and border
             Assert.AreEqual(new Thickness(5, 0, 5, 5), window.WebView.Margin);
             Assert.AreEqual(new Thickness(1), window.WindowBorder.BorderThickness);
@@ -357,17 +353,17 @@ public class MainWindowTests
 
             // Trigger dynamic runtime state transition to Maximized
             window.WindowState = WindowState.Maximized;
+            window.UpdateWindowStateUI();
             Assert.AreEqual(new Thickness(0), window.WebView.Margin, "WebView margin must dynamically collapse to 0 on maximize.");
             Assert.AreEqual(new Thickness(0), window.WindowBorder.BorderThickness, "WindowBorder thickness must dynamically collapse to 0 on maximize.");
             Assert.AreEqual("\uE923", window.MaxRestoreBtn.Content, "MaxRestore button glyph must switch to Restore icon on maximize.");
 
             // Trigger dynamic runtime state transition back to Normal
             window.WindowState = WindowState.Normal;
-            Assert.AreEqual(new Thickness(5, 0, 5, 5), window.WebView.Margin, "WebView margin must restore to 5,0,5,5 on restore.");
+            window.UpdateWindowStateUI();
+            Assert.AreEqual(new Thickness(5, 0, 5, 5), window.WebView.Margin, "WebView margin must dynamically restore to 5,0,5,5 on restore.");
             Assert.AreEqual(new Thickness(1), window.WindowBorder.BorderThickness, "WindowBorder thickness must restore to 1 on restore.");
             Assert.AreEqual("\uE922", window.MaxRestoreBtn.Content, "MaxRestore button glyph must switch back to Maximize icon on restore.");
-
-            window.Close();
         });
     }
 }

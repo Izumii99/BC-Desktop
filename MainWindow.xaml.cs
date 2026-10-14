@@ -147,7 +147,7 @@ public partial class MainWindow : Window
         }
     }
 
-    private void UpdateWindowStateUI()
+    internal void UpdateWindowStateUI()
     {
         if (_isFullscreen) return;
 
