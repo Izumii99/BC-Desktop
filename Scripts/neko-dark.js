@@ -512,24 +512,34 @@
         if (!code?.trim() || isNekoModLoaded()) return;
         window._nekoRuntimeLoaded = true;
 
-        // Theme patches
-        code = code.replace(/rgba\(\s*255\s*,\s*255\s*,\s*255\s*,/g, "rgba(30, 24, 41,");
-        code = code.replace(/"#2f2f2f"|"#1a1a1a"/g, `"${P.text}"`);
-        code = code.replace(/"#e8e8e8"|"#dddddd"/g, `"${P.border}"`);
-        code = code.replace(/"#cccccc"/g, `"${P.borderAcc}"`);
-        
-        code = code.replace(/text:\s*"#[0-9a-fA-F]{6}"/gi, `text:"${P.text}"`);
-        code = code.replace(/soft:\s*"#[0-9a-fA-F]{6}"/gi, `soft:"${P.soft}"`);
-        code = code.replace(/panel:\s*"#[0-9a-fA-F]{6}"/gi, `panel:"${P.panel}"`);
+        const origCode = code;
+        try {
+            // Theme patches
+            code = code.replace(/rgba\(\s*255\s*,\s*255\s*,\s*255\s*,/g, "rgba(30, 24, 41,");
+            code = code.replace(/"#2f2f2f"|"#1a1a1a"/g, `"${P.text}"`);
+            code = code.replace(/"#e8e8e8"|"#dddddd"/g, `"${P.border}"`);
+            code = code.replace(/"#cccccc"/g, `"${P.borderAcc}"`);
+            
+            code = code.replace(/text:\s*"#[0-9a-fA-F]{6}"/gi, `text:"${P.text}"`);
+            code = code.replace(/soft:\s*"#[0-9a-fA-F]{6}"/gi, `soft:"${P.soft}"`);
+            code = code.replace(/panel:\s*"#[0-9a-fA-F]{6}"/gi, `panel:"${P.panel}"`);
 
-        code = code.replace(/"#00a8ff"|"#007aff"|"#0099ff"|"#1e90ff"|"#3b82f6"|"#2563eb"|"#00bcd4"|"#00acc1"/gi, `"${P.borderAcc}"`);
-        
-        code = code.replace(
-            /body\.bcn-enabled input,\s*body\.bcn-enabled textarea,\s*body\.bcn-enabled select/g,
-            "body.bcn-enabled #InputChat"
-        );
+            code = code.replace(/"#00a8ff"|"#007aff"|"#0099ff"|"#1e90ff"|"#3b82f6"|"#2563eb"|"#00bcd4"|"#00acc1"/gi, `"${P.borderAcc}"`);
+            
+            code = code.replace(
+                /body\.bcn-enabled input,\s*body\.bcn-enabled textarea,\s*body\.bcn-enabled select/g,
+                "body.bcn-enabled #InputChat"
+            );
 
-        new Function(code)();
+            new Function(code)();
+        } catch (patchErr) {
+            console.warn("[BC-Neko-Dark] Monkey-patching failed, executing unpatched runtime fallback:", patchErr);
+            try {
+                new Function(origCode)();
+            } catch (fatalErr) {
+                console.error("[BC-Neko-Dark] Fatal error executing Neko runtime:", fatalErr);
+            }
+        }
     }
 
     if (!isNekoModLoaded()) {

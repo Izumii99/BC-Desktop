@@ -366,5 +366,38 @@ public class MainWindowTests
             Assert.AreEqual("\uE922", window.MaxRestoreBtn.Content, "MaxRestore button glyph must switch back to Maximize icon on restore.");
         });
     }
+
+    [TestMethod]
+    public void JavaScriptFiles_PassSyntaxAndIntegrityChecks()
+    {
+        var jsFiles = Directory.GetFiles(Path.Combine(ProjectRoot, "Scripts"), "*.js")
+            .Concat(Directory.GetFiles(Path.Combine(ProjectRoot, "PublishLoader"), "*.js"))
+            .ToList();
+
+        Assert.IsTrue(jsFiles.Count >= 5, "Must find at least 5 JavaScript addon/loader scripts.");
+
+        foreach (var file in jsFiles)
+        {
+            string fileName = Path.GetFileName(file);
+            string content = File.ReadAllText(file);
+
+            Assert.IsTrue(content.Length > 50, $"Script '{fileName}' must not be empty or truncated.");
+
+            // Must not contain leftover git merge conflict markers
+            Assert.IsFalse(content.Contains("<<<<<<<"), $"Script '{fileName}' contains git conflict marker '<<<<<<<'.");
+            Assert.IsFalse(content.Contains("======="), $"Script '{fileName}' contains git conflict marker '======='.");
+            Assert.IsFalse(content.Contains(">>>>>>>"), $"Script '{fileName}' contains git conflict marker '>>>>>>>'.");
+
+            // Must not contain corrupted null bytes
+            Assert.IsFalse(content.Contains('\0'), $"Script '{fileName}' contains binary null bytes.");
+
+            // Must follow standard browser addon architecture: scoped IIFE wrapper (allowing userscript header comments)
+            string strippedHeader = Regex.Replace(content, @"^(?:\s*//[^\r\n]*\r?\n|\s*/\*.*?\*/)*", "", RegexOptions.Singleline).TrimStart();
+            Assert.IsTrue(strippedHeader.StartsWith("(function") || strippedHeader.StartsWith("(() =>"),
+                $"Script '{fileName}' must begin with scoped IIFE '(function' or '(() =>'.");
+            Assert.IsTrue(content.Trim().EndsWith("})();"), $"Script '{fileName}' must properly terminate with IIFE invocation '}})();'.");
+        }
+    }
 }
+
 

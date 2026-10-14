@@ -17,10 +17,24 @@ dotnet publish BC-Desktop.csproj -c Release -r win-x64 --self-contained false -o
 Write-Host "Building Standalone..."
 dotnet publish BC-Desktop.csproj -c Release -r win-x64 --self-contained true -o publish/standalone
 
+# Crash recovery check if a previous build was terminated prematurely
+if (Test-Path "BC-Desktop.csproj.bak") {
+    Copy-Item "BC-Desktop.csproj.bak" "BC-Desktop.csproj" -Force
+    Remove-Item "BC-Desktop.csproj.bak" -Force
+}
+if (Test-Path "MainWindow.xaml.bak") {
+    Copy-Item "MainWindow.xaml.bak" "MainWindow.xaml" -Force
+    Remove-Item "MainWindow.xaml.bak" -Force
+}
+
 $origCsproj = Get-Content "BC-Desktop.csproj" -Raw -Encoding UTF8
 $origXaml = Get-Content "MainWindow.xaml" -Raw -Encoding UTF8
 
 try {
+    # Create persistent backup files on disk to survive hard process termination
+    Copy-Item "BC-Desktop.csproj" "BC-Desktop.csproj.bak" -Force
+    Copy-Item "MainWindow.xaml" "MainWindow.xaml.bak" -Force
+
     Write-Host "Applying Hidden Changes..."
     $hiddenName = [string][char]0x3164
     $csproj = $origCsproj -replace "<ApplicationIcon>Assets\\app.ico</ApplicationIcon>", "<ApplicationIcon>Assets\transparent.ico</ApplicationIcon>"
@@ -46,8 +60,16 @@ try {
 }
 finally {
     Write-Host "Reverting Hidden Changes to original state..."
-    Set-Content "BC-Desktop.csproj" $origCsproj -Encoding UTF8
-    Set-Content "MainWindow.xaml" $origXaml -Encoding UTF8
+    if (Test-Path "BC-Desktop.csproj.bak") {
+        Move-Item "BC-Desktop.csproj.bak" "BC-Desktop.csproj" -Force
+    } else {
+        Set-Content "BC-Desktop.csproj" $origCsproj -Encoding UTF8
+    }
+    if (Test-Path "MainWindow.xaml.bak") {
+        Move-Item "MainWindow.xaml.bak" "MainWindow.xaml" -Force
+    } else {
+        Set-Content "MainWindow.xaml" $origXaml -Encoding UTF8
+    }
 
     Write-Host "Cleaning obj folder again..."
     Remove-Item -Path "obj" -Recurse -Force -ErrorAction SilentlyContinue

@@ -5,47 +5,88 @@
     function initGoogleTranslate() {
         if (document.getElementById("bc-google-translate-btn")) return;
 
-        if (!document.getElementById("tailwind-script")) {
-            const configScript = document.createElement("script");
-            configScript.innerHTML = `
-                window.tailwind = window.tailwind || {};
-                window.tailwind.config = {
-                  corePlugins: { preflight: false },
-                  important: '#translate-root',
-                  theme: {
-                    extend: {
-                      colors: {
-                        widget: {
-                          bg: '#161724',
-                          surface: '#0f1019',
-                          card: '#1b1b2a',
-                          border: '#292b3f',
-                          accent: '#8b5cf6',
-                          accentGlow: 'rgba(139, 92, 246, 0.45)',
-                          textMuted: '#71768e',
-                          textLight: '#9499af'
-                        }
-                      },
-                      boxShadow: {
-                        'glow-purple': '0 0 20px -2px rgba(147, 51, 234, 0.55)',
-                        'widget-depth': '0 25px 60px -15px rgba(0, 0, 0, 0.85), 0 0 0 1px rgba(255, 255, 255, 0.07)'
-                      }
-                    }
-                  }
-                };
-            `;
-            document.head.appendChild(configScript);
-
-            const script = document.createElement("script");
-            script.id = "tailwind-script";
-            script.src = "https://cdn.tailwindcss.com";
-            document.head.appendChild(script);
-        }
-
         if (!document.getElementById("translate-glassmorphic-styles")) {
             const style = document.createElement("style");
             style.id = "translate-glassmorphic-styles";
             style.innerHTML = `
+                /* Translate Floating Widget Static CSS (Zero Runtime Dependency) */
+                #bc-google-translate-btn {
+                    position: fixed;
+                    top: 10px;
+                    left: 10px;
+                    z-index: 999999;
+                    width: 48px;
+                    height: 48px;
+                    border-radius: 16px;
+                    background: linear-gradient(135deg, #9333ea, #4f46e5, #6b21a8);
+                    color: #ffffff;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    box-shadow: 0 0 20px -2px rgba(147, 51, 234, 0.55);
+                    border: 1px solid rgba(192, 132, 252, 0.4);
+                    cursor: pointer;
+                    transition: transform 0.2s ease, box-shadow 0.2s ease;
+                }
+                #bc-google-translate-btn:hover { transform: scale(1.05); }
+                #bc-google-translate-btn:active { transform: scale(0.95); }
+
+                #translate-root * { box-sizing: border-box; }
+                #translate-root .flex { display: flex; }
+                #translate-root .flex-col { flex-direction: column; }
+                #translate-root .items-center { align-items: center; }
+                #translate-root .justify-between { justify-content: space-between; }
+                #translate-root .justify-end { justify-content: flex-end; }
+                #translate-root .space-x-3 > * + * { margin-left: 12px; }
+                #translate-root .space-x-2 > * + * { margin-left: 8px; }
+                #translate-root .space-x-2\.5 > * + * { margin-left: 10px; }
+                #translate-root .space-x-1\.5 > * + * { margin-left: 6px; }
+                #translate-root .gap-1 { gap: 4px; }
+                #translate-root .gap-1\.5 { gap: 6px; }
+                #translate-root .gap-2 { gap: 8px; }
+                #translate-root .gap-3\.5 { gap: 14px; }
+                #translate-root .w-full { width: 100%; }
+                #translate-root .w-3\.5 { width: 14px; }
+                #translate-root .h-3\.5 { height: 14px; }
+                #translate-root .w-4 { width: 16px; }
+                #translate-root .h-4 { height: 16px; }
+                #translate-root .w-5 { width: 20px; }
+                #translate-root .h-5 { height: 20px; }
+                #translate-root .w-6 { width: 24px; }
+                #translate-root .h-6 { height: 24px; }
+                #translate-root .w-8 { width: 32px; }
+                #translate-root .h-8 { height: 32px; }
+                #translate-root .w-10 { width: 40px; }
+                #translate-root .h-10 { height: 40px; }
+                #translate-root .p-0 { padding: 0; }
+                #translate-root .p-1 { padding: 4px; }
+                #translate-root .p-3\.5 { padding: 14px; }
+                #translate-root .p-4 { padding: 16px; }
+                #translate-root .px-1 { padding-left: 4px; padding-right: 4px; }
+                #translate-root .px-2\.5 { padding-left: 10px; padding-right: 10px; }
+                #translate-root .px-3\.5 { padding-left: 14px; padding-right: 14px; }
+                #translate-root .py-0\.5 { padding-top: 2px; padding-bottom: 2px; }
+                #translate-root .py-1\.5 { padding-top: 6px; padding-bottom: 6px; }
+                #translate-root .pt-0\.5 { padding-top: 2px; }
+                #translate-root .pt-1 { padding-top: 4px; }
+                #translate-root .pt-2 { padding-top: 8px; }
+                #translate-root .pt-3 { padding-top: 12px; }
+                #translate-root .pb-0\.5 { padding-bottom: 2px; }
+                #translate-root .pb-1 { padding-bottom: 4px; }
+                #translate-root .mt-1 { margin-top: 4px; }
+                #translate-root .mt-2 { margin-top: 8px; }
+                #translate-root .mt-auto { margin-top: auto; }
+                #translate-root .mb-2 { margin-bottom: 8px; }
+                #translate-root .mr-1 { margin-right: 4px; }
+                #translate-root .ml-1 { margin-left: 4px; }
+                #translate-root .truncate { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+                #translate-root .hidden { display: none !important; }
+                #translate-root .shrink-0 { flex-shrink: 0; }
+                #translate-root .cursor-move { cursor: move; }
+                #translate-root .cursor-default { cursor: default; }
+                #translate-root .pointer-events-none { pointer-events: none; }
+                #translate-root .relative { position: relative; }
+
                 .bc-spell-error {
                   text-decoration: underline;
                   text-decoration-style: wavy;
@@ -56,15 +97,6 @@
                 .bc-translator-scroll::-webkit-scrollbar { width: 4px; }
                 .bc-translator-scroll::-webkit-scrollbar-track { background: transparent; }
                 .bc-translator-scroll::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 4px; }
-
-                /* Prevent Tailwind CDN preflight from leaking to game inputs */
-                input:not(#translate-root *), 
-                textarea:not(#translate-root *), 
-                select:not(#translate-root *), 
-                button:not(#translate-root *) {
-                    line-height: normal !important;
-                    font-family: Arial, sans-serif !important;
-                }
 
                 /* Dedicated class for widget textareas — does not touch BC game styles */
                 html body #translate-widget-container .bc-widget-textarea {
