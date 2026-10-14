@@ -378,6 +378,12 @@ public partial class MainWindow : Window
                         _newReleaseUrl = htmlUrl;
                         TitleLabel.ToolTip = $"New desktop release available: {tag}\nClick to view release notes";
                         TitleLabel.Cursor = Cursors.Hand;
+                        if (UpdateBadge != null && UpdateBadgeText != null)
+                        {
+                            UpdateBadgeText.Text = $"Update {tag}";
+                            UpdateBadge.ToolTip = $"New desktop release available: {tag}\nClick to view release notes";
+                            UpdateBadge.Visibility = Visibility.Visible;
+                        }
                     };
 
                     if (Dispatcher.CheckAccess())
@@ -435,25 +441,49 @@ public partial class MainWindow : Window
         }
         catch { }
 
-        var options = new CoreWebView2EnvironmentOptions
+        try
         {
-            AdditionalBrowserArguments =
-                "--disable-features=Translate,OptimizationHints,MediaRouter,DialMediaRouteProvider,SpareRendererForSitePerProcess " +
-                "--disable-background-networking " +
-                "--disable-component-update " +
-                "--disable-domain-reliability " +
-                "--disable-sync " +
-                "--enable-features=CalculateNativeWinOcclusion " +
-                "--js-flags=\"--max-old-space-size=768\""
-        };
+            var options = new CoreWebView2EnvironmentOptions
+            {
+                AdditionalBrowserArguments =
+                    "--disable-features=Translate,OptimizationHints,MediaRouter,DialMediaRouteProvider,SpareRendererForSitePerProcess " +
+                    "--disable-background-networking " +
+                    "--disable-component-update " +
+                    "--disable-domain-reliability " +
+                    "--disable-sync " +
+                    "--enable-features=CalculateNativeWinOcclusion " +
+                    "--js-flags=\"--max-old-space-size=768\""
+            };
 
-        var env = await CoreWebView2Environment.CreateAsync(
-            browserExecutableFolder: null,
-            userDataFolder: userDataFolder,
-            options: options);
+            var env = await CoreWebView2Environment.CreateAsync(
+                browserExecutableFolder: null,
+                userDataFolder: userDataFolder,
+                options: options);
 
-        _resolvedUrl = await urlTask;
-        await WebView.EnsureCoreWebView2Async(env);
+            _resolvedUrl = await urlTask;
+            await WebView.EnsureCoreWebView2Async(env);
+        }
+        catch (Exception ex)
+        {
+            var res = MessageBox.Show(
+                $"Microsoft Edge WebView2 Runtime is required but could not be initialized:\n\n{ex.Message}\n\nWould you like to open the official download page?",
+                "WebView2 Runtime Required",
+                MessageBoxButton.YesNo,
+                MessageBoxImage.Warning);
+
+            if (res == MessageBoxResult.Yes)
+            {
+                try
+                {
+                    Process.Start(new ProcessStartInfo
+                    {
+                        FileName = "https://go.microsoft.com/fwlink/p/?LinkId=2124703",
+                        UseShellExecute = true
+                    });
+                }
+                catch { }
+            }
+        }
     }
 
     private string _resolvedUrl = FallbackUrl;

@@ -94,6 +94,24 @@
                            FontFamily="Segoe UI"
                            VerticalAlignment="Center"
                            MouseLeftButtonUp="TitleLabel_MouseLeftButtonUp"/>
+                <Border x:Name="UpdateBadge"
+                        Visibility="Collapsed"
+                        Background="#2d1b4e"
+                        BorderBrush="#a855f7"
+                        BorderThickness="1"
+                        CornerRadius="4"
+                        Margin="8,0,0,0"
+                        Padding="6,1,6,1"
+                        Cursor="Hand"
+                        MouseLeftButtonUp="TitleLabel_MouseLeftButtonUp">
+                    <TextBlock x:Name="UpdateBadgeText"
+                               Text="Update"
+                               Foreground="#d8b4fe"
+                               FontSize="10"
+                               FontFamily="Segoe UI"
+                               FontWeight="SemiBold"
+                               VerticalAlignment="Center"/>
+                </Border>
             </StackPanel>
 
             <StackPanel Grid.Column="1" Orientation="Horizontal">

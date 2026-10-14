@@ -45,6 +45,7 @@ public class MainWindowTests
         // Essential controls and handlers must be present
         StringAssert.Contains(xaml, "x:Name=\"WebView\"", "WebView control must be defined with x:Name='WebView'.");
         StringAssert.Contains(xaml, "x:Name=\"TitleLabel\"", "TitleLabel must exist for window captioning.");
+        StringAssert.Contains(xaml, "x:Name=\"UpdateBadge\"", "UpdateBadge must exist for unobtrusive release notifications.");
         StringAssert.Contains(xaml, "MinimizeBtn_Click", "Minimize button handler must exist.");
         StringAssert.Contains(xaml, "MaxRestoreBtn", "MaxRestoreBtn must exist.");
         StringAssert.Contains(xaml, "CloseBtn_Click", "Close button handler must exist.");
@@ -432,6 +433,7 @@ public class MainWindowTests
             checkTask.Wait(500);
 
             Assert.IsNull(window.TitleLabel.ToolTip, "Stealth mode must strictly suppress any update tooltip or notice.");
+            Assert.AreEqual(Visibility.Collapsed, window.UpdateBadge.Visibility, "Stealth mode must strictly keep UpdateBadge collapsed.");
         });
     }
 
