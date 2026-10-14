@@ -1,10 +1,11 @@
 ### Fixes & Improvements:
 
-- **Immersive Fullscreen & Window Polish:** Press `F11` at any time to toggle borderless fullscreen mode. Maximizing, dragging across different monitor scalings, and resizing now work seamlessly with sharp text rendering and a subtle window border in windowed mode.
-- **Smooth Chat & Typing Experience:** Seamless typing focus across game chat, dialog boxes, and addon chat windows. Supports multiline chat (`Shift + Enter`), clean text unselection, and reliable `Ctrl + C` copying across all keyboard layouts.
-- **Lower Background CPU & Memory Usage:** Automatically throttles to a gentle 15 FPS and frees up background RAM when Alt-Tabbed or minimized, keeping your device cool and battery-efficient without disconnecting your session. Fast chat rooms run significantly lighter and smoother.
-- **Crash Auto-Recovery & Stability:** Built-in safeguards automatically recover and reload frozen game pages with crash-loop protection. Cleaned up addon manager icons and set legacy mod loaders to off by default.
-- **Built-in Quality Assurance:** Automated test suites verify native 2:1 canvas ratios and core window rules before every release.
+- **Immersive Fullscreen & Window Sizing:** Press `F11` at any time to toggle borderless fullscreen mode. Maximizing the game now cleanly fills your display without border gaps, and dragging maximized windows down restores smoothly across all monitor resolutions and DPI scaling factors (125%, 150%, 200%).
+- **Smooth Chat & Typing Experience:** Multiline chat via `Shift + Enter` works naturally without losing your cursor. Seamless focus handling allows clicking between the game chat, dialog boxes, and addon chat windows without focus fighting. Copying with `Ctrl + C` now works reliably across all international keyboard layouts.
+- **Background Battery & RAM Optimization:** When Alt-Tabbed, redraws automatically throttle to a gentle 15 FPS to cut CPU heat and battery usage while preserving your session, timers, and WebSocket connections (any custom graphics limit is always respected). Idle RAM is actively trimmed, and crowded chat rooms run significantly lighter.
+- **In-App Desktop Release Checker:** The client now silently checks GitHub for newer desktop updates on startup and displays an unobtrusive indicator on the title bar with a direct link to release notes (strictly suppressed in stealth mode).
+- **Crash Auto-Recovery & Developer Tools:** Built-in safeguards automatically recover and reload frozen game pages with crash-loop protection. Press `F12` to open the Chromium Developer Tools directly for quick troubleshooting and addon development.
+- **Visual Polish & Quality Assurance:** Added a subtle 1-pixel border for windowed contrast, crisp ClearType text rendering, red hover highlights for the Close button, and an expanded 20-test automated validation suite.
 
 ### Downloads:
 

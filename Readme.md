@@ -23,7 +23,9 @@ A minimal native desktop wrapper for BC, built with **WPF** and **.NET 8**. Uses
 
 - **Auto-detects the latest game version** on every launch
 - **OTA (Over-the-Air) Remote Loader**: All addons and scripts are fetched automatically from GitHub on startup. You never need to re-download the desktop app just to get script updates!
+- **Silent Release Checker**: Background check for newer desktop releases with unobtrusive title bar notifications
 - **Borderless custom title bar** with seamless drag, minimize, maximize, and close
+- **Immersive Fullscreen (F11)** and **Chromium DevTools (F12)** keyboard shortcuts
 - **Sleeping Tabs (Suspend on minimize)** to drastically reduce RAM while in background
 - **Multi-monitor support** with proper DPI scaling bounds
 - **Discreet / Stealth** design for Task Manager and Taskbar
@@ -323,13 +325,13 @@ dotnet test
 **Option 1: Lightweight (~10MB, requires .NET 8 Runtime installed)**
 
 ```powershell
-dotnet publish -c Release -r win-x64 --self-contained false -p:PublishSingleFile=true -o .\publish\Lightweight
+dotnet publish BC-Desktop.csproj -c Release -r win-x64 --self-contained false -p:PublishSingleFile=true -o .\publish\Lightweight
 ```
 
 **Option 2: Standalone (~172MB, fully self-contained)**
 
 ```powershell
-dotnet publish -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -o .\publish\Standalone
+dotnet publish BC-Desktop.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -o .\publish\Standalone
 ```
 
 ## Project Structure
@@ -338,11 +340,12 @@ dotnet publish -c Release -r win-x64 --self-contained true -p:PublishSingleFile=
 BC-Desktop.sln      — Solution file uniting application and test projects
 BC-Desktop.csproj   — Main client build configuration
 App.xaml / .cs      — Entry point & global settings
-MainWindow.xaml     — Borderless window layout
-MainWindow.xaml.cs  — WebView2 init, version detection, memory management
+MainWindow.xaml     — Borderless window layout & controls
+MainWindow.xaml.cs  — WebView2 init, version detection, memory optimization, DPI handling
+RELEASE_NOTES.md    — Detailed user-facing changelog and release history
 Assets/             — Application icons and visual assets
 Scripts/            — Mod/addon scripts directory
 PublishLoader/      — Remote loader bundle for OTA distribution
 tests/              — Automated unit test suite (MSTest)
-.github/workflows/  — CI PR validation & Release automation workflows
+.github/workflows/  — CI PR validation & release automation workflows
 ```
