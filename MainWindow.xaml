@@ -92,7 +92,8 @@
                            Foreground="#dddddd"
                            FontSize="12"
                            FontFamily="Segoe UI"
-                           VerticalAlignment="Center"/>
+                           VerticalAlignment="Center"
+                           MouseLeftButtonUp="TitleLabel_MouseLeftButtonUp"/>
             </StackPanel>
 
             <StackPanel Grid.Column="1" Orientation="Horizontal">

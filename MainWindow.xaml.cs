@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.IO;
 using System.Net.Http;
 using System.Runtime.InteropServices;
@@ -313,9 +314,109 @@ public partial class MainWindow : Window
         return _lastKnownGoodUrl;
     }
 
+    internal const string CurrentAppVersion = "6.0";
+    internal const string GitHubRepo = "Izumii99/BC-Desktop";
+    private static string? _newReleaseUrl;
+
+    internal static bool IsNewerVersion(string latestTag, string currentVersion)
+    {
+        if (string.IsNullOrWhiteSpace(latestTag) || string.IsNullOrWhiteSpace(currentVersion))
+            return false;
+
+        string cleanLatest = latestTag.Trim().TrimStart('v', 'V');
+        string cleanCurrent = currentVersion.Trim().TrimStart('v', 'V');
+
+        if (Version.TryParse(cleanLatest, out var vLatest) && Version.TryParse(cleanCurrent, out var vCurrent))
+        {
+            return vLatest > vCurrent;
+        }
+
+        var latestParts = cleanLatest.Split('.').Select(p => int.TryParse(p, out int n) ? n : 0).ToList();
+        var currentParts = cleanCurrent.Split('.').Select(p => int.TryParse(p, out int n) ? n : 0).ToList();
+        int maxLen = Math.Max(latestParts.Count, currentParts.Count);
+        for (int i = 0; i < maxLen; i++)
+        {
+            int l = i < latestParts.Count ? latestParts[i] : 0;
+            int c = i < currentParts.Count ? currentParts[i] : 0;
+            if (l > c) return true;
+            if (l < c) return false;
+        }
+        return false;
+    }
+
+    internal async Task CheckForAppUpdatesAsync(HttpClient? httpClient = null)
+    {
+        if (string.IsNullOrEmpty(_originalTitleLabel)) return;
+
+        try
+        {
+            using var http = httpClient != null ? null : new HttpClient { Timeout = TimeSpan.FromSeconds(3) };
+            var client = httpClient ?? http!;
+            if (client.DefaultRequestHeaders.UserAgent.Count == 0)
+            {
+                client.DefaultRequestHeaders.UserAgent.ParseAdd("BC-Desktop-Client");
+            }
+
+            using var res = await client.GetAsync($"https://api.github.com/repos/{GitHubRepo}/releases/latest");
+            if (!res.IsSuccessStatusCode) return;
+
+            using var stream = await res.Content.ReadAsStreamAsync();
+            using var doc = await System.Text.Json.JsonDocument.ParseAsync(stream);
+
+            if (doc.RootElement.TryGetProperty("tag_name", out var tagElem))
+            {
+                string? tag = tagElem.GetString();
+                if (!string.IsNullOrEmpty(tag) && IsNewerVersion(tag, CurrentAppVersion))
+                {
+                    string htmlUrl = doc.RootElement.TryGetProperty("html_url", out var urlElem)
+                        ? (urlElem.GetString() ?? $"https://github.com/{GitHubRepo}/releases/latest")
+                        : $"https://github.com/{GitHubRepo}/releases/latest";
+
+                    Action applyUi = () =>
+                    {
+                        if (string.IsNullOrEmpty(_originalTitleLabel)) return;
+                        _newReleaseUrl = htmlUrl;
+                        TitleLabel.ToolTip = $"New desktop release available: {tag}\nClick to view release notes";
+                        TitleLabel.Cursor = Cursors.Hand;
+                    };
+
+                    if (Dispatcher.CheckAccess())
+                    {
+                        applyUi();
+                    }
+                    else
+                    {
+                        await Dispatcher.InvokeAsync(applyUi);
+                    }
+                }
+            }
+        }
+        catch
+        {
+            // Non-blocking fire-and-forget: network errors must never disturb app startup
+        }
+    }
+
+    private void TitleLabel_MouseLeftButtonUp(object sender, MouseButtonEventArgs e)
+    {
+        if (!string.IsNullOrEmpty(_newReleaseUrl))
+        {
+            try
+            {
+                Process.Start(new ProcessStartInfo
+                {
+                    FileName = _newReleaseUrl,
+                    UseShellExecute = true
+                });
+            }
+            catch { }
+        }
+    }
+
     private async void InitWebViewAsync()
     {
         var urlTask = DetectLatestUrlAsync();
+        _ = CheckForAppUpdatesAsync();
 
         string userDataFolder = Path.Combine(
             Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),

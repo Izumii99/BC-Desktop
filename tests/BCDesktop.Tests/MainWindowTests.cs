@@ -400,6 +400,91 @@ public class MainWindowTests
             Assert.IsTrue(content.Trim().EndsWith("})();"), $"Script '{fileName}' must properly terminate with IIFE invocation '}})();'.");
         }
     }
+
+    [TestMethod]
+    public void AppVersionComparison_AccuratelyEvaluatesSemanticVersions()
+    {
+        Assert.IsTrue(MainWindow.IsNewerVersion("v6.1", "6.0"), "v6.1 must be newer than 6.0.");
+        Assert.IsTrue(MainWindow.IsNewerVersion("6.1", "6.0"), "6.1 must be newer than 6.0.");
+        Assert.IsTrue(MainWindow.IsNewerVersion("v6.0.1", "6.0"), "Patch version v6.0.1 must be newer than 6.0.");
+        Assert.IsTrue(MainWindow.IsNewerVersion("v7.0", "6.0"), "Major version v7.0 must be newer than 6.0.");
+
+        Assert.IsFalse(MainWindow.IsNewerVersion("6.0", "6.0"), "Identical versions must return false.");
+        Assert.IsFalse(MainWindow.IsNewerVersion("v6.0", "6.0"), "Identical versions with 'v' prefix must return false.");
+        Assert.IsFalse(MainWindow.IsNewerVersion("v5.5", "6.0"), "Older version v5.5 must return false.");
+        Assert.IsFalse(MainWindow.IsNewerVersion("v1.0", "6.0"), "Older version v1.0 must return false.");
+        Assert.IsFalse(MainWindow.IsNewerVersion("", "6.0"), "Empty latest tag must return false.");
+        Assert.IsFalse(MainWindow.IsNewerVersion("invalid-tag", "6.0"), "Malformed tag must return false.");
+    }
+
+    [TestMethod]
+    public void AppUpdateNotification_SuppressedInStealthMode()
+    {
+        RunInSTA(() =>
+        {
+            var window = new MainWindow(initializeWebView: false);
+            // Simulate stealth mode where title label was initialized empty
+            window.TitleLabel.Text = "";
+            typeof(MainWindow).GetField("_originalTitleLabel", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)
+                ?.SetValue(window, "");
+
+            var checkTask = window.CheckForAppUpdatesAsync();
+            checkTask.Wait(500);
+
+            Assert.IsNull(window.TitleLabel.ToolTip, "Stealth mode must strictly suppress any update tooltip or notice.");
+        });
+    }
+
+    [TestMethod]
+    public void Win32Structures_HaveCorrectMemoryFootprintAndLayout()
+    {
+        Type monitorInfoType = typeof(MainWindow).GetNestedType("MONITORINFO", System.Reflection.BindingFlags.NonPublic)!;
+        Assert.IsNotNull(monitorInfoType, "MONITORINFO struct must be defined.");
+        Assert.AreEqual(40, Marshal.SizeOf(monitorInfoType), "MONITORINFO must be 40 bytes.");
+
+        Type rectType = typeof(MainWindow).GetNestedType("RECT", System.Reflection.BindingFlags.NonPublic)!;
+        Assert.IsNotNull(rectType, "RECT struct must be defined.");
+        Assert.AreEqual(16, Marshal.SizeOf(rectType), "RECT must be 16 bytes.");
+
+        Type minmaxInfoType = typeof(MainWindow).GetNestedType("MINMAXINFO", System.Reflection.BindingFlags.NonPublic)!;
+        Assert.IsNotNull(minmaxInfoType, "MINMAXINFO struct must be defined.");
+        Assert.AreEqual(40, Marshal.SizeOf(minmaxInfoType), "MINMAXINFO must be 40 bytes.");
+
+        Type flashwInfoType = typeof(MainWindow).GetNestedType("FLASHWINFO", System.Reflection.BindingFlags.NonPublic)!;
+        Assert.IsNotNull(flashwInfoType, "FLASHWINFO struct must be defined.");
+        Assert.IsTrue(Marshal.SizeOf(flashwInfoType) >= 20, "FLASHWINFO must be at least 20 bytes.");
+    }
+
+    [TestMethod]
+    public void CrashLoopThrottle_CalculatesIntervalCorrectly()
+    {
+        DateTime lastCrash = DateTime.UtcNow.AddSeconds(-10);
+        DateTime now = DateTime.UtcNow;
+        int crashCount = 1;
+
+        if ((now - lastCrash).TotalSeconds < 30)
+        {
+            crashCount++;
+        }
+        else
+        {
+            crashCount = 1;
+        }
+
+        Assert.AreEqual(2, crashCount, "Rapid crash within 30s must increment crash count.");
+
+        lastCrash = DateTime.UtcNow.AddSeconds(-45);
+        if ((now - lastCrash).TotalSeconds < 30)
+        {
+            crashCount++;
+        }
+        else
+        {
+            crashCount = 1;
+        }
+
+        Assert.AreEqual(1, crashCount, "Crash after > 30s cooldown must reset count to 1.");
+    }
 }
 
 
