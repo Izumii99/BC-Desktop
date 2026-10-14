@@ -212,6 +212,7 @@ public class MainWindowTests
         StringAssert.Contains(nekoDarkContent, "_bcNekoDarkInjected", "neko-dark.js must contain singleton guard.");
         StringAssert.Contains(nekoDarkContent, "hookBcModSdk", "neko-dark.js must guard bcModSdk against duplicate unloading.");
         StringAssert.Contains(nekoDarkContent, "isNekoModLoaded", "neko-dark.js must verify existing Neko mod state before injecting runtime.");
+        StringAssert.Contains(nekoDarkContent, "#bcn-toast", "neko-dark.js must include dark theme overrides for #bcn-toast popup.");
 
         // 4. If tester scripts directory exists, enforce whitelist rule strictly
         string testerScripts = Path.Combine(ProjectRoot, "publish", "tester", "Scripts");

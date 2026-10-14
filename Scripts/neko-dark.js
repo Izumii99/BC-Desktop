@@ -351,6 +351,28 @@
                 color: #c07080 !important;
                 text-shadow: none !important;
             }
+
+            /* Neko Toast / Mini Notification Popup (#bcn-toast) */
+            html body #bcn-toast {
+                background: ${P.panel} !important;
+                background-color: ${P.panel} !important;
+                border: 2px solid ${P.whisperBdr} !important;
+                color: ${P.whisperTxt} !important;
+                box-shadow: 0 12px 28px rgba(0, 0, 0, 0.65), 0 0 16px rgba(152, 88, 204, 0.35) !important;
+                backdrop-filter: blur(12px) !important;
+                -webkit-backdrop-filter: blur(12px) !important;
+                text-shadow: 0 1px 3px rgba(0, 0, 0, 0.8) !important;
+            }
+
+            /* Action composer warnings & blank wheel states */
+            html body .bcn-composer-warning {
+                background: #2a1518 !important;
+                border: 1px solid #7a3030 !important;
+                color: #f0a0a0 !important;
+            }
+            html body .bcn-wheel-blank {
+                box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.1), 0 3px 0 var(--bcn-glow) !important;
+            }
         `;
         if (document.head.lastElementChild !== style) {
             document.head.appendChild(style);
