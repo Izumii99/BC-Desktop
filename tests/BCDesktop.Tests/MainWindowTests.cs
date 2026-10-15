@@ -487,6 +487,26 @@ public class MainWindowTests
 
         Assert.AreEqual(1, crashCount, "Crash after > 30s cooldown must reset count to 1.");
     }
+
+    [TestMethod]
+    public void FocusAndInputIntegrity_EnterAndScrollGuardsAreEnforced()
+    {
+        string csPath = Path.Combine(ProjectRoot, "MainWindow.xaml.cs");
+        string code = File.ReadAllText(csPath);
+
+        // Enter key in editable controls must not be blocked or blurred
+        StringAssert.Contains(code, "isInteractive(active) || isInteractive(e.target)", "Enter key handler must exempt interactive elements.");
+        StringAssert.Contains(code, "function isTextInput(el)", "isTextInput helper must be defined.");
+        StringAssert.Contains(code, "function isInteractive(el)", "isInteractive helper must be defined.");
+
+        // bcRunFocusCrawler must filter out non-text inputs (checkboxes, radio buttons)
+        StringAssert.Contains(code, "!isTextInput(el)", "bcRunFocusCrawler must exclude non-text inputs like checkboxes.");
+
+        // Preference screens and scroll boxes must not have focus hijacked on mouseup
+        StringAssert.Contains(code, ".scroll-box", "mouseup must protect scroll-box containers from focus stealing.");
+        StringAssert.Contains(code, "[id^=\"\"preference-\"\"]", "mouseup must protect preference screen containers.");
+    }
 }
+
 
 

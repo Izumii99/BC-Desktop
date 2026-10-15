@@ -605,6 +605,24 @@ public partial class MainWindow : Window
         string copyScript = @"
             let origFocus = HTMLElement.prototype.focus;
 
+            function isTextInput(el) {
+                if (!el) return false;
+                if (el.tagName === 'TEXTAREA' || el.isContentEditable) return true;
+                if (el.tagName === 'INPUT') {
+                    let type = (el.type || 'text').toLowerCase();
+                    return type === 'text' || type === 'search' || type === 'password' || 
+                           type === 'email' || type === 'number' || type === 'url' || type === 'tel';
+                }
+                return false;
+            }
+
+            function isInteractive(el) {
+                if (!el) return false;
+                if (isTextInput(el)) return true;
+                let tag = el.tagName;
+                return tag === 'INPUT' || tag === 'SELECT' || tag === 'BUTTON' || tag === 'OPTION';
+            }
+
             document.addEventListener('keydown', (e) => {
                 if (e.key === 'F11' || e.keyCode === 122) {
                     window.chrome.webview.postMessage('TOGGLE_FULLSCREEN');
@@ -622,27 +640,24 @@ public partial class MainWindow : Window
                         if (e.shiftKey) {
                             window.bcFocusMemory = ic;
                         }
+                    } else if (isInteractive(active) || isInteractive(e.target)) {
+                        // User is inside an interactive element (e.g. textarea#DescriptionInput, search input, dropdown, button)
+                        // Never intercept or preventDefault: native Enter/Shift+Enter must work untouched!
+                        return;
                     } else {
-                        // User is OUTSIDE InputChat (e.g. text in chat log or elsewhere is selected / blocked)
-                        // Both Enter and Shift+Enter MUST clear any selection block and pull focus down into InputChat!
-                        e.preventDefault();
+                        // User is OUTSIDE any input, textarea, button, or select (e.g. clicking on canvas or chat log)
+                        // Both Enter and Shift+Enter clear selection and pull focus to InputChat if visible!
+                        if (ic && (ic.offsetParent !== null || ic.offsetWidth > 0)) {
+                            e.preventDefault();
 
-                        try {
-                            let sel = window.getSelection ? window.getSelection() : null;
-                            if (sel) {
-                                if (sel.removeAllRanges) sel.removeAllRanges();
-                                if (sel.empty) sel.empty();
-                            }
-                        } catch (err) {}
-
-                        if (active && (active.tagName === 'INPUT' || active.tagName === 'TEXTAREA')) {
                             try {
-                                active.selectionStart = active.selectionEnd;
-                                if (active !== ic && active.blur) active.blur();
-                            } catch(err) {}
-                        }
+                                let sel = window.getSelection ? window.getSelection() : null;
+                                if (sel) {
+                                    if (sel.removeAllRanges) sel.removeAllRanges();
+                                    if (sel.empty) sel.empty();
+                                }
+                            } catch (err) {}
 
-                        if (ic) {
                             window.bcFocusMemory = ic;
                             origFocus.call(ic);
                             try {
@@ -676,13 +691,6 @@ public partial class MainWindow : Window
                 }
             }, true);
 
-            function isEditable(el) {
-                if (!el) return false;
-                if (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA') return true;
-                if (el.isContentEditable) return true;
-                return false;
-            }
-
             function isChatArea(el) {
                 if (!el) return false;
                 if (el.id === 'InputChat') return true;
@@ -701,6 +709,10 @@ public partial class MainWindow : Window
                     let id = (curr.id || '').toLowerCase();
                     let cls = (typeof curr.className === 'string' ? curr.className : '').toLowerCase();
                     
+                    // Native BC preference screens, scroll boxes, and inputs are NOT addon containers
+                    if (id.startsWith('preference') || cls.includes('preference') || cls.includes('scroll-box')) return null;
+                    if (id === 'descriptioninput') return null;
+
                     if (id.startsWith('lce-') || cls.includes('lce-') ||
                         id.includes('bcx') || cls.includes('bcx') ||
                         id.includes('fusam') || cls.includes('fusam') ||
@@ -714,7 +726,9 @@ public partial class MainWindow : Window
                     let z = parseInt(window.getComputedStyle(curr).zIndex, 10);
                     let pos = window.getComputedStyle(curr).position;
                     if (!isNaN(z) && z >= 1 && (pos === 'fixed' || pos === 'absolute')) {
-                        return curr;
+                        if (!id.startsWith('preference') && !cls.includes('preference') && !cls.includes('scroll-box')) {
+                            return curr;
+                        }
                     }
                     curr = curr.parentElement;
                 }
@@ -722,7 +736,7 @@ public partial class MainWindow : Window
             }
 
             document.addEventListener('focusin', (e) => {
-                if (isEditable(e.target)) {
+                if (isInteractive(e.target)) {
                     window.bcFocusMemory = e.target;
                     if (isChatArea(e.target)) {
                         window.bcUserPrefersGameChat = true;
@@ -750,23 +764,21 @@ public partial class MainWindow : Window
                     // User clicked inside an addon dialog/container: switch preference to addon!
                     window.bcUserPrefersGameChat = false;
                     window.bcForceUnfocusSearch = false;
-                    if (isEditable(e.target)) {
+                    if (isInteractive(e.target)) {
                         window.bcFocusMemory = e.target;
                     } else {
-                        // Softly resolve the best input inside this clicked addon container (e.g. selecting friend in LianChat)
+                        // Softly resolve the best text input inside this clicked addon container (e.g. selecting friend in LianChat)
                         setTimeout(() => {
                             if (!window.bcUserPrefersGameChat) {
-                                let ta = addonBox.querySelector('textarea:not([disabled]):not([readonly])');
-                                let inp = addonBox.querySelector('input:not([type=button]):not([type=submit]):not([disabled]):not([readonly])');
-                                let targetInput = ta || inp;
-                                if (targetInput && !targetInput.disabled) {
+                                let targetInput = addonBox.querySelector('textarea:not([disabled]):not([readonly]), input[type=text]:not([disabled]):not([readonly]), input[type=search]:not([disabled]):not([readonly]), input:not([type]):not([disabled]):not([readonly])');
+                                if (targetInput) {
                                     window.bcFocusMemory = targetInput;
                                     origFocus.call(targetInput);
                                 }
                             }
                         }, 40);
                     }
-                } else if (isEditable(e.target)) {
+                } else if (isInteractive(e.target)) {
                     window.bcFocusMemory = e.target;
                     window.bcForceUnfocusSearch = false;
                     window.bcUserPrefersGameChat = false;
@@ -783,15 +795,20 @@ public partial class MainWindow : Window
                 setTimeout(() => {
                     if (window.bcIsMouseDown) return;
                     let active = document.activeElement;
-                    if (active && isEditable(active)) {
+                    if (active && isInteractive(active)) {
                         window.bcFocusMemory = active;
                         return;
                     }
                     if (window.getSelection().toString().length > 0) return;
                     
                     if (window.bcForceUnfocusSearch) return;
+
+                    // If user clicked inside a DOM scroll box or preference grid or non-chat container, do NOT steal focus!
+                    if (e.target && e.target.closest && e.target.closest('.scroll-box, [id^=""preference-""], .preference-settings-grid, select, option')) {
+                        return;
+                    }
                     
-                    let target = (window.bcFocusMemory && isEditable(window.bcFocusMemory)) 
+                    let target = (window.bcFocusMemory && isInteractive(window.bcFocusMemory)) 
                         ? window.bcFocusMemory 
                         : (window.bcRunFocusCrawler ? window.bcRunFocusCrawler() : null);
                     if (target && document.activeElement !== target) {
@@ -804,11 +821,11 @@ public partial class MainWindow : Window
                 if (window.bcSelectionTimeout) clearTimeout(window.bcSelectionTimeout);
                 window.bcSelectionTimeout = setTimeout(() => {
                     let active = document.activeElement;
-                    if (active && (active.tagName === 'INPUT' || active.tagName === 'TEXTAREA' || active.isContentEditable)) return;
+                    if (active && isInteractive(active)) return;
                     if (window.getSelection().toString().length > 0) return;
                     if (window.bcForceUnfocusSearch) return;
                     
-                    let target = (window.bcFocusMemory && isEditable(window.bcFocusMemory)) 
+                    let target = (window.bcFocusMemory && isInteractive(window.bcFocusMemory)) 
                         ? window.bcFocusMemory 
                         : (window.bcRunFocusCrawler ? window.bcRunFocusCrawler() : null);
                     if (target && document.activeElement !== target) {
@@ -855,6 +872,7 @@ public partial class MainWindow : Window
                 for (let i = 0; i < inputs.length; i++) {
                     let el = inputs[i];
                     if (el.disabled || el.readOnly) continue;
+                    if (!isTextInput(el)) continue; // STRICTLY text-typing inputs: exclude checkboxes, radios, buttons, etc.
                     
                     let rect = el.getBoundingClientRect();
                     if (rect.width === 0 || rect.height === 0) continue;
@@ -863,7 +881,7 @@ public partial class MainWindow : Window
                     if (style.visibility === 'hidden' || style.opacity === '0' || style.display === 'none') continue;
                     
                     let z = getHighestZ(el);
-                    let score = z * 1000 + i;
+                    let score = z * 1000;
                     
                     if (el.id === 'InputChat' || el.id === 'TextAreaChatLog') score -= 500000;
                     
@@ -879,12 +897,12 @@ public partial class MainWindow : Window
                     return bestInput;
                 }
 
-                if (window.bcUserPrefersGameChat) {
-                    let ic = document.getElementById('InputChat');
-                    if (ic) return ic;
+                let ic = document.getElementById('InputChat');
+                if (ic && (ic.offsetParent !== null || ic.offsetWidth > 0)) {
+                    return ic;
                 }
 
-                return document.getElementById('InputChat');
+                return null;
             };
 
             let patchInterval = setInterval(() => {
@@ -906,7 +924,7 @@ public partial class MainWindow : Window
                         if (window.bcIsMouseDown && !isLayeringInput) return;
                         
                         let active = document.activeElement;
-                        let isUserInAnotherInput = active && (active.tagName === 'INPUT' || active.tagName === 'TEXTAREA' || active.isContentEditable) && active !== targetEl;
+                        let isUserInAnotherInput = active && isInteractive(active) && active !== targetEl;
 
                         // Only prevent background InputChat refocusing from hijacking user away from active inputs/search boxes
                         if (ID === 'InputChat' && isUserInAnotherInput) {
@@ -948,7 +966,7 @@ public partial class MainWindow : Window
                     if (currentIsLayering && !isLayeringInput) return;
 
                     let active = document.activeElement;
-                    let isUserInAnotherInput = active && (active.tagName === 'INPUT' || active.tagName === 'TEXTAREA' || active.isContentEditable) && active !== this;
+                    let isUserInAnotherInput = active && isInteractive(active) && active !== this;
 
                     // Only prevent InputChat from stealing focus away from an active search box, dialog, or addon
                     if (this.id === 'InputChat' && isUserInAnotherInput) {
@@ -970,7 +988,7 @@ public partial class MainWindow : Window
                         if (m.addedNodes.length > 0) {
                             for (let i = 0; i < m.addedNodes.length; i++) {
                                 let n = m.addedNodes[i];
-                                if (n.tagName === 'INPUT' || n.tagName === 'TEXTAREA' || (n.querySelector && n.querySelector('input, textarea'))) {
+                                if (isTextInput(n) || (n.querySelector && n.querySelector('textarea, input[type=text], input[type=search], input:not([type])'))) {
                                     addedInputs = true;
                                     shouldCheck = true;
                                 }
@@ -980,7 +998,7 @@ public partial class MainWindow : Window
                             shouldCheck = true;
                         }
                     } else if (m.type === 'attributes') {
-                        if (m.target && (m.target.tagName === 'INPUT' || m.target.tagName === 'TEXTAREA' || (m.target.querySelector && m.target.querySelector('input, textarea')))) {
+                        if (m.target && isTextInput(m.target)) {
                             shouldCheck = true;
                         }
                     }
