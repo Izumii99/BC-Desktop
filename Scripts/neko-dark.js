@@ -252,17 +252,66 @@
                 display: inline !important;
             }
 
-            /* Mod Effects */
+            /* Mod Effects: Soft Paws & Hearts (50% Ke Kanan vs 50% Kebawah) */
             html body #bcn-soft-paws {
-                left: 50% !important;
-                width: 50% !important;
                 overflow: hidden !important;
                 pointer-events: none !important;
+                transition: left 0.3s ease, top 0.3s ease, width 0.3s ease, height 0.3s ease !important;
             }
             html body #bcn-soft-paws span {
                 color: ${P.icon} !important;
                 text-shadow: 0 4px 12px rgba(107, 80, 144, 0.35) !important;
-                opacity: 0.12 !important;
+                opacity: 0.14 !important;
+            }
+
+            /* Option 1: 50% Ke Kanan (Right Half - Default Landscape / Desktop) */
+            html body #bcn-soft-paws,
+            html body.bcn-paws-right #bcn-soft-paws,
+            html body #bcn-soft-paws.paws-right {
+                top: 0 !important;
+                bottom: 0 !important;
+                left: 50% !important;
+                right: 0 !important;
+                width: 50% !important;
+                height: 100% !important;
+            }
+
+            /* Option 2: 50% Kebawah (Bottom Half - Portrait / Mobile / BC-LCE) */
+            html body.bcn-paws-bottom #bcn-soft-paws,
+            html body #bcn-soft-paws.paws-bottom {
+                top: 50% !important;
+                bottom: 0 !important;
+                left: 0 !important;
+                right: 0 !important;
+                width: 100% !important;
+                height: 50% !important;
+            }
+
+            /* Auto-Adaptation for Portrait Layouts (when not explicitly locked to right) */
+            @media (orientation: portrait), (max-aspect-ratio: 1/1) {
+                html body:not(.bcn-paws-right) #bcn-soft-paws:not(.paws-right) {
+                    top: 50% !important;
+                    bottom: 0 !important;
+                    left: 0 !important;
+                    right: 0 !important;
+                    width: 100% !important;
+                    height: 50% !important;
+                }
+            }
+
+            html body.portrait-mode:not(.bcn-paws-right) #bcn-soft-paws:not(.paws-right),
+            html body.bclce-portrait:not(.bcn-paws-right) #bcn-soft-paws:not(.paws-right) {
+                top: 50% !important;
+                bottom: 0 !important;
+                left: 0 !important;
+                right: 0 !important;
+                width: 100% !important;
+                height: 50% !important;
+            }
+
+            /* Allow submenu to cleanly fit the layout toggle button */
+            html body #bcn-panel #bcn-submenu {
+                max-width: 180px !important;
             }
 
             /* Top Menu */
@@ -468,6 +517,106 @@
             watchChat();
         }
     }, 800);
+
+    // Soft Paws / Hearts Layout Manager (50% Ke Kanan / 50% Kebawah)
+    const PAWS_STORAGE_KEY = "bcn_soft_paws_layout";
+    const PAWS_MODES = ["auto", "right", "bottom"];
+    let currentPawsMode = "auto";
+    try {
+        currentPawsMode = localStorage.getItem(PAWS_STORAGE_KEY) || "auto";
+    } catch (e) {}
+
+    function applyPawsLayout(mode) {
+        if (!PAWS_MODES.includes(mode)) mode = "auto";
+        currentPawsMode = mode;
+        try {
+            localStorage.setItem(PAWS_STORAGE_KEY, mode);
+        } catch (e) {}
+
+        const body = document.body;
+        if (!body) return;
+
+        body.classList.remove("bcn-paws-right", "bcn-paws-bottom");
+
+        if (mode === "right") {
+            body.classList.add("bcn-paws-right");
+        } else if (mode === "bottom") {
+            body.classList.add("bcn-paws-bottom");
+        }
+
+        updatePawsButtonLabel();
+    }
+
+    function togglePawsLayout() {
+        const nextIdx = (PAWS_MODES.indexOf(currentPawsMode) + 1) % PAWS_MODES.length;
+        const nextMode = PAWS_MODES[nextIdx];
+        applyPawsLayout(nextMode);
+
+        const labels = {
+            right: "50% Ke Kanan (Right Half)",
+            bottom: "50% Kebawah (Bottom Half)",
+            auto: "Auto (Sesuai Orientasi Layar)"
+        };
+        showNekoToast(`🐾 Paws Layout: ${labels[nextMode] || nextMode}`);
+    }
+
+    function showNekoToast(text) {
+        let toast = document.getElementById("bcn-toast");
+        if (!toast) {
+            toast = document.createElement("div");
+            toast.id = "bcn-toast";
+            document.body?.appendChild(toast);
+        }
+        toast.textContent = `♪ ${text}`;
+        toast.classList.add("show");
+        clearTimeout(window._bcnToastTimer);
+        window._bcnToastTimer = setTimeout(() => toast?.classList.remove("show"), 2600);
+    }
+
+    function updatePawsButtonLabel() {
+        const btn = document.getElementById("bcn-paws-layout-toggle");
+        if (!btn) return;
+        const icons = {
+            right: "🐾➡",
+            bottom: "🐾⬇",
+            auto: "🐾⚡"
+        };
+        btn.textContent = icons[currentPawsMode] || "🐾";
+        btn.title = `Paws Layout: ${currentPawsMode.toUpperCase()} (Klik untuk ganti: 50% Kanan / 50% Bawah / Auto)`;
+    }
+
+    function hookPawsLayoutUI() {
+        applyPawsLayout(currentPawsMode);
+
+        const submenu = document.getElementById("bcn-submenu");
+        if (submenu && !document.getElementById("bcn-paws-layout-toggle")) {
+            const btn = document.createElement("button");
+            btn.className = "bcn-btn";
+            btn.id = "bcn-paws-layout-toggle";
+            btn.type = "button";
+            btn.style.fontSize = "13px";
+            btn.style.lineHeight = "1";
+            btn.onclick = (e) => {
+                e.stopPropagation();
+                togglePawsLayout();
+            };
+            submenu.appendChild(btn);
+            updatePawsButtonLabel();
+        }
+    }
+
+    window.bcNekoDarkSetPawsLayout = applyPawsLayout;
+    window.bcNekoDarkTogglePaws = togglePawsLayout;
+
+    if (document.body) {
+        applyPawsLayout(currentPawsMode);
+    }
+    const pawsUiPoller = setInterval(() => {
+        hookPawsLayoutUI();
+        if (document.getElementById("bcn-paws-layout-toggle")) {
+            clearInterval(pawsUiPoller);
+        }
+    }, 1000);
 
     // Runtime Injector & Duplicate Guard
     const RUNTIME_URL = "https://cdn.jsdelivr.net/gh/QAQMOON/meow-@main/dist/bondage-club-neko.runtime.full.js?v=2.13.1";
