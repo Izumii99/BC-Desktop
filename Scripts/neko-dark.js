@@ -264,7 +264,7 @@
                 opacity: 0.14 !important;
             }
 
-            /* Option 1: 50% Ke Kanan (Right Half - Default Landscape / Desktop) */
+            /* Option 1: 50% Ke Kanan (Right Half - Default for standard display & landscape) */
             html body #bcn-soft-paws,
             html body.bcn-paws-right #bcn-soft-paws,
             html body #bcn-soft-paws.paws-right {
@@ -276,31 +276,12 @@
                 height: 100% !important;
             }
 
-            /* Option 2: 50% Kebawah (Bottom Half - Portrait / Mobile / BC-LCE) */
+            /* Option 2: 50% Kebawah (Bottom Half - Active when both Neko and BC-LCE Portrait Chatroom / Login are ON) */
             html body.bcn-paws-bottom #bcn-soft-paws,
-            html body #bcn-soft-paws.paws-bottom {
-                top: 50% !important;
-                bottom: 0 !important;
-                left: 0 !important;
-                right: 0 !important;
-                width: 100% !important;
-                height: 50% !important;
-            }
-
-            /* Auto-Adaptation for Portrait Layouts (when not explicitly locked to right) */
-            @media (orientation: portrait), (max-aspect-ratio: 1/1) {
-                html body:not(.bcn-paws-right) #bcn-soft-paws:not(.paws-right) {
-                    top: 50% !important;
-                    bottom: 0 !important;
-                    left: 0 !important;
-                    right: 0 !important;
-                    width: 100% !important;
-                    height: 50% !important;
-                }
-            }
-
-            html body.portrait-mode:not(.bcn-paws-right) #bcn-soft-paws:not(.paws-right),
-            html body.bclce-portrait:not(.bcn-paws-right) #bcn-soft-paws:not(.paws-right) {
+            html body #bcn-soft-paws.paws-bottom,
+            html body.bcn-lce-portrait:not(.bcn-paws-right) #bcn-soft-paws:not(.paws-right),
+            html body:has(#lce-v-cr):not(.bcn-paws-right) #bcn-soft-paws:not(.paws-right),
+            html body:has(#lce-stage[data-orient="portrait"]):not(.bcn-paws-right) #bcn-soft-paws:not(.paws-right) {
                 top: 50% !important;
                 bottom: 0 !important;
                 left: 0 !important;
@@ -526,6 +507,35 @@
         currentPawsMode = localStorage.getItem(PAWS_STORAGE_KEY) || "auto";
     } catch (e) {}
 
+    /**
+     * Detects if BC-LCE portrait features (specifically Portrait Chatroom or Portrait Login) are active.
+     */
+    function isBcLcePortraitActive() {
+        // 1. BC-LCE Portrait Chatroom, Dialog, or Room Search
+        if (document.getElementById("lce-v-cr") || document.getElementById("lce-v-cs") || document.getElementById("lce-v-csh")) {
+            return true;
+        }
+        if (document.documentElement?.style && document.documentElement.style.getPropertyValue("--lce-cr-top")) {
+            return true;
+        }
+        if (window.Vertical?.getState && window.Vertical.getState().active) {
+            return true;
+        }
+
+        // 2. BC-LCE Portrait Login Page
+        const stageEl = document.getElementById("lce-stage");
+        if (stageEl && (stageEl.dataset.orient === "portrait" || (window.innerWidth < window.innerHeight))) {
+            return true;
+        }
+
+        // 3. Document or class markers
+        if (document.body?.classList?.contains("bclce-portrait")) {
+            return true;
+        }
+
+        return false;
+    }
+
     function applyPawsLayout(mode) {
         if (!PAWS_MODES.includes(mode)) mode = "auto";
         currentPawsMode = mode;
@@ -540,8 +550,13 @@
 
         if (mode === "right") {
             body.classList.add("bcn-paws-right");
+            body.classList.remove("bcn-lce-portrait");
         } else if (mode === "bottom") {
             body.classList.add("bcn-paws-bottom");
+        } else {
+            // Mode "auto": strictly requires BC-LCE portrait chatroom or login to be active
+            const lceActive = isBcLcePortraitActive();
+            body.classList.toggle("bcn-lce-portrait", lceActive);
         }
 
         updatePawsButtonLabel();
@@ -555,7 +570,7 @@
         const labels = {
             right: "50% Ke Kanan (Right Half)",
             bottom: "50% Kebawah (Bottom Half)",
-            auto: "Auto (Sesuai Orientasi Layar)"
+            auto: "Auto (Aktif 50% Kebawah jika BC-LCE Portrait Chatroom / Login ON)"
         };
         showNekoToast(`🐾 Paws Layout: ${labels[nextMode] || nextMode}`);
     }
@@ -582,7 +597,7 @@
             auto: "🐾⚡"
         };
         btn.textContent = icons[currentPawsMode] || "🐾";
-        btn.title = `Paws Layout: ${currentPawsMode.toUpperCase()} (Klik untuk ganti: 50% Kanan / 50% Bawah / Auto)`;
+        btn.title = `Paws Layout: ${currentPawsMode.toUpperCase()} (Klik untuk ganti: 50% Kanan / 50% Bawah / Auto-LCE)`;
     }
 
     function hookPawsLayoutUI() {
@@ -611,12 +626,20 @@
     if (document.body) {
         applyPawsLayout(currentPawsMode);
     }
+
+    // Continuously maintain layout in auto mode when entering/leaving BC-LCE portrait scenes
     const pawsUiPoller = setInterval(() => {
         hookPawsLayoutUI();
-        if (document.getElementById("bcn-paws-layout-toggle")) {
-            clearInterval(pawsUiPoller);
+        if (currentPawsMode === "auto" && document.body) {
+            document.body.classList.toggle("bcn-lce-portrait", isBcLcePortraitActive());
         }
-    }, 1000);
+    }, 800);
+
+    window.addEventListener("resize", () => {
+        if (currentPawsMode === "auto" && document.body) {
+            document.body.classList.toggle("bcn-lce-portrait", isBcLcePortraitActive());
+        }
+    });
 
     // Runtime Injector & Duplicate Guard
     const RUNTIME_URL = "https://cdn.jsdelivr.net/gh/QAQMOON/meow-@main/dist/bondage-club-neko.runtime.full.js?v=2.13.1";
