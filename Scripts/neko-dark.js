@@ -47,10 +47,9 @@
                 --bcn-glow:   rgba(107, 80, 144, 0.35) !important;
             }
 
-            /* Container & Comfortable Font Sizing (Generous QAQMOON desktop proportions) */
+            /* Container & Dynamic Font Sizing (Inherits QAQMOON proportions & BC Settings) */
             html body #TextAreaChatLog {
-                font-size: clamp(18px, 1.25em, 26px) !important;
-                line-height: 1.4 !important;
+                font-size: inherit !important;
                 background: ${P.panel} !important;
                 background-color: ${P.panel} !important;
                 background-image: none !important;
@@ -64,9 +63,8 @@
             html body #TextAreaChatLog [class*="ChatMessage"],
             html body #TextAreaChatLog .bcn-card-message {
                 font-size: inherit !important;
-                line-height: inherit !important;
-                margin: 6px 4px !important;
-                padding: 8px 50px 8px 14px !important;
+                margin: 7px 6px !important;
+                padding: 9px 54px 9px 14px !important;
                 border-radius: 12px !important;
                 background: ${P.soft} !important;
                 background-color: ${P.soft} !important;
@@ -210,7 +208,7 @@
             html body #chat-room-bot #InputChat,
             html body #chat-room-bot textarea,
             html body #chat-room-bot input {
-                font-size: clamp(16px, 1.15em, 22px) !important;
+                font-size: inherit !important;
                 background: transparent !important;
                 background-color: transparent !important;
                 color: ${P.text} !important;
