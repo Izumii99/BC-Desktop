@@ -528,6 +528,22 @@ public class MainWindowTests
         StringAssert.Contains(code, ".scroll-box", "mouseup must protect scroll-box containers from focus stealing.");
         StringAssert.Contains(code, "[id^=\"\"preference-\"\"]", "mouseup must protect preference screen containers.");
     }
+
+    [TestMethod]
+    public void TranslateWidget_CssAndMarkupIntegrity()
+    {
+        string translatePath = Path.Combine(ProjectRoot, "Scripts", "translate.js");
+        Assert.IsTrue(File.Exists(translatePath), "Scripts/translate.js must exist.");
+
+        string content = File.ReadAllText(translatePath);
+
+        // Must define self-contained styles for widget and dropdown chevron
+        StringAssert.Contains(content, "#translate-widget", "translate.js must style #translate-widget.");
+        StringAssert.Contains(content, ".bc-dropdown-chevron", "translate.js must style .bc-dropdown-chevron.");
+        StringAssert.Contains(content, "14px !important", "Dropdown chevron must enforce explicit 14px size.");
+        StringAssert.Contains(content, "#bc-google-translate-btn", "translate.js must style floating button.");
+        StringAssert.Contains(content, "#copy-translation-btn", "translate.js must style copy button.");
+    }
 }
 
 
