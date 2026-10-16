@@ -51,9 +51,9 @@
                 overflow: hidden !important;
             }
 
-            /* Container: follow BC's native scaled font */
+            /* Container: follow BC's native scaled font with mobile responsive capping */
             html body #TextAreaChatLog {
-                font-size: 1em !important;
+                font-size: clamp(12px, min(1em, 15px), 16px) !important;
                 background: ${P.panel} !important;
                 border: 1px solid ${P.border} !important;
                 box-shadow: none !important;
@@ -67,6 +67,8 @@
             /* Base Bubbles */
             html body #TextAreaChatLog .ChatMessage {
                 font-size: inherit !important;
+                line-height: 1.35 !important;
+                padding: clamp(3px, 0.6vh, 6px) clamp(6px, 1.2vw, 10px) !important;
                 background: ${P.soft} !important;
                 border: 1px solid ${P.border} !important;
                 color: ${P.text} !important;
@@ -186,7 +188,11 @@
             [hidden]#chat-room-div,
             #chat-room-div.hidden,
             body.bcn-in-dialog #chat-room-div,
+            body.bcn-in-dialog #chat-room-top-menu,
             body.bcn-in-dialog #bcn-soft-paws,
+            body:has(#liko-dr-mirror) #chat-room-div,
+            body:has(#liko-dr-overlay) #chat-room-div,
+            body:has(#lce-v-dr) #chat-room-div,
             body:has(div#chat-room-div[hidden]) #bcn-soft-paws {
                 display: none !important;
                 visibility: hidden !important;
@@ -194,7 +200,7 @@
                 pointer-events: none !important;
             }
 
-            /* Chat Input Area & Bot Container (Flexible Responsive Sizing) */
+            /* Chat Input Area & Bot Container (Flexible Responsive Sizing & Mobile Bounds) */
             html body #chat-room-bot,
             html body.bcn-enabled #chat-room-bot,
             html body [id*="chat-room-bot"],
@@ -204,13 +210,14 @@
                 background: ${P.panel} !important;
                 background-color: ${P.panel} !important;
                 border: 2px solid ${P.borderAcc} !important;
-                border-radius: 0.75em !important;
+                border-radius: clamp(8px, 1.5vmin, 12px) !important;
                 color: ${P.text} !important;
                 box-shadow: 0 4px 12px rgba(0, 0, 0, 0.45) !important;
-                min-height: unset !important;
+                min-height: clamp(30px, calc(var(--button-size, 32px) + 2px), 44px) !important;
+                max-height: 25vh !important;
             }
 
-            /* Chat Input Element (Flexes smoothly with native canvas font scaling without jitter) */
+            /* Chat Input Element (Flexes smoothly with canvas scaling while strictly capped for mobile/Android) */
             html body #InputChat,
             html body textarea#InputChat,
             html body input#InputChat,
@@ -251,12 +258,28 @@
                 background: ${P.panel} !important;
                 color: ${P.text} !important;
                 border: 2px solid ${P.borderAcc} !important;
-                border-radius: clamp(6px, 1vh, 12px) !important;
+                border-radius: clamp(6px, 1vmin, 10px) !important;
+                width: clamp(28px, 4.5vmin, 40px) !important;
+                height: clamp(28px, 4.5vmin, 40px) !important;
             }
 
             html body #chat-room-send::before {
                 color: ${P.icon} !important;
-                font-size: clamp(1rem, 2vh, 1.35rem) !important;
+                font-size: clamp(14px, 2vmin, 20px) !important;
+            }
+
+            /* Mobile & Small Screen Adaptations (Prevents oversized chat elements on mobile/Android) */
+            @media (orientation: portrait), (max-width: 600px) {
+                div#chat-room-div {
+                    font-size: clamp(12px, 3.5vw, 16px) !important;
+                    max-height: 50vh !important;
+                }
+                #TextAreaChatLog {
+                    font-size: clamp(11px, 3.2vw, 15px) !important;
+                }
+                #InputChat {
+                    font-size: clamp(11px, 3.2vw, 15px) !important;
+                }
             }
 
             /* Toasts */
@@ -697,9 +720,10 @@
     }
 
     function isChatActiveAndVisible() {
-        if (window.CurrentScreen !== "ChatRoom") return false;
-        if (window.CurrentCharacter != null) return false;
+        if (typeof window.CurrentScreen !== "undefined" && window.CurrentScreen !== "ChatRoom") return false;
+        if (typeof window.CurrentCharacter !== "undefined" && window.CurrentCharacter != null) return false;
         if (window.ChatRoomChatHidden) return false;
+        if (document.getElementById("liko-dr-overlay") || document.getElementById("lce-v-dr") || document.getElementById("liko-dr-mirror")) return false;
         const crDiv = document.getElementById("chat-room-div");
         if (!crDiv || crDiv.hasAttribute("hidden")) return false;
         return true;
@@ -707,6 +731,41 @@
 
     function updateChatVisibilityState() {
         const inDialogOrHidden = !isChatActiveAndVisible();
+        const crDiv = document.getElementById("chat-room-div");
+        const topMenu = document.getElementById("chat-room-top-menu");
+        const paws = document.getElementById("bcn-soft-paws");
+
+        if (crDiv) {
+            if (inDialogOrHidden) {
+                crDiv.toggleAttribute("hidden", true);
+                crDiv.style.setProperty("display", "none", "important");
+                crDiv.style.setProperty("visibility", "hidden", "important");
+                crDiv.style.setProperty("opacity", "0", "important");
+                crDiv.style.setProperty("pointer-events", "none", "important");
+            } else {
+                crDiv.style.removeProperty("display");
+                crDiv.style.removeProperty("visibility");
+                crDiv.style.removeProperty("opacity");
+                crDiv.style.removeProperty("pointer-events");
+            }
+        }
+
+        if (topMenu) {
+            if (inDialogOrHidden) {
+                topMenu.style.setProperty("display", "none", "important");
+            } else {
+                topMenu.style.removeProperty("display");
+            }
+        }
+
+        if (paws) {
+            if (inDialogOrHidden) {
+                paws.style.setProperty("display", "none", "important");
+            } else {
+                paws.style.removeProperty("display");
+            }
+        }
+
         if (document.body) {
             document.body.classList.toggle("bcn-in-dialog", inDialogOrHidden);
             if (currentPawsMode === "auto") {
@@ -714,6 +773,64 @@
             }
         }
         return !inDialogOrHidden;
+    }
+
+    function hookChatVisibilityGuards() {
+        if (window._bcnChatVisGuardsHooked) return;
+        window._bcnChatVisGuardsHooked = true;
+
+        // 1. Intercept ChatRoomShowElements to prevent unhiding in dialog or background screens
+        const origShowElements = window.ChatRoomShowElements;
+        if (typeof origShowElements === "function") {
+            window.ChatRoomShowElements = function () {
+                if (window.CurrentCharacter != null || (window.CurrentScreen && window.CurrentScreen !== "ChatRoom") || !isChatActiveAndVisible()) {
+                    updateChatVisibilityState();
+                    return;
+                }
+                const res = origShowElements.apply(this, arguments);
+                updateChatVisibilityState();
+                return res;
+            };
+        }
+
+        // 2. Intercept ChatRoomResize
+        const origResize = window.ChatRoomResize;
+        if (typeof origResize === "function") {
+            window.ChatRoomResize = function (load) {
+                if (window.CurrentCharacter != null || (window.CurrentScreen && window.CurrentScreen !== "ChatRoom")) {
+                    updateChatVisibilityState();
+                    return;
+                }
+                const res = origResize.apply(this, arguments);
+                updateChatVisibilityState();
+                return res;
+            };
+        }
+
+        // 3. Intercept DialogLoad for instant suppression when opening character menus
+        const origDialogLoad = window.DialogLoad;
+        if (typeof origDialogLoad === "function") {
+            window.DialogLoad = function () {
+                updateChatVisibilityState();
+                const res = origDialogLoad.apply(this, arguments);
+                updateChatVisibilityState();
+                return res;
+            };
+        }
+
+        // 4. Intercept CommonSetScreen
+        const origCommonSetScreen = window.CommonSetScreen;
+        if (typeof origCommonSetScreen === "function") {
+            window.CommonSetScreen = function (...args) {
+                const targetScreen = args[1] || args[0];
+                if (targetScreen !== "ChatRoom") {
+                    updateChatVisibilityState();
+                }
+                const res = origCommonSetScreen.apply(this, arguments);
+                updateChatVisibilityState();
+                return res;
+            };
+        }
     }
 
     function keepPanelInViewport() {
@@ -738,11 +855,13 @@
     }
 
     // Continuously maintain layout & visibility states in poller
+    hookChatVisibilityGuards();
     const pawsUiPoller = setInterval(() => {
+        hookChatVisibilityGuards();
         hookPawsLayoutUI();
         updateChatVisibilityState();
         keepPanelInViewport();
-    }, 400);
+    }, 150);
 
     function resyncChatLayout() {
         if (window.scrollX !== 0 || window.scrollY !== 0) {
