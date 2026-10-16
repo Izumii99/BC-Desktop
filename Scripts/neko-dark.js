@@ -60,7 +60,7 @@
             /* Base Bubbles, Addon Messages & Strict White Eradication */
             html body #TextAreaChatLog .ChatMessage,
             html body #TextAreaChatLog div.ChatMessage,
-            html body #TextAreaChatLog [class*="ChatMessage"],
+            html body #TextAreaChatLog [class*="ChatMessage"]:not(.ChatMessageName):not(button),
             html body #TextAreaChatLog .bcn-card-message {
                 font-size: inherit !important;
                 margin: 7px 6px !important;
@@ -89,7 +89,7 @@
                 color: ${P.text} !important;
                 box-shadow: ${P.borderAcc} 3px 0px 0px 0px inset, 0 2px 8px rgba(0,0,0,0.45) !important;
             }
-            html body #TextAreaChatLog .ChatMessage.bce-notification *:not(.ChatMessageName) {
+            html body #TextAreaChatLog .ChatMessage.bce-notification *:not(.ChatMessageName):not(.ChatMessageName *) {
                 color: ${P.text} !important;
                 text-shadow: none !important;
             }
@@ -108,19 +108,54 @@
                 color: ${P.beepTxt} !important;
             }
 
-            /* Name overrides */
-            html body #TextAreaChatLog .ChatMessageName {
-                text-shadow: none !important;
+            /* Name Styling: Completely remove button/box wrapper & enforce natural LabelColor (ID Color) */
+            html body #TextAreaChatLog .ChatMessageName,
+            html body #TextAreaChatLog button.ChatMessageName,
+            html body #TextAreaChatLog .ChatMessageName.button,
+            html body #TextAreaChatLog .ChatMessageName.blank-button {
+                background: transparent !important;
+                background-color: transparent !important;
+                background-image: none !important;
+                border: none !important;
+                box-shadow: none !important;
+                outline: none !important;
+                padding: 0 !important;
+                margin: 0 !important;
+                border-radius: 0 !important;
+                color: var(--label-color, ${P.text}) !important;
+                font-weight: 800 !important;
+                text-shadow: 0 1px 2px rgba(0, 0, 0, 0.75) !important;
                 -webkit-text-stroke: 0 !important;
+                cursor: pointer !important;
+                display: inline !important;
+                vertical-align: baseline !important;
             }
 
-            /* Content text */
-            html body #TextAreaChatLog .ChatMessage *:not(.ChatMessageName) {
+            html body #TextAreaChatLog .ChatMessageName *:not(.bcn-relation-badge) {
+                color: var(--label-color, ${P.text}) !important;
+                background: transparent !important;
+                background-color: transparent !important;
+                border: none !important;
+                box-shadow: none !important;
+                padding: 0 !important;
+                margin: 0 !important;
+            }
+
+            html body #TextAreaChatLog .ChatMessageName:hover,
+            html body #TextAreaChatLog .ChatMessageName:hover * {
+                color: var(--label-color, ${P.text}) !important;
+                text-decoration: underline !important;
+                background: transparent !important;
+                box-shadow: none !important;
+            }
+
+            /* Content text (strict exclusion so character names & badges preserve their ID color) */
+            html body #TextAreaChatLog .ChatMessage *:not(.ChatMessageName):not(.ChatMessageName *) {
                 color: ${P.text} !important;
                 text-shadow: 0 1px 3px rgba(0,0,0,0.6) !important;
             }
-            html body #TextAreaChatLog .ChatMessageWhisper *:not(.ChatMessageName) { color: ${P.whisperTxt} !important; }
-            html body #TextAreaChatLog .ChatMessageBeep *:not(.ChatMessageName) { color: ${P.beepTxt} !important; }
+            html body #TextAreaChatLog .ChatMessageWhisper *:not(.ChatMessageName):not(.ChatMessageName *) { color: ${P.whisperTxt} !important; }
+            html body #TextAreaChatLog .ChatMessageBeep *:not(.ChatMessageName):not(.ChatMessageName *) { color: ${P.beepTxt} !important; }
             
             /* Links */
             html body #TextAreaChatLog .ChatMessage:not(.ChatMessageBeep) a:not(.ChatMessageName) {
@@ -351,7 +386,7 @@
                 color: #60a5fa !important;
                 opacity: 0.65 !important;
             }
-            html body #TextAreaChatLog div.ChatMessage.nk-online *:not(.ChatMessageName) { color: #60a5fa !important; text-shadow: none !important; }
+            html body #TextAreaChatLog div.ChatMessage.nk-online *:not(.ChatMessageName):not(.ChatMessageName *) { color: #60a5fa !important; text-shadow: none !important; }
 
             html body #TextAreaChatLog div.ChatMessage.nk-offline {
                 background: #1f0810 !important;
@@ -359,7 +394,7 @@
                 color: #fb7185 !important;
                 opacity: 0.65 !important;
             }
-            html body #TextAreaChatLog div.ChatMessage.nk-offline *:not(.ChatMessageName) { color: #fb7185 !important; text-shadow: none !important; }
+            html body #TextAreaChatLog div.ChatMessage.nk-offline *:not(.ChatMessageName):not(.ChatMessageName *) { color: #fb7185 !important; text-shadow: none !important; }
 
             html body #TextAreaChatLog div.ChatMessage.ChatMessageWhisper {
                 background: #2d142c !important;
@@ -368,7 +403,7 @@
                 opacity: 0.95 !important;
                 box-shadow: 0 0 5px rgba(217, 70, 239, 0.25) !important;
             }
-            html body #TextAreaChatLog div.ChatMessage.ChatMessageWhisper *:not(.ChatMessageName) { color: #f0abfc !important; text-shadow: none !important; }
+            html body #TextAreaChatLog div.ChatMessage.ChatMessageWhisper *:not(.ChatMessageName):not(.ChatMessageName *) { color: #f0abfc !important; text-shadow: none !important; }
 
             html body #TextAreaChatLog div.ChatMessage.nk-voice {
                 background: #1c150a !important;
@@ -376,7 +411,7 @@
                 color: #cda240 !important;
                 opacity: 0.75 !important;
             }
-            html body #TextAreaChatLog div.ChatMessage.nk-voice *:not(.ChatMessageName) { color: #cda240 !important; text-shadow: none !important; }
+            html body #TextAreaChatLog div.ChatMessage.nk-voice *:not(.ChatMessageName):not(.ChatMessageName *) { color: #cda240 !important; text-shadow: none !important; }
 
             html body #TextAreaChatLog div.ChatMessage.nk-enter {
                 background: #141828 !important;
@@ -387,7 +422,7 @@
                 box-shadow: none !important;
                 text-align: center !important;
             }
-            html body #TextAreaChatLog div.ChatMessage.nk-enter *:not(.ChatMessageName) {
+            html body #TextAreaChatLog div.ChatMessage.nk-enter *:not(.ChatMessageName):not(.ChatMessageName *) {
                 color: #8898d0 !important;
                 text-shadow: none !important;
             }
@@ -401,7 +436,7 @@
                 box-shadow: none !important;
                 text-align: center !important;
             }
-            html body #TextAreaChatLog div.ChatMessage.nk-disconnect *:not(.ChatMessageName) {
+            html body #TextAreaChatLog div.ChatMessage.nk-disconnect *:not(.ChatMessageName):not(.ChatMessageName *) {
                 color: #c07080 !important;
                 text-shadow: none !important;
             }
