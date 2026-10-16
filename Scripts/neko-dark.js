@@ -177,7 +177,20 @@
                 border: 2px solid ${P.borderAcc} !important;
             }
 
-            /* Chat Input Area & Bot Container */
+            /* Ensure BC chatroom elements & soft paws are strictly hidden when inactive, in dialog, or on other screens */
+            div#chat-room-div[hidden],
+            [hidden]#chat-room-div,
+            #chat-room-div.hidden,
+            body.bcn-in-dialog #chat-room-div,
+            body.bcn-in-dialog #bcn-soft-paws,
+            body:has(div#chat-room-div[hidden]) #bcn-soft-paws {
+                display: none !important;
+                visibility: hidden !important;
+                opacity: 0 !important;
+                pointer-events: none !important;
+            }
+
+            /* Chat Input Area & Bot Container (Flexible Responsive Sizing) */
             html body #chat-room-bot,
             html body.bcn-enabled #chat-room-bot,
             html body [id*="chat-room-bot"],
@@ -187,13 +200,13 @@
                 background: ${P.panel} !important;
                 background-color: ${P.panel} !important;
                 border: 2px solid ${P.borderAcc} !important;
-                border-radius: 14px !important;
+                border-radius: clamp(8px, 1.5vh, 14px) !important;
                 color: ${P.text} !important;
                 box-shadow: 0 4px 12px rgba(0, 0, 0, 0.45) !important;
-                min-height: 48px !important;
+                min-height: clamp(30px, calc(var(--button-size, 32px) + 4px), 46px) !important;
             }
 
-            /* Chat Input Element */
+            /* Chat Input Element (Flexes smoothly between small and large windows) */
             html body #InputChat,
             html body textarea#InputChat,
             html body input#InputChat,
@@ -208,10 +221,10 @@
                 color: ${P.text} !important;
                 border: none !important;
                 box-shadow: none !important;
-                padding: 12px 16px !important;
-                font-size: clamp(16px, 1.15em, 18px) !important;
-                line-height: 1.45 !important;
-                min-height: 44px !important;
+                padding: clamp(5px, 1.2vh, 10px) clamp(8px, 1.5vw, 14px) !important;
+                font-size: clamp(13px, 1.1em, 17px) !important;
+                line-height: 1.35 !important;
+                min-height: clamp(28px, var(--button-size, 32px), 42px) !important;
                 box-sizing: border-box !important;
             }
 
@@ -234,12 +247,12 @@
                 background: ${P.panel} !important;
                 color: ${P.text} !important;
                 border: 2px solid ${P.borderAcc} !important;
-                border-radius: 12px !important;
+                border-radius: clamp(6px, 1vh, 12px) !important;
             }
 
             html body #chat-room-send::before {
                 color: ${P.icon} !important;
-                font-size: 1.4em !important;
+                font-size: clamp(1rem, 2vh, 1.35rem) !important;
             }
 
             /* Toasts */
@@ -649,24 +662,40 @@
         applyPawsLayout(currentPawsMode);
     }
 
-    // Continuously maintain layout in auto mode when entering/leaving BC-LCE portrait scenes
+    function isChatActiveAndVisible() {
+        if (window.CurrentScreen !== "ChatRoom") return false;
+        if (window.CurrentCharacter != null) return false;
+        if (window.ChatRoomChatHidden) return false;
+        const crDiv = document.getElementById("chat-room-div");
+        if (!crDiv || crDiv.hasAttribute("hidden")) return false;
+        return true;
+    }
+
+    function updateChatVisibilityState() {
+        const inDialogOrHidden = !isChatActiveAndVisible();
+        if (document.body) {
+            document.body.classList.toggle("bcn-in-dialog", inDialogOrHidden);
+            if (currentPawsMode === "auto") {
+                document.body.classList.toggle("bcn-lce-portrait", isBcLcePortraitActive());
+            }
+        }
+        return !inDialogOrHidden;
+    }
+
+    // Continuously maintain layout & visibility states in poller
     const pawsUiPoller = setInterval(() => {
         hookPawsLayoutUI();
-        if (currentPawsMode === "auto" && document.body) {
-            document.body.classList.toggle("bcn-lce-portrait", isBcLcePortraitActive());
-        }
-    }, 800);
+        updateChatVisibilityState();
+    }, 400);
 
     function resyncChatLayout() {
-        if (currentPawsMode === "auto" && document.body) {
-            document.body.classList.toggle("bcn-lce-portrait", isBcLcePortraitActive());
-        }
-        if (typeof window.ChatRoomResize === "function" && window.CurrentScreen === "ChatRoom") {
+        const active = updateChatVisibilityState();
+        if (active && typeof window.ChatRoomResize === "function") {
             try { window.ChatRoomResize(false); } catch (e) {}
-        }
-        const ic = document.getElementById("InputChat");
-        if (ic) {
-            try { ic.dispatchEvent(new Event("input")); } catch (e) {}
+            const ic = document.getElementById("InputChat");
+            if (ic) {
+                try { ic.dispatchEvent(new Event("input")); } catch (e) {}
+            }
         }
     }
 

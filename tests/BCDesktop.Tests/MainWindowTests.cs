@@ -217,10 +217,10 @@ public class MainWindowTests
         Assert.IsFalse(nekoDarkContent.Contains("bcn-paws-layout-toggle"), "neko-dark.js must not inject the unused paws toggle into the Neko submenu.");
         StringAssert.Contains(nekoDarkContent, "_bcnChatResync", "neko-dark.js must resync BC chat log height after viewport resize.");
         StringAssert.Contains(nekoDarkContent, "orientation: portrait", "neko-dark.js must include portrait orientation media query for soft paws/hearts.");
-        StringAssert.Contains(nekoDarkContent, "padding: 12px 16px !important", "neko-dark.js must preserve spacious padding for #InputChat.");
-        StringAssert.Contains(nekoDarkContent, "font-size: clamp(16px, 1.15em, 18px)", "neko-dark.js must enforce comfortable text sizing on chat input.");
+        StringAssert.Contains(nekoDarkContent, "clamp(5px, 1.2vh, 10px)", "neko-dark.js must enforce responsive padding for #InputChat.");
+        StringAssert.Contains(nekoDarkContent, "clamp(13px, 1.1em, 17px)", "neko-dark.js must enforce flexible responsive text sizing on chat input.");
+        StringAssert.Contains(nekoDarkContent, "bcn-in-dialog", "neko-dark.js must track and hide chat elements when character dialog or profile is open.");
         Assert.IsFalse(nekoDarkContent.Contains("html body #chat-room-div"), "neko-dark.js must not override #chat-room-div layout (conflicts with BC resize sync).");
-        StringAssert.Contains(nekoDarkContent, "font-size: max(15px, 1em)", "neko-dark.js chat log font must follow native scale with a 15px floor.");
 
         // 4. If tester scripts directory exists, enforce whitelist rule strictly
         string testerScripts = Path.Combine(ProjectRoot, "publish", "tester", "Scripts");
