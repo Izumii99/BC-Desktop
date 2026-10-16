@@ -294,11 +294,13 @@
             html body #bcn-soft-paws {
                 overflow: hidden !important;
                 pointer-events: none !important;
+                transition: top 0.35s ease, left 0.35s ease, width 0.35s ease, height 0.35s ease, opacity 0.25s ease !important;
             }
             html body #bcn-soft-paws span {
                 color: ${P.icon} !important;
                 text-shadow: 0 4px 12px rgba(107, 80, 144, 0.35) !important;
                 opacity: 0.14 !important;
+                font-size: clamp(20px, 4.5vmin, 42px) !important;
             }
 
             /* Option 1: 50% Ke Kanan (Right Half - Default for standard display & landscape) */
@@ -329,6 +331,8 @@
             html body #bcn-soft-paws.paws-bottom,
             html body.bcn-lce-portrait:not(.bcn-paws-right) #bcn-soft-paws:not(.paws-right),
             html body:has(#lce-v-cr):not(.bcn-paws-right) #bcn-soft-paws:not(.paws-right),
+            html body:has(#lce-v-dr):not(.bcn-paws-right) #bcn-soft-paws:not(.paws-right),
+            html body:has(#liko-dr-overlay):not(.bcn-paws-right) #bcn-soft-paws:not(.paws-right),
             html body:has(#lce-stage[data-orient="portrait"]):not(.bcn-paws-right) #bcn-soft-paws:not(.paws-right) {
                 top: 50% !important;
                 bottom: 0 !important;
@@ -601,6 +605,7 @@
 
         // 2. BC-LCE / MPL Portrait Chatroom, Dialog, or Room Search elements
         if (document.getElementById("lce-v-cr") || document.getElementById("lce-v-cs") || document.getElementById("lce-v-csh") ||
+            document.getElementById("lce-v-dr") || document.getElementById("liko-dr-overlay") || document.getElementById("liko-ml-dr") ||
             document.getElementById("liko-cs-bg") || document.getElementById("liko-csh-shell") || document.getElementById("liko-cr-fake-input-overlay")) {
             return true;
         }
@@ -619,6 +624,11 @@
 
         // 4. Document or class markers
         if (document.body?.classList?.contains("bclce-portrait") || document.body?.classList?.contains("mpl-portrait")) {
+            return true;
+        }
+
+        // 5. In dialog / character interaction: preserve existing portrait state to avoid motion sickness
+        if (window.CurrentCharacter != null && document.body?.classList?.contains("bcn-lce-portrait")) {
             return true;
         }
 
