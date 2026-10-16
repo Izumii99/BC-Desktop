@@ -47,11 +47,18 @@
                 --bcn-glow:   rgba(107, 80, 144, 0.35) !important;
             }
 
-            /* Chatroom Flex Layout: Prevents chat input from clipping/overflowing off-screen */
-            html body #chat-room-div {
+            /* Chatroom Flex Layout: Prevents chat input from clipping/overflowing off-screen, while strictly respecting [hidden] attribute when dialogs/profiles open */
+            html body #chat-room-div:not([hidden]) {
                 display: flex !important;
                 flex-direction: column !important;
                 box-sizing: border-box !important;
+            }
+
+            html body #chat-room-div[hidden],
+            html body #chat-room-div.hidden,
+            html body #chat-room-div[style*="display: none"],
+            html body #chat-room-div[style*="display:none"] {
+                display: none !important;
             }
 
             html body #chat-room-top-menu,
