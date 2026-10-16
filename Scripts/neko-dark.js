@@ -321,16 +321,24 @@
                 height: 50% !important;
             }
 
-            /* Allow submenu to cleanly fit the layout toggle button when expanded, and properly collapse to 0 when closed */
-            html body #bcn-panel #bcn-submenu {
-                max-width: 220px !important;
-            }
+            /* Collapse empty or unused submenu cleanly so #bcn-panel snugly wraps the cat button */
+            html body #bcn-submenu:empty,
+            html body #bcn-submenu:not(:has(button)),
+            html body.bcn-menu-collapsed #bcn-submenu,
             html body.bcn-menu-collapsed #bcn-panel #bcn-submenu {
+                display: none !important;
                 max-width: 0 !important;
-                opacity: 0 !important;
+                width: 0 !important;
                 margin: 0 !important;
                 padding: 0 !important;
+                opacity: 0 !important;
                 pointer-events: none !important;
+            }
+
+            html body #bcn-panel:has(#bcn-submenu:empty),
+            html body #bcn-panel:not(:has(#bcn-submenu button)),
+            html body.bcn-menu-collapsed #bcn-panel {
+                gap: 0 !important;
             }
 
             /* Top Menu */
@@ -602,8 +610,6 @@
             const lceActive = isBcLcePortraitActive();
             body.classList.toggle("bcn-lce-portrait", lceActive);
         }
-
-        updatePawsButtonLabel();
     }
 
     function togglePawsLayout() {
@@ -632,36 +638,8 @@
         window._bcnToastTimer = setTimeout(() => toast?.classList.remove("show"), 2600);
     }
 
-    function updatePawsButtonLabel() {
-        const btn = document.getElementById("bcn-paws-layout-toggle");
-        if (!btn) return;
-        const icons = {
-            right: "🐾➡",
-            bottom: "🐾⬇",
-            auto: "🐾⚡"
-        };
-        btn.textContent = icons[currentPawsMode] || "🐾";
-        btn.title = `Paws Layout: ${currentPawsMode.toUpperCase()} (Klik untuk ganti: 50% Kanan / 50% Bawah / Auto-Portrait)`;
-    }
-
     function hookPawsLayoutUI() {
         applyPawsLayout(currentPawsMode);
-
-        const submenu = document.getElementById("bcn-submenu");
-        if (submenu && !document.getElementById("bcn-paws-layout-toggle")) {
-            const btn = document.createElement("button");
-            btn.className = "bcn-btn";
-            btn.id = "bcn-paws-layout-toggle";
-            btn.type = "button";
-            btn.style.fontSize = "13px";
-            btn.style.lineHeight = "1";
-            btn.onclick = (e) => {
-                e.stopPropagation();
-                togglePawsLayout();
-            };
-            submenu.appendChild(btn);
-            updatePawsButtonLabel();
-        }
     }
 
     window.bcNekoDarkSetPawsLayout = applyPawsLayout;
@@ -679,10 +657,27 @@
         }
     }, 800);
 
-    window.addEventListener("resize", () => {
+    function resyncChatLayout() {
         if (currentPawsMode === "auto" && document.body) {
             document.body.classList.toggle("bcn-lce-portrait", isBcLcePortraitActive());
         }
+        if (typeof window.ChatRoomResize === "function" && window.CurrentScreen === "ChatRoom") {
+            try { window.ChatRoomResize(false); } catch (e) {}
+        }
+        const ic = document.getElementById("InputChat");
+        if (ic) {
+            try { ic.dispatchEvent(new Event("input")); } catch (e) {}
+        }
+    }
+
+    window.addEventListener("resize", () => {
+        clearTimeout(window._bcnChatResync);
+        window._bcnChatResync = setTimeout(resyncChatLayout, 150);
+    });
+
+    window.addEventListener("orientationchange", () => {
+        clearTimeout(window._bcnChatResync);
+        window._bcnChatResync = setTimeout(resyncChatLayout, 150);
     });
 
     // Runtime Injector & Duplicate Guard

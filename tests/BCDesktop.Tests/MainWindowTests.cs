@@ -214,7 +214,8 @@ public class MainWindowTests
         StringAssert.Contains(nekoDarkContent, "hookBcModSdk", "neko-dark.js must guard bcModSdk against duplicate unloading.");
         StringAssert.Contains(nekoDarkContent, "isNekoModLoaded", "neko-dark.js must verify existing Neko mod state before injecting runtime.");
         StringAssert.Contains(nekoDarkContent, "#bcn-toast", "neko-dark.js must include dark theme overrides for #bcn-toast popup.");
-        StringAssert.Contains(nekoDarkContent, "bcn-menu-collapsed", "neko-dark.js must handle bcn-menu-collapsed for #bcn-submenu collapse state.");
+        Assert.IsFalse(nekoDarkContent.Contains("bcn-paws-layout-toggle"), "neko-dark.js must not inject the unused paws toggle into the Neko submenu.");
+        StringAssert.Contains(nekoDarkContent, "_bcnChatResync", "neko-dark.js must resync BC chat log height after viewport resize.");
         StringAssert.Contains(nekoDarkContent, "orientation: portrait", "neko-dark.js must include portrait orientation media query for soft paws/hearts.");
         StringAssert.Contains(nekoDarkContent, "padding: 12px 16px !important", "neko-dark.js must preserve spacious padding for #InputChat.");
         StringAssert.Contains(nekoDarkContent, "font-size: clamp(16px, 1.15em, 18px)", "neko-dark.js must enforce comfortable text sizing on chat input.");
