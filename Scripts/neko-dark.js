@@ -47,10 +47,10 @@
                 --bcn-glow:   rgba(107, 80, 144, 0.35) !important;
             }
 
-            /* Container & Font Size Stabilization */
+            /* Container & Comfortable Font Sizing (Generous QAQMOON desktop proportions) */
             html body #TextAreaChatLog {
-                font-size: clamp(14px, 1.05em, 17px) !important;
-                line-height: 1.45 !important;
+                font-size: clamp(18px, 1.25em, 26px) !important;
+                line-height: 1.4 !important;
                 background: ${P.panel} !important;
                 background-color: ${P.panel} !important;
                 background-image: none !important;
@@ -65,6 +65,9 @@
             html body #TextAreaChatLog .bcn-card-message {
                 font-size: inherit !important;
                 line-height: inherit !important;
+                margin: 6px 4px !important;
+                padding: 8px 50px 8px 14px !important;
+                border-radius: 12px !important;
                 background: ${P.soft} !important;
                 background-color: ${P.soft} !important;
                 background-image: none !important;
@@ -207,6 +210,7 @@
             html body #chat-room-bot #InputChat,
             html body #chat-room-bot textarea,
             html body #chat-room-bot input {
+                font-size: clamp(16px, 1.15em, 22px) !important;
                 background: transparent !important;
                 background-color: transparent !important;
                 color: ${P.text} !important;
@@ -294,7 +298,7 @@
                 opacity: 0.12 !important;
             }
 
-            /* Portrait Mode (Mobile / Narrow View) - move 50% to bottom */
+            /* Portrait Mode (Mobile / Narrow View) - move 50% to bottom & adapt sizes */
             @media (orientation: portrait), (max-aspect-ratio: 1/1) {
                 html body #bcn-soft-paws {
                     left: 0 !important;
@@ -304,6 +308,16 @@
                 }
                 html body #bcn-toast {
                     left: 50% !important;
+                }
+                html body #TextAreaChatLog {
+                    font-size: clamp(12px, 3.2vw, 16px) !important;
+                }
+                html body #TextAreaChatLog .ChatMessage {
+                    padding: 5px 36px 5px 10px !important;
+                    margin: 4px 2px !important;
+                }
+                html body #InputChat {
+                    font-size: clamp(12px, 3.2vw, 16px) !important;
                 }
             }
 
