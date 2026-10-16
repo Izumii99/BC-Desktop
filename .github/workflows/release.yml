@@ -135,6 +135,20 @@ jobs:
               publish/BC-Desktop-Lightweight-Hidden.exe
           }
 
+      - name: Purge jsDelivr Edge Cache
+        if: always()
+        shell: powershell
+        run: |
+          Write-Host "Purging jsDelivr edge cache for scripts..."
+          $files = Get-ChildItem -Path "Scripts", "PublishLoader" -Recurse -Filter "*.js" -ErrorAction SilentlyContinue | Resolve-Path -Relative
+          Invoke-RestMethod -Uri "https://purge.jsdelivr.net/gh/${{ github.repository }}@main/" -Method Get -ErrorAction SilentlyContinue
+          foreach ($f in $files) {
+              $cleanPath = $f.TrimStart(".\").Replace("\", "/")
+              Write-Host "Purging: $cleanPath"
+              Invoke-RestMethod -Uri "https://purge.jsdelivr.net/gh/${{ github.repository }}@main/$cleanPath" -Method Get -ErrorAction SilentlyContinue
+          }
+          Write-Host "jsDelivr cache purge complete!"
+
       - name: Clean up Workspace
         if: always()
         shell: powershell
