@@ -196,6 +196,11 @@ public class MainWindowTests
         string loaderContent = File.ReadAllText(publishLoader);
         StringAssert.Contains(loaderContent, "addon-manager.js", "Remote loader must target addon-manager.js.");
 
+        // Verify built-in loader embedded resource compiles into the binary
+        string builtInScript = MainWindow.GetBuiltInLoaderScript();
+        Assert.IsFalse(string.IsNullOrWhiteSpace(builtInScript), "Embedded resource BuiltInLoader.js must be present.");
+        StringAssert.Contains(builtInScript, "addon-manager.js", "Built-in loader must target addon-manager.js.");
+
         // 2. Verify addon-manager.js ignores deprecated and disabled scripts
         string addonManagerPath = Path.Combine(ProjectRoot, "Scripts", "addon-manager.js");
         Assert.IsTrue(File.Exists(addonManagerPath), "Scripts/addon-manager.js must exist.");
@@ -415,17 +420,19 @@ public class MainWindowTests
     [TestMethod]
     public void AppVersionComparison_AccuratelyEvaluatesSemanticVersions()
     {
-        Assert.IsTrue(MainWindow.IsNewerVersion("v6.1", "6.0"), "v6.1 must be newer than 6.0.");
-        Assert.IsTrue(MainWindow.IsNewerVersion("6.1", "6.0"), "6.1 must be newer than 6.0.");
-        Assert.IsTrue(MainWindow.IsNewerVersion("v6.0.1", "6.0"), "Patch version v6.0.1 must be newer than 6.0.");
-        Assert.IsTrue(MainWindow.IsNewerVersion("v7.0", "6.0"), "Major version v7.0 must be newer than 6.0.");
+        Assert.AreEqual("6.1", MainWindow.CurrentAppVersion, "CurrentAppVersion must be 6.1.");
 
-        Assert.IsFalse(MainWindow.IsNewerVersion("6.0", "6.0"), "Identical versions must return false.");
-        Assert.IsFalse(MainWindow.IsNewerVersion("v6.0", "6.0"), "Identical versions with 'v' prefix must return false.");
-        Assert.IsFalse(MainWindow.IsNewerVersion("v5.5", "6.0"), "Older version v5.5 must return false.");
-        Assert.IsFalse(MainWindow.IsNewerVersion("v1.0", "6.0"), "Older version v1.0 must return false.");
-        Assert.IsFalse(MainWindow.IsNewerVersion("", "6.0"), "Empty latest tag must return false.");
-        Assert.IsFalse(MainWindow.IsNewerVersion("invalid-tag", "6.0"), "Malformed tag must return false.");
+        Assert.IsTrue(MainWindow.IsNewerVersion("v6.2", "6.1"), "v6.2 must be newer than 6.1.");
+        Assert.IsTrue(MainWindow.IsNewerVersion("6.2", "6.1"), "6.2 must be newer than 6.1.");
+        Assert.IsTrue(MainWindow.IsNewerVersion("v6.1.1", "6.1"), "Patch version v6.1.1 must be newer than 6.1.");
+        Assert.IsTrue(MainWindow.IsNewerVersion("v7.0", "6.1"), "Major version v7.0 must be newer than 6.1.");
+
+        Assert.IsFalse(MainWindow.IsNewerVersion("6.1", "6.1"), "Identical versions must return false.");
+        Assert.IsFalse(MainWindow.IsNewerVersion("v6.1", "6.1"), "Identical versions with 'v' prefix must return false.");
+        Assert.IsFalse(MainWindow.IsNewerVersion("v6.0", "6.1"), "Older version v6.0 must return false.");
+        Assert.IsFalse(MainWindow.IsNewerVersion("v1.0", "6.1"), "Older version v1.0 must return false.");
+        Assert.IsFalse(MainWindow.IsNewerVersion("", "6.1"), "Empty latest tag must return false.");
+        Assert.IsFalse(MainWindow.IsNewerVersion("invalid-tag", "6.1"), "Malformed tag must return false.");
     }
 
     [TestMethod]

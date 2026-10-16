@@ -8,14 +8,14 @@ name: 'Build and Release'
   workflow_dispatch:
     inputs:
       version:
-        description: 'Release version / tag (e.g., 6.0)'
+        description: 'Release version / tag (e.g., 6.1)'
         required: false
-        default: '6.0'
+        default: '6.1'
         type: string
       title:
         description: 'Release Title Highlight (Title Case)'
         required: false
-        default: 'Immersive Fullscreen, UI Polish & Enhanced Quality Checks'
+        default: 'Single-File Seamless App & Built-in Addon Loader'
         type: string
       notes:
         description: 'Custom Release Notes (leave empty to use standard template)'
@@ -46,15 +46,15 @@ jobs:
         run: |
           powershell -ExecutionPolicy Bypass -File .\build_all.ps1
 
-      - name: Verify Zip Artifacts
+      - name: Verify Executable Artifacts
         shell: powershell
         run: |
-          $zips = Get-ChildItem "publish/*.zip"
-          if ($zips.Count -lt 4) {
-            Write-Error "Expected 4 zip packages in publish/, but found $($zips.Count)!"
+          $exes = Get-ChildItem "publish/*.exe"
+          if ($exes.Count -lt 4) {
+            Write-Error "Expected 4 executable packages in publish/, but found $($exes.Count)!"
             exit 1
           }
-          $zips | Select-Object Name, Length | Format-Table
+          $exes | Select-Object Name, Length | Format-Table
 
       - name: Prepare Tag and Release Notes
         shell: powershell
@@ -65,10 +65,10 @@ jobs:
         run: |
           $inputVer = if ($env:INPUT_VERSION) { $env:INPUT_VERSION.Trim() } else { "" }
           $refTag = if ($env:GITHUB_REF_NAME) { $env:GITHUB_REF_NAME.Trim().TrimStart('v') } else { "" }
-          $ver = if ($inputVer.Length -gt 0) { $inputVer } elseif ($refTag.Length -gt 0) { $refTag } else { "5.6" }
+          $ver = if ($inputVer.Length -gt 0) { $inputVer } elseif ($refTag.Length -gt 0) { $refTag } else { "6.1" }
 
           $inputTitle = if ($env:INPUT_TITLE) { $env:INPUT_TITLE.Trim() } else { "" }
-          $title = if ($inputTitle.Length -gt 0) { $inputTitle } else { "Shift-Enter Multiline Preservation & Focus Steal Mitigation" }
+          $title = if ($inputTitle.Length -gt 0) { $inputTitle } else { "Single-File Seamless App & Built-in Addon Loader" }
 
           $customNotes = if ($env:INPUT_NOTES) { $env:INPUT_NOTES.Trim() } else { "" }
 
@@ -84,14 +84,15 @@ jobs:
               "### Fixes & Improvements:",
               "",
               "- **Highlight ($ver):** $title.",
+              "- **Feature (Single-File Seamless Executable):** Remote addon loader is now embedded directly into the application binary. No zip extraction needed.",
               "- **Internal Cleanliness & Maintenance:** Regular maintenance, performance enhancements, and dependency updates.",
               "",
               "### Downloads:",
               "",
-              "- **Standalone (~160MB):** Self-contained executable. No .NET runtime required. Just download and run.",
-              "- **Lightweight (~3MB):** Extremely small footprint. Requires the [.NET 8 Desktop Runtime](https://dotnet.microsoft.com/en-us/download/dotnet/8.0).",
-              "- **Standalone-hidden (~160MB):** Same as Standalone, but with no icon and a blank app name (Discreet mode).",
-              "- **Lightweight-hidden (~3MB):** Same as Lightweight, but with no icon and a blank app name (Discreet mode)."
+              "- **BC-Desktop-Standalone.exe (~160MB):** Self-contained executable. No .NET runtime required. Just download and run.",
+              "- **BC-Desktop-Lightweight.exe (~6MB):** Extremely small footprint. Requires the [.NET 8 Desktop Runtime](https://dotnet.microsoft.com/en-us/download/dotnet/8.0).",
+              "- **BC-Desktop-Standalone-Hidden.exe (~160MB):** Same as Standalone, but with no icon and a blank app name (Discreet mode).",
+              "- **BC-Desktop-Lightweight-Hidden.exe (~6MB):** Same as Lightweight, but with no icon and a blank app name (Discreet mode)."
             )
             Set-Content -Path "RELEASE_NOTES.md" -Value $defaultNotes -Encoding UTF8
           }
@@ -105,10 +106,10 @@ jobs:
         run: |
           $inputVer = if ($env:INPUT_VERSION) { $env:INPUT_VERSION.Trim() } else { "" }
           $refTag = if ($env:GITHUB_REF_NAME) { $env:GITHUB_REF_NAME.Trim().TrimStart('v') } else { "" }
-          $ver = if ($inputVer.Length -gt 0) { $inputVer } elseif ($refTag.Length -gt 0) { $refTag } else { "5.6" }
+          $ver = if ($inputVer.Length -gt 0) { $inputVer } elseif ($refTag.Length -gt 0) { $refTag } else { "6.1" }
 
           $inputTitle = if ($env:INPUT_TITLE) { $env:INPUT_TITLE.Trim() } else { "" }
-          $title = if ($inputTitle.Length -gt 0) { $inputTitle } else { "Shift-Enter Multiline Preservation & Focus Steal Mitigation" }
+          $title = if ($inputTitle.Length -gt 0) { $inputTitle } else { "Single-File Seamless App & Built-in Addon Loader" }
           $releaseTitle = if ($title.Length -gt 0) { "v$ver - $title" } else { "v$ver" }
 
           $existingTags = gh release list -L 100 --json tagName -q ".[].tagName"
@@ -118,20 +119,20 @@ jobs:
             Write-Host "Release $ver already exists. Updating release notes and re-uploading assets..."
             gh release edit $ver --title $releaseTitle --notes-file RELEASE_NOTES.md
             gh release upload $ver `
-              publish/BC-Desktop-Standalone.zip `
-              publish/BC-Desktop-Lightweight.zip `
-              publish/BC-Desktop-Standalone-Hidden.zip `
-              publish/BC-Desktop-Lightweight-Hidden.zip `
+              publish/BC-Desktop-Standalone.exe `
+              publish/BC-Desktop-Lightweight.exe `
+              publish/BC-Desktop-Standalone-Hidden.exe `
+              publish/BC-Desktop-Lightweight-Hidden.exe `
               --clobber
           } else {
             Write-Host "Creating new release for $ver..."
             gh release create $ver `
               --title $releaseTitle `
               --notes-file RELEASE_NOTES.md `
-              publish/BC-Desktop-Standalone.zip `
-              publish/BC-Desktop-Lightweight.zip `
-              publish/BC-Desktop-Standalone-Hidden.zip `
-              publish/BC-Desktop-Lightweight-Hidden.zip
+              publish/BC-Desktop-Standalone.exe `
+              publish/BC-Desktop-Lightweight.exe `
+              publish/BC-Desktop-Standalone-Hidden.exe `
+              publish/BC-Desktop-Lightweight-Hidden.exe
           }
 
       - name: Clean up Workspace

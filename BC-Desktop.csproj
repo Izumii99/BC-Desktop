@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
@@ -35,7 +35,7 @@
     <Compile Remove="tests\**" />
     <None Remove="tests\**" />
     <None Remove="Scripts\**\*" />
-    <None Include="PublishLoader\inject-all.js" Link="Scripts\inject-all.js" CopyToOutputDirectory="PreserveNewest" />
+    <EmbeddedResource Include="PublishLoader\inject-all.js" LogicalName="BuiltInLoader.js" />
   </ItemGroup>
 
   <ItemGroup>

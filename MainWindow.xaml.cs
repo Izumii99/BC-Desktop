@@ -314,9 +314,28 @@ public partial class MainWindow : Window
         return _lastKnownGoodUrl;
     }
 
-    internal const string CurrentAppVersion = "6.0";
+    internal const string CurrentAppVersion = "6.1";
     internal const string GitHubRepo = "Izumii99/BC-Desktop";
     private static string? _newReleaseUrl;
+
+    private static readonly string _builtInLoaderScript = LoadBuiltInLoaderScript();
+
+    internal static string GetBuiltInLoaderScript() => _builtInLoaderScript;
+
+    private static string LoadBuiltInLoaderScript()
+    {
+        try
+        {
+            using var stream = typeof(MainWindow).Assembly.GetManifestResourceStream("BuiltInLoader.js");
+            if (stream == null) return string.Empty;
+            using var reader = new StreamReader(stream);
+            return reader.ReadToEnd();
+        }
+        catch
+        {
+            return string.Empty;
+        }
+    }
 
     internal static bool IsNewerVersion(string latestTag, string currentVersion)
     {
@@ -1100,11 +1119,20 @@ public partial class MainWindow : Window
             }
         };
 
+        string builtInLoader = GetBuiltInLoaderScript();
+        if (!string.IsNullOrWhiteSpace(builtInLoader))
+        {
+            await core.AddScriptToExecuteOnDocumentCreatedAsync(builtInLoader);
+        }
+
         string scriptsDir = Path.Combine(AppContext.BaseDirectory, "Scripts");
         if (Directory.Exists(scriptsDir))
         {
             foreach (var file in Directory.GetFiles(scriptsDir, "*.js"))
             {
+                if (string.Equals(Path.GetFileName(file), "inject-all.js", StringComparison.OrdinalIgnoreCase))
+                    continue;
+
                 string script = await File.ReadAllTextAsync(file);
                 await core.AddScriptToExecuteOnDocumentCreatedAsync(script);
             }

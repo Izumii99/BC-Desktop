@@ -10,6 +10,8 @@ Remove-Item "publish/lightweight" -Recurse -Force -ErrorAction SilentlyContinue
 Remove-Item "publish/standalone" -Recurse -Force -ErrorAction SilentlyContinue
 Remove-Item "publish/lightweight-hidden" -Recurse -Force -ErrorAction SilentlyContinue
 Remove-Item "publish/standalone-hidden" -Recurse -Force -ErrorAction SilentlyContinue
+Remove-Item "publish/BC-Desktop-*.exe" -Force -ErrorAction SilentlyContinue
+Remove-Item "publish/*.zip" -Force -ErrorAction SilentlyContinue
 
 Write-Host "Building Lightweight..."
 dotnet publish BC-Desktop.csproj -c Release -r win-x64 --self-contained false -o publish/lightweight
@@ -76,15 +78,26 @@ finally {
     Remove-Item -Path "bin" -Recurse -Force -ErrorAction SilentlyContinue
 }
 
-Write-Host "NOTE: Scripts folder now uses Remote Loader (inject-all.js). No manual script cleanup needed!"
+Write-Host "Organizing executables for direct single-file distribution..."
+Move-Item "publish/lightweight/Bondage Club.exe" "publish/BC-Desktop-Lightweight.exe" -Force
+Move-Item "publish/standalone/Bondage Club.exe" "publish/BC-Desktop-Standalone.exe" -Force
 
-Write-Host "Zipping..."
-Remove-Item "publish/*.zip" -ErrorAction SilentlyContinue
-Compress-Archive -Path "publish/lightweight/*" -DestinationPath "publish/BC-Desktop-Lightweight.zip" -Force
-Compress-Archive -Path "publish/lightweight-hidden/*" -DestinationPath "publish/BC-Desktop-Lightweight-Hidden.zip" -Force
-Compress-Archive -Path "publish/standalone/*" -DestinationPath "publish/BC-Desktop-Standalone.zip" -Force
-Compress-Archive -Path "publish/standalone-hidden/*" -DestinationPath "publish/BC-Desktop-Standalone-Hidden.zip" -Force
+$hiddenLightweightExe = Get-ChildItem "publish/lightweight-hidden/*.exe" | Select-Object -First 1
+if ($hiddenLightweightExe) {
+    Move-Item $hiddenLightweightExe.FullName "publish/BC-Desktop-Lightweight-Hidden.exe" -Force
+}
 
+$hiddenStandaloneExe = Get-ChildItem "publish/standalone-hidden/*.exe" | Select-Object -First 1
+if ($hiddenStandaloneExe) {
+    Move-Item $hiddenStandaloneExe.FullName "publish/BC-Desktop-Standalone-Hidden.exe" -Force
+}
 
+Write-Host "Cleaning temporary build directories..."
+Remove-Item "publish/lightweight" -Recurse -Force -ErrorAction SilentlyContinue
+Remove-Item "publish/standalone" -Recurse -Force -ErrorAction SilentlyContinue
+Remove-Item "publish/lightweight-hidden" -Recurse -Force -ErrorAction SilentlyContinue
+Remove-Item "publish/standalone-hidden" -Recurse -Force -ErrorAction SilentlyContinue
 
-Write-Host "Done!"
+Write-Host "`nBuild complete! Direct single-file executables ready in publish/:"
+Get-ChildItem "publish/BC-Desktop-*.exe" | Select-Object Name, @{Name="Size (MB)"; Expression={[math]::Round($_.Length / 1MB, 2)}} | Format-Table -AutoSize
+

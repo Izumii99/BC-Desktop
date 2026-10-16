@@ -22,7 +22,7 @@ A minimal native desktop wrapper for BC, built with **WPF** and **.NET 8**. Uses
 ## Features
 
 - **Auto-detects the latest game version** on every launch
-- **OTA (Over-the-Air) Remote Loader**: All addons and scripts are fetched automatically from GitHub on startup. You never need to re-download the desktop app just to get script updates!
+- **OTA (Over-the-Air) Built-in Remote Loader**: Addon manager and remote scripts are seamlessly embedded into the executable and fetched automatically on startup — no zip extraction or external script setup required!
 - **Silent Release Checker**: Background check for newer desktop releases with unobtrusive title bar notifications
 - **Borderless custom title bar** with seamless drag, minimize, maximize, and close
 - **Immersive Fullscreen (F11)** and **Chromium DevTools (F12)** keyboard shortcuts
@@ -345,7 +345,7 @@ MainWindow.xaml.cs  — WebView2 init, version detection, memory optimization, D
 RELEASE_NOTES.md    — Detailed user-facing changelog and release history
 Assets/             — Application icons and visual assets
 Scripts/            — Mod/addon scripts directory
-PublishLoader/      — Remote loader bundle for OTA distribution
+PublishLoader/      — Remote loader bundle embedded into the app for seamless distribution
 tests/              — Automated unit test suite (MSTest)
 .github/workflows/  — CI PR validation & release automation workflows
 ```
