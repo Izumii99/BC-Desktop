@@ -218,9 +218,8 @@ public class MainWindowTests
         StringAssert.Contains(nekoDarkContent, "orientation: portrait", "neko-dark.js must include portrait orientation media query for soft paws/hearts.");
         StringAssert.Contains(nekoDarkContent, "padding: 12px 16px !important", "neko-dark.js must preserve spacious padding for #InputChat.");
         StringAssert.Contains(nekoDarkContent, "font-size: clamp(16px, 1.15em, 18px)", "neko-dark.js must enforce comfortable text sizing on chat input.");
-        StringAssert.Contains(nekoDarkContent, "html body #chat-room-div:not([hidden])", "neko-dark.js must enforce flex layout on visible #chat-room-div to prevent clipping.");
-        StringAssert.Contains(nekoDarkContent, "html body #chat-room-div[hidden]", "neko-dark.js must enforce display: none on #chat-room-div[hidden] to allow character profiles and dialogs to hide the chat room.");
-        StringAssert.Contains(nekoDarkContent, "font-size: clamp(15px, 1.1em, 18px)", "neko-dark.js must enforce comfortable text sizing on chat log.");
+        Assert.IsFalse(nekoDarkContent.Contains("html body #chat-room-div"), "neko-dark.js must not override #chat-room-div layout (conflicts with BC resize sync).");
+        StringAssert.Contains(nekoDarkContent, "font-size: max(15px, 1em)", "neko-dark.js chat log font must follow native scale with a 15px floor.");
 
         // 4. If tester scripts directory exists, enforce whitelist rule strictly
         string testerScripts = Path.Combine(ProjectRoot, "publish", "tester", "Scripts");

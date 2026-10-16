@@ -47,44 +47,22 @@
                 --bcn-glow:   rgba(107, 80, 144, 0.35) !important;
             }
 
-            /* Chatroom Flex Layout: Prevents chat input from clipping/overflowing off-screen, while strictly respecting [hidden] attribute when dialogs/profiles open */
-            html body #chat-room-div:not([hidden]) {
-                display: flex !important;
-                flex-direction: column !important;
-                box-sizing: border-box !important;
-            }
-
-            html body #chat-room-div[hidden],
-            html body #chat-room-div.hidden,
-            html body #chat-room-div[style*="display: none"],
-            html body #chat-room-div[style*="display:none"] {
-                display: none !important;
-            }
-
-            html body #chat-room-top-menu,
-            html body #chat-room-struggle-bar {
-                flex: 0 0 auto !important;
-                box-sizing: border-box !important;
-            }
-
-            /* Container */
+            /* Container: follow BC's native scaled font, floored at 15px for small windows */
             html body #TextAreaChatLog {
-                flex: 1 1 0 !important;
-                height: auto !important;
-                min-height: 0 !important;
-                box-sizing: border-box !important;
-                overflow-y: auto !important;
-                font-size: clamp(15px, 1.1em, 18px) !important;
-                line-height: 1.45 !important;
+                font-size: max(15px, 1em) !important;
                 background: ${P.panel} !important;
                 border: 1px solid ${P.border} !important;
                 box-shadow: none !important;
             }
 
+            /* Own/other messages must share the same text size */
+            html body #TextAreaChatLog .ChatMessage .chat-room-message-content {
+                font-size: inherit !important;
+            }
+
             /* Base Bubbles */
             html body #TextAreaChatLog .ChatMessage {
                 font-size: inherit !important;
-                line-height: inherit !important;
                 background: ${P.soft} !important;
                 border: 1px solid ${P.border} !important;
                 color: ${P.text} !important;
@@ -200,19 +178,12 @@
             }
 
             /* Chat Input Area & Bot Container */
-            html body #chat-room-reply-indicator {
-                flex: 0 0 auto !important;
-                box-sizing: border-box !important;
-            }
-
             html body #chat-room-bot,
             html body.bcn-enabled #chat-room-bot,
             html body [id*="chat-room-bot"],
             html body #chat-room-bottom,
             html body div#chat-room-bottom,
             html body #chat-room-reply-indicator > * {
-                flex: 0 0 auto !important;
-                box-sizing: border-box !important;
                 background: ${P.panel} !important;
                 background-color: ${P.panel} !important;
                 border: 2px solid ${P.borderAcc} !important;
