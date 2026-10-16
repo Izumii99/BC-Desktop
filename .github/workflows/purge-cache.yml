@@ -1,0 +1,55 @@
+name: 'Purge jsDelivr Cache'
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'Scripts/**'
+      - 'PublishLoader/**'
+  workflow_dispatch:
+
+concurrency:
+  group: purge-cache-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  purge:
+    name: Purge jsDelivr Edge Cache
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Purge Cache on jsDelivr
+        shell: bash
+        run: |
+          echo "Finding all JavaScript scripts in repository..."
+          FILES=$(find Scripts PublishLoader -type f -name "*.js" 2>/dev/null)
+
+          if [ -z "$FILES" ]; then
+            echo "No .js files found in Scripts or PublishLoader."
+            exit 0
+          fi
+
+          echo "Found scripts:"
+          echo "$FILES"
+          echo "----------------------------------------"
+
+          # 1. Purge root package metadata (refreshes data.jsdelivr.com directory listing)
+          echo "Purging package metadata on data.jsdelivr.com..."
+          curl -s -X GET "https://purge.jsdelivr.net/gh/${{ github.repository }}@main/" || true
+          echo ""
+
+          # 2. Purge each script file on jsDelivr edge
+          for file in $FILES; do
+            clean_path="${file#./}"
+            purge_url="https://purge.jsdelivr.net/gh/${{ github.repository }}@main/${clean_path}"
+            echo "Purging: ${purge_url}"
+            response=$(curl -s -X GET "${purge_url}")
+            echo "Response: ${response}"
+          done
+
+          echo "----------------------------------------"
+          echo "All jsDelivr caches purged successfully!"
