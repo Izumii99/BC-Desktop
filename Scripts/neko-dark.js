@@ -53,11 +53,12 @@
                 line-height: 1.45 !important;
                 background: ${P.panel} !important;
                 background-color: ${P.panel} !important;
+                background-image: none !important;
                 border: 1px solid ${P.border} !important;
                 box-shadow: none !important;
             }
 
-            /* Base Bubbles & Addon Messages */
+            /* Base Bubbles, Addon Messages & Strict White Eradication */
             html body #TextAreaChatLog .ChatMessage,
             html body #TextAreaChatLog div.ChatMessage,
             html body #TextAreaChatLog [class*="ChatMessage"],
@@ -66,6 +67,7 @@
                 line-height: inherit !important;
                 background: ${P.soft} !important;
                 background-color: ${P.soft} !important;
+                background-image: none !important;
                 border: 1px solid ${P.border} !important;
                 color: ${P.text} !important;
                 box-shadow: 0 2px 8px rgba(0,0,0,0.45) !important;
@@ -75,6 +77,7 @@
             html body #TextAreaChatLog .bcn-own-message {
                 background: ${P.ownMsg} !important;
                 background-color: ${P.ownMsg} !important;
+                background-image: none !important;
                 border-color: ${P.borderAcc} !important;
             }
 
@@ -274,17 +277,34 @@
                 display: inline !important;
             }
 
-            /* Mod Effects */
+            /* Mod Effects - Responsive Floating Paws & Hearts (#bcn-soft-paws) */
             html body #bcn-soft-paws {
+                position: fixed !important;
                 left: 50% !important;
+                top: 0 !important;
                 width: 50% !important;
+                height: 100% !important;
                 overflow: hidden !important;
                 pointer-events: none !important;
+                z-index: 8 !important;
             }
             html body #bcn-soft-paws span {
                 color: ${P.icon} !important;
                 text-shadow: 0 4px 12px rgba(107, 80, 144, 0.35) !important;
                 opacity: 0.12 !important;
+            }
+
+            /* Portrait Mode (Mobile / Narrow View) - move 50% to bottom */
+            @media (orientation: portrait), (max-aspect-ratio: 1/1) {
+                html body #bcn-soft-paws {
+                    left: 0 !important;
+                    top: 50% !important;
+                    width: 100% !important;
+                    height: 50% !important;
+                }
+                html body #bcn-toast {
+                    left: 50% !important;
+                }
             }
 
             /* Top Menu */
@@ -376,8 +396,10 @@
 
             /* Neko Toast / Mini Notification Popup (#bcn-toast) */
             html body #bcn-toast {
+                left: 75% !important;
                 background: ${P.panel} !important;
                 background-color: ${P.panel} !important;
+                background-image: none !important;
                 border: 2px solid ${P.whisperBdr} !important;
                 color: ${P.whisperTxt} !important;
                 box-shadow: 0 12px 28px rgba(0, 0, 0, 0.65), 0 0 16px rgba(152, 88, 204, 0.35) !important;
@@ -401,13 +423,35 @@
         }
     }
 
+    function sanitizeStylesheets() {
+        try {
+            document.querySelectorAll("style:not(#neko-enhancer-dark-theme)").forEach(s => {
+                const text = s.textContent || "";
+                if (text.includes("bcn-") || text.includes("#TextAreaChatLog") || text.includes("--bcn-soft")) {
+                    if (text.includes("rgba(255, 255, 255") || text.includes("#fff1f6") || text.includes("#ffffff")) {
+                        s.textContent = text
+                            .replace(/--bcn-soft:\s*#fff1f6/g, `--bcn-soft: ${P.soft}`)
+                            .replace(/--bcn-panel:\s*#ffffff/g, `--bcn-panel: ${P.panel}`)
+                            .replace(/--bcn-text:\s*#8a3f5b/g, `--bcn-text: ${P.text}`)
+                            .replace(/--bcn-muted:\s*#9d7a86/g, `--bcn-muted: ${P.muted}`)
+                            .replace(/--bcn-border:\s*#ffd4e2/g, `--bcn-border: ${P.border}`)
+                            .replace(/--bcn-accent:\s*#f65086/g, `--bcn-accent: ${P.borderAcc}`)
+                            .replace(/rgba\(\s*255\s*,\s*255\s*,\s*255\s*,/g, "rgba(30, 24, 41,");
+                    }
+                }
+            });
+        } catch (e) {}
+    }
+
     injectDarkTheme();
+    sanitizeStylesheets();
     if (document.head) {
         new MutationObserver(() => {
             const style = document.getElementById("neko-enhancer-dark-theme");
             if (!style || document.head.lastElementChild !== style) {
                 injectDarkTheme();
             }
+            sanitizeStylesheets();
         }).observe(document.head, { childList: true });
     }
 
@@ -484,10 +528,26 @@
         }).observe(log, { childList: true });
     }
 
+    function syncPawsPosition() {
+        const paws = document.getElementById("bcn-soft-paws");
+        const log = document.getElementById("TextAreaChatLog");
+        if (!paws || !log) return;
+        const rect = log.getBoundingClientRect();
+        if (rect.width > 0 && rect.height > 0) {
+            paws.style.setProperty("left", `${rect.left}px`, "important");
+            paws.style.setProperty("top", `${rect.top}px`, "important");
+            paws.style.setProperty("width", `${rect.width}px`, "important");
+            paws.style.setProperty("height", `${rect.height}px`, "important");
+        }
+    }
+    window.addEventListener("resize", syncPawsPosition, { passive: true });
+    setInterval(syncPawsPosition, 1000);
+
     const chatPoller = setInterval(() => {
         if (document.getElementById("TextAreaChatLog")) {
             clearInterval(chatPoller);
             watchChat();
+            syncPawsPosition();
         }
     }, 800);
 
