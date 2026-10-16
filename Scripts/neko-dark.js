@@ -36,7 +36,7 @@
 
         style.textContent = `
             /* Variables */
-            :root, body, body.bcn-enabled {
+            :root, html, body, body.bcn-enabled {
                 --bcn-panel:  ${P.panel}  !important;
                 --bcn-soft:   ${P.soft}   !important;
                 --bcn-border: ${P.border} !important;
@@ -47,16 +47,25 @@
                 --bcn-glow:   rgba(107, 80, 144, 0.35) !important;
             }
 
-            /* Container */
+            /* Container & Font Size Stabilization */
             html body #TextAreaChatLog {
+                font-size: clamp(14px, 1.05em, 17px) !important;
+                line-height: 1.45 !important;
                 background: ${P.panel} !important;
+                background-color: ${P.panel} !important;
                 border: 1px solid ${P.border} !important;
                 box-shadow: none !important;
             }
 
-            /* Base Bubbles */
-            html body #TextAreaChatLog .ChatMessage {
+            /* Base Bubbles & Addon Messages */
+            html body #TextAreaChatLog .ChatMessage,
+            html body #TextAreaChatLog div.ChatMessage,
+            html body #TextAreaChatLog [class*="ChatMessage"],
+            html body #TextAreaChatLog .bcn-card-message {
+                font-size: inherit !important;
+                line-height: inherit !important;
                 background: ${P.soft} !important;
+                background-color: ${P.soft} !important;
                 border: 1px solid ${P.border} !important;
                 color: ${P.text} !important;
                 box-shadow: 0 2px 8px rgba(0,0,0,0.45) !important;
@@ -65,6 +74,7 @@
             /* Own Message */
             html body #TextAreaChatLog .bcn-own-message {
                 background: ${P.ownMsg} !important;
+                background-color: ${P.ownMsg} !important;
                 border-color: ${P.borderAcc} !important;
             }
 

@@ -66,8 +66,47 @@
                     font-family: Arial, sans-serif !important;
                 }
 
+                /* Self-contained styling for translate widget (protects against ad-blockers blocking cdn.tailwindcss.com) */
+                #translate-root * { box-sizing: border-box; }
+                #translate-widget {
+                    position: relative;
+                    width: 340px;
+                    background: rgba(22, 23, 36, 0.95);
+                    backdrop-filter: blur(16px);
+                    -webkit-backdrop-filter: blur(16px);
+                    border: 1px solid rgba(255, 255, 255, 0.08);
+                    border-radius: 24px;
+                    padding: 16px;
+                    box-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.85), 0 0 0 1px rgba(255, 255, 255, 0.07);
+                    color: #f1f5f9;
+                    font-family: ui-sans-serif, system-ui, sans-serif;
+                }
+
+                #bc-google-translate-btn {
+                    position: fixed;
+                    top: 10px;
+                    left: 10px;
+                    z-index: 999999;
+                    width: 48px;
+                    height: 48px;
+                    border-radius: 16px;
+                    background: linear-gradient(135deg, #9333ea, #4f46e5, #6b21a8);
+                    color: #ffffff;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    box-shadow: 0 0 20px -2px rgba(147, 51, 234, 0.55);
+                    border: 1px solid rgba(192, 132, 252, 0.4);
+                    cursor: pointer;
+                    transition: transform 0.2s ease, box-shadow 0.2s ease;
+                }
+                #bc-google-translate-btn:hover { transform: scale(1.05); }
+                #bc-google-translate-btn:active { transform: scale(0.95); }
+                #bc-google-translate-btn svg { width: 24px; height: 24px; }
+
                 /* Dedicated class for widget textareas — does not touch BC game styles */
-                html body #translate-widget-container .bc-widget-textarea {
+                #translate-root .bc-widget-textarea {
+                    width: 100%;
                     background: transparent !important;
                     background-color: transparent !important;
                     border: none !important;
@@ -76,12 +115,121 @@
                     resize: none !important;
                     font-family: ui-sans-serif, system-ui, sans-serif !important;
                     color: #e2e8f0 !important;
+                    font-size: 13px !important;
+                    line-height: 1.5 !important;
+                    padding: 0 !important;
                 }
-                html body #translate-widget-container .bc-widget-textarea::placeholder {
+                #translate-root .bc-widget-textarea::placeholder {
+                    color: #71768e !important;
                     opacity: 1 !important;
                 }
-                html body #translate-widget-container .bc-widget-textarea.bc-output-muted { color: #71717a !important; }
-                html body #translate-widget-container .bc-widget-textarea.bc-output-active { color: #e2e8f0 !important; }
+                #translate-root .bc-widget-textarea.bc-output-muted { color: #71717a !important; }
+                #translate-root .bc-widget-textarea.bc-output-active { color: #e2e8f0 !important; }
+
+                /* Core layout utilities scoped to #translate-root */
+                #translate-root .flex { display: flex; }
+                #translate-root .flex-col { flex-direction: column; }
+                #translate-root .items-center { align-items: center; }
+                #translate-root .justify-between { justify-content: space-between; }
+                #translate-root .justify-end { justify-content: flex-end; }
+                #translate-root .w-full { width: 100%; }
+                #translate-root .hidden { display: none !important; }
+                #translate-root .relative { position: relative; }
+                #translate-root .shrink-0 { flex-shrink: 0; }
+                #translate-root .cursor-move { cursor: move; }
+                #translate-root .cursor-pointer { cursor: pointer; }
+                #translate-root .truncate { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+                #translate-root .bg-\[\#0f1019\] { background-color: #0f1019; }
+                #translate-root .bg-\[\#1b1c2b\] { background-color: #1b1c2b; }
+                #translate-root .rounded-2xl { border-radius: 16px; }
+                #translate-root .p-3\.5 { padding: 14px; }
+                #translate-root .min-h-\[140px\] { min-height: 140px; }
+                #translate-root .min-h-\[148px\] { min-height: 148px; }
+                #translate-root .border-white\/\[0\.04\] { border-color: rgba(255, 255, 255, 0.04); }
+                #translate-root .border-purple-500\/10 { border-color: rgba(168, 85, 247, 0.1); }
+                #translate-root .border { border-width: 1px; border-style: solid; }
+                #translate-root .border-t { border-top-width: 1px; border-top-style: solid; }
+
+                #translate-root .bc-quick-lang {
+                    padding: 3px 10px;
+                    border-radius: 6px;
+                    background: #212335;
+                    color: #cbd5e1;
+                    font-size: 11px;
+                    font-weight: 500;
+                    border: 1px solid rgba(255, 255, 255, 0.05);
+                    cursor: pointer;
+                    transition: all 0.15s ease;
+                }
+                #translate-root .bc-quick-lang:hover {
+                    background: rgba(139, 92, 246, 0.3);
+                    color: #d8b4fe;
+                }
+
+                #copy-translation-btn {
+                    display: flex;
+                    align-items: center;
+                    gap: 6px;
+                    background: linear-gradient(to right, #9333ea, #6366f1);
+                    color: #ffffff;
+                    font-weight: 500;
+                    font-size: 12px;
+                    padding: 6px 14px;
+                    border-radius: 12px;
+                    border: none;
+                    box-shadow: 0 0 15px rgba(147, 51, 234, 0.4);
+                    cursor: pointer;
+                    transition: all 0.15s ease;
+                }
+                #copy-translation-btn:hover { background: linear-gradient(to right, #a855f7, #4f46e5); }
+                #copy-translation-btn:active { transform: scale(0.95); }
+
+                #btn-swap {
+                    width: 28px;
+                    height: 28px;
+                    border-radius: 8px;
+                    background: #212335;
+                    color: #94a3b8;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    border: 1px solid rgba(255, 255, 255, 0.05);
+                    cursor: pointer;
+                    transition: all 0.15s;
+                }
+                #btn-swap:hover {
+                    background: rgba(139, 92, 246, 0.3);
+                    color: #c084fc;
+                }
+
+                #clear-input {
+                    background: transparent;
+                    border: none;
+                    color: #71717a;
+                    cursor: pointer;
+                    padding: 2px;
+                    display: flex;
+                    align-items: center;
+                }
+                #clear-input:hover { color: #ffffff; }
+
+                #btn-minimize, #btn-close {
+                    background: transparent;
+                    border: none;
+                    color: #64748b;
+                    cursor: pointer;
+                    padding: 4px;
+                    border-radius: 6px;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    transition: all 0.15s;
+                }
+                #btn-minimize:hover, #btn-close:hover {
+                    color: #ffffff;
+                    background: rgba(255, 255, 255, 0.08);
+                }
 
                 /* Custom dropdown */
                 .bc-dropdown { position: relative; flex: 1; }
@@ -151,12 +299,6 @@
                 }
                 .bc-dropdown-trigger:hover { background: rgba(39,41,64,1); }
                 .bc-dropdown-trigger.active { border-color: rgba(139,92,246,0.5); background: rgba(39,41,64,1); }
-                #bc-google-translate-btn {
-                    cursor: pointer;
-                }
-                #translate-widget {
-                    font-family: ui-sans-serif, system-ui, sans-serif;
-                }
                 .bc-dropdown-chevron {
                     width: 14px !important;
                     height: 14px !important;
