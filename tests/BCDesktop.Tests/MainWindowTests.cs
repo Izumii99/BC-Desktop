@@ -220,6 +220,9 @@ public class MainWindowTests
         StringAssert.Contains(nekoDarkContent, "clamp(5px, 1.2vh, 10px)", "neko-dark.js must enforce responsive padding for #InputChat.");
         StringAssert.Contains(nekoDarkContent, "clamp(13px, 1.1em, 17px)", "neko-dark.js must enforce flexible responsive text sizing on chat input.");
         StringAssert.Contains(nekoDarkContent, "bcn-in-dialog", "neko-dark.js must track and hide chat elements when character dialog or profile is open.");
+        StringAssert.Contains(nekoDarkContent, "keepPanelInViewport", "neko-dark.js must clamp floating cat button inside viewport on resize.");
+        StringAssert.Contains(nekoDarkContent, "clamp(28px, 5.5vmin, 48px)", "neko-dark.js must enforce responsive scaling on floating cat button.");
+        StringAssert.Contains(nekoDarkContent, "overflow: hidden !important", "neko-dark.js must lock html/body scroll to prevent game canvas shifting.");
         Assert.IsFalse(nekoDarkContent.Contains("html body #chat-room-div"), "neko-dark.js must not override #chat-room-div layout (conflicts with BC resize sync).");
 
         // 4. If tester scripts directory exists, enforce whitelist rule strictly

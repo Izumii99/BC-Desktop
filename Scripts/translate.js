@@ -15,9 +15,10 @@
                     top: 10px;
                     left: 10px;
                     z-index: 999999;
-                    width: 48px;
-                    height: 48px;
-                    border-radius: 16px;
+                    width: clamp(28px, 5.5vmin, 48px);
+                    height: clamp(28px, 5.5vmin, 48px);
+                    border-radius: clamp(10px, 2vh, 16px);
+                    font-size: clamp(13px, 2.5vmin, 18px);
                     background: linear-gradient(135deg, #9333ea, #4f46e5, #6b21a8);
                     color: #ffffff;
                     display: flex;

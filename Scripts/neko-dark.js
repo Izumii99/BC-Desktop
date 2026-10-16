@@ -47,6 +47,10 @@
                 --bcn-glow:   rgba(107, 80, 144, 0.35) !important;
             }
 
+            html, body {
+                overflow: hidden !important;
+            }
+
             /* Container: follow BC's native scaled font, floored at 15px for small windows */
             html body #TextAreaChatLog {
                 font-size: max(15px, 1em) !important;
@@ -352,6 +356,26 @@
             html body #bcn-panel:not(:has(#bcn-submenu button)),
             html body.bcn-menu-collapsed #bcn-panel {
                 gap: 0 !important;
+            }
+
+            /* Responsive & Flexible Floating Cat Button (#bcn-panel) */
+            html body #bcn-panel {
+                padding: clamp(3px, 0.8vh, 6px) clamp(4px, 1vw, 8px) !important;
+                border-radius: clamp(10px, 2vh, 16px) !important;
+                max-width: fit-content !important;
+                max-height: fit-content !important;
+            }
+
+            html body #bcn-main-cat,
+            html body #bcn-wheel-handle,
+            html body #bcn-face,
+            html body .bcn-btn {
+                width: clamp(28px, 5.5vmin, 48px) !important;
+                height: clamp(28px, 5.5vmin, 48px) !important;
+                min-width: clamp(28px, 5.5vmin, 48px) !important;
+                min-height: clamp(28px, 5.5vmin, 48px) !important;
+                font-size: clamp(14px, 2.8vmin, 24px) !important;
+                border-radius: clamp(8px, 1.8vh, 14px) !important;
             }
 
             /* Top Menu */
@@ -682,13 +706,39 @@
         return !inDialogOrHidden;
     }
 
+    function keepPanelInViewport() {
+        const panel = document.getElementById("bcn-panel");
+        if (!panel) return;
+        const rect = panel.getBoundingClientRect();
+        const maxLeft = Math.max(0, window.innerWidth - rect.width - 6);
+        const maxTop = Math.max(0, window.innerHeight - rect.height - 6);
+
+        let curLeft = panel.offsetLeft;
+        let curTop = panel.offsetTop;
+
+        let newLeft = Math.min(Math.max(6, curLeft), maxLeft);
+        let newTop = Math.min(Math.max(6, curTop), maxTop);
+
+        if (panel.style.left && curLeft !== newLeft) {
+            panel.style.left = `${newLeft}px`;
+        }
+        if (panel.style.top && curTop !== newTop) {
+            panel.style.top = `${newTop}px`;
+        }
+    }
+
     // Continuously maintain layout & visibility states in poller
     const pawsUiPoller = setInterval(() => {
         hookPawsLayoutUI();
         updateChatVisibilityState();
+        keepPanelInViewport();
     }, 400);
 
     function resyncChatLayout() {
+        if (window.scrollX !== 0 || window.scrollY !== 0) {
+            window.scrollTo(0, 0);
+        }
+        keepPanelInViewport();
         const active = updateChatVisibilityState();
         if (active && typeof window.ChatRoomResize === "function") {
             try { window.ChatRoomResize(false); } catch (e) {}
@@ -698,6 +748,12 @@
             }
         }
     }
+
+    window.addEventListener("scroll", () => {
+        if (window.scrollX !== 0 || window.scrollY !== 0) {
+            window.scrollTo(0, 0);
+        }
+    }, { passive: true });
 
     window.addEventListener("resize", () => {
         clearTimeout(window._bcnChatResync);
