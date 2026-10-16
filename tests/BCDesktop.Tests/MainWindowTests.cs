@@ -201,6 +201,11 @@ public class MainWindowTests
         Assert.IsFalse(string.IsNullOrWhiteSpace(builtInScript), "Embedded resource BuiltInLoader.js must be present.");
         StringAssert.Contains(builtInScript, "addon-manager.js", "Built-in loader must target addon-manager.js.");
 
+        // Verify smart auto-detection between local tester folder and built-in loader
+        string csPath = Path.Combine(ProjectRoot, "MainWindow.xaml.cs");
+        string csCode = File.ReadAllText(csPath);
+        StringAssert.Contains(csCode, "hasLocalScripts", "MainWindow must auto-detect local scripts folder.");
+
         // 2. Verify addon-manager.js ignores deprecated and disabled scripts
         string addonManagerPath = Path.Combine(ProjectRoot, "Scripts", "addon-manager.js");
         Assert.IsTrue(File.Exists(addonManagerPath), "Scripts/addon-manager.js must exist.");
@@ -222,8 +227,8 @@ public class MainWindowTests
         Assert.IsFalse(nekoDarkContent.Contains("bcn-paws-layout-toggle"), "neko-dark.js must not inject the unused paws toggle into the Neko submenu.");
         StringAssert.Contains(nekoDarkContent, "_bcnChatResync", "neko-dark.js must resync BC chat log height after viewport resize.");
         StringAssert.Contains(nekoDarkContent, "orientation: portrait", "neko-dark.js must include portrait orientation media query for soft paws/hearts.");
-        StringAssert.Contains(nekoDarkContent, "clamp(5px, 1.2vh, 10px)", "neko-dark.js must enforce responsive padding for #InputChat.");
-        StringAssert.Contains(nekoDarkContent, "clamp(13px, 1.1em, 17px)", "neko-dark.js must enforce flexible responsive text sizing on chat input.");
+        StringAssert.Contains(nekoDarkContent, "padding: 0.45em 0.8em !important", "neko-dark.js must enforce responsive em padding for #InputChat.");
+        StringAssert.Contains(nekoDarkContent, "font-size: 1em !important", "neko-dark.js must follow native em text scaling on chat input.");
         StringAssert.Contains(nekoDarkContent, "bcn-in-dialog", "neko-dark.js must track and hide chat elements when character dialog or profile is open.");
         StringAssert.Contains(nekoDarkContent, "keepPanelInViewport", "neko-dark.js must clamp floating cat button inside viewport on resize.");
         StringAssert.Contains(nekoDarkContent, "clamp(28px, 5.5vmin, 48px)", "neko-dark.js must enforce responsive scaling on floating cat button.");

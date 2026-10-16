@@ -1,6 +1,7 @@
 ### Fixes & Improvements:
 
 - **Feature (Seamless Single-File Executable):** The remote addon loader (`inject-all.js`) is now embedded directly into the application binary as an embedded resource. No external `Scripts/` folder is required on disk, and users no longer need to extract `.zip` archives.
+- **Improvement (Smart Tester Auto-Detection):** Automatically detects if an external `Scripts/` folder is present. If local scripts exist, the client prioritizes the local folder and cleanly bypasses the remote loader, enabling offline tester workflows without duplicate injections or CDN conflicts.
 - **Improvement (Direct App Distribution):** Releases are now distributed directly as runnable single `.exe` files (`BC-Desktop-Standalone.exe`, `BC-Desktop-Lightweight.exe`, `BC-Desktop-Standalone-Hidden.exe`, `BC-Desktop-Lightweight-Hidden.exe`), enabling instant one-click download and launch.
 - **Fix (Room & Profile Descriptions):** Pressing Enter or Shift+Enter inside text areas (such as online room descriptions and character profiles) now inserts new lines as expected, without losing focus or mistakenly activating chat shortcuts.
 - **Fix (Preferences & Dropdown Menus):** Clicking dropdown menus or scrolling inside preference grids no longer causes the window to jump to the bottom or dismiss dropdown selections prematurely.

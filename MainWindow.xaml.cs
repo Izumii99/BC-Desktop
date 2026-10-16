@@ -1119,22 +1119,25 @@ public partial class MainWindow : Window
             }
         };
 
-        string builtInLoader = GetBuiltInLoaderScript();
-        if (!string.IsNullOrWhiteSpace(builtInLoader))
-        {
-            await core.AddScriptToExecuteOnDocumentCreatedAsync(builtInLoader);
-        }
-
         string scriptsDir = Path.Combine(AppContext.BaseDirectory, "Scripts");
-        if (Directory.Exists(scriptsDir))
+        bool hasLocalScripts = Directory.Exists(scriptsDir) && Directory.EnumerateFiles(scriptsDir, "*.js").Any();
+
+        if (hasLocalScripts)
         {
+            // 🧪 Tester / Local Dev Mode: Prioritaskan skrip lokal dari folder Scripts/ dan bypass remote CDN
             foreach (var file in Directory.GetFiles(scriptsDir, "*.js"))
             {
-                if (string.Equals(Path.GetFileName(file), "inject-all.js", StringComparison.OrdinalIgnoreCase))
-                    continue;
-
                 string script = await File.ReadAllTextAsync(file);
                 await core.AddScriptToExecuteOnDocumentCreatedAsync(script);
+            }
+        }
+        else
+        {
+            // 🚀 Single-File Standalone Release Mode: Gunakan built-in remote loader bawaan
+            string builtInLoader = GetBuiltInLoaderScript();
+            if (!string.IsNullOrWhiteSpace(builtInLoader))
+            {
+                await core.AddScriptToExecuteOnDocumentCreatedAsync(builtInLoader);
             }
         }
 

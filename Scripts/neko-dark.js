@@ -51,9 +51,9 @@
                 overflow: hidden !important;
             }
 
-            /* Container: follow BC's native scaled font, floored at 15px for small windows */
+            /* Container: follow BC's native scaled font */
             html body #TextAreaChatLog {
-                font-size: max(15px, 1em) !important;
+                font-size: 1em !important;
                 background: ${P.panel} !important;
                 border: 1px solid ${P.border} !important;
                 box-shadow: none !important;
@@ -204,13 +204,13 @@
                 background: ${P.panel} !important;
                 background-color: ${P.panel} !important;
                 border: 2px solid ${P.borderAcc} !important;
-                border-radius: clamp(8px, 1.5vh, 14px) !important;
+                border-radius: 0.75em !important;
                 color: ${P.text} !important;
                 box-shadow: 0 4px 12px rgba(0, 0, 0, 0.45) !important;
-                min-height: clamp(30px, calc(var(--button-size, 32px) + 4px), 46px) !important;
+                min-height: unset !important;
             }
 
-            /* Chat Input Element (Flexes smoothly between small and large windows) */
+            /* Chat Input Element (Flexes smoothly with native canvas font scaling without jitter) */
             html body #InputChat,
             html body textarea#InputChat,
             html body input#InputChat,
@@ -225,10 +225,10 @@
                 color: ${P.text} !important;
                 border: none !important;
                 box-shadow: none !important;
-                padding: clamp(5px, 1.2vh, 10px) clamp(8px, 1.5vw, 14px) !important;
-                font-size: clamp(13px, 1.1em, 17px) !important;
+                padding: 0.45em 0.8em !important;
+                font-size: 1em !important;
                 line-height: 1.35 !important;
-                min-height: clamp(28px, var(--button-size, 32px), 42px) !important;
+                min-height: unset !important;
                 box-sizing: border-box !important;
             }
 
