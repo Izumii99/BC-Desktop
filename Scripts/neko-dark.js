@@ -293,15 +293,64 @@
                 color: ${P.text} !important;
             }
 
-            /* Emotes/Activities */
+            /* Emotes / Actions / Activities: Compact spacing without bubble paddings or badges */
+            html body #TextAreaChatLog .ChatMessageEmote,
+            html body #TextAreaChatLog .ChatMessageAction,
+            html body #TextAreaChatLog .ChatMessageActivity,
             html body #TextAreaChatLog .nk-emote,
-            html body #TextAreaChatLog .nk-emote .chat-room-message-content,
-            html body #TextAreaChatLog .ChatMessageEmote .chat-room-message-content,
-            html body #TextAreaChatLog .ChatMessageAction .chat-room-message-content {
-                font-style: italic !important;
+            html body #TextAreaChatLog div.ChatMessageEmote,
+            html body #TextAreaChatLog div.ChatMessageAction,
+            html body #TextAreaChatLog div.ChatMessageActivity,
+            html body #TextAreaChatLog div.nk-emote {
+                margin: 2px 8px !important;
+                padding: 2px 14px !important;
+                border: none !important;
+                border-radius: 0 !important;
+                background: transparent !important;
+                background-color: transparent !important;
+                background-image: none !important;
+                box-shadow: none !important;
                 color: ${P.emoteTxt} !important;
+                font-style: italic !important;
+                min-height: 0 !important;
+                line-height: 1.35 !important;
             }
-            html body #TextAreaChatLog .nk-emote *:not(.ChatMessageName) {
+
+            html body #TextAreaChatLog .bcn-own-message.ChatMessageEmote,
+            html body #TextAreaChatLog .bcn-own-message.ChatMessageAction,
+            html body #TextAreaChatLog .bcn-own-message.ChatMessageActivity,
+            html body #TextAreaChatLog .bcn-own-message.nk-emote {
+                background: transparent !important;
+                background-color: transparent !important;
+                background-image: none !important;
+                border: none !important;
+                box-shadow: none !important;
+            }
+
+            html body #TextAreaChatLog .ChatMessageEmote::before,
+            html body #TextAreaChatLog .ChatMessageAction::before,
+            html body #TextAreaChatLog .ChatMessageActivity::before,
+            html body #TextAreaChatLog .nk-emote::before,
+            html body #TextAreaChatLog .ChatMessageEmote::after,
+            html body #TextAreaChatLog .ChatMessageAction::after,
+            html body #TextAreaChatLog .ChatMessageActivity::after,
+            html body #TextAreaChatLog .nk-emote::after,
+            html body #TextAreaChatLog .bcn-own-message.ChatMessageEmote::before,
+            html body #TextAreaChatLog .bcn-own-message.ChatMessageAction::before,
+            html body #TextAreaChatLog .bcn-own-message.ChatMessageActivity::before,
+            html body #TextAreaChatLog .bcn-own-message.nk-emote::before,
+            html body #TextAreaChatLog .bcn-own-message.ChatMessageEmote::after,
+            html body #TextAreaChatLog .bcn-own-message.ChatMessageAction::after,
+            html body #TextAreaChatLog .bcn-own-message.ChatMessageActivity::after,
+            html body #TextAreaChatLog .bcn-own-message.nk-emote::after {
+                content: none !important;
+                display: none !important;
+            }
+
+            html body #TextAreaChatLog .ChatMessageEmote *,
+            html body #TextAreaChatLog .ChatMessageAction *,
+            html body #TextAreaChatLog .ChatMessageActivity *,
+            html body #TextAreaChatLog .nk-emote *:not(.ChatMessageName):not(.ChatMessageName *) {
                 color: ${P.emoteTxt} !important;
                 text-shadow: none !important;
             }
@@ -511,6 +560,7 @@
         { cls: "nk-enter", re: /(entered|has entered|joined the room)/i },
     ];
     const EMOTE_RE = /^\s*\*[^*]+\*/;
+    const ACTION_RE = /^\s*\(.+\)\s*$/;
 
     function fixUndefinedName(el) {
         const name = window.Player?.Name || "";
@@ -538,13 +588,16 @@
         const isActivity = el.classList.contains("ChatMessageActivity") ||
                            el.classList.contains("ChatMessageEmote") ||
                            el.classList.contains("ChatMessageAction");
-        const isEmote = !isActivity && EMOTE_RE.test(text);
+        const isEmote = !isActivity && (EMOTE_RE.test(text) || ACTION_RE.test(text));
         
         if (isActivity || isEmote) {
             el.classList.add("nk-emote");
             el.style.setProperty("background", "transparent", "important");
             el.style.setProperty("border", "none", "important");
             el.style.setProperty("box-shadow", "none", "important");
+            el.style.setProperty("margin", "2px 8px", "important");
+            el.style.setProperty("padding", "2px 14px", "important");
+            el.style.setProperty("min-height", "0", "important");
             return;
         }
 
