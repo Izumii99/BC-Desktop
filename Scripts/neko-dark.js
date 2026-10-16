@@ -293,15 +293,18 @@
                 color: ${P.text} !important;
             }
 
-            /* Emotes / Actions / Activities: Compact spacing without bubble paddings or badges */
+            /* Emotes / Actions / Activities / Non-Dialogues: Compact spacing without bubble paddings or badges */
             html body #TextAreaChatLog .ChatMessageEmote,
             html body #TextAreaChatLog .ChatMessageAction,
             html body #TextAreaChatLog .ChatMessageActivity,
+            html body #TextAreaChatLog .ChatMessageNonDialogue,
+            html body #TextAreaChatLog .ChatMessageEnterLeave,
             html body #TextAreaChatLog .nk-emote,
             html body #TextAreaChatLog div.ChatMessageEmote,
             html body #TextAreaChatLog div.ChatMessageAction,
             html body #TextAreaChatLog div.ChatMessageActivity,
-            html body #TextAreaChatLog div.nk-emote {
+            html body #TextAreaChatLog div.nk-emote,
+            html body #TextAreaChatLog .ChatMessage:not(.ChatMessageChat):not(.ChatMessageWhisper):not(.ChatMessageBeep):not(.nk-voice):not(.nk-online):not(.nk-offline) {
                 margin: 2px 8px !important;
                 padding: 2px 14px !important;
                 border: none !important;
@@ -319,7 +322,10 @@
             html body #TextAreaChatLog .bcn-own-message.ChatMessageEmote,
             html body #TextAreaChatLog .bcn-own-message.ChatMessageAction,
             html body #TextAreaChatLog .bcn-own-message.ChatMessageActivity,
-            html body #TextAreaChatLog .bcn-own-message.nk-emote {
+            html body #TextAreaChatLog .bcn-own-message.ChatMessageNonDialogue,
+            html body #TextAreaChatLog .bcn-own-message.ChatMessageEnterLeave,
+            html body #TextAreaChatLog .bcn-own-message.nk-emote,
+            html body #TextAreaChatLog .bcn-own-message:not(.ChatMessageChat):not(.ChatMessageWhisper):not(.ChatMessageBeep):not(.nk-voice):not(.nk-online):not(.nk-offline) {
                 background: transparent !important;
                 background-color: transparent !important;
                 background-image: none !important;
@@ -327,22 +333,23 @@
                 box-shadow: none !important;
             }
 
+            /* Strip paw badges from all non-dialogue messages */
             html body #TextAreaChatLog .ChatMessageEmote::before,
             html body #TextAreaChatLog .ChatMessageAction::before,
             html body #TextAreaChatLog .ChatMessageActivity::before,
+            html body #TextAreaChatLog .ChatMessageNonDialogue::before,
+            html body #TextAreaChatLog .ChatMessageEnterLeave::before,
             html body #TextAreaChatLog .nk-emote::before,
+            html body #TextAreaChatLog .ChatMessage:not(.ChatMessageChat):not(.ChatMessageWhisper)::before,
+            html body #TextAreaChatLog .bcn-own-message:not(.ChatMessageChat):not(.ChatMessageWhisper)::before,
             html body #TextAreaChatLog .ChatMessageEmote::after,
             html body #TextAreaChatLog .ChatMessageAction::after,
             html body #TextAreaChatLog .ChatMessageActivity::after,
+            html body #TextAreaChatLog .ChatMessageNonDialogue::after,
+            html body #TextAreaChatLog .ChatMessageEnterLeave::after,
             html body #TextAreaChatLog .nk-emote::after,
-            html body #TextAreaChatLog .bcn-own-message.ChatMessageEmote::before,
-            html body #TextAreaChatLog .bcn-own-message.ChatMessageAction::before,
-            html body #TextAreaChatLog .bcn-own-message.ChatMessageActivity::before,
-            html body #TextAreaChatLog .bcn-own-message.nk-emote::before,
-            html body #TextAreaChatLog .bcn-own-message.ChatMessageEmote::after,
-            html body #TextAreaChatLog .bcn-own-message.ChatMessageAction::after,
-            html body #TextAreaChatLog .bcn-own-message.ChatMessageActivity::after,
-            html body #TextAreaChatLog .bcn-own-message.nk-emote::after {
+            html body #TextAreaChatLog .ChatMessage:not(.ChatMessageChat):not(.ChatMessageWhisper)::after,
+            html body #TextAreaChatLog .bcn-own-message:not(.ChatMessageChat):not(.ChatMessageWhisper)::after {
                 content: none !important;
                 display: none !important;
             }
@@ -350,7 +357,10 @@
             html body #TextAreaChatLog .ChatMessageEmote *,
             html body #TextAreaChatLog .ChatMessageAction *,
             html body #TextAreaChatLog .ChatMessageActivity *,
-            html body #TextAreaChatLog .nk-emote *:not(.ChatMessageName):not(.ChatMessageName *) {
+            html body #TextAreaChatLog .ChatMessageNonDialogue *,
+            html body #TextAreaChatLog .ChatMessageEnterLeave *,
+            html body #TextAreaChatLog .nk-emote *:not(.ChatMessageName):not(.ChatMessageName *),
+            html body #TextAreaChatLog .ChatMessage:not(.ChatMessageChat):not(.ChatMessageWhisper):not(.ChatMessageBeep):not(.nk-voice):not(.nk-online):not(.nk-offline) *:not(.ChatMessageName):not(.ChatMessageName *) {
                 color: ${P.emoteTxt} !important;
                 text-shadow: none !important;
             }
@@ -587,7 +597,9 @@
 
         const isActivity = el.classList.contains("ChatMessageActivity") ||
                            el.classList.contains("ChatMessageEmote") ||
-                           el.classList.contains("ChatMessageAction");
+                           el.classList.contains("ChatMessageAction") ||
+                           el.classList.contains("ChatMessageNonDialogue") ||
+                           el.classList.contains("ChatMessageEnterLeave");
         const isEmote = !isActivity && (EMOTE_RE.test(text) || ACTION_RE.test(text));
         
         if (isActivity || isEmote) {
