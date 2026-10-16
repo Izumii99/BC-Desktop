@@ -224,19 +224,7 @@ public class MainWindowTests
         StringAssert.Contains(nekoDarkContent, "hookBcModSdk", "neko-dark.js must guard bcModSdk against duplicate unloading.");
         StringAssert.Contains(nekoDarkContent, "isNekoModLoaded", "neko-dark.js must verify existing Neko mod state before injecting runtime.");
         StringAssert.Contains(nekoDarkContent, "#bcn-toast", "neko-dark.js must include dark theme overrides for #bcn-toast popup.");
-        Assert.IsFalse(nekoDarkContent.Contains("bcn-paws-layout-toggle"), "neko-dark.js must not inject the unused paws toggle into the Neko submenu.");
-        StringAssert.Contains(nekoDarkContent, "_bcnChatResync", "neko-dark.js must resync BC chat log height after viewport resize.");
-        StringAssert.Contains(nekoDarkContent, "orientation: portrait", "neko-dark.js must include portrait orientation media query for soft paws/hearts.");
-        StringAssert.Contains(nekoDarkContent, "padding: 0.45em 0.8em !important", "neko-dark.js must enforce responsive em padding for #InputChat.");
-        StringAssert.Contains(nekoDarkContent, "font-size: 1em !important", "neko-dark.js must follow native em text scaling on chat input.");
-        StringAssert.Contains(nekoDarkContent, "bcn-in-dialog", "neko-dark.js must track and hide chat elements when character dialog or profile is open.");
-        StringAssert.Contains(nekoDarkContent, "keepPanelInViewport", "neko-dark.js must clamp floating cat button inside viewport on resize.");
-        StringAssert.Contains(nekoDarkContent, "clamp(28px, 5.5vmin, 48px)", "neko-dark.js must enforce responsive scaling on floating cat button.");
-        StringAssert.Contains(nekoDarkContent, "overflow: hidden !important", "neko-dark.js must lock html/body scroll to prevent game canvas shifting.");
-        StringAssert.Contains(nekoDarkContent, "hookChatVisibilityGuards", "neko-dark.js must hook chat visibility guards to suppress bleed-through.");
-        StringAssert.Contains(nekoDarkContent, "div#chat-room-div", "neko-dark.js must clamp chatroom font size for mobile/Android portrait.");
-        StringAssert.Contains(nekoDarkContent, "liko-dr-overlay", "neko-dark.js must detect Liko dialog overlay to suppress chatbox bleed-through.");
-        Assert.IsFalse(nekoDarkContent.Contains("html body #chat-room-div"), "neko-dark.js must not override #chat-room-div layout (conflicts with BC resize sync).");
+        StringAssert.Contains(nekoDarkContent, "[class*=\"new-message\"]", "neko-dark.js must include dark theme overrides for floating new message notifications.");
 
         // 4. If tester scripts directory exists, enforce whitelist rule strictly
         string testerScripts = Path.Combine(ProjectRoot, "publish", "tester", "Scripts");
@@ -541,11 +529,11 @@ public class MainWindowTests
         string content = File.ReadAllText(translatePath);
 
         // Must define self-contained styles for widget and dropdown chevron
-        StringAssert.Contains(content, "#translate-widget", "translate.js must style #translate-widget.");
+        StringAssert.Contains(content, "translate-widget", "translate.js must define #translate-widget.");
         StringAssert.Contains(content, ".bc-dropdown-chevron", "translate.js must style .bc-dropdown-chevron.");
         StringAssert.Contains(content, "14px !important", "Dropdown chevron must enforce explicit 14px size.");
-        StringAssert.Contains(content, "#bc-google-translate-btn", "translate.js must style floating button.");
-        StringAssert.Contains(content, "#copy-translation-btn", "translate.js must style copy button.");
+        StringAssert.Contains(content, "bc-google-translate-btn", "translate.js must define floating button.");
+        StringAssert.Contains(content, "copy-translation-btn", "translate.js must define copy button.");
     }
 }
 

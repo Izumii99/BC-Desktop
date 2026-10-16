@@ -5,242 +5,86 @@
     function initGoogleTranslate() {
         if (document.getElementById("bc-google-translate-btn")) return;
 
+        if (!document.getElementById("tailwind-script")) {
+            const configScript = document.createElement("script");
+            configScript.innerHTML = `
+                window.tailwind = window.tailwind || {};
+                window.tailwind.config = {
+                  corePlugins: { preflight: false },
+                  important: '#translate-root',
+                  theme: {
+                    extend: {
+                      colors: {
+                        widget: {
+                          bg: '#161724',
+                          surface: '#0f1019',
+                          card: '#1b1b2a',
+                          border: '#292b3f',
+                          accent: '#8b5cf6',
+                          accentGlow: 'rgba(139, 92, 246, 0.45)',
+                          textMuted: '#71768e',
+                          textLight: '#9499af'
+                        }
+                      },
+                      boxShadow: {
+                        'glow-purple': '0 0 20px -2px rgba(147, 51, 234, 0.55)',
+                        'widget-depth': '0 25px 60px -15px rgba(0, 0, 0, 0.85), 0 0 0 1px rgba(255, 255, 255, 0.07)'
+                      }
+                    }
+                  }
+                };
+            `;
+            document.head.appendChild(configScript);
+
+            const script = document.createElement("script");
+            script.id = "tailwind-script";
+            script.src = "https://cdn.tailwindcss.com";
+            document.head.appendChild(script);
+        }
+
         if (!document.getElementById("translate-glassmorphic-styles")) {
             const style = document.createElement("style");
             style.id = "translate-glassmorphic-styles";
             style.innerHTML = `
-                /* Translate Floating Widget Static CSS (Zero Runtime Dependency) */
-                #bc-google-translate-btn {
-                    position: fixed;
-                    top: 10px;
-                    left: 10px;
-                    z-index: 999999;
-                    width: 48px;
-                    height: 48px;
-                    border-radius: 16px;
-                    background: linear-gradient(135deg, #9333ea, #4f46e5, #6b21a8);
-                    color: #ffffff;
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                    box-shadow: 0 0 20px -2px rgba(147, 51, 234, 0.55);
-                    border: 1px solid rgba(192, 132, 252, 0.4);
-                    cursor: pointer;
-                    transition: transform 0.2s ease, box-shadow 0.2s ease;
+                .bc-spell-error {
+                  text-decoration: underline;
+                  text-decoration-style: wavy;
+                  text-decoration-color: #f43f5e;
+                  text-underline-offset: 5px;
+                  cursor: pointer;
                 }
-                #bc-google-translate-btn:hover { transform: scale(1.05); }
-                #bc-google-translate-btn:active { transform: scale(0.95); }
-                #bc-google-translate-btn svg { width: 24px; height: 24px; color: #ffffff; }
+                .bc-translator-scroll::-webkit-scrollbar { width: 4px; }
+                .bc-translator-scroll::-webkit-scrollbar-track { background: transparent; }
+                .bc-translator-scroll::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 4px; }
 
-                #translate-root {
-                    position: fixed;
-                    top: 0;
-                    left: 0;
-                    width: 0;
-                    height: 0;
-                    overflow: visible;
-                    z-index: 999990;
-                    font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-                    color: #e2e8f0;
-                }
-                #translate-root * {
-                    box-sizing: border-box;
-                    margin: 0;
-                    padding: 0;
-                }
-                #translate-root .hidden { display: none !important; }
-
-                #translate-widget-container {
-                    position: fixed;
-                    top: 70px;
-                    left: 20px;
-                    z-index: 1000000;
+                /* Prevent Tailwind CDN preflight from leaking to game inputs */
+                input:not(#translate-root *), 
+                textarea:not(#translate-root *), 
+                select:not(#translate-root *), 
+                button:not(#translate-root *) {
+                    line-height: normal !important;
+                    font-family: Arial, sans-serif !important;
                 }
 
-                #translate-widget {
-                    width: 380px;
-                    max-width: calc(100vw - 32px);
-                    border-radius: 24px;
-                    background: rgba(22, 23, 36, 0.96);
-                    backdrop-filter: blur(20px);
-                    -webkit-backdrop-filter: blur(20px);
-                    border: 1px solid rgba(255, 255, 255, 0.12);
-                    box-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.85), 0 0 0 1px rgba(255, 255, 255, 0.07);
-                    padding: 16px;
-                    display: flex;
-                    flex-direction: column;
-                    gap: 14px;
-                    position: relative;
-                    box-sizing: border-box;
-                    color: #e2e8f0;
-                    user-select: none;
+                /* Dedicated class for widget textareas — does not touch BC game styles */
+                html body #translate-widget-container .bc-widget-textarea {
+                    background: transparent !important;
+                    background-color: transparent !important;
+                    border: none !important;
+                    outline: none !important;
+                    box-shadow: none !important;
+                    resize: none !important;
+                    font-family: ui-sans-serif, system-ui, sans-serif !important;
+                    color: #e2e8f0 !important;
                 }
+                html body #translate-widget-container .bc-widget-textarea::placeholder {
+                    opacity: 1 !important;
+                }
+                html body #translate-widget-container .bc-widget-textarea.bc-output-muted { color: #71717a !important; }
+                html body #translate-widget-container .bc-widget-textarea.bc-output-active { color: #e2e8f0 !important; }
 
-                #translate-widget #widget-header {
-                    display: flex;
-                    align-items: center;
-                    justify-content: space-between;
-                    padding: 2px 4px;
-                    cursor: move;
-                }
-                #translate-widget .header-title-group {
-                    display: flex;
-                    align-items: center;
-                    gap: 12px;
-                    pointer-events: none;
-                }
-                #translate-widget .header-icon {
-                    position: relative;
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                    width: 38px;
-                    height: 38px;
-                    border-radius: 9999px;
-                    background: linear-gradient(135deg, #7e22ce, #9333ea, #a855f7);
-                    box-shadow: 0 0 15px rgba(168, 85, 247, 0.5);
-                    border: 1px solid rgba(216, 180, 254, 0.35);
-                    flex-shrink: 0;
-                }
-                #translate-widget .header-icon svg {
-                    width: 20px;
-                    height: 20px;
-                    color: #ffffff;
-                }
-                #translate-widget .header-text-container {
-                    display: flex;
-                    align-items: center;
-                    gap: 8px;
-                }
-                #translate-widget h1 {
-                    font-size: 15px !important;
-                    font-weight: 600 !important;
-                    letter-spacing: -0.01em !important;
-                    color: #ffffff !important;
-                    margin: 0 !important;
-                    padding: 0 !important;
-                    line-height: 1.2 !important;
-                }
-                #translate-widget .uwu-badge {
-                    font-size: 10px;
-                    font-weight: 700;
-                    padding: 2px 8px;
-                    border-radius: 9999px;
-                    background: rgba(88, 28, 135, 0.6);
-                    color: #d8b4fe;
-                    border: 1px solid rgba(168, 85, 247, 0.4);
-                    letter-spacing: 0.05em;
-                    text-transform: uppercase;
-                }
-                #translate-widget .header-actions {
-                    display: flex;
-                    align-items: center;
-                    gap: 8px;
-                    color: #a1a1aa;
-                }
-                #translate-widget #btn-minimize,
-                #translate-widget #btn-close {
-                    background: transparent;
-                    border: none;
-                    color: #a1a1aa;
-                    cursor: pointer;
-                    padding: 6px;
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                    border-radius: 8px;
-                    transition: color 0.15s ease, background 0.15s ease;
-                }
-                #translate-widget #btn-minimize:hover,
-                #translate-widget #btn-close:hover {
-                    color: #ffffff;
-                    background: rgba(255, 255, 255, 0.08);
-                }
-                #translate-widget #btn-minimize span {
-                    display: block;
-                    width: 12px;
-                    height: 2px;
-                    background: currentColor;
-                    border-radius: 2px;
-                }
-                #translate-widget #btn-close svg {
-                    width: 14px;
-                    height: 14px;
-                }
-
-                #translate-widget #widget-body {
-                    display: flex;
-                    flex-direction: column;
-                    gap: 14px;
-                }
-
-                /* Dropdown */
-                .bc-dropdown { position: relative; flex: 1; min-width: 0; }
-                .bc-dropdown-trigger {
-                    width: 100%;
-                    display: flex;
-                    align-items: center;
-                    justify-content: space-between;
-                    background: rgba(32, 34, 53, 0.95);
-                    border: 1px solid rgba(255, 255, 255, 0.08);
-                    padding: 8px 12px;
-                    border-radius: 12px;
-                    font-size: 11px;
-                    color: #e2e8f0;
-                    cursor: pointer;
-                    transition: background 0.15s, border-color 0.15s;
-                    font-family: inherit;
-                    user-select: none;
-                    box-sizing: border-box;
-                    gap: 8px;
-                }
-                .bc-dropdown-trigger:hover {
-                    background: rgba(42, 44, 68, 1);
-                    border-color: rgba(168, 85, 247, 0.35);
-                }
-                .bc-dropdown-trigger.active {
-                    border-color: rgba(139, 92, 246, 0.6);
-                    background: rgba(42, 44, 68, 1);
-                }
-                .bc-dropdown-label-group {
-                    display: flex;
-                    align-items: center;
-                    gap: 8px;
-                    overflow: hidden;
-                    text-overflow: ellipsis;
-                    white-space: nowrap;
-                    flex: 1;
-                }
-                .bc-dropdown-dot {
-                    width: 8px;
-                    height: 8px;
-                    border-radius: 9999px;
-                    background: #a855f7;
-                    box-shadow: 0 0 8px #a855f7;
-                    display: inline-block;
-                    flex-shrink: 0;
-                }
-                .bc-dropdown-text {
-                    overflow: hidden;
-                    text-overflow: ellipsis;
-                    white-space: nowrap;
-                    font-weight: 500;
-                }
-                .bc-dropdown-chevron {
-                    width: 14px !important;
-                    height: 14px !important;
-                    min-width: 14px !important;
-                    min-height: 14px !important;
-                    max-width: 14px !important;
-                    max-height: 14px !important;
-                    color: #a1a1aa;
-                    transition: transform 0.2s cubic-bezier(0.34,1.2,0.64,1);
-                    flex-shrink: 0;
-                }
-                .bc-dropdown-trigger.active .bc-dropdown-chevron {
-                    transform: rotate(180deg);
-                }
-
+                /* Custom dropdown */
+                .bc-dropdown { position: relative; flex: 1; }
                 .bc-dropdown-menu {
                     position: absolute;
                     top: calc(100% + 6px);
@@ -276,7 +120,7 @@
                     align-items: center;
                     gap: 8px;
                     transition: background 0.12s, color 0.12s;
-                    font-family: inherit;
+                    font-family: ui-sans-serif, system-ui, sans-serif;
                 }
                 .bc-dropdown-item:hover { background: rgba(139,92,246,0.15); color: #c4b5fd; }
                 .bc-dropdown-item.selected { background: rgba(139,92,246,0.2); color: #a78bfa; font-weight: 600; }
@@ -289,203 +133,37 @@
                 }
                 .bc-dropdown-item.selected .bc-check { opacity: 1; }
                 .bc-dropdown-divider { height: 1px; background: rgba(255,255,255,0.06); margin: 2px 0; }
-
-                /* Swap Button */
-                #translate-widget #swap-languages {
-                    width: 32px;
-                    height: 32px;
-                    min-width: 32px;
-                    min-height: 32px;
+                .bc-dropdown-trigger {
+                    width: 100%;
+                    display: flex;
+                    align-items: center;
+                    justify-content: space-between;
+                    background: rgba(32,34,53,0.9);
+                    border: 1px solid rgba(255,255,255,0.05);
+                    padding: 8px 12px;
                     border-radius: 12px;
-                    background: #202235;
-                    border: 1px solid rgba(255, 255, 255, 0.08);
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                    color: #cbd5e1;
-                    cursor: pointer;
-                    transition: all 0.2s ease;
-                    flex-shrink: 0;
-                    padding: 0;
-                }
-                #translate-widget #swap-languages:hover {
-                    background: #2b2d45;
-                    color: #d8b4fe;
-                    border-color: rgba(168, 85, 247, 0.35);
-                }
-                #translate-widget #swap-languages:active {
-                    transform: rotate(180deg);
-                }
-                #translate-widget #swap-languages svg {
-                    width: 16px;
-                    height: 16px;
-                }
-
-                /* Quick Presets */
-                #translate-widget .quick-presets-row {
-                    display: flex;
-                    align-items: center;
-                    gap: 6px;
-                    padding: 0 2px;
-                }
-                #translate-widget .quick-presets-title {
-                    font-size: 10px;
-                    font-weight: 700;
-                    letter-spacing: 0.05em;
-                    color: #64748b;
-                    margin-right: 2px;
-                }
-                #translate-widget .bc-quick-lang {
-                    padding: 3px 10px;
-                    border-radius: 6px;
-                    background: #212335;
-                    color: #cbd5e1;
                     font-size: 11px;
-                    font-weight: 500;
-                    border: 1px solid rgba(255, 255, 255, 0.06);
-                    cursor: pointer;
-                    transition: all 0.15s ease;
-                }
-                #translate-widget .bc-quick-lang:hover {
-                    background: rgba(147, 51, 234, 0.35);
-                    color: #d8b4fe;
-                    border-color: rgba(168, 85, 247, 0.4);
-                }
-
-                /* Input Section */
-                #translate-widget .translate-input-section {
-                    background: #0f1019;
-                    border-radius: 16px;
-                    padding: 14px;
-                    border: 1px solid rgba(255, 255, 255, 0.05);
-                    display: flex;
-                    flex-direction: column;
-                    justify-content: space-between;
-                    min-height: 140px;
-                    position: relative;
-                    box-sizing: border-box;
-                }
-                #translate-widget #source-textarea {
-                    width: 100%;
-                    font-size: 13px;
                     color: #e2e8f0;
-                    background: transparent;
-                    border: none;
-                    outline: none;
-                    resize: none;
-                    padding: 0;
-                    font-family: inherit;
-                    line-height: 1.5;
-                    box-sizing: border-box;
-                }
-                #translate-widget #source-textarea::placeholder {
-                    color: #52525b;
-                }
-                #translate-widget #clear-input {
-                    background: transparent;
-                    border: none;
-                    color: #71717a;
                     cursor: pointer;
-                    padding: 4px;
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                    transition: color 0.15s ease;
-                    margin-left: auto;
+                    transition: background 0.15s, border-color 0.15s;
+                    font-family: ui-sans-serif, system-ui, sans-serif;
+                    user-select: none;
                 }
-                #translate-widget #clear-input:hover {
-                    color: #ffffff;
-                }
-                #translate-widget #clear-input svg {
-                    width: 14px;
-                    height: 14px;
-                }
-
-                /* Output Section */
-                #translate-widget .translate-output-section {
-                    background: #1b1c2b;
-                    border-radius: 16px;
-                    padding: 14px;
-                    border: 1px solid rgba(168, 85, 247, 0.15);
-                    display: flex;
-                    flex-direction: column;
-                    justify-content: space-between;
-                    min-height: 148px;
-                    box-sizing: border-box;
-                }
-                #translate-widget #translation-text {
-                    width: 100%;
-                    font-size: 14px;
-                    font-weight: 500;
-                    line-height: 1.4;
-                    color: #e2e8f0;
-                    background: transparent;
-                    border: none;
-                    outline: none;
-                    resize: none;
-                    padding: 0;
-                    font-family: inherit;
-                    box-sizing: border-box;
-                }
-                #translate-widget #translation-text.bc-output-muted {
-                    color: #71717a;
-                }
-                #translate-widget #copy-translation-btn {
-                    display: flex;
-                    align-items: center;
-                    gap: 6px;
-                    background: linear-gradient(135deg, #9333ea, #7e22ce, #4f46e5);
-                    color: #ffffff;
-                    font-weight: 600;
-                    font-size: 12px;
-                    padding: 6px 14px;
-                    border-radius: 12px;
-                    border: none;
-                    cursor: pointer;
-                    box-shadow: 0 0 15px rgba(147, 51, 234, 0.4);
-                    transition: transform 0.15s ease, filter 0.15s ease;
-                    margin-left: auto;
-                    margin-top: 8px;
-                }
-                #translate-widget #copy-translation-btn:hover {
-                    filter: brightness(1.1);
-                }
-                #translate-widget #copy-translation-btn:active {
-                    transform: scale(0.95);
-                }
-                #translate-widget #copy-translation-btn svg {
-                    width: 14px;
-                    height: 14px;
-                    color: #ffffff;
-                }
-
-                .bc-spell-error {
-                    text-decoration: underline;
-                    text-decoration-style: wavy;
-                    text-decoration-color: #f43f5e;
-                    text-underline-offset: 5px;
+                .bc-dropdown-trigger:hover { background: rgba(39,41,64,1); }
+                .bc-dropdown-trigger.active { border-color: rgba(139,92,246,0.5); background: rgba(39,41,64,1); }
+                #bc-google-translate-btn {
                     cursor: pointer;
                 }
-                .bc-translator-scroll::-webkit-scrollbar { width: 4px; }
-                .bc-translator-scroll::-webkit-scrollbar-track { background: transparent; }
-                .bc-translator-scroll::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 4px; }
-
-                /* Dedicated class for widget textareas — does not touch BC game styles */
-                html body #translate-widget-container .bc-widget-textarea {
-                    background: transparent !important;
-                    background-color: transparent !important;
-                    border: none !important;
-                    outline: none !important;
-                    box-shadow: none !important;
-                    resize: none !important;
-                    font-family: ui-sans-serif, system-ui, sans-serif !important;
-                    color: #e2e8f0 !important;
+                #translate-widget {
+                    font-family: ui-sans-serif, system-ui, sans-serif;
                 }
-                html body #translate-widget-container .bc-widget-textarea::placeholder {
-                    opacity: 1 !important;
+                .bc-dropdown-chevron {
+                    width: 14px !important;
+                    height: 14px !important;
+                    transition: transform 0.2s cubic-bezier(0.34,1.2,0.64,1);
+                    flex-shrink: 0;
                 }
-                html body #translate-widget-container .bc-widget-textarea.bc-output-muted { color: #71717a !important; }
-                html body #translate-widget-container .bc-widget-textarea.bc-output-active { color: #e2e8f0 !important; }
+                .bc-dropdown-trigger.active .bc-dropdown-chevron { transform: rotate(180deg); }
             `;
             document.head.appendChild(style);
         }
@@ -493,12 +171,18 @@
         const btn = document.createElement("button");
         btn.id = "bc-google-translate-btn";
         btn.setAttribute("aria-label", "Google Translate Floating Widget");
+        btn.className = "w-12 h-12 rounded-2xl bg-gradient-to-br from-purple-600 via-indigo-600 to-purple-800 text-white flex items-center justify-center shadow-glow-purple border border-purple-400/40 hover:scale-105 active:scale-95 transition-all duration-200";
+        btn.style.cssText = "position:fixed;top:10px;left:10px;z-index:999999";
         btn.innerHTML = `
-        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <svg class="w-6 h-6 drop-shadow" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path d="M3 5h12M9 3v2m1.048 9.5A18.022 18.022 0 016.412 9m6.088 9h7M11 21l5-10 5 10M12.751 5C11.783 10.77 8.07 15.61 3 18.129" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
         </svg>`;
         const popup = document.createElement("div");
         popup.id = "translate-widget-container";
+        popup.style.position = "fixed";
+        popup.style.top = "70px";
+        popup.style.left = "20px";
+        popup.style.zIndex = "1000000";
         popup.style.display = "none";
 
         const LANGUAGES = [
@@ -550,25 +234,27 @@
         }
 
         popup.innerHTML = `
-<main id="translate-widget">
-    <header id="widget-header">
-        <div class="header-title-group">
-            <div class="header-icon">
-                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+<main class="w-full min-w-[360px] max-w-[390px] rounded-[28px] bg-[#161724]/95 backdrop-blur-xl border border-white/10 shadow-widget-depth p-4 flex flex-col gap-3.5 relative" id="translate-widget" style="font-family: ui-sans-serif, system-ui, sans-serif;">
+    <header class="flex items-center justify-between pt-1 pb-0.5 px-1 cursor-move" id="widget-header">
+        <div class="flex items-center space-x-3 pointer-events-none">
+            <div class="relative flex items-center justify-center w-10 h-10 rounded-full bg-gradient-to-tr from-purple-700 via-purple-600 to-violet-400 shadow-[0_0_15px_rgba(168,85,247,0.5)] border border-purple-300/30">
+                <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path d="M3 5h12M9 3v2m1.048 9.5A18.022 18.022 0 016.412 9m6.088 9h7M11 21l5-10 5 10M12.751 5C11.783 10.77 8.07 15.61 3 18.129" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2"></path>
                 </svg>
             </div>
-            <div class="header-text-container">
-                <h1>Google Translate</h1>
-                <span class="uwu-badge">UwU</span>
+            <div>
+                <div class="flex items-center space-x-2">
+                    <h1 class="text-[15px] font-semibold tracking-tight text-white m-0">Google Translate</h1>
+                    <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-purple-900/60 text-purple-300 border border-purple-500/40 tracking-wider uppercase">UwU</span>
+                </div>
             </div>
         </div>
-        <div class="header-actions">
-            <button aria-label="Minimize Widget" id="btn-minimize" type="button">
-                <span></span>
+        <div class="flex items-center space-x-2.5 text-zinc-400 pr-1 cursor-default">
+            <button aria-label="Minimize Widget" class="hover:text-white transition-colors p-1 text-base leading-none" id="btn-minimize">
+                <span class="block w-3 h-[2px] bg-zinc-400 rounded-sm"></span>
             </button>
-            <button aria-label="Close Widget" id="btn-close" type="button">
-                <svg fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" viewBox="0 0 24 24">
+            <button aria-label="Close Widget" class="hover:text-white transition-colors p-1" id="btn-close">
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" viewBox="0 0 24 24">
                     <line x1="18" x2="6" y1="6" y2="18"></line>
                     <line x1="6" x2="18" y1="6" y2="18"></line>
                 </svg>
@@ -576,17 +262,17 @@
         </div>
     </header>
 
-    <div id="widget-body">
+    <div id="widget-body" class="flex flex-col gap-3.5">
         <!-- Language Selectors -->
-        <section class="lang-select-row" style="display:flex;align-items:center;justify-content:space-between;gap:6px;padding-top:2px;">
+        <section class="flex items-center justify-between gap-1.5 pt-0.5">
             <!-- Source dropdown -->
             <div class="bc-dropdown" id="source-dropdown">
-                <button class="bc-dropdown-trigger" id="source-trigger" type="button" style="display:flex;align-items:center;justify-content:space-between;width:100%;height:38px;padding:6px 10px;box-sizing:border-box;">
-                    <div class="bc-dropdown-label-group" style="display:flex;align-items:center;gap:6px;overflow:hidden;flex:1;min-width:0;">
-                        <span class="bc-dropdown-dot" style="width:7px;height:7px;border-radius:9999px;background:#a855f7;flex-shrink:0;"></span>
-                        <span id="source-lang-label" class="bc-dropdown-text" style="font-size:11px;font-weight:600;color:#e2e8f0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Auto</span>
+                <button class="bc-dropdown-trigger" id="source-trigger">
+                    <div class="flex items-center gap-2 truncate">
+                        <span class="w-2 h-2 rounded-full bg-purple-500 shadow-[0_0_8px_#a855f7] shrink-0" style="display:inline-block"></span>
+                        <span id="source-lang-label" class="truncate font-medium">Auto</span>
                     </div>
-                    <svg class="bc-dropdown-chevron" width="14" height="14" style="width:14px;height:14px;min-width:14px;min-height:14px;max-width:14px;max-height:14px;flex-shrink:0;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg class="bc-dropdown-chevron w-3.5 h-3.5 text-zinc-400 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path d="M19 9l-7 7-7-7" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"></path>
                     </svg>
                 </button>
@@ -594,20 +280,20 @@
             </div>
 
             <!-- Swap button -->
-            <button aria-label="Swap Languages" id="swap-languages" type="button" style="width:36px;height:36px;flex-shrink:0;display:flex;align-items:center;justify-content:center;">
-                <svg width="16" height="16" style="width:16px;height:16px;min-width:16px;min-height:16px;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <button aria-label="Swap Languages" class="w-8 h-8 rounded-xl bg-[#202235] hover:bg-[#2b2d45] border border-white/5 flex items-center justify-center text-slate-300 hover:text-purple-300 active:rotate-180 transition-all duration-200 shrink-0" id="swap-languages" type="button">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
                 </svg>
             </button>
 
             <!-- Target dropdown -->
             <div class="bc-dropdown" id="target-dropdown">
-                <button class="bc-dropdown-trigger" id="target-trigger" type="button" style="display:flex;align-items:center;justify-content:space-between;width:100%;height:38px;padding:6px 10px;box-sizing:border-box;">
-                    <div class="bc-dropdown-label-group" style="display:flex;align-items:center;gap:6px;overflow:hidden;flex:1;min-width:0;">
-                        <span class="bc-dropdown-dot" style="width:7px;height:7px;border-radius:9999px;background:#a855f7;flex-shrink:0;"></span>
-                        <span id="target-lang-label" class="bc-dropdown-text" style="font-size:11px;font-weight:600;color:#e2e8f0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">English</span>
+                <button class="bc-dropdown-trigger" id="target-trigger">
+                    <div class="flex items-center gap-2 truncate">
+                        <span class="w-2 h-2 rounded-full bg-purple-500 shadow-[0_0_8px_#a855f7] shrink-0" style="display:inline-block"></span>
+                        <span id="target-lang-label" class="truncate font-medium">English</span>
                     </div>
-                    <svg class="bc-dropdown-chevron" width="14" height="14" style="width:14px;height:14px;min-width:14px;min-height:14px;max-width:14px;max-height:14px;flex-shrink:0;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg class="bc-dropdown-chevron w-3.5 h-3.5 text-zinc-400 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path d="M19 9l-7 7-7-7" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"></path>
                     </svg>
                 </button>
@@ -616,45 +302,45 @@
         </section>
 
         <!-- Quick presets -->
-        <nav aria-label="Quick languages" class="quick-presets-row">
-            <span class="quick-presets-title">QUICK:</span>
-            <button class="bc-quick-lang" data-lang="en" type="button">EN</button>
-            <button class="bc-quick-lang" data-lang="id" type="button">IND</button>
-            <button class="bc-quick-lang" data-lang="zh-CN" type="button">CN</button>
+        <nav aria-label="Quick languages" class="flex items-center space-x-1.5 px-0.5 text-xs">
+            <span class="text-[10px] font-bold tracking-wider text-[#5f637b] mr-1">QUICK:</span>
+            <button class="bc-quick-lang px-2.5 py-0.5 rounded-md bg-[#212335] text-slate-300 text-[11px] font-medium hover:bg-purple-900/40 hover:text-purple-300 border border-white/5 transition-all" data-lang="en" type="button">EN</button>
+            <button class="bc-quick-lang px-2.5 py-0.5 rounded-md bg-[#212335] text-slate-300 text-[11px] font-medium hover:bg-purple-900/40 hover:text-purple-300 border border-white/5 transition-all" data-lang="id" type="button">IND</button>
+            <button class="bc-quick-lang px-2.5 py-0.5 rounded-md bg-[#212335] text-slate-300 text-[11px] font-medium hover:bg-purple-900/40 hover:text-purple-300 border border-white/5 transition-all" data-lang="zh-CN" type="button">CN</button>
         </nav>
 
         <!-- Source input -->
-        <section class="translate-input-section" style="background:#0f1019;border-radius:16px;padding:12px;border:1px solid rgba(255,255,255,0.06);">
-            <textarea class="bc-widget-textarea bc-translator-scroll" id="source-textarea" placeholder="Type text here..." rows="3" style="background:transparent!important;color:#e2e8f0!important;border:none!important;box-shadow:none!important;outline:none!important;width:100%;"></textarea>
+        <section class="bg-[#0f1019] rounded-2xl p-3.5 border border-white/[0.04] flex flex-col justify-between min-h-[140px] relative">
+            <textarea class="bc-widget-textarea w-full text-[13px] text-slate-200 placeholder-zinc-600 focus:ring-0 p-0 font-normal leading-relaxed bc-translator-scroll" id="source-textarea" placeholder="Type text here..." rows="3"></textarea>
             
-            <div id="bc-translate-correction-container" class="hidden" style="display:none;font-size:12px;color:#fb7185;margin-top:4px;padding-bottom:4px;">
+            <div id="bc-translate-correction-container" class="hidden text-xs text-rose-400 mt-1 pb-1">
                 Did you mean: <span id="bc-translate-correction" class="bc-spell-error"></span>
             </div>
 
-            <div style="display:flex;align-items:center;justify-content:flex-end;padding-top:8px;border-top:1px solid rgba(255,255,255,0.04);margin-top:auto;">
-                <button aria-label="Clear text" id="clear-input" type="button">
-                    <svg width="14" height="14" style="width:14px;height:14px;" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" viewBox="0 0 24 24"><line x1="18" x2="6" y1="6" y2="18"></line><line x1="6" x2="18" y1="6" y2="18"></line></svg>
+            <div class="flex items-center justify-end pt-2 border-t border-white/[0.04] text-zinc-400 mt-auto">
+                <button aria-label="Clear text" class="hover:text-white transition-colors" id="clear-input" type="button">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" viewBox="0 0 24 24"><line x1="18" x2="6" y1="6" y2="18"></line><line x1="6" x2="18" y1="6" y2="18"></line></svg>
                 </button>
             </div>
         </section>
 
         <!-- Output -->
-        <section class="translate-output-section" style="background:#1b1c2b;border-radius:16px;padding:12px;border:1px solid rgba(168,85,247,0.18);">
+        <section class="bg-[#1b1c2b] rounded-2xl p-3.5 border border-purple-500/10 flex flex-col justify-between min-h-[148px]">
             <div>
-                <div style="display:flex;align-items:center;gap:6px;font-size:10px;font-weight:700;color:#c084fc;letter-spacing:0.05em;margin-bottom:8px;text-transform:uppercase;">
-                    <span style="width:6px;height:6px;border-radius:9999px;background:#a855f7;"></span>
+                <div class="flex items-center space-x-1.5 text-[10px] font-bold text-purple-400 tracking-wider mb-2 uppercase">
+                    <span class="w-1.5 h-1.5 rounded-full bg-purple-500"></span>
                     <span>TRANSLATION</span>
                 </div>
-                <textarea id="translation-text" class="bc-widget-textarea bc-output-muted bc-translator-scroll" rows="3" readonly placeholder="Translation will appear here..." style="background:transparent!important;color:#e2e8f0!important;border:none!important;box-shadow:none!important;outline:none!important;width:100%;"></textarea>
-                <div id="bc-translate-meta" class="hidden" style="display:none;flex-direction:column;gap:4px;font-size:11px;color:#71768e;font-weight:500;margin-top:4px;">
+                <textarea id="translation-text" class="bc-widget-textarea bc-output-muted w-full font-medium text-[15px] leading-snug bc-translator-scroll p-0" rows="3" readonly placeholder="Translation will appear here..."></textarea>
+                <div id="bc-translate-meta" class="hidden flex-col gap-1 text-[11px] text-[#71768e] font-medium mt-1">
                     <div id="bc-translate-src-romaji" class="hidden"></div>
                     <div id="bc-translate-tgt-romaji" class="hidden"></div>
                 </div>
             </div>
             
-            <div style="display:flex;align-items:center;justify-content:flex-end;padding-top:12px;border-top:1px solid rgba(255,255,255,0.04);margin-top:8px;">
-                <button id="copy-translation-btn" type="button">
-                    <svg width="14" height="14" style="width:14px;height:14px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path></svg>
+            <div class="flex items-center justify-end pt-3 border-t border-white/[0.04] mt-2">
+                <button class="flex items-center space-x-1.5 bg-gradient-to-r from-purple-600 via-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-medium text-xs py-1.5 px-3.5 rounded-xl shadow-[0_0_15px_rgba(147,51,234,0.4)] active:scale-95 transition-all" id="copy-translation-btn" type="button">
+                    <svg class="w-3.5 h-3.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path></svg>
                     <span id="copy-text-span">Copy</span>
                 </button>
             </div>

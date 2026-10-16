@@ -47,28 +47,15 @@
                 --bcn-glow:   rgba(107, 80, 144, 0.35) !important;
             }
 
-            html, body {
-                overflow: hidden !important;
-            }
-
-            /* Container: follow BC's native scaled font with mobile responsive capping */
+            /* Container */
             html body #TextAreaChatLog {
-                font-size: clamp(12px, min(1em, 15px), 16px) !important;
                 background: ${P.panel} !important;
                 border: 1px solid ${P.border} !important;
                 box-shadow: none !important;
             }
 
-            /* Own/other messages must share the same text size */
-            html body #TextAreaChatLog .ChatMessage .chat-room-message-content {
-                font-size: inherit !important;
-            }
-
             /* Base Bubbles */
             html body #TextAreaChatLog .ChatMessage {
-                font-size: inherit !important;
-                line-height: 1.35 !important;
-                padding: clamp(3px, 0.6vh, 6px) clamp(6px, 1.2vw, 10px) !important;
                 background: ${P.soft} !important;
                 border: 1px solid ${P.border} !important;
                 color: ${P.text} !important;
@@ -183,24 +170,7 @@
                 border: 2px solid ${P.borderAcc} !important;
             }
 
-            /* Ensure BC chatroom elements & soft paws are strictly hidden when inactive, in dialog, or on other screens */
-            div#chat-room-div[hidden],
-            [hidden]#chat-room-div,
-            #chat-room-div.hidden,
-            body.bcn-in-dialog #chat-room-div,
-            body.bcn-in-dialog #chat-room-top-menu,
-            body.bcn-in-dialog #bcn-soft-paws,
-            body:has(#liko-dr-mirror) #chat-room-div,
-            body:has(#liko-dr-overlay) #chat-room-div,
-            body:has(#lce-v-dr) #chat-room-div,
-            body:has(div#chat-room-div[hidden]) #bcn-soft-paws {
-                display: none !important;
-                visibility: hidden !important;
-                opacity: 0 !important;
-                pointer-events: none !important;
-            }
-
-            /* Chat Input Area & Bot Container (Flexible Responsive Sizing & Mobile Bounds) */
+            /* Chat Input Area & Bot Container */
             html body #chat-room-bot,
             html body.bcn-enabled #chat-room-bot,
             html body [id*="chat-room-bot"],
@@ -210,14 +180,11 @@
                 background: ${P.panel} !important;
                 background-color: ${P.panel} !important;
                 border: 2px solid ${P.borderAcc} !important;
-                border-radius: clamp(8px, 1.5vmin, 12px) !important;
                 color: ${P.text} !important;
                 box-shadow: 0 4px 12px rgba(0, 0, 0, 0.45) !important;
-                min-height: clamp(30px, calc(var(--button-size, 32px) + 2px), 44px) !important;
-                max-height: 25vh !important;
             }
 
-            /* Chat Input Element (Flexes smoothly with canvas scaling while strictly capped for mobile/Android) */
+            /* Chat Input Element */
             html body #InputChat,
             html body textarea#InputChat,
             html body input#InputChat,
@@ -232,16 +199,6 @@
                 color: ${P.text} !important;
                 border: none !important;
                 box-shadow: none !important;
-                padding: 0.45em 0.8em !important;
-                font-size: 1em !important;
-                line-height: 1.35 !important;
-                min-height: unset !important;
-                box-sizing: border-box !important;
-            }
-
-            html body #chat-room-bot:has(#InputChat:focus) {
-                outline: 2px solid ${P.borderAcc} !important;
-                box-shadow: 0 0 0 4px rgba(107, 80, 144, 0.35) !important;
             }
 
             html body #InputChat::placeholder,
@@ -258,38 +215,32 @@
                 background: ${P.panel} !important;
                 color: ${P.text} !important;
                 border: 2px solid ${P.borderAcc} !important;
-                border-radius: clamp(6px, 1vmin, 10px) !important;
-                width: clamp(28px, 4.5vmin, 40px) !important;
-                height: clamp(28px, 4.5vmin, 40px) !important;
             }
 
             html body #chat-room-send::before {
                 color: ${P.icon} !important;
-                font-size: clamp(14px, 2vmin, 20px) !important;
             }
 
-            /* Mobile & Small Screen Adaptations (Prevents oversized chat elements on mobile/Android) */
-            @media (orientation: portrait), (max-width: 600px) {
-                div#chat-room-div {
-                    font-size: clamp(12px, 3.5vw, 16px) !important;
-                    max-height: 50vh !important;
-                }
-                #TextAreaChatLog {
-                    font-size: clamp(11px, 3.2vw, 15px) !important;
-                }
-                #InputChat {
-                    font-size: clamp(11px, 3.2vw, 15px) !important;
-                }
-            }
-
-            /* Toasts */
+            /* Floating New Message Indicator & Toasts */
             html body [id*="scroll-to-bottom"],
             html body [id*="chat-room-scroll"],
-            html body [class*="new-message"] {
+            html body [class*="new-message"],
+            html body #TextAreaChatLog [class*="new-message"],
+            html body .chat-room-new-messages-container,
+            html body .chat-room-new-messages {
                 background: ${P.panel} !important;
+                background-color: ${P.panel} !important;
                 color: ${P.text} !important;
                 border: 1px solid ${P.borderAcc} !important;
                 box-shadow: 0 4px 6px rgba(0,0,0,0.5) !important;
+            }
+            html body [id*="scroll-to-bottom"] *,
+            html body [id*="chat-room-scroll"] *,
+            html body [class*="new-message"] *,
+            html body #TextAreaChatLog [class*="new-message"] *,
+            html body .chat-room-new-messages-container *,
+            html body .chat-room-new-messages * {
+                color: ${P.text} !important;
             }
 
             /* Emotes/Activities */
@@ -313,96 +264,17 @@
                 display: inline !important;
             }
 
-            /* Mod Effects: Soft Paws & Hearts (50% Ke Kanan vs 50% Kebawah) */
+            /* Mod Effects */
             html body #bcn-soft-paws {
+                left: 50% !important;
+                width: 50% !important;
                 overflow: hidden !important;
                 pointer-events: none !important;
-                transition: top 0.35s ease, left 0.35s ease, width 0.35s ease, height 0.35s ease, opacity 0.25s ease !important;
             }
             html body #bcn-soft-paws span {
                 color: ${P.icon} !important;
                 text-shadow: 0 4px 12px rgba(107, 80, 144, 0.35) !important;
-                opacity: 0.14 !important;
-                font-size: clamp(20px, 4.5vmin, 42px) !important;
-            }
-
-            /* Option 1: 50% Ke Kanan (Right Half - Default for standard display & landscape) */
-            html body #bcn-soft-paws,
-            html body.bcn-paws-right #bcn-soft-paws,
-            html body #bcn-soft-paws.paws-right {
-                top: 0 !important;
-                bottom: 0 !important;
-                left: 50% !important;
-                right: 0 !important;
-                width: 50% !important;
-                height: 100% !important;
-            }
-
-            /* Option 2: 50% Kebawah (Bottom Half - Active in Portrait Orientation or BC-LCE / MPL) */
-            @media (orientation: portrait) {
-                html body:not(.bcn-paws-right) #bcn-soft-paws:not(.paws-right) {
-                    top: 50% !important;
-                    bottom: 0 !important;
-                    left: 0 !important;
-                    right: 0 !important;
-                    width: 100% !important;
-                    height: 50% !important;
-                }
-            }
-
-            html body.bcn-paws-bottom #bcn-soft-paws,
-            html body #bcn-soft-paws.paws-bottom,
-            html body.bcn-lce-portrait:not(.bcn-paws-right) #bcn-soft-paws:not(.paws-right),
-            html body:has(#lce-v-cr):not(.bcn-paws-right) #bcn-soft-paws:not(.paws-right),
-            html body:has(#lce-v-dr):not(.bcn-paws-right) #bcn-soft-paws:not(.paws-right),
-            html body:has(#liko-dr-overlay):not(.bcn-paws-right) #bcn-soft-paws:not(.paws-right),
-            html body:has(#lce-stage[data-orient="portrait"]):not(.bcn-paws-right) #bcn-soft-paws:not(.paws-right) {
-                top: 50% !important;
-                bottom: 0 !important;
-                left: 0 !important;
-                right: 0 !important;
-                width: 100% !important;
-                height: 50% !important;
-            }
-
-            /* Collapse empty or unused submenu cleanly so #bcn-panel snugly wraps the cat button */
-            html body #bcn-submenu:empty,
-            html body #bcn-submenu:not(:has(button)),
-            html body.bcn-menu-collapsed #bcn-submenu,
-            html body.bcn-menu-collapsed #bcn-panel #bcn-submenu {
-                display: none !important;
-                max-width: 0 !important;
-                width: 0 !important;
-                margin: 0 !important;
-                padding: 0 !important;
-                opacity: 0 !important;
-                pointer-events: none !important;
-            }
-
-            html body #bcn-panel:has(#bcn-submenu:empty),
-            html body #bcn-panel:not(:has(#bcn-submenu button)),
-            html body.bcn-menu-collapsed #bcn-panel {
-                gap: 0 !important;
-            }
-
-            /* Responsive & Flexible Floating Cat Button (#bcn-panel) */
-            html body #bcn-panel {
-                padding: clamp(3px, 0.8vh, 6px) clamp(4px, 1vw, 8px) !important;
-                border-radius: clamp(10px, 2vh, 16px) !important;
-                max-width: fit-content !important;
-                max-height: fit-content !important;
-            }
-
-            html body #bcn-main-cat,
-            html body #bcn-wheel-handle,
-            html body #bcn-face,
-            html body .bcn-btn {
-                width: clamp(28px, 5.5vmin, 48px) !important;
-                height: clamp(28px, 5.5vmin, 48px) !important;
-                min-width: clamp(28px, 5.5vmin, 48px) !important;
-                min-height: clamp(28px, 5.5vmin, 48px) !important;
-                font-size: clamp(14px, 2.8vmin, 24px) !important;
-                border-radius: clamp(8px, 1.8vh, 14px) !important;
+                opacity: 0.12 !important;
             }
 
             /* Top Menu */
@@ -609,291 +481,6 @@
         }
     }, 800);
 
-    // Soft Paws / Hearts Layout Manager (50% Ke Kanan / 50% Kebawah)
-    const PAWS_STORAGE_KEY = "bcn_soft_paws_layout";
-    const PAWS_MODES = ["auto", "right", "bottom"];
-    let currentPawsMode = "auto";
-    try {
-        currentPawsMode = localStorage.getItem(PAWS_STORAGE_KEY) || "auto";
-    } catch (e) {}
-
-    /**
-     * Detects if portrait mode (window aspect ratio, BC-LCE, or Liko-MPL) is active.
-     */
-    function isBcLcePortraitActive() {
-        // 1. Native viewport orientation: if height >= width, it is definitively portrait
-        if (window.innerHeight >= window.innerWidth) {
-            return true;
-        }
-
-        // 2. BC-LCE / MPL Portrait Chatroom, Dialog, or Room Search elements
-        if (document.getElementById("lce-v-cr") || document.getElementById("lce-v-cs") || document.getElementById("lce-v-csh") ||
-            document.getElementById("lce-v-dr") || document.getElementById("liko-dr-overlay") || document.getElementById("liko-ml-dr") ||
-            document.getElementById("liko-cs-bg") || document.getElementById("liko-csh-shell") || document.getElementById("liko-cr-fake-input-overlay")) {
-            return true;
-        }
-        if (document.documentElement?.style && document.documentElement.style.getPropertyValue("--lce-cr-top")) {
-            return true;
-        }
-        if (window.Vertical?.getState && window.Vertical.getState().active) {
-            return true;
-        }
-
-        // 3. BC-LCE Portrait Login Page
-        const stageEl = document.getElementById("lce-stage");
-        if (stageEl && stageEl.dataset.orient === "portrait") {
-            return true;
-        }
-
-        // 4. Document or class markers
-        if (document.body?.classList?.contains("bclce-portrait") || document.body?.classList?.contains("mpl-portrait")) {
-            return true;
-        }
-
-        // 5. In dialog / character interaction: preserve existing portrait state to avoid motion sickness
-        if (window.CurrentCharacter != null && document.body?.classList?.contains("bcn-lce-portrait")) {
-            return true;
-        }
-
-        return false;
-    }
-
-    function applyPawsLayout(mode) {
-        if (!PAWS_MODES.includes(mode)) mode = "auto";
-        currentPawsMode = mode;
-        try {
-            localStorage.setItem(PAWS_STORAGE_KEY, mode);
-        } catch (e) {}
-
-        const body = document.body;
-        if (!body) return;
-
-        body.classList.remove("bcn-paws-right", "bcn-paws-bottom");
-
-        if (mode === "right") {
-            body.classList.add("bcn-paws-right");
-            body.classList.remove("bcn-lce-portrait");
-        } else if (mode === "bottom") {
-            body.classList.add("bcn-paws-bottom");
-        } else {
-            // Mode "auto": strictly requires BC-LCE portrait chatroom or login to be active
-            const lceActive = isBcLcePortraitActive();
-            body.classList.toggle("bcn-lce-portrait", lceActive);
-        }
-    }
-
-    function togglePawsLayout() {
-        const nextIdx = (PAWS_MODES.indexOf(currentPawsMode) + 1) % PAWS_MODES.length;
-        const nextMode = PAWS_MODES[nextIdx];
-        applyPawsLayout(nextMode);
-
-        const labels = {
-            right: "50% Ke Kanan (Right Half)",
-            bottom: "50% Kebawah (Bottom Half)",
-            auto: "Auto (50% Bawah saat Portrait / 50% Kanan saat Landscape)"
-        };
-        showNekoToast(`🐾 Paws Layout: ${labels[nextMode] || nextMode}`);
-    }
-
-    function showNekoToast(text) {
-        let toast = document.getElementById("bcn-toast");
-        if (!toast) {
-            toast = document.createElement("div");
-            toast.id = "bcn-toast";
-            document.body?.appendChild(toast);
-        }
-        toast.textContent = `♪ ${text}`;
-        toast.classList.add("show");
-        clearTimeout(window._bcnToastTimer);
-        window._bcnToastTimer = setTimeout(() => toast?.classList.remove("show"), 2600);
-    }
-
-    function hookPawsLayoutUI() {
-        applyPawsLayout(currentPawsMode);
-    }
-
-    window.bcNekoDarkSetPawsLayout = applyPawsLayout;
-    window.bcNekoDarkTogglePaws = togglePawsLayout;
-
-    if (document.body) {
-        applyPawsLayout(currentPawsMode);
-    }
-
-    function isChatActiveAndVisible() {
-        if (typeof window.CurrentScreen !== "undefined" && window.CurrentScreen !== "ChatRoom") return false;
-        if (typeof window.CurrentCharacter !== "undefined" && window.CurrentCharacter != null) return false;
-        if (window.ChatRoomChatHidden) return false;
-        if (document.getElementById("liko-dr-overlay") || document.getElementById("lce-v-dr") || document.getElementById("liko-dr-mirror")) return false;
-        const crDiv = document.getElementById("chat-room-div");
-        if (!crDiv || crDiv.hasAttribute("hidden")) return false;
-        return true;
-    }
-
-    function updateChatVisibilityState() {
-        const inDialogOrHidden = !isChatActiveAndVisible();
-        const crDiv = document.getElementById("chat-room-div");
-        const topMenu = document.getElementById("chat-room-top-menu");
-        const paws = document.getElementById("bcn-soft-paws");
-
-        if (crDiv) {
-            if (inDialogOrHidden) {
-                crDiv.toggleAttribute("hidden", true);
-                crDiv.style.setProperty("display", "none", "important");
-                crDiv.style.setProperty("visibility", "hidden", "important");
-                crDiv.style.setProperty("opacity", "0", "important");
-                crDiv.style.setProperty("pointer-events", "none", "important");
-            } else {
-                crDiv.style.removeProperty("display");
-                crDiv.style.removeProperty("visibility");
-                crDiv.style.removeProperty("opacity");
-                crDiv.style.removeProperty("pointer-events");
-            }
-        }
-
-        if (topMenu) {
-            if (inDialogOrHidden) {
-                topMenu.style.setProperty("display", "none", "important");
-            } else {
-                topMenu.style.removeProperty("display");
-            }
-        }
-
-        if (paws) {
-            if (inDialogOrHidden) {
-                paws.style.setProperty("display", "none", "important");
-            } else {
-                paws.style.removeProperty("display");
-            }
-        }
-
-        if (document.body) {
-            document.body.classList.toggle("bcn-in-dialog", inDialogOrHidden);
-            if (currentPawsMode === "auto") {
-                document.body.classList.toggle("bcn-lce-portrait", isBcLcePortraitActive());
-            }
-        }
-        return !inDialogOrHidden;
-    }
-
-    function hookChatVisibilityGuards() {
-        if (window._bcnChatVisGuardsHooked) return;
-        window._bcnChatVisGuardsHooked = true;
-
-        // 1. Intercept ChatRoomShowElements to prevent unhiding in dialog or background screens
-        const origShowElements = window.ChatRoomShowElements;
-        if (typeof origShowElements === "function") {
-            window.ChatRoomShowElements = function () {
-                if (window.CurrentCharacter != null || (window.CurrentScreen && window.CurrentScreen !== "ChatRoom") || !isChatActiveAndVisible()) {
-                    updateChatVisibilityState();
-                    return;
-                }
-                const res = origShowElements.apply(this, arguments);
-                updateChatVisibilityState();
-                return res;
-            };
-        }
-
-        // 2. Intercept ChatRoomResize
-        const origResize = window.ChatRoomResize;
-        if (typeof origResize === "function") {
-            window.ChatRoomResize = function (load) {
-                if (window.CurrentCharacter != null || (window.CurrentScreen && window.CurrentScreen !== "ChatRoom")) {
-                    updateChatVisibilityState();
-                    return;
-                }
-                const res = origResize.apply(this, arguments);
-                updateChatVisibilityState();
-                return res;
-            };
-        }
-
-        // 3. Intercept DialogLoad for instant suppression when opening character menus
-        const origDialogLoad = window.DialogLoad;
-        if (typeof origDialogLoad === "function") {
-            window.DialogLoad = function () {
-                updateChatVisibilityState();
-                const res = origDialogLoad.apply(this, arguments);
-                updateChatVisibilityState();
-                return res;
-            };
-        }
-
-        // 4. Intercept CommonSetScreen
-        const origCommonSetScreen = window.CommonSetScreen;
-        if (typeof origCommonSetScreen === "function") {
-            window.CommonSetScreen = function (...args) {
-                const targetScreen = args[1] || args[0];
-                if (targetScreen !== "ChatRoom") {
-                    updateChatVisibilityState();
-                }
-                const res = origCommonSetScreen.apply(this, arguments);
-                updateChatVisibilityState();
-                return res;
-            };
-        }
-    }
-
-    function keepPanelInViewport() {
-        const panel = document.getElementById("bcn-panel");
-        if (!panel) return;
-        const rect = panel.getBoundingClientRect();
-        const maxLeft = Math.max(0, window.innerWidth - rect.width - 6);
-        const maxTop = Math.max(0, window.innerHeight - rect.height - 6);
-
-        let curLeft = panel.offsetLeft;
-        let curTop = panel.offsetTop;
-
-        let newLeft = Math.min(Math.max(6, curLeft), maxLeft);
-        let newTop = Math.min(Math.max(6, curTop), maxTop);
-
-        if (panel.style.left && curLeft !== newLeft) {
-            panel.style.left = `${newLeft}px`;
-        }
-        if (panel.style.top && curTop !== newTop) {
-            panel.style.top = `${newTop}px`;
-        }
-    }
-
-    // Continuously maintain layout & visibility states in poller
-    hookChatVisibilityGuards();
-    const pawsUiPoller = setInterval(() => {
-        hookChatVisibilityGuards();
-        hookPawsLayoutUI();
-        updateChatVisibilityState();
-        keepPanelInViewport();
-    }, 150);
-
-    function resyncChatLayout() {
-        if (window.scrollX !== 0 || window.scrollY !== 0) {
-            window.scrollTo(0, 0);
-        }
-        keepPanelInViewport();
-        const active = updateChatVisibilityState();
-        if (active && typeof window.ChatRoomResize === "function") {
-            try { window.ChatRoomResize(false); } catch (e) {}
-            const ic = document.getElementById("InputChat");
-            if (ic) {
-                try { ic.dispatchEvent(new Event("input")); } catch (e) {}
-            }
-        }
-    }
-
-    window.addEventListener("scroll", () => {
-        if (window.scrollX !== 0 || window.scrollY !== 0) {
-            window.scrollTo(0, 0);
-        }
-    }, { passive: true });
-
-    window.addEventListener("resize", () => {
-        clearTimeout(window._bcnChatResync);
-        window._bcnChatResync = setTimeout(resyncChatLayout, 150);
-    });
-
-    window.addEventListener("orientationchange", () => {
-        clearTimeout(window._bcnChatResync);
-        window._bcnChatResync = setTimeout(resyncChatLayout, 150);
-    });
-
     // Runtime Injector & Duplicate Guard
     const RUNTIME_URL = "https://cdn.jsdelivr.net/gh/QAQMOON/meow-@main/dist/bondage-club-neko.runtime.full.js?v=2.13.1";
 
@@ -959,34 +546,24 @@
         if (!code?.trim() || isNekoModLoaded()) return;
         window._nekoRuntimeLoaded = true;
 
-        const origCode = code;
-        try {
-            // Theme patches
-            code = code.replace(/rgba\(\s*255\s*,\s*255\s*,\s*255\s*,/g, "rgba(30, 24, 41,");
-            code = code.replace(/"#2f2f2f"|"#1a1a1a"/g, `"${P.text}"`);
-            code = code.replace(/"#e8e8e8"|"#dddddd"/g, `"${P.border}"`);
-            code = code.replace(/"#cccccc"/g, `"${P.borderAcc}"`);
-            
-            code = code.replace(/text:\s*"#[0-9a-fA-F]{6}"/gi, `text:"${P.text}"`);
-            code = code.replace(/soft:\s*"#[0-9a-fA-F]{6}"/gi, `soft:"${P.soft}"`);
-            code = code.replace(/panel:\s*"#[0-9a-fA-F]{6}"/gi, `panel:"${P.panel}"`);
+        // Theme patches
+        code = code.replace(/rgba\(\s*255\s*,\s*255\s*,\s*255\s*,/g, "rgba(30, 24, 41,");
+        code = code.replace(/"#2f2f2f"|"#1a1a1a"/g, `"${P.text}"`);
+        code = code.replace(/"#e8e8e8"|"#dddddd"/g, `"${P.border}"`);
+        code = code.replace(/"#cccccc"/g, `"${P.borderAcc}"`);
+        
+        code = code.replace(/text:\s*"#[0-9a-fA-F]{6}"/gi, `text:"${P.text}"`);
+        code = code.replace(/soft:\s*"#[0-9a-fA-F]{6}"/gi, `soft:"${P.soft}"`);
+        code = code.replace(/panel:\s*"#[0-9a-fA-F]{6}"/gi, `panel:"${P.panel}"`);
 
-            code = code.replace(/"#00a8ff"|"#007aff"|"#0099ff"|"#1e90ff"|"#3b82f6"|"#2563eb"|"#00bcd4"|"#00acc1"/gi, `"${P.borderAcc}"`);
-            
-            code = code.replace(
-                /body\.bcn-enabled input,\s*body\.bcn-enabled textarea,\s*body\.bcn-enabled select/g,
-                "body.bcn-enabled #InputChat"
-            );
+        code = code.replace(/"#00a8ff"|"#007aff"|"#0099ff"|"#1e90ff"|"#3b82f6"|"#2563eb"|"#00bcd4"|"#00acc1"/gi, `"${P.borderAcc}"`);
+        
+        code = code.replace(
+            /body\.bcn-enabled input,\s*body\.bcn-enabled textarea,\s*body\.bcn-enabled select/g,
+            "body.bcn-enabled #InputChat"
+        );
 
-            new Function(code)();
-        } catch (patchErr) {
-            console.warn("[BC-Neko-Dark] Monkey-patching failed, executing unpatched runtime fallback:", patchErr);
-            try {
-                new Function(origCode)();
-            } catch (fatalErr) {
-                console.error("[BC-Neko-Dark] Fatal error executing Neko runtime:", fatalErr);
-            }
-        }
+        new Function(code)();
     }
 
     if (!isNekoModLoaded()) {
