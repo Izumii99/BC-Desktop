@@ -581,12 +581,12 @@
         <section class="lang-select-row" style="display:flex;align-items:center;justify-content:space-between;gap:6px;padding-top:2px;">
             <!-- Source dropdown -->
             <div class="bc-dropdown" id="source-dropdown">
-                <button class="bc-dropdown-trigger" id="source-trigger" type="button">
-                    <div class="bc-dropdown-label-group">
-                        <span class="bc-dropdown-dot"></span>
-                        <span id="source-lang-label" class="bc-dropdown-text">Auto</span>
+                <button class="bc-dropdown-trigger" id="source-trigger" type="button" style="display:flex;align-items:center;justify-content:space-between;width:100%;height:38px;padding:6px 10px;box-sizing:border-box;">
+                    <div class="bc-dropdown-label-group" style="display:flex;align-items:center;gap:6px;overflow:hidden;flex:1;min-width:0;">
+                        <span class="bc-dropdown-dot" style="width:7px;height:7px;border-radius:9999px;background:#a855f7;flex-shrink:0;"></span>
+                        <span id="source-lang-label" class="bc-dropdown-text" style="font-size:11px;font-weight:600;color:#e2e8f0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Auto</span>
                     </div>
-                    <svg class="bc-dropdown-chevron" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg class="bc-dropdown-chevron" width="14" height="14" style="width:14px;height:14px;min-width:14px;min-height:14px;max-width:14px;max-height:14px;flex-shrink:0;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path d="M19 9l-7 7-7-7" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"></path>
                     </svg>
                 </button>
@@ -594,20 +594,20 @@
             </div>
 
             <!-- Swap button -->
-            <button aria-label="Swap Languages" id="swap-languages" type="button">
-                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <button aria-label="Swap Languages" id="swap-languages" type="button" style="width:36px;height:36px;flex-shrink:0;display:flex;align-items:center;justify-content:center;">
+                <svg width="16" height="16" style="width:16px;height:16px;min-width:16px;min-height:16px;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
                 </svg>
             </button>
 
             <!-- Target dropdown -->
             <div class="bc-dropdown" id="target-dropdown">
-                <button class="bc-dropdown-trigger" id="target-trigger" type="button">
-                    <div class="bc-dropdown-label-group">
-                        <span class="bc-dropdown-dot"></span>
-                        <span id="target-lang-label" class="bc-dropdown-text">English</span>
+                <button class="bc-dropdown-trigger" id="target-trigger" type="button" style="display:flex;align-items:center;justify-content:space-between;width:100%;height:38px;padding:6px 10px;box-sizing:border-box;">
+                    <div class="bc-dropdown-label-group" style="display:flex;align-items:center;gap:6px;overflow:hidden;flex:1;min-width:0;">
+                        <span class="bc-dropdown-dot" style="width:7px;height:7px;border-radius:9999px;background:#a855f7;flex-shrink:0;"></span>
+                        <span id="target-lang-label" class="bc-dropdown-text" style="font-size:11px;font-weight:600;color:#e2e8f0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">English</span>
                     </div>
-                    <svg class="bc-dropdown-chevron" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg class="bc-dropdown-chevron" width="14" height="14" style="width:14px;height:14px;min-width:14px;min-height:14px;max-width:14px;max-height:14px;flex-shrink:0;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path d="M19 9l-7 7-7-7" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"></path>
                     </svg>
                 </button>
@@ -624,8 +624,8 @@
         </nav>
 
         <!-- Source input -->
-        <section class="translate-input-section">
-            <textarea class="bc-widget-textarea bc-translator-scroll" id="source-textarea" placeholder="Type text here..." rows="3"></textarea>
+        <section class="translate-input-section" style="background:#0f1019;border-radius:16px;padding:12px;border:1px solid rgba(255,255,255,0.06);">
+            <textarea class="bc-widget-textarea bc-translator-scroll" id="source-textarea" placeholder="Type text here..." rows="3" style="background:transparent!important;color:#e2e8f0!important;border:none!important;box-shadow:none!important;outline:none!important;width:100%;"></textarea>
             
             <div id="bc-translate-correction-container" class="hidden" style="display:none;font-size:12px;color:#fb7185;margin-top:4px;padding-bottom:4px;">
                 Did you mean: <span id="bc-translate-correction" class="bc-spell-error"></span>
@@ -633,19 +633,19 @@
 
             <div style="display:flex;align-items:center;justify-content:flex-end;padding-top:8px;border-top:1px solid rgba(255,255,255,0.04);margin-top:auto;">
                 <button aria-label="Clear text" id="clear-input" type="button">
-                    <svg fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" viewBox="0 0 24 24"><line x1="18" x2="6" y1="6" y2="18"></line><line x1="6" x2="18" y1="6" y2="18"></line></svg>
+                    <svg width="14" height="14" style="width:14px;height:14px;" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" viewBox="0 0 24 24"><line x1="18" x2="6" y1="6" y2="18"></line><line x1="6" x2="18" y1="6" y2="18"></line></svg>
                 </button>
             </div>
         </section>
 
         <!-- Output -->
-        <section class="translate-output-section">
+        <section class="translate-output-section" style="background:#1b1c2b;border-radius:16px;padding:12px;border:1px solid rgba(168,85,247,0.18);">
             <div>
                 <div style="display:flex;align-items:center;gap:6px;font-size:10px;font-weight:700;color:#c084fc;letter-spacing:0.05em;margin-bottom:8px;text-transform:uppercase;">
                     <span style="width:6px;height:6px;border-radius:9999px;background:#a855f7;"></span>
                     <span>TRANSLATION</span>
                 </div>
-                <textarea id="translation-text" class="bc-widget-textarea bc-output-muted bc-translator-scroll" rows="3" readonly placeholder="Translation will appear here..."></textarea>
+                <textarea id="translation-text" class="bc-widget-textarea bc-output-muted bc-translator-scroll" rows="3" readonly placeholder="Translation will appear here..." style="background:transparent!important;color:#e2e8f0!important;border:none!important;box-shadow:none!important;outline:none!important;width:100%;"></textarea>
                 <div id="bc-translate-meta" class="hidden" style="display:none;flex-direction:column;gap:4px;font-size:11px;color:#71768e;font-weight:500;margin-top:4px;">
                     <div id="bc-translate-src-romaji" class="hidden"></div>
                     <div id="bc-translate-tgt-romaji" class="hidden"></div>
@@ -654,7 +654,7 @@
             
             <div style="display:flex;align-items:center;justify-content:flex-end;padding-top:12px;border-top:1px solid rgba(255,255,255,0.04);margin-top:8px;">
                 <button id="copy-translation-btn" type="button">
-                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path></svg>
+                    <svg width="14" height="14" style="width:14px;height:14px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path></svg>
                     <span id="copy-text-span">Copy</span>
                 </button>
             </div>
