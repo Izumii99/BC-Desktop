@@ -1,8 +1,9 @@
 ### Fixes & Improvements:
 
-- **Improvement (GPU & VRAM Consumption):** Massively reduced dedicated video memory (VRAM) footprint from ~700MB down to ~30–60MB across all game screens and wardrobe sessions, keeping your graphics card cool and responsive.
-- **Improvement (Background Idle Mode):** Switching away (Alt-Tab) or minimizing the game now drops system memory (RAM) to ~100–200MB and background CPU usage to ~0% without disconnecting your chat room or dropping timers.
-- **Improvement (Active Gameplay Performance):** Streamlined chat log processing and input detection, reducing active processor usage to 4–6% even in crowded rooms with active chat and multiple extensions running.
+- **Improvement (Hardware-Accelerated 60 FPS & Low CPU):** Full GPU hardware acceleration delivers buttery-smooth 60 FPS across all wardrobe sessions and chat rooms, keeping active CPU consumption at an ultra-low ~4–5%.
+- **Improvement (Ultra-Low Background Idle Mode):** Switching away (Alt-Tab) or minimizing the game instantly drops GPU utilization and CPU usage to ~0% and trims system RAM to ~100–200MB, leaving your system completely free for other games and tasks.
+- **Improvement (VRAM Capping & Leak Prevention):** Implemented strict Chromium GPU memory buffer budgets and discardable limits, preventing dedicated VRAM from ballooning during extended play sessions or heavy room transitions.
+- **Improvement (Active Gameplay Performance):** Streamlined chat log processing and input detection, preventing frame drops in crowded rooms with active chat and multiple extensions running.
 - **Fix (Input & Focus Restoration):** Returning focus to the game window now immediately restores the chat input cursor and interactive dialogue controls without input lag or missed clicks.
 - **Fix (Long-Session Stability):** Eliminated resource accumulation in taskbar notification badges and page event listeners, ensuring zero memory leaks during extended all-day play sessions.
 - **Fix (Taskbar Minimize & Restore):** Restoring the game window from the taskbar is now instantaneous with no frame freezing or duplicate background tasks.

@@ -522,7 +522,6 @@ public partial class MainWindow : Window
                     "--disable-sync " +
                     "--disable-notifications " +
                     "--no-pings " +
-                    "--disable-accelerated-2d-canvas " +
                     "--force-gpu-mem-available-mb=192 " +
                     "--force-gpu-mem-discardable-limit-mb=32 " +
                     "--gpu-rasterization-msaa-sample-count=0 " +

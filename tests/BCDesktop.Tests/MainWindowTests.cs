@@ -107,7 +107,6 @@ public class MainWindowTests
         StringAssert.Contains(code, "AudioServiceOutOfProcess");
         StringAssert.Contains(code, "PurgeRendererMemoryWhenBackgrounded");
         StringAssert.Contains(code, "IntensiveWakeUpThrottling");
-        StringAssert.Contains(code, "--disable-accelerated-2d-canvas");
 
         // Prohibited flags for 2D canvas apps
         Assert.IsFalse(code.Contains("--enable-gpu-rasterization"), "GPU rasterization flag is prohibited for 2D canvas.");

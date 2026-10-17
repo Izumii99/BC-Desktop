@@ -15,7 +15,7 @@ name: 'Build and Release'
       title:
         description: 'Release Title Highlight (Title Case)'
         required: false
-        default: 'Ultra-Low VRAM Overhaul & Background Resource Optimization'
+        default: 'Full GPU Power & Ultra-Low Background Idle Optimization'
         type: string
       notes:
         description: 'Custom Release Notes (leave empty to use standard template)'
@@ -68,7 +68,7 @@ jobs:
           $ver = if ($inputVer.Length -gt 0) { $inputVer } elseif ($refTag.Length -gt 0) { $refTag } else { "6.2" }
 
           $inputTitle = if ($env:INPUT_TITLE) { $env:INPUT_TITLE.Trim() } else { "" }
-          $title = if ($inputTitle.Length -gt 0) { $inputTitle } else { "Ultra-Low VRAM Overhaul & Background Resource Optimization" }
+          $title = if ($inputTitle.Length -gt 0) { $inputTitle } else { "Adjusted Low GPU Power & Ultra-Low Background Idle Optimization" }
 
           $customNotes = if ($env:INPUT_NOTES) { $env:INPUT_NOTES.Trim() } else { "" }
 
