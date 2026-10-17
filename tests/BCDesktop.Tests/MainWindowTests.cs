@@ -427,12 +427,12 @@ public class MainWindowTests
     [TestMethod]
     public void AppVersionComparison_AccuratelyEvaluatesSemanticVersions()
     {
-        Assert.AreEqual("6.2", MainWindow.CurrentAppVersion, "CurrentAppVersion must be 6.2.");
+        Assert.AreEqual("6.3", MainWindow.CurrentAppVersion, "CurrentAppVersion must be 6.3.");
 
-        Assert.IsTrue(MainWindow.IsNewerVersion("v6.3", "6.2"), "v6.3 must be newer than 6.2.");
-        Assert.IsTrue(MainWindow.IsNewerVersion("6.3", "6.2"), "6.3 must be newer than 6.2.");
-        Assert.IsTrue(MainWindow.IsNewerVersion("v6.2.1", "6.2"), "Patch version v6.2.1 must be newer than 6.2.");
-        Assert.IsTrue(MainWindow.IsNewerVersion("v7.0", "6.2"), "Major version v7.0 must be newer than 6.2.");
+        Assert.IsTrue(MainWindow.IsNewerVersion("v6.4", "6.3"), "v6.4 must be newer than 6.3.");
+        Assert.IsTrue(MainWindow.IsNewerVersion("6.4", "6.3"), "6.4 must be newer than 6.3.");
+        Assert.IsTrue(MainWindow.IsNewerVersion("v6.3.1", "6.3"), "Patch version v6.3.1 must be newer than 6.3.");
+        Assert.IsTrue(MainWindow.IsNewerVersion("v7.0", "6.3"), "Major version v7.0 must be newer than 6.3.");
 
         Assert.IsFalse(MainWindow.IsNewerVersion("6.2", "6.2"), "Identical versions must return false.");
         Assert.IsFalse(MainWindow.IsNewerVersion("v6.2", "6.2"), "Identical versions with 'v' prefix must return false.");
