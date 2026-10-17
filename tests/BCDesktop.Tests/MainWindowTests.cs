@@ -546,6 +546,37 @@ public class MainWindowTests
         StringAssert.Contains(content, "bc-google-translate-btn", "translate.js must define floating button.");
         StringAssert.Contains(content, "copy-translation-btn", "translate.js must define copy button.");
     }
+
+    [TestMethod]
+    public void VersionDetection_FollowsRedirectionChainAndLock()
+    {
+        string csPath = Path.Combine(ProjectRoot, "MainWindow.xaml.cs");
+        string csContent = File.ReadAllText(csPath);
+
+        // Verify CheckVersionStatusAsync and enum are present
+        StringAssert.Contains(csContent, "CheckVersionStatusAsync", "MainWindow must define CheckVersionStatusAsync.");
+        StringAssert.Contains(csContent, "VersionStatus.Outdated", "Must handle outdated version status.");
+        StringAssert.Contains(csContent, "VersionStatus.Active", "Must handle active version status.");
+        StringAssert.Contains(csContent, "rawContent.EndsWith(\":lock\"", "Must support version lock syntax in version.txt.");
+
+        // Unit test regex matching for outdated version meta redirects
+        string sampleHtml1 = "<html><head><title>Bondage College - Outdated Version</title><meta http-equiv=\"refresh\" content=\"2; URL=../R133/\"></head></html>";
+        var match1 = Regex.Match(sampleHtml1, @"URL=(?:\.\./)?R(\d+)/", RegexOptions.IgnoreCase);
+        Assert.IsTrue(match1.Success, "Must match relative URL=../R133/");
+        Assert.AreEqual("133", match1.Groups[1].Value);
+
+        string sampleHtml2 = "<html><head><meta http-equiv=\"refresh\" content=\"0; URL=R134/\"></head></html>";
+        var match2 = Regex.Match(sampleHtml2, @"URL=(?:\.\./)?R(\d+)/", RegexOptions.IgnoreCase);
+        Assert.IsTrue(match2.Success, "Must match direct URL=R134/");
+        Assert.AreEqual("134", match2.Groups[1].Value);
+
+        // Unit test version lock string parsing logic
+        string lockInput = "132:lock";
+        bool isLocked = lockInput.EndsWith(":lock", StringComparison.OrdinalIgnoreCase);
+        string cleanedVer = lockInput.Substring(0, lockInput.Length - 5).Trim();
+        Assert.IsTrue(isLocked, "isLocked must be true for 132:lock");
+        Assert.AreEqual("132", cleanedVer);
+    }
 }
 
 

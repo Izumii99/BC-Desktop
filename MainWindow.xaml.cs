@@ -259,33 +259,80 @@ public partial class MainWindow : Window
         }
     }
 
-    private static async Task<bool> IsVersionLiveAsync(HttpClient http, int version)
+    private enum VersionStatus
+    {
+        NotFound,
+        Active,
+        Outdated
+    }
+
+    private static async Task<(VersionStatus Status, int? RedirectTo)> CheckVersionStatusAsync(HttpClient http, int version)
     {
         try
         {
-            using var req = new HttpRequestMessage(HttpMethod.Head, $"https://www.bondage-asia.com/club/R{version}/");
-            using var res = await http.SendAsync(req);
-            return res.IsSuccessStatusCode;
+            using var res = await http.GetAsync(
+                $"https://www.bondage-asia.com/club/R{version}/", 
+                HttpCompletionOption.ResponseContentRead);
+                
+            if (!res.IsSuccessStatusCode)
+                return (VersionStatus.NotFound, null);
+
+            string html = await res.Content.ReadAsStringAsync();
+
+            // Match meta refresh to next version (e.g. URL=../R133/ or URL=R133/)
+            var refreshMatch = Regex.Match(
+                html, 
+                @"URL=(?:\.\./)?R(\d+)/", 
+                RegexOptions.IgnoreCase);
+
+            if (refreshMatch.Success && int.TryParse(refreshMatch.Groups[1].Value, out int nextVer))
+            {
+                return (VersionStatus.Outdated, nextVer);
+            }
+
+            if (html.Contains("Outdated Version", StringComparison.OrdinalIgnoreCase))
+            {
+                return (VersionStatus.Outdated, version + 1);
+            }
+
+            // If there is no redirect, this version is officially active
+            return (VersionStatus.Active, null);
         }
         catch
         {
-            return false;
+            return (VersionStatus.NotFound, null);
         }
     }
 
     private static async Task<string> DetectLatestUrlAsync()
     {
         int activeVersion = 132;
-        
+        bool isLocked = false;
+
         string localAppData = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
         string versionFile = Path.Combine(localAppData, "BCClient", "version.txt");
-        
-        if (File.Exists(versionFile) && int.TryParse(File.ReadAllText(versionFile), out int savedVersion))
+
+        // 1. Read version.txt & check if :lock flag is present
+        if (File.Exists(versionFile))
         {
-            if (savedVersion >= 132 && savedVersion < 500)
+            string rawContent = File.ReadAllText(versionFile).Trim();
+            if (rawContent.EndsWith(":lock", StringComparison.OrdinalIgnoreCase))
+            {
+                isLocked = true;
+                rawContent = rawContent.Substring(0, rawContent.Length - 5).Trim();
+            }
+
+            if (int.TryParse(rawContent, out int savedVersion) && savedVersion >= 132 && savedVersion < 500)
             {
                 activeVersion = savedVersion;
             }
+        }
+
+        // If user locked the version (e.g. "132:lock"), bypass auto-detect directly
+        if (isLocked)
+        {
+            _lastKnownGoodUrl = $"https://www.bondage-asia.com/club/R{activeVersion}/";
+            return _lastKnownGoodUrl;
         }
 
         try
@@ -294,69 +341,54 @@ public partial class MainWindow : Window
             http.DefaultRequestHeaders.UserAgent.ParseAdd(
                 "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36");
 
-            // 1. Always probe upcoming and nearby versions directly against the server.
-            // This guarantees the game auto-updates even if GitGud CHANGELOG is never updated, delayed, or unreachable.
-            var candidates = new HashSet<int>();
-            for (int i = 0; i <= 8; i++)
-            {
-                candidates.Add(activeVersion + i);
-            }
-            for (int i = 1; i <= 3; i++)
-            {
-                if (activeVersion - i >= 132) candidates.Add(activeVersion - i);
-            }
+            int currentProbe = activeVersion;
+            int maxHops = 10;
 
-            // Optional bonus: read GitGud CHANGELOG to fast-forward any large multi-version jumps
-            try
+            // 2. Follow server redirection chain
+            for (int hop = 0; hop < maxHops; hop++)
             {
-                var response = await http.GetAsync(
-                    "https://gitgud.io/BondageProjects/Bondage-College/-/raw/master/BondageClub/CHANGELOG.md",
-                    HttpCompletionOption.ResponseHeadersRead);
+                var (status, nextVer) = await CheckVersionStatusAsync(http, currentProbe);
 
-                if (response.IsSuccessStatusCode)
+                if (status == VersionStatus.Active)
                 {
-                    using var stream = await response.Content.ReadAsStreamAsync();
-                    using var reader = new StreamReader(stream);
-                    string? line;
-                    int lineCount = 0;
-                    while ((line = await reader.ReadLineAsync()) != null && lineCount < 100)
+                    // Current version is still active and has NOT been redirected by the server
+                    activeVersion = currentProbe;
+                    break;
+                }
+                else if (status == VersionStatus.Outdated && nextVer.HasValue)
+                {
+                    // Server officially instructs to proceed to the next version
+                    var (nextStatus, _) = await CheckVersionStatusAsync(http, nextVer.Value);
+                    if (nextStatus != VersionStatus.NotFound)
                     {
-                        lineCount++;
-                        var match = Regex.Match(line, @"^## \[R(\d+)\]");
-                        if (match.Success && int.TryParse(match.Groups[1].Value, out int ver))
-                        {
-                            if (ver >= 132 && ver < 500)
-                            {
-                                candidates.Add(ver);
-                            }
-                        }
+                        activeVersion = nextVer.Value;
+                        currentProbe = nextVer.Value;
+                        
+                        if (nextStatus == VersionStatus.Active) break;
+                    }
+                    else
+                    {
+                        break;
                     }
                 }
+                else
+                {
+                    if (currentProbe > 132)
+                    {
+                        currentProbe--;
+                        continue;
+                    }
+                    break;
+                }
+            }
+
+            _lastKnownGoodUrl = $"https://www.bondage-asia.com/club/R{activeVersion}/";
+            try
+            {
+                Directory.CreateDirectory(Path.GetDirectoryName(versionFile)!);
+                File.WriteAllText(versionFile, activeVersion.ToString());
             }
             catch { }
-
-            // 2. Probe all candidates concurrently in parallel (~100ms total)
-            var probeTasks = candidates.Select(async v => (Version: v, IsLive: await IsVersionLiveAsync(http, v)));
-            var probeResults = await Task.WhenAll(probeTasks);
-
-            // 3. Select the HIGHEST confirmed live release
-            int bestLiveVersion = probeResults
-                .Where(r => r.IsLive)
-                .OrderByDescending(r => r.Version)
-                .Select(r => r.Version)
-                .FirstOrDefault();
-
-            if (bestLiveVersion > 0)
-            {
-                activeVersion = bestLiveVersion;
-                _lastKnownGoodUrl = $"https://www.bondage-asia.com/club/R{activeVersion}/";
-                try 
-                { 
-                    Directory.CreateDirectory(Path.GetDirectoryName(versionFile)!); 
-                    File.WriteAllText(versionFile, activeVersion.ToString()); 
-                } 
-                catch { }
-            }
         }
         catch { }
 
