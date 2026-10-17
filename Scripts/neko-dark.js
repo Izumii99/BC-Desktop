@@ -713,19 +713,23 @@
         const origRegister = sdk.registerMod;
         if (typeof origRegister !== "function") return;
 
-        // ponytail: wrap registerMod to return existing modApi on duplicate registration instead of unloading
-        sdk.registerMod = function (info) {
-            if (info && (info.name === "Bondage Club Neko Chat Enhancer (BCNekoEnhancer)" || info.name?.includes("BCNekoEnhancer"))) {
-                try {
-                    const existing = sdk.getMod ? sdk.getMod(info.name) : null;
-                    if (existing) {
-                        return existing;
-                    }
-                } catch (e) {}
-            }
-            return origRegister.apply(this, arguments);
-        };
-        sdk._nekoGuardHooked = true;
+        try {
+            // ponytail: wrap registerMod to return existing modApi on duplicate registration instead of unloading
+            sdk.registerMod = function (info) {
+                if (info && (info.name === "Bondage Club Neko Chat Enhancer (BCNekoEnhancer)" || info.name?.includes("BCNekoEnhancer"))) {
+                    try {
+                        const existing = sdk.getMod ? sdk.getMod(info.name) : null;
+                        if (existing) {
+                            return existing;
+                        }
+                    } catch (e) {}
+                }
+                return origRegister.apply(this, arguments);
+            };
+            sdk._nekoGuardHooked = true;
+        } catch (e) {
+            // In newer BC releases, bcModSdk may be frozen or sealed
+        }
     }
 
     if (window.bcModSdk) {
