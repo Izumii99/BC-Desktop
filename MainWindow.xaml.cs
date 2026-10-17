@@ -1192,7 +1192,7 @@ public partial class MainWindow : Window
 
         if (hasLocalScripts)
         {
-            // 🧪 Tester / Local Dev Mode: Prioritaskan skrip lokal dari folder Scripts/ dan bypass remote CDN
+            // 🧪 Tester / Local Dev Mode: Prioritize local scripts from Scripts/ folder and bypass remote loader
             foreach (var file in Directory.GetFiles(scriptsDir, "*.js"))
             {
                 string script = await File.ReadAllTextAsync(file);
@@ -1201,7 +1201,7 @@ public partial class MainWindow : Window
         }
         else
         {
-            // 🚀 Single-File Standalone Release Mode: Gunakan built-in remote loader bawaan
+            // 🚀 Single-File Standalone Release Mode: Inject embedded remote loader
             string builtInLoader = GetBuiltInLoaderScript();
             if (!string.IsNullOrWhiteSpace(builtInLoader))
             {

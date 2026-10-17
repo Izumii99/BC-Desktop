@@ -1482,7 +1482,7 @@
                             let chatInput = document.getElementById("InputChat");
                             let msg = chatInput ? chatInput.value : "";
                             
-                            // Matikan textmoji khusus untuk Whisper sesuai request
+                            // Disable textmojis for Whisper messages
                             if (msg.startsWith("/w ") || msg.startsWith("/whisper ")) return;
                             
                             if (msg && typeof CharacterSetFacialExpression === "function" && typeof Player !== "undefined" && Player) {
