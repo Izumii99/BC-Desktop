@@ -35,7 +35,7 @@
     <Compile Remove="tests\**" />
     <None Remove="tests\**" />
     <None Remove="Scripts\**\*" />
-    <EmbeddedResource Include="PublishLoader\inject-all.js" LogicalName="BuiltInLoader.js" />
+    <EmbeddedResource Include="loader.user.js" LogicalName="BuiltInLoader.js" />
   </ItemGroup>
 
   <ItemGroup>

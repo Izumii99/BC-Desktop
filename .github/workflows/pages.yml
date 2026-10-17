@@ -1,0 +1,191 @@
+name: 'Deploy to GitHub Pages'
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'Scripts/**'
+      - 'Assets/**'
+      - 'loader.user.js'
+      - '.github/workflows/pages.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v5
+
+      - name: Prepare static files
+        shell: bash
+        run: |
+          mkdir -p _site
+          touch _site/.nojekyll
+
+          # Copy core distribution files
+          cp loader.user.js _site/
+          cp -r Scripts _site/
+          cp -r Assets _site/
+
+          # Create landing page for users who visit the GitHub Pages URL
+          cat << 'EOF' > _site/index.html
+          <!DOCTYPE html>
+          <html lang="en">
+          <head>
+              <meta charset="UTF-8">
+              <meta name="viewport" content="width=device-width, initial-scale=1.0">
+              <title>BC Desktop Addon Hub</title>
+              <link rel="icon" type="image/png" href="Assets/app_logo.png">
+              <style>
+                  body {
+                      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+                      background-color: #0f0d19;
+                      color: #e2e8f0;
+                      margin: 0;
+                      padding: 40px 20px;
+                      display: flex;
+                      flex-direction: column;
+                      align-items: center;
+                      min-height: 100vh;
+                      box-sizing: border-box;
+                  }
+                  .card {
+                      background: rgba(30, 27, 46, 0.8);
+                      border: 1px solid rgba(168, 85, 247, 0.3);
+                      border-radius: 12px;
+                      padding: 32px;
+                      max-width: 650px;
+                      width: 100%;
+                      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+                      backdrop-filter: blur(10px);
+                  }
+                  .header {
+                      display: flex;
+                      align-items: center;
+                      gap: 16px;
+                      margin-bottom: 24px;
+                  }
+                  .logo {
+                      width: 56px;
+                      height: 56px;
+                      border-radius: 8px;
+                  }
+                  h1 {
+                      font-size: 24px;
+                      margin: 0;
+                      color: #f3e8ff;
+                  }
+                  p {
+                      font-size: 14px;
+                      line-height: 1.6;
+                      color: #cbd5e1;
+                      margin: 0 0 16px 0;
+                  }
+                  .btn-group {
+                      display: flex;
+                      flex-wrap: wrap;
+                      gap: 12px;
+                      margin: 20px 0;
+                  }
+                  .btn {
+                      display: inline-flex;
+                      align-items: center;
+                      padding: 10px 18px;
+                      border-radius: 8px;
+                      font-size: 14px;
+                      font-weight: 600;
+                      text-decoration: none;
+                      transition: all 0.2s ease;
+                      cursor: pointer;
+                  }
+                  .btn-primary {
+                      background: #9333ea;
+                      color: #ffffff;
+                      border: 1px solid #a855f7;
+                  }
+                  .btn-primary:hover {
+                      background: #a855f7;
+                      box-shadow: 0 0 15px rgba(168, 85, 247, 0.4);
+                  }
+                  .btn-secondary {
+                      background: rgba(255, 255, 255, 0.05);
+                      color: #e2e8f0;
+                      border: 1px solid rgba(255, 255, 255, 0.15);
+                  }
+                  .btn-secondary:hover {
+                      background: rgba(255, 255, 255, 0.1);
+                  }
+                  .code-box {
+                      background: #090710;
+                      border: 1px solid rgba(168, 85, 247, 0.2);
+                      border-radius: 8px;
+                      padding: 12px;
+                      font-family: Consolas, monospace;
+                      font-size: 12px;
+                      color: #a78bfa;
+                      overflow-x: auto;
+                      white-space: pre-wrap;
+                      word-break: break-all;
+                  }
+                  .badge {
+                      display: inline-block;
+                      padding: 4px 8px;
+                      background: rgba(34, 197, 94, 0.15);
+                      border: 1px solid rgba(34, 197, 94, 0.3);
+                      color: #4ade80;
+                      border-radius: 9999px;
+                      font-size: 11px;
+                      font-weight: bold;
+                      text-transform: uppercase;
+                      margin-bottom: 12px;
+                  }
+              </style>
+          </head>
+          <body>
+              <div class="card">
+                  <div class="header">
+                      <img src="Assets/app_logo.png" alt="BC Desktop Logo" class="logo">
+                      <div>
+                          <div class="badge">Live CDN & Pages</div>
+                          <h1>BC Desktop Addon Hub</h1>
+                      </div>
+                  </div>
+                  <p>Welcome to the official static CDN for <strong>BC Desktop</strong> addons and remote userscripts. Scripts hosted here are served directly with real-time updates and low latency.</p>
+                  
+                  <div class="btn-group">
+                      <a href="loader.user.js" class="btn btn-primary">Install Userscript (Tampermonkey)</a>
+                      <a href="https://github.com/Izumii99/BC-Desktop" class="btn btn-secondary">GitHub Repository</a>
+                  </div>
+
+                  <p><strong>Bookmarklet:</strong> You can also load all addons dynamically with one click by bookmarking the code below:</p>
+                  <div class="code-box">javascript:(function(){if(window._bcRemoteLoaderInjected)return;window._bcRemoteLoaderInjected=true;let target=document.head||document.documentElement;let s=document.createElement("script");s.src="https://izumii99.github.io/BC-Desktop/loader.user.js?v="+Date.now();s.async=false;target.appendChild(s);})();</div>
+              </div>
+          </body>
+          </html>
+          EOF
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: '_site'
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

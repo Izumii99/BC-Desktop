@@ -345,7 +345,7 @@ MainWindow.xaml.cs  — WebView2 init, version detection, memory optimization, D
 RELEASE_NOTES.md    — Detailed user-facing changelog and release history
 Assets/             — Application icons and visual assets
 Scripts/            — Mod/addon scripts directory
-PublishLoader/      — Remote loader bundle embedded into the app for seamless distribution
+loader.user.js      — Universal remote userscript loader with 3-tier fallback embedded into the app
 tests/              — Automated unit test suite (MSTest)
 .github/workflows/  — CI PR validation & release automation workflows
 ```

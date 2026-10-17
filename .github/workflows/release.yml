@@ -140,7 +140,7 @@ jobs:
         shell: powershell
         run: |
           Write-Host "Purging jsDelivr edge cache for scripts..."
-          $files = Get-ChildItem -Path "Scripts", "PublishLoader" -Recurse -Filter "*.js" -ErrorAction SilentlyContinue | Resolve-Path -Relative
+          $files = (Get-ChildItem -Path "Scripts" -Recurse -Filter "*.js" -ErrorAction SilentlyContinue | Resolve-Path -Relative) + @("loader.user.js")
           Invoke-RestMethod -Uri "https://purge.jsdelivr.net/gh/${{ github.repository }}@main/" -Method Get -ErrorAction SilentlyContinue
           foreach ($f in $files) {
               $cleanPath = $f.TrimStart(".\").Replace("\", "/")

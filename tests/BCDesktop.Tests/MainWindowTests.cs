@@ -202,9 +202,9 @@ public class MainWindowTests
     public void ScriptDistribution_FollowsWhitelistAndLoaderIntegrity()
     {
         // 1. Verify remote loader exists and points to addon manager
-        string publishLoader = Path.Combine(ProjectRoot, "PublishLoader", "inject-all.js");
-        Assert.IsTrue(File.Exists(publishLoader), "Remote loader PublishLoader/inject-all.js must exist.");
-        string loaderContent = File.ReadAllText(publishLoader);
+        string rootLoader = Path.Combine(ProjectRoot, "loader.user.js");
+        Assert.IsTrue(File.Exists(rootLoader), "Root loader loader.user.js must exist.");
+        string loaderContent = File.ReadAllText(rootLoader);
         StringAssert.Contains(loaderContent, "addon-manager.js", "Remote loader must target addon-manager.js.");
 
         // Verify built-in loader embedded resource compiles into the binary
@@ -396,7 +396,7 @@ public class MainWindowTests
     public void JavaScriptFiles_PassSyntaxAndIntegrityChecks()
     {
         var jsFiles = Directory.GetFiles(Path.Combine(ProjectRoot, "Scripts"), "*.js")
-            .Concat(Directory.GetFiles(Path.Combine(ProjectRoot, "PublishLoader"), "*.js"))
+            .Append(Path.Combine(ProjectRoot, "loader.user.js"))
             .ToList();
 
         Assert.IsTrue(jsFiles.Count >= 5, "Must find at least 5 JavaScript addon/loader scripts.");

@@ -6,7 +6,7 @@ on:
       - main
     paths:
       - 'Scripts/**'
-      - 'PublishLoader/**'
+      - 'loader.user.js'
   workflow_dispatch:
 
 concurrency:
@@ -26,10 +26,10 @@ jobs:
         shell: bash
         run: |
           echo "Finding all JavaScript scripts in repository..."
-          FILES=$(find Scripts PublishLoader -type f -name "*.js" 2>/dev/null)
+          FILES=$(find Scripts -type f -name "*.js" 2>/dev/null; find . -maxdepth 1 -name "loader.user.js" 2>/dev/null)
 
           if [ -z "$FILES" ]; then
-            echo "No .js files found in Scripts or PublishLoader."
+            echo "No .js files found in Scripts or root loader."
             exit 0
           fi
 

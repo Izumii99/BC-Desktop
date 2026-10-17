@@ -84,7 +84,7 @@
     let REPO_API_URL =
         "https://data.jsdelivr.com/v1/package/gh/Izumii99/BC-Desktop@main";
     let SCRIPT_BASE_URL =
-        "https://cdn.jsdelivr.net/gh/Izumii99/BC-Desktop@main/Scripts/";
+        "https://izumii99.github.io/BC-Desktop/Scripts/";
     const STORAGE_KEY = "BCDesktop_Addons_Config";
 
     if (window.bcLocalScripts) {
