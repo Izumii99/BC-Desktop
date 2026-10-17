@@ -175,7 +175,7 @@ jobs:
                   </div>
 
                   <p><strong>Bookmarklet:</strong> You can also load all addons dynamically with one click by bookmarking the code below:</p>
-                  <div class="code-box">javascript:(function(){if(window._bcRemoteLoaderInjected)return;window._bcRemoteLoaderInjected=true;let target=document.head||document.documentElement;let s=document.createElement("script");s.src="https://izumii99.github.io/BC-Desktop/loader.user.js?v="+Date.now();s.async=false;target.appendChild(s);})();</div>
+                  <div class="code-box">javascript:(function(){let target=document.head||document.documentElement;let s=document.createElement("script");s.src="https://izumii99.github.io/BC-Desktop/Scripts/addon-manager.js?v="+Date.now();s.async=false;target.appendChild(s);})();</div>
               </div>
           </body>
           </html>

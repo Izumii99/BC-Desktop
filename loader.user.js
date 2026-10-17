@@ -15,8 +15,12 @@
 (function () {
     "use strict";
 
-    if (window._bcRemoteLoaderInjected) return;
+    if (window._bcRemoteLoaderInjected) {
+        console.warn("BC Desktop: Remote Loader is already active on this tab.");
+        return;
+    }
     window._bcRemoteLoaderInjected = true;
+    console.log("BC Desktop: Remote Loader initializing...");
 
     const pagesURL = "https://izumii99.github.io/BC-Desktop/Scripts/addon-manager.js";
     const rawURL = "https://raw.githubusercontent.com/Izumii99/BC-Desktop/main/Scripts/addon-manager.js";
@@ -27,7 +31,7 @@
         let script = document.createElement("script");
         script.textContent = code;
         target.appendChild(script);
-        console.log("BC Desktop: Loaded Addon Manager from GitHub Pages / Raw");
+        console.log("BC Desktop: Addon Manager injected successfully");
     }
 
     function injectScriptSrc(src) {
@@ -56,7 +60,8 @@
                 return res.text();
             })
             .then(code => injectScriptText(code))
-            .catch(() => {
+            .catch((err) => {
+                console.warn("BC Desktop: Pages fetch unavailable (" + (err && err.message) + "), falling back to Raw GitHub...");
                 // 2. Try GitHub Raw fallback (direct from repository)
                 fetch(rawURL + "?v=" + Date.now(), { cache: "no-store" })
                     .then(res => {
@@ -64,7 +69,8 @@
                         return res.text();
                     })
                     .then(code => injectScriptText(code))
-                    .catch(() => {
+                    .catch((rawErr) => {
+                        console.warn("BC Desktop: Raw fetch unavailable (" + (rawErr && rawErr.message) + "), falling back to jsDelivr CDN...");
                         // 3. Fallback to jsDelivr CDN
                         injectScriptSrc(cdnURL);
                     });
