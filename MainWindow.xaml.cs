@@ -22,12 +22,22 @@ public partial class MainWindow : Window
 
     private string _originalTitleLabel;
     private CancellationTokenSource? _deactivationCts;
+    private bool _isSuspending;
+    private bool _wantsResume;
+    private bool _wasMinimized;
     private int _recentCrashCount;
     private DateTime _lastCrashTime = DateTime.MinValue;
 
     // In-memory only: the game persists GraphicsSettings solely when leaving the Preference screen, which is skipped here.
     internal const string CapUnfocusedFpsScript =
-        "(()=>{const g=window.Player&&Player.GraphicsSettings;if(g&&!g.MaxUnfocusedFPS&&window.CurrentScreen!=='Preference'){g.MaxUnfocusedFPS=15;window.bcFpsCap=g;}})()";
+        "(()=>{" +
+        "const g=window.Player&&Player.GraphicsSettings;" +
+        "if(g&&!g.MaxUnfocusedFPS&&window.CurrentScreen!=='Preference'){g.MaxUnfocusedFPS=15;window.bcFpsCap=g;}" +
+        "if(window.bcFocusMemory&&!window.bcFocusMemory.isConnected)window.bcFocusMemory=null;" +
+        "if(window.bcLastMousedown&&!window.bcLastMousedown.isConnected)window.bcLastMousedown=null;" +
+        "if(window.bcLastFocusedLayer&&!window.bcLastFocusedLayer.isConnected)window.bcLastFocusedLayer=null;" +
+        "if(typeof window.gc==='function'){try{window.gc();}catch(e){}}" +
+        "})()";
     internal const string RestoreUnfocusedFpsScript =
         "(()=>{const g=window.bcFpsCap;if(g){if(g.MaxUnfocusedFPS===15)g.MaxUnfocusedFPS=0;window.bcFpsCap=null;}})()";
 
@@ -50,6 +60,30 @@ public partial class MainWindow : Window
         catch
         {
         }
+    }
+
+    private void TrimAllWebViewProcesses()
+    {
+        _ = Task.Run(() =>
+        {
+            TrimWorkingSet();
+            try
+            {
+                foreach (var proc in Process.GetProcessesByName("msedgewebview2"))
+                {
+                    try
+                    {
+                        SetProcessWorkingSetSize(proc.Handle, (IntPtr)(-1), (IntPtr)(-1));
+                    }
+                    catch { }
+                    finally
+                    {
+                        proc.Dispose();
+                    }
+                }
+            }
+            catch { }
+        });
     }
 
     public MainWindow() : this(initializeWebView: true)
@@ -82,11 +116,15 @@ public partial class MainWindow : Window
             if (!token.IsCancellationRequested && WindowState != WindowState.Minimized && WebView.CoreWebView2 is { } core)
             {
                 core.MemoryUsageTargetLevel = CoreWebView2MemoryUsageTargetLevel.Low;
-                _ = core.ExecuteScriptAsync(CapUnfocusedFpsScript);
-                TrimWorkingSet();
+                await core.ExecuteScriptAsync(CapUnfocusedFpsScript);
+                await Task.Delay(150, token);
+                TrimAllWebViewProcesses();
             }
         }
         catch (OperationCanceledException)
+        {
+        }
+        catch
         {
         }
     }
@@ -178,30 +216,42 @@ public partial class MainWindow : Window
         {
             if (WindowState == WindowState.Minimized)
             {
+                _wasMinimized = true;
                 CancelDeactivation();
+                _wantsResume = false;
                 core.MemoryUsageTargetLevel = CoreWebView2MemoryUsageTargetLevel.Low;
-                await core.TrySuspendAsync();
-                TrimWorkingSet();
+                await core.ExecuteScriptAsync(CapUnfocusedFpsScript);
+
+                if (!_isSuspending)
+                {
+                    _isSuspending = true;
+                    try
+                    {
+                        await core.TrySuspendAsync();
+                    }
+                    finally
+                    {
+                        _isSuspending = false;
+                    }
+
+                    if (_wantsResume || WindowState != WindowState.Minimized)
+                    {
+                        _wasMinimized = false;
+                        core.Resume();
+                        core.MemoryUsageTargetLevel = CoreWebView2MemoryUsageTargetLevel.Normal;
+                        _ = core.ExecuteScriptAsync(RestoreUnfocusedFpsScript);
+                        return;
+                    }
+                }
+                TrimAllWebViewProcesses();
             }
-            else
+            else if (_wasMinimized)
             {
+                _wasMinimized = false;
+                _wantsResume = true;
                 core.Resume();
                 core.MemoryUsageTargetLevel = CoreWebView2MemoryUsageTargetLevel.Normal;
-                await Task.Delay(100);
-                WebView.Focus();
-                string smartFocusScript = @"
-                    (function() {
-                        if (window.bcLogDebug) window.bcLogDebug('ACTIVATED');
-                        if (window.bcRunFocusCrawler) {
-                            let bestInput = window.bcRunFocusCrawler();
-                            if (bestInput) {
-                                if (window.bcLogDebug) window.bcLogDebug('=> Hybrid focus: ' + bestInput.tagName + '#' + bestInput.id);
-                                bestInput.focus();
-                            }
-                        }
-                    })();
-                ";
-                _ = core.ExecuteScriptAsync(smartFocusScript);
+                _ = core.ExecuteScriptAsync(RestoreUnfocusedFpsScript);
             }
         }
         catch
@@ -314,7 +364,7 @@ public partial class MainWindow : Window
         return _lastKnownGoodUrl;
     }
 
-    internal const string CurrentAppVersion = "6.1";
+    internal const string CurrentAppVersion = "6.2";
     internal const string GitHubRepo = "Izumii99/BC-Desktop";
     private static string? _newReleaseUrl;
 
@@ -465,13 +515,20 @@ public partial class MainWindow : Window
             var options = new CoreWebView2EnvironmentOptions
             {
                 AdditionalBrowserArguments =
-                    "--disable-features=Translate,OptimizationHints,MediaRouter,DialMediaRouteProvider,SpareRendererForSitePerProcess " +
+                    "--disable-features=Translate,OptimizationHints,MediaRouter,DialMediaRouteProvider,SpareRendererForSitePerProcess,CanvasOopRasterization,AudioServiceOutOfProcess,AutofillServerCommunication " +
                     "--disable-background-networking " +
                     "--disable-component-update " +
                     "--disable-domain-reliability " +
                     "--disable-sync " +
-                    "--enable-features=CalculateNativeWinOcclusion " +
-                    "--js-flags=\"--max-old-space-size=768\""
+                    "--disable-notifications " +
+                    "--no-pings " +
+                    "--disable-accelerated-2d-canvas " +
+                    "--force-gpu-mem-available-mb=192 " +
+                    "--force-gpu-mem-discardable-limit-mb=32 " +
+                    "--gpu-rasterization-msaa-sample-count=0 " +
+                    "--max-gum-fps=60 " +
+                    "--enable-features=CalculateNativeWinOcclusion,PurgeRendererMemoryWhenBackgrounded,IntensiveWakeUpThrottling " +
+                    "--js-flags=\"--max-old-space-size=512 --optimize-for-size --expose-gc\""
             };
 
             var env = await CoreWebView2Environment.CreateAsync(
@@ -622,7 +679,11 @@ public partial class MainWindow : Window
         };
 
         string copyScript = @"
-            let origFocus = HTMLElement.prototype.focus;
+            (() => {
+                if (window.__bcCopyScriptInitialized) return;
+                window.__bcCopyScriptInitialized = true;
+
+                let origFocus = HTMLElement.prototype.focus;
 
             function isTextInput(el) {
                 if (!el) return false;
@@ -721,16 +782,14 @@ public partial class MainWindow : Window
                 if (!el || el === document.body || el === document.documentElement) return null;
                 let curr = el;
                 while (curr && curr !== document.body && curr !== document.documentElement) {
-                    if (curr.id === 'chat-room-bot' || curr.id === 'chat-room-div' || curr.id === 'chat-room-main') return null;
-                    if (curr.id === 'InputChat' || curr.id === 'TextAreaChatLog') return null;
-                    if (curr.id === 'MainCanvas') return null;
+                    let rawId = curr.id || '';
+                    if (rawId === 'chat-room-bot' || rawId === 'chat-room-div' || rawId === 'chat-room-main' ||
+                        rawId === 'InputChat' || rawId === 'TextAreaChatLog' || rawId === 'MainCanvas') return null;
                     
-                    let id = (curr.id || '').toLowerCase();
+                    let id = rawId.toLowerCase();
                     let cls = (typeof curr.className === 'string' ? curr.className : '').toLowerCase();
                     
-                    // Native BC preference screens, scroll boxes, and inputs are NOT addon containers
-                    if (id.startsWith('preference') || cls.includes('preference') || cls.includes('scroll-box')) return null;
-                    if (id === 'descriptioninput') return null;
+                    if (id === 'descriptioninput' || id.startsWith('preference') || cls.includes('preference') || cls.includes('scroll-box')) return null;
 
                     if (id.startsWith('lce-') || cls.includes('lce-') ||
                         id.includes('bcx') || cls.includes('bcx') ||
@@ -742,10 +801,11 @@ public partial class MainWindow : Window
                         return curr;
                     }
                     
-                    let z = parseInt(window.getComputedStyle(curr).zIndex, 10);
-                    let pos = window.getComputedStyle(curr).position;
-                    if (!isNaN(z) && z >= 1 && (pos === 'fixed' || pos === 'absolute')) {
-                        if (!id.startsWith('preference') && !cls.includes('preference') && !cls.includes('scroll-box')) {
+                    let style = window.getComputedStyle(curr);
+                    let pos = style.position;
+                    if (pos === 'fixed' || pos === 'absolute') {
+                        let z = parseInt(style.zIndex, 10);
+                        if (!isNaN(z) && z >= 1) {
                             return curr;
                         }
                     }
@@ -874,11 +934,17 @@ public partial class MainWindow : Window
             };
 
             window.bcRunFocusCrawler = function() {
+                let zCache = new Map();
                 function getHighestZ(el) {
                     let max = 0;
                     while (el && el !== document.documentElement) {
-                        let z = parseInt(window.getComputedStyle(el).zIndex, 10);
-                        if (!isNaN(z) && z > max) max = z;
+                        let z = zCache.get(el);
+                        if (z === undefined) {
+                            let parsed = parseInt(window.getComputedStyle(el).zIndex, 10);
+                            z = isNaN(parsed) ? 0 : parsed;
+                            zCache.set(el, z);
+                        }
+                        if (z > max) max = z;
                         el = el.parentElement;
                     }
                     return max;
@@ -891,10 +957,12 @@ public partial class MainWindow : Window
                 for (let i = 0; i < inputs.length; i++) {
                     let el = inputs[i];
                     if (el.disabled || el.readOnly) continue;
-                    if (!isTextInput(el)) continue; // STRICTLY text-typing inputs: exclude checkboxes, radios, buttons, etc.
+                    if (!isTextInput(el)) continue;
                     
-                    let rect = el.getBoundingClientRect();
-                    if (rect.width === 0 || rect.height === 0) continue;
+                    if (el.offsetWidth === 0 && el.offsetHeight === 0) {
+                        let rect = el.getBoundingClientRect();
+                        if (rect.width === 0 || rect.height === 0) continue;
+                    }
                     
                     let style = window.getComputedStyle(el);
                     if (style.visibility === 'hidden' || style.opacity === '0' || style.display === 'none') continue;
@@ -903,15 +971,12 @@ public partial class MainWindow : Window
                     let score = z * 1000;
                     
                     if (el.id === 'InputChat' || el.id === 'TextAreaChatLog') score -= 500000;
-                    
-                    // Prioritize textareas and search/dialog inputs
                     if (el.tagName === 'TEXTAREA') score += 5000;
                     if (el.id && el.id.toLowerCase().indexOf('search') !== -1) score += 2000;
                     
                     if (score > maxScore) { maxScore = score; bestInput = el; }
                 }
 
-                // If an active search, menu, or dialog input is open, return it!
                 if (bestInput && bestInput.id !== 'InputChat') {
                     return bestInput;
                 }
@@ -1002,7 +1067,7 @@ public partial class MainWindow : Window
                 let shouldCheck = false;
                 let addedInputs = false;
                 for (let m of mutations) {
-                    if (chatLog && chatLog.contains(m.target)) continue;
+                    if (m.target && (m.target.id === 'TextAreaChatLog' || (chatLog && chatLog.contains(m.target)))) continue;
                     if (m.type === 'childList') {
                         if (m.addedNodes.length > 0) {
                             for (let i = 0; i < m.addedNodes.length; i++) {
@@ -1103,6 +1168,7 @@ public partial class MainWindow : Window
                 }
                 return originalExecCommand.apply(this, arguments);
             };
+        })();
         ";
         
         core.NavigationCompleted += async (sender, args) =>
@@ -1223,6 +1289,9 @@ public partial class MainWindow : Window
             e.Cancel = true;
             return;
         }
+
+        CancelDeactivation();
+        try { WebView?.Dispose(); } catch { }
         base.OnClosing(e);
     }
 
@@ -1507,23 +1576,37 @@ public partial class MainWindow : Window
     private string? _lastBadgeText;
     private ImageSource? _lastBadgeImage;
 
+    private static readonly Typeface BadgeTypeface = new(new FontFamily("Segoe UI"), FontStyles.Normal, FontWeights.Bold, FontStretches.Normal);
+    private static readonly SolidColorBrush BadgeFillBrush = CreateFrozenBrush(Color.FromRgb(230, 39, 39));
+    private static readonly Pen BadgeBorderPen = CreateFrozenPen();
+
+    private static SolidColorBrush CreateFrozenBrush(Color color)
+    {
+        var b = new SolidColorBrush(color);
+        b.Freeze();
+        return b;
+    }
+
+    private static Pen CreateFrozenPen()
+    {
+        var p = new Pen(Brushes.White, 1.5);
+        p.Freeze();
+        return p;
+    }
+
     private ImageSource CreateBadge(string text)
     {
         var visual = new DrawingVisual();
         using (var context = visual.RenderOpen())
         {
-            var brush = new SolidColorBrush(Color.FromRgb(230, 39, 39)); // Red
-            var pen = new Pen(Brushes.White, 1.5); // White border
+            context.DrawEllipse(BadgeFillBrush, BadgeBorderPen, new Point(16, 16), 14, 14);
             
-            context.DrawEllipse(brush, pen, new Point(16, 16), 14, 14);
-            
-            var typeface = new Typeface(new FontFamily("Segoe UI"), FontStyles.Normal, FontWeights.Bold, FontStretches.Normal);
             double pixelsPerDip = VisualTreeHelper.GetDpi(this).PixelsPerDip;
             var formattedText = new FormattedText(
                 text,
                 System.Globalization.CultureInfo.InvariantCulture,
                 FlowDirection.LeftToRight,
-                typeface,
+                BadgeTypeface,
                 14,
                 Brushes.White,
                 pixelsPerDip);
@@ -1531,10 +1614,9 @@ public partial class MainWindow : Window
             context.DrawText(formattedText, new Point(16 - formattedText.Width / 2, 16 - formattedText.Height / 2));
         }
 
-
-
         var bitmap = new RenderTargetBitmap(32, 32, 96, 96, PixelFormats.Pbgra32);
         bitmap.Render(visual);
+        bitmap.Freeze();
         return bitmap;
     }
 

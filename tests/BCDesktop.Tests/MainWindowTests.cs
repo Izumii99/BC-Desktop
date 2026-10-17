@@ -95,7 +95,19 @@ public class MainWindowTests
         StringAssert.Contains(code, "--disable-sync");
         StringAssert.Contains(code, "--enable-features=CalculateNativeWinOcclusion");
         StringAssert.Contains(code, "--js-flags=");
-        StringAssert.Contains(code, "--max-old-space-size=768");
+        StringAssert.Contains(code, "--max-old-space-size=512");
+        StringAssert.Contains(code, "--optimize-for-size");
+        StringAssert.Contains(code, "--expose-gc");
+
+        // VRAM capping and memory budget flags
+        StringAssert.Contains(code, "--force-gpu-mem-available-mb=192");
+        StringAssert.Contains(code, "--force-gpu-mem-discardable-limit-mb=32");
+        StringAssert.Contains(code, "--gpu-rasterization-msaa-sample-count=0");
+        StringAssert.Contains(code, "CanvasOopRasterization");
+        StringAssert.Contains(code, "AudioServiceOutOfProcess");
+        StringAssert.Contains(code, "PurgeRendererMemoryWhenBackgrounded");
+        StringAssert.Contains(code, "IntensiveWakeUpThrottling");
+        StringAssert.Contains(code, "--disable-accelerated-2d-canvas");
 
         // Prohibited flags for 2D canvas apps
         Assert.IsFalse(code.Contains("--enable-gpu-rasterization"), "GPU rasterization flag is prohibited for 2D canvas.");
@@ -416,19 +428,19 @@ public class MainWindowTests
     [TestMethod]
     public void AppVersionComparison_AccuratelyEvaluatesSemanticVersions()
     {
-        Assert.AreEqual("6.1", MainWindow.CurrentAppVersion, "CurrentAppVersion must be 6.1.");
+        Assert.AreEqual("6.2", MainWindow.CurrentAppVersion, "CurrentAppVersion must be 6.2.");
 
-        Assert.IsTrue(MainWindow.IsNewerVersion("v6.2", "6.1"), "v6.2 must be newer than 6.1.");
-        Assert.IsTrue(MainWindow.IsNewerVersion("6.2", "6.1"), "6.2 must be newer than 6.1.");
-        Assert.IsTrue(MainWindow.IsNewerVersion("v6.1.1", "6.1"), "Patch version v6.1.1 must be newer than 6.1.");
-        Assert.IsTrue(MainWindow.IsNewerVersion("v7.0", "6.1"), "Major version v7.0 must be newer than 6.1.");
+        Assert.IsTrue(MainWindow.IsNewerVersion("v6.3", "6.2"), "v6.3 must be newer than 6.2.");
+        Assert.IsTrue(MainWindow.IsNewerVersion("6.3", "6.2"), "6.3 must be newer than 6.2.");
+        Assert.IsTrue(MainWindow.IsNewerVersion("v6.2.1", "6.2"), "Patch version v6.2.1 must be newer than 6.2.");
+        Assert.IsTrue(MainWindow.IsNewerVersion("v7.0", "6.2"), "Major version v7.0 must be newer than 6.2.");
 
-        Assert.IsFalse(MainWindow.IsNewerVersion("6.1", "6.1"), "Identical versions must return false.");
-        Assert.IsFalse(MainWindow.IsNewerVersion("v6.1", "6.1"), "Identical versions with 'v' prefix must return false.");
-        Assert.IsFalse(MainWindow.IsNewerVersion("v6.0", "6.1"), "Older version v6.0 must return false.");
-        Assert.IsFalse(MainWindow.IsNewerVersion("v1.0", "6.1"), "Older version v1.0 must return false.");
-        Assert.IsFalse(MainWindow.IsNewerVersion("", "6.1"), "Empty latest tag must return false.");
-        Assert.IsFalse(MainWindow.IsNewerVersion("invalid-tag", "6.1"), "Malformed tag must return false.");
+        Assert.IsFalse(MainWindow.IsNewerVersion("6.2", "6.2"), "Identical versions must return false.");
+        Assert.IsFalse(MainWindow.IsNewerVersion("v6.2", "6.2"), "Identical versions with 'v' prefix must return false.");
+        Assert.IsFalse(MainWindow.IsNewerVersion("v6.1", "6.2"), "Older version v6.1 must return false.");
+        Assert.IsFalse(MainWindow.IsNewerVersion("v1.0", "6.2"), "Older version v1.0 must return false.");
+        Assert.IsFalse(MainWindow.IsNewerVersion("", "6.2"), "Empty latest tag must return false.");
+        Assert.IsFalse(MainWindow.IsNewerVersion("invalid-tag", "6.2"), "Malformed tag must return false.");
     }
 
     [TestMethod]
