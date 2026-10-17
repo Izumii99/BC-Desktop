@@ -17,7 +17,8 @@
     if (window._bcRemoteLoaderInjected) return;
     window._bcRemoteLoaderInjected = true;
 
-    const managerURL = "https://cdn.jsdelivr.net/gh/Izumii99/BC-Desktop@main/Scripts/addon-manager.js";
+    const rawURL = "https://raw.githubusercontent.com/Izumii99/BC-Desktop/main/Scripts/addon-manager.js";
+    const cdnURL = "https://cdn.jsdelivr.net/gh/Izumii99/BC-Desktop@main/Scripts/addon-manager.js";
 
     function injectManager() {
         let target = document.head || document.documentElement;
@@ -26,14 +27,27 @@
             return;
         }
 
-        let script = document.createElement("script");
-        script.src = managerURL + "?v=" + Date.now();
-        script.async = false;
-        script.onerror = () => {
-            console.warn("BC Desktop: Remote Addon Manager could not be reached. Continuing in standalone mode.");
-        };
-        target.appendChild(script);
-        console.log("BC Desktop: Loaded Addon Manager remotely");
+        fetch(rawURL + "?v=" + Date.now(), { cache: "no-store" })
+            .then(res => {
+                if (!res.ok) throw new Error("HTTP " + res.status);
+                return res.text();
+            })
+            .then(code => {
+                let script = document.createElement("script");
+                script.textContent = code;
+                target.appendChild(script);
+                console.log("BC Desktop: Loaded Addon Manager directly from GitHub");
+            })
+            .catch(() => {
+                let script = document.createElement("script");
+                script.src = cdnURL + "?v=" + Date.now();
+                script.async = false;
+                script.onerror = () => {
+                    console.warn("BC Desktop: Remote Addon Manager could not be reached. Continuing in standalone mode.");
+                };
+                target.appendChild(script);
+                console.log("BC Desktop: Loaded Addon Manager remotely from CDN");
+            });
     }
 
     injectManager();

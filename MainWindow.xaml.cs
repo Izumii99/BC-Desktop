@@ -1184,6 +1184,9 @@ public partial class MainWindow : Window
             }
         };
 
+        // ponytail: Native WebView2 fallback guard against undefined pidx ReferenceError
+        await core.AddScriptToExecuteOnDocumentCreatedAsync("if(typeof window.pidx==='undefined'){try{Object.defineProperty(window,'pidx',{get:()=>0,set:()=>{},configurable:true});}catch(e){}}");
+
         string scriptsDir = Path.Combine(AppContext.BaseDirectory, "Scripts");
         bool hasLocalScripts = Directory.Exists(scriptsDir) && Directory.EnumerateFiles(scriptsDir, "*.js").Any();
 

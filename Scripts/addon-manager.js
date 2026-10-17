@@ -600,44 +600,64 @@
         return;
     }
 
-    fetch(REPO_API_URL)
-        .then((response) => response.json())
-        .then((data) => {
-            let scriptsDir = null;
-            if (data && data.files) {
-                scriptsDir = data.files.find(
-                    (f) => f.type === "directory" && f.name === "Scripts",
-                );
-            }
+    // Immediate injection: always load known scripts right away without waiting for remote API network latency
+    let knownScripts = Object.keys(SCRIPT_INFO).filter(name => !IGNORED_SCRIPTS.includes(name));
+    scriptsList = sortScripts(knownScripts);
+    injectTargetScripts();
 
-            let apiScripts = [];
-            if (scriptsDir && scriptsDir.files) {
-                apiScripts = scriptsDir.files
-                    .filter(
-                        (f) =>
-                            f.type === "file" &&
-                            f.name.endsWith(".js") &&
-                            !f.name.toLowerCase().includes("debug") &&
-                            !IGNORED_SCRIPTS.includes(f.name)
-                    )
-                    .map((f) => f.name);
-            } else {
-                console.warn("BC Desktop: Could not find Scripts directory from API. Falling back to known scripts.");
-            }
+    // Background discovery for additional community scripts from repository API (non-blocking)
+    if (!window.bcLocalScripts) {
+        fetch(REPO_API_URL)
+            .then((response) => response.json())
+            .then((data) => {
+                let scriptsDir = null;
+                if (data && data.files) {
+                    scriptsDir = data.files.find(
+                        (f) => f.type === "directory" && f.name === "Scripts",
+                    );
+                }
 
-            let knownScripts = Object.keys(SCRIPT_INFO).filter(name => !IGNORED_SCRIPTS.includes(name));
-            scriptsList = sortScripts([...new Set([...apiScripts, ...knownScripts])]);
+                if (scriptsDir && scriptsDir.files) {
+                    const apiScripts = scriptsDir.files
+                        .filter(
+                            (f) =>
+                                f.type === "file" &&
+                                f.name.endsWith(".js") &&
+                                !f.name.toLowerCase().includes("debug") &&
+                                !IGNORED_SCRIPTS.includes(f.name)
+                        )
+                        .map((f) => f.name);
 
-            injectTargetScripts();
-        })
-        .catch((err) => {
-            console.warn(
-                "BC Desktop: Failed to fetch remote script list from jsDelivr, falling back to known scripts.",
-                err,
-            );
-            modalBody.innerHTML = `<div style="text-align: center; color: #f44336;">Failed to fetch script list from jsDelivr. Running fallback list.</div>`;
-            let knownScripts = Object.keys(SCRIPT_INFO).filter(name => !IGNORED_SCRIPTS.includes(name));
-            scriptsList = sortScripts(knownScripts);
-            injectTargetScripts();
-        });
+                    const newScripts = apiScripts.filter((s) => !scriptsList.includes(s));
+                    if (newScripts.length > 0) {
+                        scriptsList = sortScripts([...new Set([...scriptsList, ...newScripts])]);
+                        newScripts.forEach((scriptName) => {
+                            const isEnabled = userConfig[scriptName] !== false;
+                            if (!isEnabled) {
+                                scriptStatuses[scriptName] = "disabled";
+                                return;
+                            }
+                            scriptStatuses[scriptName] = "loading";
+                            let script = document.createElement("script");
+                            script.src = SCRIPT_BASE_URL + scriptName + "?v=" + Date.now();
+                            script.async = false;
+                            script.onload = () => {
+                                scriptStatuses[scriptName] = "loaded";
+                                if (isModalOpen) renderList();
+                            };
+                            script.onerror = () => {
+                                scriptStatuses[scriptName] = "failed";
+                                if (isModalOpen) renderList();
+                            };
+                            let target = document.head || document.documentElement;
+                            if (target) target.appendChild(script);
+                        });
+                        if (isModalOpen) renderList();
+                    }
+                }
+            })
+            .catch(() => {
+                // Silently ignore background discovery errors as known scripts are already running
+            });
+    }
 })();
