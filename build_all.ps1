@@ -6,18 +6,13 @@ if ($LASTEXITCODE -ne 0) {
 }
 
 Write-Host "Cleaning previous publish folders..."
-Remove-Item "publish/lightweight" -Recurse -Force -ErrorAction SilentlyContinue
 Remove-Item "publish/standalone" -Recurse -Force -ErrorAction SilentlyContinue
-Remove-Item "publish/lightweight-hidden" -Recurse -Force -ErrorAction SilentlyContinue
 Remove-Item "publish/standalone-hidden" -Recurse -Force -ErrorAction SilentlyContinue
 Remove-Item "publish/BC-Desktop-*.exe" -Force -ErrorAction SilentlyContinue
 Remove-Item "publish/*.zip" -Force -ErrorAction SilentlyContinue
 
-Write-Host "Building Lightweight..."
-dotnet publish BC-Desktop.csproj -c Release -r win-x64 --self-contained false -o publish/lightweight
-
-Write-Host "Building Standalone..."
-dotnet publish BC-Desktop.csproj -c Release -r win-x64 --self-contained true -o publish/standalone
+Write-Host "Building Windows Standalone..."
+dotnet publish BC-Desktop.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:DebugType=none -p:DebugSymbols=false -o publish/standalone
 
 # Crash recovery check if a previous build was terminated prematurely
 if (Test-Path "BC-Desktop.csproj.bak") {
@@ -54,11 +49,8 @@ try {
     Remove-Item -Path "obj" -Recurse -Force -ErrorAction SilentlyContinue
     Remove-Item -Path "bin" -Recurse -Force -ErrorAction SilentlyContinue
 
-    Write-Host "Building Lightweight-Hidden..."
-    dotnet publish BC-Desktop.csproj -c Release -r win-x64 --self-contained false -o publish/lightweight-hidden
-
-    Write-Host "Building Standalone-Hidden..."
-    dotnet publish BC-Desktop.csproj -c Release -r win-x64 --self-contained true -o publish/standalone-hidden
+    Write-Host "Building Windows Standalone-Hidden..."
+    dotnet publish BC-Desktop.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:DebugType=none -p:DebugSymbols=false -o publish/standalone-hidden
 }
 finally {
     Write-Host "Reverting Hidden Changes to original state..."
@@ -79,25 +71,24 @@ finally {
 }
 
 Write-Host "Organizing executables for direct single-file distribution..."
-Move-Item "publish/lightweight/Bondage Club.exe" "publish/BC-Desktop-Lightweight.exe" -Force
-Move-Item "publish/standalone/Bondage Club.exe" "publish/BC-Desktop-Standalone.exe" -Force
-
-$hiddenLightweightExe = Get-ChildItem "publish/lightweight-hidden/*.exe" | Select-Object -First 1
-if ($hiddenLightweightExe) {
-    Move-Item $hiddenLightweightExe.FullName "publish/BC-Desktop-Lightweight-Hidden.exe" -Force
-}
+Move-Item "publish/standalone/Bondage Club.exe" "publish/BC-Desktop-Windows-Standalone.exe" -Force
 
 $hiddenStandaloneExe = Get-ChildItem "publish/standalone-hidden/*.exe" | Select-Object -First 1
 if ($hiddenStandaloneExe) {
-    Move-Item $hiddenStandaloneExe.FullName "publish/BC-Desktop-Standalone-Hidden.exe" -Force
+    Move-Item $hiddenStandaloneExe.FullName "publish/BC-Desktop-Windows-Standalone-Hidden.exe" -Force
 }
 
 Write-Host "Cleaning temporary build directories..."
-Remove-Item "publish/lightweight" -Recurse -Force -ErrorAction SilentlyContinue
 Remove-Item "publish/standalone" -Recurse -Force -ErrorAction SilentlyContinue
-Remove-Item "publish/lightweight-hidden" -Recurse -Force -ErrorAction SilentlyContinue
 Remove-Item "publish/standalone-hidden" -Recurse -Force -ErrorAction SilentlyContinue
 
-Write-Host "`nBuild complete! Direct single-file executables ready in publish/:"
-Get-ChildItem "publish/BC-Desktop-*.exe" | Select-Object Name, @{Name="Size (MB)"; Expression={[math]::Round($_.Length / 1MB, 2)}} | Format-Table -AutoSize
+# Also build Linux if Linux build script exists
+$linuxBuildScript = "platform/linux/build-linux.ps1"
+if (Test-Path $linuxBuildScript) {
+    Write-Host "`nFound Linux build script. Running $linuxBuildScript..."
+    powershell -ExecutionPolicy Bypass -File $linuxBuildScript
+}
+
+Write-Host "`nBuild complete! Ready in publish/:"
+Get-ChildItem "publish/BC-Desktop-*" | Select-Object Name, @{Name="Size (MB)"; Expression={[math]::Round($_.Length / 1MB, 2)}} | Format-Table -AutoSize
 

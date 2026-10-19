@@ -782,8 +782,9 @@
         let startX, startY, btnInitX, btnInitY, popupInitX, popupInitY;
 
         const onMouseMove = (e) => {
-            const dx = e.clientX - startX;
-            const dy = e.clientY - startY;
+            const pos = (e.touches && e.touches[0]) ? e.touches[0] : e;
+            const dx = pos.clientX - startX;
+            const dy = pos.clientY - startY;
             if (btnDragging) {
                 if (Math.abs(dx) > 3 || Math.abs(dy) > 3) btnMoved = true;
                 btn.style.left = `${btnInitX + dx}px`;
@@ -800,26 +801,40 @@
             btnDragging = false; popupDragging = false;
             document.removeEventListener("mousemove", onMouseMove);
             document.removeEventListener("mouseup", onMouseUp);
+            document.removeEventListener("touchmove", onMouseMove);
+            document.removeEventListener("touchend", onMouseUp);
         };
 
-        btn.onmousedown = (e) => {
+        const onStartDragBtn = (e) => {
             btnDragging = true; btnMoved = false;
-            startX = e.clientX; startY = e.clientY;
+            const pos = (e.touches && e.touches[0]) ? e.touches[0] : e;
+            startX = pos.clientX; startY = pos.clientY;
             btnInitX = parseInt(btn.style.left, 10) || 0;
             btnInitY = parseInt(btn.style.top, 10)  || 0;
             document.addEventListener("mousemove", onMouseMove);
             document.addEventListener("mouseup", onMouseUp);
+            document.addEventListener("touchmove", onMouseMove, { passive: false });
+            document.addEventListener("touchend", onMouseUp);
         };
 
-        header.onmousedown = (e) => {
+        btn.onmousedown = onStartDragBtn;
+        btn.ontouchstart = onStartDragBtn;
+
+        const onStartDragHeader = (e) => {
             if (e.target.closest("button")) return;
             popupDragging = true;
-            startX = e.clientX; startY = e.clientY;
+            const pos = (e.touches && e.touches[0]) ? e.touches[0] : e;
+            startX = pos.clientX; startY = pos.clientY;
             popupInitX = parseInt(popup.style.left, 10) || 0;
             popupInitY = parseInt(popup.style.top, 10)  || 0;
             document.addEventListener("mousemove", onMouseMove);
             document.addEventListener("mouseup", onMouseUp);
+            document.addEventListener("touchmove", onMouseMove, { passive: false });
+            document.addEventListener("touchend", onMouseUp);
         };
+
+        header.onmousedown = onStartDragHeader;
+        header.ontouchstart = onStartDragHeader;
 
         btn.onclick = (e) => {
             if (btnMoved) { e.preventDefault(); return; }

@@ -46,10 +46,9 @@ A custom dark mode theme designed specifically for **Neko Chat Enhancer**.
 - **Refined Background Overlay:** The floating heart (love) particles in the background are tweaked with custom opacity and blend modes, giving a subtle and beautiful half-screen ambiance without distracting from the chat.
 - **Improved Readability:** Action texts, whispers, and chat borders have been re-colored to stand out elegantly against the dark background.
 
-**Prerequisite:**
-Because this is a theme for **Neko Chat Enhancer**, you must have the original addon by _QAQMOON_ installed and enabled first.
-
-<img src="Assets/neko_chat_enhancer.png" width="700" alt="Neko Chat Enhancer Required" />
+> [!TIP]
+> **Built-in Auto-Loader (No Manual Installation Required):**  
+> Powered by [QAQMOON/meow-](https://github.com/QAQMOON/meow-). **Sudah auto-include di aplikasi, tidak perlu install manual!** (*Auto-included out-of-the-box — no separate installation needed.*) When enabled via the Addon Manager, the theme automatically loads and applies the dark aesthetic without extra steps.
 
 **How to Install:**
 

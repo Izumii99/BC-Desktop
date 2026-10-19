@@ -1,0 +1,29 @@
+{
+  "name": "bc-desktop-linux",
+  "productName": "Bondage Club",
+  "version": "7.0.0",
+  "description": "Bondage Club Desktop Client for Linux",
+  "author": "Izumii99",
+  "license": "MIT",
+  "homepage": "https://github.com/Izumii99/BC-Desktop",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Izumii99/BC-Desktop.git"
+  },
+  "keywords": [
+    "bondage-club",
+    "bc-desktop",
+    "game",
+    "client",
+    "linux"
+  ],
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "build:linux": "node build.js"
+  },
+  "devDependencies": {
+    "electron": "^34.0.0",
+    "electron-builder": "^25.1.8"
+  }
+}

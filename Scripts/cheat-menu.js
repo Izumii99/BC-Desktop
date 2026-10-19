@@ -506,6 +506,8 @@
         true,
     );
 
+    const isMobileDevice = !!window.AndroidBridge || /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent);
+
     function onChatRightClick(e) {
         if (!isChatRoom()) return;
         if (isCheatUi(e.target)) return;
@@ -518,6 +520,43 @@
     document.addEventListener("mouseup", onChatRightClick, true);
     document.addEventListener("contextmenu", onChatRightClick, true);
 
+    // Mobile touch support: 2-finger tap or long-press (600ms) in ChatRoom
+    let touchTimer = null;
+    let touchStartX = 0, touchStartY = 0;
+
+    document.addEventListener("touchstart", (e) => {
+        if (!isChatRoom() || isCheatUi(e.target)) return;
+        if (e.touches.length === 2) {
+            e.preventDefault();
+            openCheatMenu();
+            return;
+        }
+        if (e.touches.length === 1) {
+            touchStartX = e.touches[0].clientX;
+            touchStartY = e.touches[0].clientY;
+            clearTimeout(touchTimer);
+            touchTimer = setTimeout(() => {
+                openCheatMenu();
+            }, 600);
+        }
+    }, { passive: false });
+
+    document.addEventListener("touchmove", (e) => {
+        if (touchTimer && e.touches.length > 0) {
+            const dx = Math.abs(e.touches[0].clientX - touchStartX);
+            const dy = Math.abs(e.touches[0].clientY - touchStartY);
+            if (dx > 10 || dy > 10) {
+                clearTimeout(touchTimer);
+                touchTimer = null;
+            }
+        }
+    });
+
+    document.addEventListener("touchend", () => {
+        clearTimeout(touchTimer);
+        touchTimer = null;
+    });
+
     setInterval(() => {
         try {
             if (!uiAppended && document.body) {
@@ -528,7 +567,7 @@
 
             if (
                 typeof CurrentScreen !== "undefined" &&
-                BUTTON_SCREENS.indexOf(CurrentScreen) !== -1
+                (BUTTON_SCREENS.indexOf(CurrentScreen) !== -1 || (isMobileDevice && isChatRoom()))
             ) {
                 cheatBtn.style.display = "flex";
             } else {

@@ -45,4 +45,13 @@ unused-script/
 ## Local build scripts
 build-local.ps1
 build-local*.ps1
+local_*.ps1
+test_linux.bat
+
+## Node / Electron dependencies
+node_modules/
+platform/linux/node_modules/
+platform/linux/assets/
+platform/linux/loader.user.js
+
 

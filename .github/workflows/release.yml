@@ -8,14 +8,14 @@ name: 'Build and Release'
   workflow_dispatch:
     inputs:
       version:
-        description: 'Release version / tag (e.g., 6.2)'
+        description: 'Release version / tag (e.g., 7.0)'
         required: false
-        default: '6.2'
+        default: '7.0'
         type: string
       title:
         description: 'Release Title Highlight (Title Case)'
         required: false
-        default: 'Full GPU Power & Ultra-Low Background Idle Optimization'
+        default: 'Multi-Platform Standalone Release (Windows & Linux) & Addon QoL Updates'
         type: string
       notes:
         description: 'Custom Release Notes (leave empty to use standard template)'
@@ -27,9 +27,8 @@ permissions:
   contents: write
 
 jobs:
-  build-and-release:
+  build-windows:
     runs-on: windows-latest
-
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -41,20 +40,72 @@ jobs:
         with:
           dotnet-version: '8.0.x'
 
-      - name: Run Build Script (build_all.ps1)
+      - name: Run Windows Build Script
         shell: powershell
         run: |
           powershell -ExecutionPolicy Bypass -File .\build_all.ps1
 
-      - name: Verify Executable Artifacts
-        shell: powershell
+      - name: Upload Windows Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-artifacts
+          path: |
+            publish/BC-Desktop-Windows-Standalone.exe
+            publish/BC-Desktop-Windows-Standalone-Hidden.exe
+
+  build-linux:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install Linux Build Dependencies
         run: |
-          $exes = Get-ChildItem "publish/*.exe"
-          if ($exes.Count -lt 4) {
-            Write-Error "Expected 4 executable packages in publish/, but found $($exes.Count)!"
-            exit 1
-          }
-          $exes | Select-Object Name, Length | Format-Table
+          cd platform/linux
+          npm install
+
+      - name: Build Linux Standalone AppImages & Tarballs
+        run: |
+          cd platform/linux
+          node build.js
+
+      - name: Upload Linux Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: linux-artifacts
+          path: |
+            publish/BC-Desktop-Linux-Standalone.AppImage
+            publish/BC-Desktop-Linux-Standalone.tar.gz
+            publish/BC-Desktop-Linux-Standalone-Hidden.AppImage
+            publish/BC-Desktop-Linux-Standalone-Hidden.tar.gz
+
+  release:
+    needs: [build-windows, build-linux]
+    runs-on: windows-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Download Windows Artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: windows-artifacts
+          path: publish
+
+      - name: Download Linux Artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: linux-artifacts
+          path: publish
 
       - name: Prepare Tag and Release Notes
         shell: powershell
@@ -65,10 +116,10 @@ jobs:
         run: |
           $inputVer = if ($env:INPUT_VERSION) { $env:INPUT_VERSION.Trim() } else { "" }
           $refTag = if ($env:GITHUB_REF_NAME) { $env:GITHUB_REF_NAME.Trim().TrimStart('v') } else { "" }
-          $ver = if ($inputVer.Length -gt 0) { $inputVer } elseif ($refTag.Length -gt 0) { $refTag } else { "6.2" }
+          $ver = if ($inputVer.Length -gt 0) { $inputVer } elseif ($refTag.Length -gt 0) { $refTag } else { "6.4" }
 
           $inputTitle = if ($env:INPUT_TITLE) { $env:INPUT_TITLE.Trim() } else { "" }
-          $title = if ($inputTitle.Length -gt 0) { $inputTitle } else { "Adjusted Low GPU Power & Ultra-Low Background Idle Optimization" }
+          $title = if ($inputTitle.Length -gt 0) { $inputTitle } else { "Multi-Platform Standalone Release (Windows & Linux) & Addon QoL Updates" }
 
           $customNotes = if ($env:INPUT_NOTES) { $env:INPUT_NOTES.Trim() } else { "" }
 
@@ -84,15 +135,16 @@ jobs:
               "### Fixes & Improvements:",
               "",
               "- **Highlight ($ver):** $title.",
-              "- **Feature (Single-File Seamless Executable):** Remote addon loader is now embedded directly into the application binary. No zip extraction needed.",
-              "- **Internal Cleanliness & Maintenance:** Regular maintenance, performance enhancements, and dependency updates.",
+              "- **Feature (Multi-Platform Standalone):** Full standalone binaries are now available for both Windows and Linux with zero external dependencies.",
+              "- **QoL (Neko Dark Theme):** Restored native checkbox rendering in game preference menus and optimized new message popup positioning across portrait and landscape screens.",
+              "- **Internal Cleanliness & Maintenance:** Switched to 100% full standalone distribution with zero runtime dependency requirements.",
               "",
               "### Downloads:",
               "",
-              "- **BC-Desktop-Standalone.exe (~160MB):** Self-contained executable. No .NET runtime required. Just download and run.",
-              "- **BC-Desktop-Lightweight.exe (~6MB):** Extremely small footprint. Requires the [.NET 8 Desktop Runtime](https://dotnet.microsoft.com/en-us/download/dotnet/8.0).",
-              "- **BC-Desktop-Standalone-Hidden.exe (~160MB):** Same as Standalone, but with no icon and a blank app name (Discreet mode).",
-              "- **BC-Desktop-Lightweight-Hidden.exe (~6MB):** Same as Lightweight, but with no icon and a blank app name (Discreet mode)."
+              "- **BC-Desktop-Windows-Standalone.exe (~160MB):** Self-contained executable for Windows 10/11. No .NET runtime required. Just download and run.",
+              "- **BC-Desktop-Windows-Standalone-Hidden.exe (~160MB):** Same as Windows Standalone, but with no icon and a blank app name (Discreet mode).",
+              "- **BC-Desktop-Linux-Standalone.AppImage (~120MB):** Portable standalone for Linux (Ubuntu, Debian, Fedora, Arch, Steam Deck).",
+              "- **BC-Desktop-Linux-Standalone-Hidden.AppImage (~120MB):** Same as Linux Standalone, but with no icon and a blank app name (Discreet mode)."
             )
             Set-Content -Path "RELEASE_NOTES.md" -Value $defaultNotes -Encoding UTF8
           }
@@ -106,11 +158,20 @@ jobs:
         run: |
           $inputVer = if ($env:INPUT_VERSION) { $env:INPUT_VERSION.Trim() } else { "" }
           $refTag = if ($env:GITHUB_REF_NAME) { $env:GITHUB_REF_NAME.Trim().TrimStart('v') } else { "" }
-          $ver = if ($inputVer.Length -gt 0) { $inputVer } elseif ($refTag.Length -gt 0) { $refTag } else { "6.3" }
+          $ver = if ($inputVer.Length -gt 0) { $inputVer } elseif ($refTag.Length -gt 0) { $refTag } else { "7.0" }
 
           $inputTitle = if ($env:INPUT_TITLE) { $env:INPUT_TITLE.Trim() } else { "" }
-          $title = if ($inputTitle.Length -gt 0) { $inputTitle } else { "Server Redirection Chain, GitHub Pages Loader & Resilient Auto-Detection" }
+          $title = if ($inputTitle.Length -gt 0) { $inputTitle } else { "Multi-Platform Standalone Release (Windows & Linux) & Addon QoL Updates" }
           $releaseTitle = if ($title.Length -gt 0) { "v$ver - $title" } else { "v$ver" }
+
+          $releaseAssets = @(
+            "publish/BC-Desktop-Windows-Standalone.exe",
+            "publish/BC-Desktop-Windows-Standalone-Hidden.exe",
+            "publish/BC-Desktop-Linux-Standalone.AppImage",
+            "publish/BC-Desktop-Linux-Standalone.tar.gz",
+            "publish/BC-Desktop-Linux-Standalone-Hidden.AppImage",
+            "publish/BC-Desktop-Linux-Standalone-Hidden.tar.gz"
+          ) | Where-Object { Test-Path $_ }
 
           $existingTags = gh release list -L 100 --json tagName -q ".[].tagName"
           $releaseExists = if ($existingTags) { @($existingTags -split "\r?\n" | ForEach-Object { $_.Trim() }) } else { @() }
@@ -118,21 +179,10 @@ jobs:
           if ($releaseExists -contains $ver) {
             Write-Host "Release $ver already exists. Updating release notes and re-uploading assets..."
             gh release edit $ver --title $releaseTitle --notes-file RELEASE_NOTES.md
-            gh release upload $ver `
-              publish/BC-Desktop-Standalone.exe `
-              publish/BC-Desktop-Lightweight.exe `
-              publish/BC-Desktop-Standalone-Hidden.exe `
-              publish/BC-Desktop-Lightweight-Hidden.exe `
-              --clobber
+            gh release upload $ver $releaseAssets --clobber
           } else {
             Write-Host "Creating new release for $ver..."
-            gh release create $ver `
-              --title $releaseTitle `
-              --notes-file RELEASE_NOTES.md `
-              publish/BC-Desktop-Standalone.exe `
-              publish/BC-Desktop-Lightweight.exe `
-              publish/BC-Desktop-Standalone-Hidden.exe `
-              publish/BC-Desktop-Lightweight-Hidden.exe
+            gh release create $ver --title $releaseTitle --notes-file RELEASE_NOTES.md $releaseAssets
           }
 
       - name: Purge jsDelivr Edge Cache

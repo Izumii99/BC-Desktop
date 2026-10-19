@@ -357,7 +357,7 @@ public class MainWindowTests
             Assert.IsNotNull(window, "MainWindow instance must be created successfully.");
             Assert.AreEqual(WindowStyle.None, window.WindowStyle);
             Assert.IsTrue(window.AllowsTransparency);
-            Assert.AreEqual("BC", window.Title);
+            Assert.AreEqual("Bondage Club", window.Title);
             Assert.AreEqual("Bondage Club", window.TitleLabel.Text);
             Assert.AreEqual(WindowState.Normal, window.WindowState);
 
@@ -427,12 +427,12 @@ public class MainWindowTests
     [TestMethod]
     public void AppVersionComparison_AccuratelyEvaluatesSemanticVersions()
     {
-        Assert.AreEqual("6.3", MainWindow.CurrentAppVersion, "CurrentAppVersion must be 6.3.");
+        Assert.AreEqual("7.0", MainWindow.CurrentAppVersion, "CurrentAppVersion must be 7.0.");
 
-        Assert.IsTrue(MainWindow.IsNewerVersion("v6.4", "6.3"), "v6.4 must be newer than 6.3.");
-        Assert.IsTrue(MainWindow.IsNewerVersion("6.4", "6.3"), "6.4 must be newer than 6.3.");
-        Assert.IsTrue(MainWindow.IsNewerVersion("v6.3.1", "6.3"), "Patch version v6.3.1 must be newer than 6.3.");
-        Assert.IsTrue(MainWindow.IsNewerVersion("v7.0", "6.3"), "Major version v7.0 must be newer than 6.3.");
+        Assert.IsTrue(MainWindow.IsNewerVersion("v7.1", "7.0"), "v7.1 must be newer than 7.0.");
+        Assert.IsTrue(MainWindow.IsNewerVersion("7.1", "7.0"), "7.1 must be newer than 7.0.");
+        Assert.IsTrue(MainWindow.IsNewerVersion("v7.0.1", "7.0"), "Patch version v7.0.1 must be newer than 7.0.");
+        Assert.IsTrue(MainWindow.IsNewerVersion("v8.0", "7.0"), "Major version v8.0 must be newer than 7.0.");
 
         Assert.IsFalse(MainWindow.IsNewerVersion("6.2", "6.2"), "Identical versions must return false.");
         Assert.IsFalse(MainWindow.IsNewerVersion("v6.2", "6.2"), "Identical versions with 'v' prefix must return false.");

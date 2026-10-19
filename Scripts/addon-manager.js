@@ -153,6 +153,8 @@
     }
 
     const DEFAULT_DISABLED_SCRIPTS = [
+        "FUSAM",
+        "LikoPlugin",
         "neko-dark.js",
         "translate.js",
         "cheat-menu.js"
