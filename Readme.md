@@ -107,7 +107,7 @@ Fixes the issue where having too many clothing items (e.g. from using multiple m
   <img src="Assets/wardrobe_page2.png" width="49%" alt="Wardrobe Page 2" />
 </p>
 
-_The standalone script remains in this repository as a historical backup/archive, but no manual installation is required anymore._
+_The standalone script has been officially retired as the pagination feature is now part of native BCX._
 
 ### 3. Chat QoL & Emoticons (`chat-qol.js`)
 

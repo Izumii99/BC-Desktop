@@ -221,7 +221,7 @@ public class MainWindowTests
         string addonManagerPath = Path.Combine(ProjectRoot, "Scripts", "addon-manager.js");
         Assert.IsTrue(File.Exists(addonManagerPath), "Scripts/addon-manager.js must exist.");
         string addonManagerContent = File.ReadAllText(addonManagerPath);
-        string[] ignoredScripts = ["autofocus.js", "fluid-color.js", "fusam.js", "LikoPlugin.js", "fusam-liko-loader.js", "wardrobe-pagination.js"];
+        string[] ignoredScripts = ["autofocus.js", "fluid-color.js", "fusam.js", "LikoPlugin.js", "fusam-liko-loader.js"];
         foreach (var ignored in ignoredScripts)
         {
             StringAssert.Contains(addonManagerContent, ignored, $"Addon Manager must include '{ignored}' in IGNORED_SCRIPTS.");
