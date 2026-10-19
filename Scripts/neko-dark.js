@@ -271,20 +271,35 @@
                 color: ${P.icon} !important;
             }
 
-            /* Floating New Message Indicator & Scroll Buttons - Centered by default (Condition 1) */
+            /* Floating New Message Indicator, Scroll Buttons & Neko Toast:
+               In Landscape (split-view), anchor to the character canvas area (left: 25%) 
+               so notifications never block chat input or typed messages */
             html body [id*="scroll-to-bottom"],
             html body [id*="chat-room-scroll"],
             html body [class*="new-message"],
             html body #TextAreaChatLog [class*="new-message"],
             html body .chat-room-new-messages-container,
-            html body .chat-room-new-messages {
-                left: 50% !important;
+            html body .chat-room-new-messages,
+            html body #bcn-toast {
+                left: 25% !important;
                 transform: translateX(-50%) !important;
                 background: ${P.panel} !important;
                 background-color: ${P.panel} !important;
                 color: ${P.text} !important;
                 border: 1px solid ${P.borderAcc} !important;
                 box-shadow: 0 4px 6px rgba(0,0,0,0.5) !important;
+            }
+            html body #bcn-toast {
+                transform: translateX(-50%) translateY(16px) !important;
+                border: 2px solid ${P.whisperBdr} !important;
+                color: ${P.whisperTxt} !important;
+                box-shadow: 0 12px 28px rgba(0, 0, 0, 0.65), 0 0 16px rgba(152, 88, 204, 0.35) !important;
+                backdrop-filter: blur(12px) !important;
+                -webkit-backdrop-filter: blur(12px) !important;
+                text-shadow: 0 1px 3px rgba(0, 0, 0, 0.8) !important;
+            }
+            html body #bcn-toast.show {
+                transform: translateX(-50%) translateY(0) !important;
             }
             html body [id*="scroll-to-bottom"] *,
             html body [id*="chat-room-scroll"] *,
@@ -382,7 +397,7 @@
                 opacity: 0.12 !important;
             }
 
-            /* Portrait Mode (Mobile / Narrow View) - move 50% to bottom & shift new-message/toast to center-left (Condition 2) */
+            /* Portrait Mode (Mobile / Narrow View) - move 50% to bottom & shift new-message/toast to right (left: 70%) to avoid blocking input */
             @media (orientation: portrait), (max-aspect-ratio: 1/1) {
                 html body #bcn-soft-paws {
                     left: 0 !important;
@@ -391,7 +406,7 @@
                     height: 50% !important;
                 }
                 html body #bcn-toast {
-                    left: 35% !important;
+                    left: 70% !important;
                     transform: translateX(-50%) translateY(16px) !important;
                 }
                 html body #bcn-toast.show {
@@ -403,7 +418,7 @@
                 html body #TextAreaChatLog [class*="new-message"],
                 html body .chat-room-new-messages-container,
                 html body .chat-room-new-messages {
-                    left: 35% !important;
+                    left: 70% !important;
                     transform: translateX(-50%) !important;
                 }
                 html body #TextAreaChatLog {
@@ -543,24 +558,6 @@
             html body #TextAreaChatLog .nk-enter::after {
                 content: none !important;
                 display: none !important;
-            }
-
-            /* Neko Toast / Mini Notification Popup (#bcn-toast) - Centered by default (Condition 1) */
-            html body #bcn-toast {
-                left: 50% !important;
-                transform: translateX(-50%) translateY(16px) !important;
-                background: ${P.panel} !important;
-                background-color: ${P.panel} !important;
-                background-image: none !important;
-                border: 2px solid ${P.whisperBdr} !important;
-                color: ${P.whisperTxt} !important;
-                box-shadow: 0 12px 28px rgba(0, 0, 0, 0.65), 0 0 16px rgba(152, 88, 204, 0.35) !important;
-                backdrop-filter: blur(12px) !important;
-                -webkit-backdrop-filter: blur(12px) !important;
-                text-shadow: 0 1px 3px rgba(0, 0, 0, 0.8) !important;
-            }
-            html body #bcn-toast.show {
-                transform: translateX(-50%) translateY(0) !important;
             }
 
             /* Action composer warnings & blank wheel states */
