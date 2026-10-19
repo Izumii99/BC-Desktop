@@ -382,7 +382,7 @@
                 opacity: 0.12 !important;
             }
 
-            /* Portrait Mode (Mobile / Narrow View) - move 50% to bottom & shift new-message/toast to right (Condition 2) */
+            /* Portrait Mode (Mobile / Narrow View) - move 50% to bottom & shift new-message/toast to center-left (Condition 2) */
             @media (orientation: portrait), (max-aspect-ratio: 1/1) {
                 html body #bcn-soft-paws {
                     left: 0 !important;
@@ -391,7 +391,7 @@
                     height: 50% !important;
                 }
                 html body #bcn-toast {
-                    left: 75% !important;
+                    left: 35% !important;
                     transform: translateX(-50%) translateY(16px) !important;
                 }
                 html body #bcn-toast.show {
@@ -403,7 +403,7 @@
                 html body #TextAreaChatLog [class*="new-message"],
                 html body .chat-room-new-messages-container,
                 html body .chat-room-new-messages {
-                    left: 75% !important;
+                    left: 35% !important;
                     transform: translateX(-50%) !important;
                 }
                 html body #TextAreaChatLog {
@@ -441,6 +441,23 @@
             html body select:not(#chat-garble):not(.wce-chat-room-select) {
                 color: #333333 !important;
                 background: rgba(255, 255, 255, 0.95) !important;
+            }
+
+            /* Native Checkbox & Radio appearance reset (prevents BC preference checkboxes from rendering solid black) */
+            html body input[type="checkbox"],
+            html body input[type="radio"],
+            html body.bcn-enabled input[type="checkbox"],
+            html body.bcn-enabled input[type="radio"],
+            html body label.checkbox-pair input[type="checkbox"],
+            html body .preference-settings-checkbox input[type="checkbox"] {
+                appearance: auto !important;
+                -webkit-appearance: auto !important;
+                background: initial !important;
+                background-color: initial !important;
+                border: initial !important;
+                border-radius: initial !important;
+                box-shadow: initial !important;
+                accent-color: ${P.borderAcc} !important;
             }
 
             /* Dynamic special messages */

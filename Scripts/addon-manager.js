@@ -152,6 +152,20 @@
         } catch (e) {}
     }
 
+    const DEFAULT_DISABLED_SCRIPTS = [
+        "neko-dark.js",
+        "translate.js",
+        "cheat-menu.js"
+    ];
+
+    function isScriptEnabled(scriptName) {
+        if (scriptName in userConfig) {
+            return userConfig[scriptName] === true;
+        }
+        // Disabled by default on clean/first install
+        return !DEFAULT_DISABLED_SCRIPTS.includes(scriptName);
+    }
+
     const floatingBtn = document.createElement("div");
     floatingBtn.innerHTML = `<img src="https://cdn.jsdelivr.net/gh/Izumii99/BC-Desktop@main/Assets/Icon.png" style="width: 28px; height: 28px;" />`;
     Object.assign(floatingBtn.style, {
@@ -314,7 +328,7 @@
 
         // --- Render scripts ---
         scriptsList.forEach((scriptName) => {
-            const isEnabled = userConfig[scriptName] !== false;
+            const isEnabled = isScriptEnabled(scriptName);
             const status = scriptStatuses[scriptName] || (isEnabled ? "loading" : "disabled");
 
             const itemDiv = document.createElement("div");
@@ -555,7 +569,7 @@
         }
 
         scriptsList.forEach((scriptName) => {
-            const isEnabled = userConfig[scriptName] !== false;
+            const isEnabled = isScriptEnabled(scriptName);
 
             if (!isEnabled) {
                 scriptStatuses[scriptName] = "disabled";
@@ -632,7 +646,7 @@
                     if (newScripts.length > 0) {
                         scriptsList = sortScripts([...new Set([...scriptsList, ...newScripts])]);
                         newScripts.forEach((scriptName) => {
-                            const isEnabled = userConfig[scriptName] !== false;
+                            const isEnabled = isScriptEnabled(scriptName);
                             if (!isEnabled) {
                                 scriptStatuses[scriptName] = "disabled";
                                 return;
