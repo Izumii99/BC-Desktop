@@ -74,6 +74,8 @@ jobs:
           npm install
 
       - name: Build Linux Standalone AppImages & Tarballs
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           cd platform/linux
           node build.js

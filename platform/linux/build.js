@@ -32,9 +32,11 @@ async function buildAllLinux() {
     console.log("=== Building Linux Standalone (Regular) ===");
     await builder.build({
         targets: builder.Platform.LINUX.createTarget(["AppImage", "tar.gz"]),
+        publish: 'never',
         config: {
             appId: "com.izumii.bcdesktop",
             productName: "Bondage Club",
+            publish: null,
             directories: {
                 output: publishDir
             },
@@ -59,9 +61,11 @@ async function buildAllLinux() {
     console.log("\n=== Building Linux Standalone (Hidden / Discreet) ===");
     await builder.build({
         targets: builder.Platform.LINUX.createTarget(["AppImage", "tar.gz"]),
+        publish: 'never',
         config: {
             appId: "com.izumii.bcdesktop.hidden",
             productName: "\u3164",
+            publish: null,
             directories: {
                 output: publishDir
             },
