@@ -529,6 +529,11 @@ public class MainWindowTests
         // Preference screens and scroll boxes must not have focus hijacked on mouseup
         StringAssert.Contains(code, ".scroll-box", "mouseup must protect scroll-box containers from focus stealing.");
         StringAssert.Contains(code, "[id^=\"\"preference-\"\"]", "mouseup must protect preference screen containers.");
+
+        // Color picker and sliders must not have focus hijacked on mouseup or selectionchange
+        StringAssert.Contains(code, "bc-tint-input", "isInteractive and mouseup must protect bc-tint-input.");
+        StringAssert.Contains(code, "fieldset[name=\"\"color-picker\"\"]", "mouseup must protect color-picker container from focus stealing.");
+        StringAssert.Contains(code, "if (window.bcIsMouseDown) return;", "selectionchange must guard against focus stealing while sliding or dragging.");
     }
 
     [TestMethod]
@@ -576,6 +581,30 @@ public class MainWindowTests
         string cleanedVer = lockInput.Substring(0, lockInput.Length - 5).Trim();
         Assert.IsTrue(isLocked, "isLocked must be true for 132:lock");
         Assert.AreEqual("132", cleanedVer);
+    }
+
+    [TestMethod]
+    public void LinuxPlatform_IntegrityAndMetadataMatchesRules()
+    {
+        string linuxPkgPath = Path.Combine(ProjectRoot, "platform", "linux", "package.json");
+        Assert.IsTrue(File.Exists(linuxPkgPath), "platform/linux/package.json must exist.");
+
+        string pkgJson = File.ReadAllText(linuxPkgPath);
+        using var doc = JsonDocument.Parse(pkgJson);
+        var root = doc.RootElement;
+
+        Assert.AreEqual("bc-desktop-linux", root.GetProperty("name").GetString());
+        Assert.AreEqual("7.0.0", root.GetProperty("version").GetString());
+        Assert.AreEqual("Bondage Club", root.GetProperty("productName").GetString());
+        Assert.IsTrue(root.TryGetProperty("keywords", out _), "package.json must specify keywords.");
+
+        string mainJsPath = Path.Combine(ProjectRoot, "platform", "linux", "main.js");
+        Assert.IsTrue(File.Exists(mainJsPath), "platform/linux/main.js must exist.");
+
+        string mainJs = File.ReadAllText(mainJsPath);
+        StringAssert.Contains(mainJs, "setAspectRatio(2.0)", "Linux main.js must enforce 2:1 native aspect ratio.");
+        StringAssert.Contains(mainJs, "bc-tint-input", "Linux main.js must include bc-tint-input focus guards.");
+        StringAssert.Contains(mainJs, "fieldset[name=\"color-picker\"]", "Linux main.js must protect color picker from focus stealing.");
     }
 }
 

@@ -731,7 +731,7 @@ public partial class MainWindow : Window
                 if (!el) return false;
                 if (isTextInput(el)) return true;
                 let tag = el.tagName;
-                return tag === 'INPUT' || tag === 'SELECT' || tag === 'BUTTON' || tag === 'OPTION';
+                return tag === 'INPUT' || tag === 'SELECT' || tag === 'BUTTON' || tag === 'OPTION' || tag === 'BC-TINT-INPUT';
             }
 
             document.addEventListener('keydown', (e) => {
@@ -857,6 +857,13 @@ public partial class MainWindow : Window
                 }
             }, true);
             
+            document.addEventListener('pointerdown', () => { window.bcIsMouseDown = true; }, true);
+            document.addEventListener('pointerup', () => { window.bcIsMouseDown = false; }, true);
+            document.addEventListener('mousemove', (e) => {
+                if (e.buttons !== undefined) window.bcIsMouseDown = (e.buttons > 0);
+            }, true);
+            window.addEventListener('blur', () => { window.bcIsMouseDown = false; });
+
             document.addEventListener('mousedown', (e) => {
                 window.bcIsMouseDown = true;
                 window.bcLastMousedown = e.target;
@@ -913,8 +920,8 @@ public partial class MainWindow : Window
                     
                     if (window.bcForceUnfocusSearch) return;
 
-                    // If user clicked inside a DOM scroll box or preference grid or non-chat container, do NOT steal focus!
-                    if (e.target && e.target.closest && e.target.closest('.scroll-box, [id^=""preference-""], .preference-settings-grid, select, option')) {
+                    // If user clicked inside a DOM scroll box, preference grid, color picker controls, or non-chat container, do NOT steal focus!
+                    if (e.target && e.target.closest && e.target.closest('.scroll-box, [id^=""preference-""], .preference-settings-grid, select, option, fieldset[name=""color-picker""], #color-picker, .color-picker, bc-tint-input, input[type=""range""]')) {
                         return;
                     }
                     
@@ -930,6 +937,7 @@ public partial class MainWindow : Window
             document.addEventListener('selectionchange', () => {
                 if (window.bcSelectionTimeout) clearTimeout(window.bcSelectionTimeout);
                 window.bcSelectionTimeout = setTimeout(() => {
+                    if (window.bcIsMouseDown) return;
                     let active = document.activeElement;
                     if (active && isInteractive(active)) return;
                     if (window.getSelection().toString().length > 0) return;
@@ -1002,13 +1010,14 @@ public partial class MainWindow : Window
                     let score = z * 1000;
                     
                     if (el.id === 'InputChat' || el.id === 'TextAreaChatLog') score -= 500000;
+                    if (el.closest && el.closest('fieldset[name=""color-picker""], #color-picker, .color-picker')) score -= 500000;
                     if (el.tagName === 'TEXTAREA') score += 5000;
                     if (el.id && el.id.toLowerCase().indexOf('search') !== -1) score += 2000;
                     
                     if (score > maxScore) { maxScore = score; bestInput = el; }
                 }
 
-                if (bestInput && bestInput.id !== 'InputChat') {
+                if (bestInput && bestInput.id !== 'InputChat' && (!bestInput.closest || !bestInput.closest('fieldset[name=""color-picker""], #color-picker, .color-picker'))) {
                     return bestInput;
                 }
 

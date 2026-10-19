@@ -43,15 +43,15 @@ jobs:
       - name: Run Windows Build Script
         shell: powershell
         run: |
-          powershell -ExecutionPolicy Bypass -File .\build_all.ps1
+          powershell -ExecutionPolicy Bypass -File .\tools\build_all.ps1
 
       - name: Upload Windows Artifacts
         uses: actions/upload-artifact@v4
         with:
           name: windows-artifacts
           path: |
-            publish/BC-Desktop-Windows-Standalone.exe
-            publish/BC-Desktop-Windows-Standalone-Hidden.exe
+            publish/BC-Windows.exe
+            publish/BC-Windows-Hidden.exe
 
   build-linux:
     runs-on: ubuntu-latest
@@ -68,6 +68,8 @@ jobs:
 
       - name: Install Linux Build Dependencies
         run: |
+          sudo apt-get update
+          sudo apt-get install -y libfuse2t64 || sudo apt-get install -y libfuse2 || true
           cd platform/linux
           npm install
 
@@ -81,10 +83,14 @@ jobs:
         with:
           name: linux-artifacts
           path: |
-            publish/BC-Desktop-Linux-Standalone.AppImage
-            publish/BC-Desktop-Linux-Standalone.tar.gz
-            publish/BC-Desktop-Linux-Standalone-Hidden.AppImage
-            publish/BC-Desktop-Linux-Standalone-Hidden.tar.gz
+            publish/BC-Linux.AppImage
+            publish/BC-Linux.tar.gz
+            publish/BC-Linux-Hidden.AppImage
+            publish/BC-Linux-Hidden.tar.gz
+            publish/linux/BC-Linux.AppImage
+            publish/linux/BC-Linux.tar.gz
+            publish/linux/BC-Linux-Hidden.AppImage
+            publish/linux/BC-Linux-Hidden.tar.gz
 
   release:
     needs: [build-windows, build-linux]
@@ -141,10 +147,10 @@ jobs:
               "",
               "### Downloads:",
               "",
-              "- **BC-Desktop-Windows-Standalone.exe (~160MB):** Self-contained executable for Windows 10/11. No .NET runtime required. Just download and run.",
-              "- **BC-Desktop-Windows-Standalone-Hidden.exe (~160MB):** Same as Windows Standalone, but with no icon and a blank app name (Discreet mode).",
-              "- **BC-Desktop-Linux-Standalone.AppImage (~120MB):** Portable standalone for Linux (Ubuntu, Debian, Fedora, Arch, Steam Deck).",
-              "- **BC-Desktop-Linux-Standalone-Hidden.AppImage (~120MB):** Same as Linux Standalone, but with no icon and a blank app name (Discreet mode)."
+              "- **BC-Windows.exe (~160MB):** Self-contained executable for Windows 10/11. No .NET runtime required. Just download and run.",
+              "- **BC-Windows-Hidden.exe (~160MB):** Same as Windows Standalone, but with no icon and a blank app name (Discreet mode).",
+              "- **BC-Linux.AppImage (~120MB):** Portable standalone for Linux (Ubuntu, Debian, Fedora, Arch, Steam Deck).",
+              "- **BC-Linux-Hidden.AppImage (~120MB):** Same as Linux Standalone, but with no icon and a blank app name (Discreet mode)."
             )
             Set-Content -Path "RELEASE_NOTES.md" -Value $defaultNotes -Encoding UTF8
           }
@@ -165,12 +171,12 @@ jobs:
           $releaseTitle = if ($title.Length -gt 0) { "v$ver - $title" } else { "v$ver" }
 
           $releaseAssets = @(
-            "publish/BC-Desktop-Windows-Standalone.exe",
-            "publish/BC-Desktop-Windows-Standalone-Hidden.exe",
-            "publish/BC-Desktop-Linux-Standalone.AppImage",
-            "publish/BC-Desktop-Linux-Standalone.tar.gz",
-            "publish/BC-Desktop-Linux-Standalone-Hidden.AppImage",
-            "publish/BC-Desktop-Linux-Standalone-Hidden.tar.gz"
+            "publish/BC-Windows.exe",
+            "publish/BC-Windows-Hidden.exe",
+            "publish/BC-Linux.AppImage",
+            "publish/BC-Linux.tar.gz",
+            "publish/BC-Linux-Hidden.AppImage",
+            "publish/BC-Linux-Hidden.tar.gz"
           ) | Where-Object { Test-Path $_ }
 
           $existingTags = gh release list -L 100 --json tagName -q ".[].tagName"

@@ -1,3 +1,6 @@
+$projectRoot = Resolve-Path "$PSScriptRoot\.."
+Set-Location $projectRoot
+
 Write-Host "Running automated tests before build..."
 dotnet test --verbosity minimal
 if ($LASTEXITCODE -ne 0) {
@@ -8,6 +11,7 @@ if ($LASTEXITCODE -ne 0) {
 Write-Host "Cleaning previous publish folders..."
 Remove-Item "publish/standalone" -Recurse -Force -ErrorAction SilentlyContinue
 Remove-Item "publish/standalone-hidden" -Recurse -Force -ErrorAction SilentlyContinue
+Remove-Item "publish/BC-*.exe" -Force -ErrorAction SilentlyContinue
 Remove-Item "publish/BC-Desktop-*.exe" -Force -ErrorAction SilentlyContinue
 Remove-Item "publish/*.zip" -Force -ErrorAction SilentlyContinue
 
@@ -71,24 +75,43 @@ finally {
 }
 
 Write-Host "Organizing executables for direct single-file distribution..."
-Move-Item "publish/standalone/Bondage Club.exe" "publish/BC-Desktop-Windows-Standalone.exe" -Force
+Move-Item "publish/standalone/Bondage Club.exe" "publish/BC-Windows.exe" -Force
 
 $hiddenStandaloneExe = Get-ChildItem "publish/standalone-hidden/*.exe" | Select-Object -First 1
 if ($hiddenStandaloneExe) {
-    Move-Item $hiddenStandaloneExe.FullName "publish/BC-Desktop-Windows-Standalone-Hidden.exe" -Force
+    Move-Item $hiddenStandaloneExe.FullName "publish/BC-Windows-Hidden.exe" -Force
 }
 
 Write-Host "Cleaning temporary build directories..."
 Remove-Item "publish/standalone" -Recurse -Force -ErrorAction SilentlyContinue
 Remove-Item "publish/standalone-hidden" -Recurse -Force -ErrorAction SilentlyContinue
 
-# Also build Linux if Linux build script exists
-$linuxBuildScript = "platform/linux/build-linux.ps1"
-if (Test-Path $linuxBuildScript) {
-    Write-Host "`nFound Linux build script. Running $linuxBuildScript..."
-    powershell -ExecutionPolicy Bypass -File $linuxBuildScript
+# Also build Linux packages directly into publish/ (flat release structure)
+$linuxPlatformDir = Join-Path $projectRoot "platform/linux"
+if (Test-Path $linuxPlatformDir) {
+    Write-Host "`nBuilding Linux Standalone packages for release into publish/..."
+    $hasWsl = $false
+    try {
+        $wslCheck = wsl uname -s 2>$null
+        if ($wslCheck -match "Linux") { $hasWsl = $true }
+    } catch {}
+
+    if ($hasWsl) {
+        $wslPath = wsl wslpath -a ($linuxPlatformDir.Replace("\", "/"))
+        $wslPublish = wsl wslpath -a ($projectRoot.Replace("\", "/") + "/publish")
+        wsl bash -c "cd '$wslPath' && export PUBLISH_DIR='$wslPublish' && (npm list electron || npm install) && node build.js"
+    } else {
+        Push-Location $linuxPlatformDir
+        try {
+            if (-not (Test-Path "node_modules")) { npm install }
+            $env:PUBLISH_DIR = Join-Path $projectRoot "publish"
+            node build.js
+        } finally {
+            $env:PUBLISH_DIR = $null
+            Pop-Location
+        }
+    }
 }
 
 Write-Host "`nBuild complete! Ready in publish/:"
-Get-ChildItem "publish/BC-Desktop-*" | Select-Object Name, @{Name="Size (MB)"; Expression={[math]::Round($_.Length / 1MB, 2)}} | Format-Table -AutoSize
-
+Get-ChildItem "publish/BC-*" | Select-Object Name, @{Name="Size (MB)"; Expression={[math]::Round($_.Length / 1MB, 2)}} | Format-Table -AutoSize

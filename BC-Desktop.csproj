@@ -25,6 +25,7 @@
     <DebugSymbols>false</DebugSymbols>
     <PublishDocumentationFiles>false</PublishDocumentationFiles>
     <PublishReferencesDocumentationFiles>false</PublishReferencesDocumentationFiles>
+    <DefaultItemExcludes>$(DefaultItemExcludes);platform\**;references\**;_references\**;tools\**</DefaultItemExcludes>
   </PropertyGroup>
 
   <ItemGroup>

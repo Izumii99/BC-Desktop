@@ -2,7 +2,7 @@ const builder = require('electron-builder');
 const path = require('path');
 const fs = require('fs');
 
-const publishDir = path.resolve(__dirname, '../../publish');
+const publishDir = process.env.PUBLISH_DIR ? path.resolve(process.env.PUBLISH_DIR) : path.resolve(__dirname, '../../publish');
 if (!fs.existsSync(publishDir)) {
     fs.mkdirSync(publishDir, { recursive: true });
 }
@@ -45,7 +45,7 @@ async function buildAllLinux() {
                 ],
                 category: "Game",
                 icon: path.resolve(__dirname, "assets/app_logo.png"),
-                artifactName: "BC-Desktop-Linux-Standalone.${ext}"
+                artifactName: "BC-Linux.${ext}"
             },
             files: [
                 "main.js",
@@ -72,7 +72,7 @@ async function buildAllLinux() {
                 ],
                 category: "Game",
                 icon: path.resolve(__dirname, "assets/transparent.png"),
-                artifactName: "BC-Desktop-Linux-Standalone-Hidden.${ext}"
+                artifactName: "BC-Linux-Hidden.${ext}"
             },
             files: [
                 "main.js",
@@ -91,6 +91,10 @@ async function buildAllLinux() {
     const debugYml = path.join(publishDir, "builder-debug.yml");
     if (fs.existsSync(debugYml)) {
         fs.rmSync(debugYml, { force: true });
+    }
+    const latestYml = path.join(publishDir, "latest-linux.yml");
+    if (fs.existsSync(latestYml)) {
+        fs.rmSync(latestYml, { force: true });
     }
     const destAssets = path.resolve(__dirname, 'assets');
     if (fs.existsSync(destAssets)) {

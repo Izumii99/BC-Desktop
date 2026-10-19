@@ -10,7 +10,7 @@
   <p>
     <img src="https://img.shields.io/badge/.NET-8.0-blue?logo=dotnet" alt=".NET 8.0" />
     <img src="https://img.shields.io/badge/C%23-WPF-purple?logo=csharp" alt="C# WPF" />
-    <img src="https://img.shields.io/badge/platform-Windows%2010%20%7C%2011-lightgrey" alt="Windows" />
+    <img src="https://img.shields.io/badge/platform-Windows%20%7C%20Linux-lightgrey" alt="Windows | Linux" />
     <img src="https://img.shields.io/badge/license-MIT-green" alt="MIT License" />
   </p>
 </div>
@@ -296,13 +296,12 @@ javascript: (function () {
 
 ## Requirements
 
-- **Windows 10/11**
-- **WebView2 Runtime** (already pre-installed on most modern Windows systems)
-- **[.NET 8 Desktop Runtime](https://dotnet.microsoft.com/en-us/download/dotnet/8.0)** _(Only required if using the Lightweight build)_
+- **Windows:** Windows 10/11 with Edge WebView2 (pre-installed on modern Windows)
+- **Linux:** Any modern 64-bit distribution (Ubuntu, Debian, Fedora, Arch, SteamOS)
 
 ## Building from Source
 
-Prerequisites: [.NET 8 SDK](https://dotnet.microsoft.com/en-us/download/dotnet/8.0)
+Prerequisites: [.NET 8 SDK](https://dotnet.microsoft.com/en-us/download/dotnet/8.0) and [Node.js](https://nodejs.org/)
 
 ```powershell
 git clone https://github.com/Izumii99/BC-Desktop.git
@@ -313,24 +312,27 @@ dotnet build -c Release
 
 ## Running Tests
 
-To run the automated unit test suite locally before pushing or submitting a pull request:
+To run the automated unit test suite locally:
 
 ```powershell
 dotnet test
 ```
 
-## Publishing (Lightweight vs Standalone)
+## Packaging Standalone Binaries
 
-**Option 1: Lightweight (~10MB, requires .NET 8 Runtime installed)**
-
+**Build Everything (Windows & Linux):**
 ```powershell
-dotnet publish BC-Desktop.csproj -c Release -r win-x64 --self-contained false -p:PublishSingleFile=true -o .\publish\Lightweight
+.\tools\build_all.ps1
 ```
 
-**Option 2: Standalone (~172MB, fully self-contained)**
-
+**Build Windows Standalone Only:**
 ```powershell
-dotnet publish BC-Desktop.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -o .\publish\Standalone
+.\tools\local_window.ps1
+```
+
+**Build Linux Packages Only (.AppImage & .tar.gz):**
+```powershell
+.\tools\local_linux.ps1
 ```
 
 ## Project Structure
@@ -344,7 +346,8 @@ MainWindow.xaml.cs  — WebView2 init, version detection, memory optimization, D
 RELEASE_NOTES.md    — Detailed user-facing changelog and release history
 Assets/             — Application icons and visual assets
 Scripts/            — Mod/addon scripts directory
-loader.user.js      — Universal remote userscript loader with 3-tier fallback embedded into the app
+tools/              — Local build scripts (Windows & Linux standalone packaging)
+platform/linux/     — Linux client (Electron & electron-builder packaging)
 tests/              — Automated unit test suite (MSTest)
 .github/workflows/  — CI PR validation & release automation workflows
 ```

@@ -32,7 +32,8 @@ Scripts/fusam-liko-loader.js
 *fusam-liko*
 tester/
 
-## Addons og
+## Reference repos & backups
+references/
 addons_og/
 game_og/
 scripts_beta/
@@ -46,6 +47,8 @@ unused-script/
 build-local.ps1
 build-local*.ps1
 local_*.ps1
+tools/local_*.ps1
+tools/build-local*.ps1
 test_linux.bat
 
 ## Node / Electron dependencies
