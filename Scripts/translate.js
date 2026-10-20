@@ -895,11 +895,15 @@
             const dy = pos.clientY - startY;
             if (btnDragging) {
                 if (Math.abs(dx) > 3 || Math.abs(dy) > 3) btnMoved = true;
-                btn.style.left = `${btnInitX + dx}px`;
-                btn.style.top  = `${btnInitY + dy}px`;
+                const newX = Math.max(0, Math.min(btnInitX + dx, window.innerWidth - btn.offsetWidth));
+                const newY = Math.max(0, Math.min(btnInitY + dy, window.innerHeight - btn.offsetHeight));
+                btn.style.left = `${newX}px`;
+                btn.style.top  = `${newY}px`;
             } else if (popupDragging) {
-                popup.style.left = `${popupInitX + dx}px`;
-                popup.style.top  = `${popupInitY + dy}px`;
+                const newX = Math.max(0, Math.min(popupInitX + dx, window.innerWidth - popup.offsetWidth));
+                const newY = Math.max(0, Math.min(popupInitY + dy, window.innerHeight - popup.offsetHeight));
+                popup.style.left = `${newX}px`;
+                popup.style.top  = `${newY}px`;
             }
         };
 
@@ -918,9 +922,8 @@
             const pos = (e.touches && e.touches[0]) ? e.touches[0] : e;
             startX = pos.clientX;
             startY = pos.clientY;
-            const rect = btn.getBoundingClientRect();
-            btnInitX = rect.left;
-            btnInitY = rect.top;
+            btnInitX = btn.offsetLeft;
+            btnInitY = btn.offsetTop;
             document.addEventListener("mousemove", onMouseMove);
             document.addEventListener("mouseup", onMouseUp);
             document.addEventListener("touchmove", onMouseMove, { passive: false });
@@ -936,9 +939,8 @@
             const pos = (e.touches && e.touches[0]) ? e.touches[0] : e;
             startX = pos.clientX;
             startY = pos.clientY;
-            const rect = popup.getBoundingClientRect();
-            popupInitX = rect.left;
-            popupInitY = rect.top;
+            popupInitX = popup.offsetLeft;
+            popupInitY = popup.offsetTop;
             document.addEventListener("mousemove", onMouseMove);
             document.addEventListener("mouseup", onMouseUp);
             document.addEventListener("touchmove", onMouseMove, { passive: false });
@@ -947,6 +949,21 @@
 
         header.onmousedown = onStartDragHeader;
         header.ontouchstart = onStartDragHeader;
+
+        window.addEventListener("resize", () => {
+            if (btn.style.left) {
+                const curX = parseFloat(btn.style.left) || btn.offsetLeft;
+                const curY = parseFloat(btn.style.top) || btn.offsetTop;
+                btn.style.left = `${Math.max(0, Math.min(curX, window.innerWidth - btn.offsetWidth))}px`;
+                btn.style.top  = `${Math.max(0, Math.min(curY, window.innerHeight - btn.offsetHeight))}px`;
+            }
+            if (popup.style.left) {
+                const curX = parseFloat(popup.style.left) || popup.offsetLeft;
+                const curY = parseFloat(popup.style.top) || popup.offsetTop;
+                popup.style.left = `${Math.max(0, Math.min(curX, window.innerWidth - popup.offsetWidth))}px`;
+                popup.style.top  = `${Math.max(0, Math.min(curY, window.innerHeight - popup.offsetHeight))}px`;
+            }
+        });
 
         btn.onclick = (e) => {
             if (btnMoved) { e.preventDefault(); return; }

@@ -1,9 +1,49 @@
-const { app, BrowserWindow, Menu, session, dialog, clipboard, ipcMain } = require('electron');
+const { app, BrowserWindow, Menu, session, dialog, clipboard, ipcMain, net } = require('electron');
 const path = require('path');
 const fs = require('fs');
 
-// Detect hidden mode via CLI flag (--hidden) or environment variable (BC_DISCREET=1)
-const isHidden = process.argv.includes('--hidden') || process.env.BC_DISCREET === '1';
+// Detect hidden mode via CLI flag (--hidden), environment variable (BC_DISCREET=1), or Hangul Filler product name
+const isHidden = process.argv.includes('--hidden') || 
+                 process.env.BC_DISCREET === '1' || 
+                 (typeof app.getName === 'function' ? app.getName() === '\u3164' : app.name === '\u3164');
+
+const CURRENT_APP_VERSION = "7.1";
+
+function isNewerVersion(latestTag, currentVersion) {
+    if (!latestTag || !currentVersion) return false;
+    const cleanLatest = latestTag.trim().replace(/^v/i, '');
+    const cleanCurrent = currentVersion.trim().replace(/^v/i, '');
+    const lParts = cleanLatest.split('.').map(p => parseInt(p, 10) || 0);
+    const cParts = cleanCurrent.split('.').map(p => parseInt(p, 10) || 0);
+    const maxLen = Math.max(lParts.length, cParts.length);
+    for (let i = 0; i < maxLen; i++) {
+        const l = lParts[i] || 0;
+        const c = cParts[i] || 0;
+        if (l > c) return true;
+        if (l < c) return false;
+    }
+    return false;
+}
+
+let updateAvailableTag = null;
+
+async function checkForAppUpdates() {
+    if (isHidden) return;
+    try {
+        const res = await fetch("https://api.github.com/repos/Izumii99/BC-Desktop/releases/latest", {
+            headers: { "User-Agent": "BC-Desktop-Linux" }
+        });
+        if (!res.ok) return;
+        const data = await res.json();
+        const latestTag = (data.tag_name || "").trim();
+        if (isNewerVersion(latestTag, CURRENT_APP_VERSION)) {
+            updateAvailableTag = latestTag.replace(/^v/i, '');
+            if (mainWindow && !mainWindow.isDestroyed()) {
+                mainWindow.setTitle(`Bondage Club — Update Available (v${updateAvailableTag})`);
+            }
+        }
+    } catch (_) {}
+}
 
 let lastKnownGoodUrl = "https://www.bondage-asia.com/club/R132/";
 
@@ -16,7 +56,25 @@ app.commandLine.appendSwitch('disable-sync');
 app.commandLine.appendSwitch('no-pings');
 app.commandLine.appendSwitch('gpu-rasterization-msaa-sample-count', '0');
 app.commandLine.appendSwitch('enable-features', 'PurgeRendererMemoryWhenBackgrounded,IntensiveWakeUpThrottling');
+app.commandLine.appendSwitch('force-gpu-mem-available-mb', '192');
+app.commandLine.appendSwitch('force-gpu-mem-discardable-limit-mb', '32');
 app.commandLine.appendSwitch('js-flags', '--max-old-space-size=512 --optimize-for-size --expose-gc');
+
+function handleWebMessage(msg) {
+    if (typeof msg !== 'string') return;
+    if (msg.startsWith('COPY_TEXT:')) {
+        const textToCopy = msg.substring(10);
+        clipboard.writeText(textToCopy);
+    } else if (msg === 'TOGGLE_FULLSCREEN') {
+        if (mainWindow && !mainWindow.isDestroyed()) {
+            mainWindow.setFullScreen(!mainWindow.isFullScreen());
+        }
+    }
+}
+
+ipcMain.on('web-message', (event, msg) => {
+    handleWebMessage(msg);
+});
 
 // Throttling script: caps FPS to 15 and triggers GC when window is unfocused (matches Windows behavior)
 const CapUnfocusedFpsScript =
@@ -51,6 +109,15 @@ const CopyAndFocusScript = `
     if (window.__bcCopyScriptInitialized) return;
     window.__bcCopyScriptInitialized = true;
 
+    if (!window.chrome) window.chrome = {};
+    if (!window.chrome.webview) {
+        window.chrome.webview = {
+            postMessage: function(msg) {
+                console.log('__BC_BRIDGE__:' + (typeof msg === 'string' ? msg : JSON.stringify(msg)));
+            }
+        };
+    }
+
     let origFocus = HTMLElement.prototype.focus;
 
     function isTextInput(el) {
@@ -72,6 +139,12 @@ const CopyAndFocusScript = `
     }
 
     document.addEventListener('keydown', (e) => {
+        if (e.key === 'F11' || e.keyCode === 122) {
+            window.chrome.webview.postMessage('TOGGLE_FULLSCREEN');
+            e.preventDefault();
+            return;
+        }
+
         let isEnter = (e.key === 'Enter' || e.keyCode === 13);
         if (isEnter) {
             let ic = document.getElementById('InputChat');
@@ -102,6 +175,28 @@ const CopyAndFocusScript = `
                         ic.setSelectionRange(len, len);
                     } catch(err) {}
                 }
+            }
+        }
+
+        if (e.ctrlKey && (e.key === 'c' || e.key === 'C' || e.code === 'KeyC')) {
+            let text = '';
+            let activeEl = document.activeElement;
+            if (activeEl && (activeEl.tagName === 'INPUT' || activeEl.tagName === 'TEXTAREA')) {
+                try {
+                    if (activeEl.selectionStart !== null && activeEl.selectionStart !== undefined) {
+                        text = activeEl.value.substring(activeEl.selectionStart, activeEl.selectionEnd);
+                    } else {
+                        text = activeEl.value;
+                    }
+                } catch (_) {
+                    text = activeEl.value;
+                }
+            } else {
+                text = window.getSelection().toString();
+            }
+            if (text) {
+                window.chrome.webview.postMessage('COPY_TEXT:' + text);
+                e.preventDefault();
             }
         }
     }, true);
@@ -534,10 +629,23 @@ async function resolveGameUrl() {
                     break;
                 }
             } else {
-                if (currentProbe > 132) {
+                if (currentProbe > 132 && currentProbe >= activeVersion - 3) {
                     currentProbe--;
                     continue;
                 }
+                break;
+            }
+        }
+
+        // Active candidate probing forward (+1 to +8) to detect live versions before redirects
+        for (let offset = 8; offset >= 1; offset--) {
+            const candVer = activeVersion + offset;
+            const { status, nextVer } = await checkVersionStatus(candVer);
+            if (status === 'Active') {
+                activeVersion = candVer;
+                break;
+            } else if (status === 'Outdated' && nextVer !== null) {
+                activeVersion = nextVer;
                 break;
             }
         }
@@ -589,12 +697,19 @@ function injectScripts() {
         if (fs.existsSync(dir)) {
             const jsFiles = fs.readdirSync(dir).filter(f => f.endsWith('.js'));
             if (jsFiles.length > 0) {
-                for (const file of jsFiles) {
-                    const content = fs.readFileSync(path.join(dir, file), 'utf8');
+                // Set list of local files so addon-manager.js recognizes them
+                mainWindow.webContents.executeJavaScript(
+                    `window.bcLocalScripts = ${JSON.stringify(jsFiles)};`
+                ).catch(() => {});
+
+                // Inject addon-manager.js, allowing the manager to toggle addons ON/OFF
+                const managerPath = path.join(dir, 'addon-manager.js');
+                if (fs.existsSync(managerPath)) {
+                    const content = fs.readFileSync(managerPath, 'utf8');
                     mainWindow.webContents.executeJavaScript(content).catch(() => {});
+                    injectedLocal = true;
+                    break;
                 }
-                injectedLocal = true;
-                break;
             }
         }
     }
@@ -641,9 +756,10 @@ function createWindow() {
 
     mainWindow = new BrowserWindow({
         width: 1152,
-        height: 608,
-        minWidth: 800,
-        minHeight: 432,
+        height: 576,
+        minWidth: 360,
+        minHeight: 180,
+        useContentSize: true,
         title: appTitle,
         icon: iconPath,
         backgroundColor: '#0d0d0d', // Matches RGB(13, 13, 13) on Windows
@@ -655,6 +771,17 @@ function createWindow() {
             sandbox: true,
             backgroundThrottling: false,
             spellcheck: false
+        }
+    });
+
+    checkForAppUpdates();
+
+    mainWindow.webContents.on('console-message', (event, level, message) => {
+        const raw = (typeof message === 'string') 
+            ? message 
+            : (event && typeof event.message === 'string' ? event.message : (typeof level === 'string' ? level : ''));
+        if (raw && raw.startsWith('__BC_BRIDGE__:')) {
+            handleWebMessage(raw.slice(14));
         }
     });
 
@@ -692,6 +819,12 @@ function createWindow() {
         if (isHidden) {
             event.preventDefault();
             mainWindow.setTitle("");
+            return;
+        }
+
+        if (updateAvailableTag) {
+            event.preventDefault();
+            mainWindow.setTitle(`Bondage Club — Update Available (v${updateAvailableTag})`);
         }
 
         const match = title.match(/^\((\d+)\)/);
@@ -738,18 +871,21 @@ function createWindow() {
     mainWindow.on('minimize', () => {
         cancelDeactivation();
         if (mainWindow && !mainWindow.isDestroyed()) {
+            mainWindow.webContents.setBackgroundThrottling(true);
             mainWindow.webContents.executeJavaScript(CapUnfocusedFpsScript).catch(() => {});
+            mainWindow.webContents.session.clearCache().catch(() => {});
         }
     });
 
     mainWindow.on('restore', () => {
         cancelDeactivation();
         if (mainWindow && !mainWindow.isDestroyed()) {
+            mainWindow.webContents.setBackgroundThrottling(false);
             mainWindow.webContents.executeJavaScript(RestoreUnfocusedFpsScript).catch(() => {});
         }
     });
 
-    // Keyboard Shortcuts (F11 Fullscreen & F12 DevTools)
+    // Keyboard Shortcuts (F11 Fullscreen, F12 DevTools, Physical Ctrl+KeyC across layouts)
     mainWindow.webContents.on('before-input-event', (event, input) => {
         if (input.type === 'keyDown') {
             if (input.key === 'F11') {
@@ -758,6 +894,21 @@ function createWindow() {
             } else if (input.key === 'F12') {
                 mainWindow.webContents.toggleDevTools();
                 event.preventDefault();
+            } else if (input.control && input.code === 'KeyC') {
+                mainWindow.webContents.executeJavaScript(`(() => {
+                    let activeEl = document.activeElement;
+                    if (activeEl && (activeEl.tagName === 'INPUT' || activeEl.tagName === 'TEXTAREA')) {
+                        try {
+                            if (activeEl.selectionStart !== null && activeEl.selectionStart !== undefined) {
+                                return activeEl.value.substring(activeEl.selectionStart, activeEl.selectionEnd);
+                            }
+                            return activeEl.value;
+                        } catch (_) { return activeEl.value; }
+                    }
+                    return window.getSelection().toString();
+                })()`).then(text => {
+                    if (text) clipboard.writeText(text);
+                }).catch(() => {});
             }
         }
     });
@@ -823,6 +974,43 @@ function createWindow() {
 
 app.whenReady().then(() => {
     app.setName(isHidden ? "\u3164" : "Bondage Club");
+    if (typeof app.setDesktopName === 'function') {
+        app.setDesktopName(isHidden ? "\u3164" : "bondage-club.desktop");
+    }
+
+    if (session.defaultSession && session.defaultSession.protocol && session.defaultSession.protocol.handle) {
+        session.defaultSession.protocol.handle('http', (request) => {
+            try {
+                const url = new URL(request.url);
+                if (url.hostname === 'bc-desktop.local') {
+                    const scriptName = path.basename(url.pathname);
+                    const localScriptsDirs = [
+                        path.join(path.dirname(process.execPath), "Scripts"),
+                        path.join(__dirname, "Scripts"),
+                        path.resolve(__dirname, "../../Scripts")
+                    ];
+                    for (const dir of localScriptsDirs) {
+                        if (fs.existsSync(dir)) {
+                            const targetFile = path.join(dir, scriptName);
+                            if (fs.existsSync(targetFile)) {
+                                const content = fs.readFileSync(targetFile);
+                                return new Response(content, {
+                                    status: 200,
+                                    headers: {
+                                        'Content-Type': 'application/javascript; charset=utf-8',
+                                        'Access-Control-Allow-Origin': '*'
+                                    }
+                                });
+                            }
+                        }
+                    }
+                    return new Response('Not Found', { status: 404 });
+                }
+            } catch (_) {}
+            return net.fetch(request);
+        });
+    }
+
     createWindow();
 });
 

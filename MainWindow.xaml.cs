@@ -396,7 +396,7 @@ public partial class MainWindow : Window
         return _lastKnownGoodUrl;
     }
 
-    internal const string CurrentAppVersion = "7.0";
+    internal const string CurrentAppVersion = "7.1";
     internal const string GitHubRepo = "Izumii99/BC-Desktop";
     private static string? _newReleaseUrl;
 

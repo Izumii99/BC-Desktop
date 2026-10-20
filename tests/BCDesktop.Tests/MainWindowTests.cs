@@ -427,12 +427,12 @@ public class MainWindowTests
     [TestMethod]
     public void AppVersionComparison_AccuratelyEvaluatesSemanticVersions()
     {
-        Assert.AreEqual("7.0", MainWindow.CurrentAppVersion, "CurrentAppVersion must be 7.0.");
+        Assert.AreEqual("7.1", MainWindow.CurrentAppVersion, "CurrentAppVersion must be 7.1.");
 
-        Assert.IsTrue(MainWindow.IsNewerVersion("v7.1", "7.0"), "v7.1 must be newer than 7.0.");
-        Assert.IsTrue(MainWindow.IsNewerVersion("7.1", "7.0"), "7.1 must be newer than 7.0.");
-        Assert.IsTrue(MainWindow.IsNewerVersion("v7.0.1", "7.0"), "Patch version v7.0.1 must be newer than 7.0.");
-        Assert.IsTrue(MainWindow.IsNewerVersion("v8.0", "7.0"), "Major version v8.0 must be newer than 7.0.");
+        Assert.IsTrue(MainWindow.IsNewerVersion("v7.2", "7.1"), "v7.2 must be newer than 7.1.");
+        Assert.IsTrue(MainWindow.IsNewerVersion("7.2", "7.1"), "7.2 must be newer than 7.1.");
+        Assert.IsTrue(MainWindow.IsNewerVersion("v7.1.1", "7.1"), "Patch version v7.1.1 must be newer than 7.1.");
+        Assert.IsTrue(MainWindow.IsNewerVersion("v8.0", "7.1"), "Major version v8.0 must be newer than 7.1.");
 
         Assert.IsFalse(MainWindow.IsNewerVersion("6.2", "6.2"), "Identical versions must return false.");
         Assert.IsFalse(MainWindow.IsNewerVersion("v6.2", "6.2"), "Identical versions with 'v' prefix must return false.");
@@ -594,7 +594,7 @@ public class MainWindowTests
         var root = doc.RootElement;
 
         Assert.AreEqual("bc-desktop-linux", root.GetProperty("name").GetString());
-        Assert.AreEqual("7.0.0", root.GetProperty("version").GetString());
+        Assert.AreEqual("7.1.0", root.GetProperty("version").GetString());
         Assert.AreEqual("Bondage Club", root.GetProperty("productName").GetString());
         Assert.IsTrue(root.TryGetProperty("keywords", out _), "package.json must specify keywords.");
 
