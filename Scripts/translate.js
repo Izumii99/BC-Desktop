@@ -3,357 +3,547 @@
     if (window !== window.top) return;
 
     function initGoogleTranslate() {
-        if (document.getElementById("bc-google-translate-btn")) return;
+        // Clean up any legacy non-shadow DOM instances if updating live
+        const legacyBtn = document.getElementById("bc-google-translate-btn");
+        if (legacyBtn) legacyBtn.remove();
+        const legacyPopup = document.getElementById("translate-widget-container");
+        if (legacyPopup) legacyPopup.remove();
+        const legacyRoot = document.getElementById("translate-root");
+        if (legacyRoot) legacyRoot.remove();
 
-        if (!document.getElementById("tailwind-script")) {
-            const configScript = document.createElement("script");
-            configScript.innerHTML = `
-                window.tailwind = window.tailwind || {};
-                window.tailwind.config = {
-                  corePlugins: { preflight: false },
-                  important: '#translate-root',
-                  theme: {
-                    extend: {
-                      colors: {
-                        widget: {
-                          bg: '#161724',
-                          surface: '#0f1019',
-                          card: '#1b1b2a',
-                          border: '#292b3f',
-                          accent: '#8b5cf6',
-                          accentGlow: 'rgba(139, 92, 246, 0.45)',
-                          textMuted: '#71768e',
-                          textLight: '#9499af'
-                        }
-                      },
-                      boxShadow: {
-                        'glow-purple': '0 0 20px -2px rgba(147, 51, 234, 0.55)',
-                        'widget-depth': '0 25px 60px -15px rgba(0, 0, 0, 0.85), 0 0 0 1px rgba(255, 255, 255, 0.07)'
-                      }
-                    }
-                  }
-                };
-            `;
-            document.head.appendChild(configScript);
+        if (document.getElementById("translate-shadow-host")) return;
 
-            const script = document.createElement("script");
-            script.id = "tailwind-script";
-            script.src = "https://cdn.tailwindcss.com";
-            document.head.appendChild(script);
-        }
+        // Shadow DOM Host: ensures 100% style isolation against external CSS and theme injections
+        const host = document.createElement("div");
+        host.id = "translate-shadow-host";
+        host.style.cssText = "position:fixed;top:0;left:0;width:0;height:0;overflow:visible;z-index:2147483640;";
+        document.body.appendChild(host);
 
-        if (!document.getElementById("translate-glassmorphic-styles")) {
-            const style = document.createElement("style");
-            style.id = "translate-glassmorphic-styles";
-            style.innerHTML = `
-                .bc-spell-error {
-                  text-decoration: underline;
-                  text-decoration-style: wavy;
-                  text-decoration-color: #f43f5e;
-                  text-underline-offset: 5px;
-                  cursor: pointer;
-                }
-                .bc-translator-scroll::-webkit-scrollbar { width: 4px; }
-                .bc-translator-scroll::-webkit-scrollbar-track { background: transparent; }
-                .bc-translator-scroll::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 4px; }
+        const shadow = host.attachShadow({ mode: "open" });
 
-                /* Prevent Tailwind CDN preflight from leaking to game inputs */
-                input:not(#translate-root *), 
-                textarea:not(#translate-root *), 
-                select:not(#translate-root *), 
-                button:not(#translate-root *) {
-                    line-height: normal !important;
-                    font-family: Arial, sans-serif !important;
-                }
+        const style = document.createElement("style");
+        style.textContent = `
+            * { box-sizing: border-box; font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+            
+            #bc-google-translate-btn {
+                position: fixed;
+                top: 10px;
+                left: 10px;
+                z-index: 999999;
+                width: 48px;
+                height: 48px;
+                border-radius: 16px;
+                background: linear-gradient(135deg, #9333ea, #4f46e5, #6b21a8);
+                color: #ffffff;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                box-shadow: 0 0 20px -2px rgba(147, 51, 234, 0.55);
+                border: 1px solid rgba(192, 132, 252, 0.4);
+                cursor: pointer;
+                transition: transform 0.2s ease, box-shadow 0.2s ease;
+                user-select: none;
+            }
+            #bc-google-translate-btn:hover { transform: scale(1.05); }
+            #bc-google-translate-btn:active { transform: scale(0.95); }
+            #bc-google-translate-btn svg { width: 24px; height: 24px; pointer-events: none; }
 
-                /* Self-contained styling for translate widget (protects against ad-blockers blocking cdn.tailwindcss.com) */
-                #translate-root * { box-sizing: border-box; }
-                #translate-widget {
-                    position: relative;
-                    width: 340px;
-                    background: rgba(22, 23, 36, 0.95);
-                    backdrop-filter: blur(16px);
-                    -webkit-backdrop-filter: blur(16px);
-                    border: 1px solid rgba(255, 255, 255, 0.08);
-                    border-radius: 24px;
-                    padding: 16px;
-                    box-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.85), 0 0 0 1px rgba(255, 255, 255, 0.07);
-                    color: #f1f5f9;
-                    font-family: ui-sans-serif, system-ui, sans-serif;
-                }
+            #translate-widget-container {
+                position: fixed;
+                top: 70px;
+                left: 20px;
+                z-index: 1000000;
+                display: none;
+            }
 
-                #bc-google-translate-btn {
-                    position: fixed;
-                    top: 10px;
-                    left: 10px;
-                    z-index: 999999;
-                    width: 48px;
-                    height: 48px;
-                    border-radius: 16px;
-                    background: linear-gradient(135deg, #9333ea, #4f46e5, #6b21a8);
-                    color: #ffffff;
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                    box-shadow: 0 0 20px -2px rgba(147, 51, 234, 0.55);
-                    border: 1px solid rgba(192, 132, 252, 0.4);
-                    cursor: pointer;
-                    transition: transform 0.2s ease, box-shadow 0.2s ease;
-                }
-                #bc-google-translate-btn:hover { transform: scale(1.05); }
-                #bc-google-translate-btn:active { transform: scale(0.95); }
-                #bc-google-translate-btn svg { width: 24px; height: 24px; }
+            #translate-widget {
+                width: 365px;
+                background: rgba(22, 23, 36, 0.96);
+                backdrop-filter: blur(16px);
+                -webkit-backdrop-filter: blur(16px);
+                border: 1px solid rgba(255, 255, 255, 0.1);
+                border-radius: 26px;
+                padding: 16px;
+                box-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.85), 0 0 0 1px rgba(255, 255, 255, 0.07);
+                color: #f1f5f9;
+                display: flex;
+                flex-direction: column;
+                gap: 14px;
+            }
 
-                /* Dedicated class for widget textareas — does not touch BC game styles */
-                #translate-root .bc-widget-textarea {
-                    width: 100%;
-                    background: transparent !important;
-                    background-color: transparent !important;
-                    border: none !important;
-                    outline: none !important;
-                    box-shadow: none !important;
-                    resize: none !important;
-                    font-family: ui-sans-serif, system-ui, sans-serif !important;
-                    color: #e2e8f0 !important;
-                    font-size: 13px !important;
-                    line-height: 1.5 !important;
-                    padding: 0 !important;
-                }
-                #translate-root .bc-widget-textarea::placeholder {
-                    color: #71768e !important;
-                    opacity: 1 !important;
-                }
-                #translate-root .bc-widget-textarea.bc-output-muted { color: #71717a !important; }
-                #translate-root .bc-widget-textarea.bc-output-active { color: #e2e8f0 !important; }
+            #widget-header {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                padding: 2px 4px;
+                cursor: move;
+                user-select: none;
+            }
+            .header-left {
+                display: flex;
+                align-items: center;
+                gap: 10px;
+                pointer-events: none;
+            }
+            .header-icon {
+                width: 38px;
+                height: 38px;
+                border-radius: 50%;
+                background: linear-gradient(to top right, #7e22ce, #9333ea, #a78bfa);
+                box-shadow: 0 0 15px rgba(168, 85, 247, 0.5);
+                border: 1px solid rgba(216, 180, 254, 0.3);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                color: #fff;
+            }
+            .header-icon svg { width: 20px; height: 20px; }
+            .header-title-wrap { display: flex; align-items: center; gap: 8px; }
+            .header-title { font-size: 15px; font-weight: 600; color: #fff; margin: 0; }
+            .uwu-badge {
+                font-size: 10px;
+                font-weight: 700;
+                padding: 2px 8px;
+                border-radius: 999px;
+                background: rgba(88, 28, 135, 0.6);
+                color: #d8b4fe;
+                border: 1px solid rgba(168, 85, 247, 0.4);
+                text-transform: uppercase;
+                letter-spacing: 0.05em;
+            }
+            .header-controls { display: flex; align-items: center; gap: 6px; }
+            .icon-btn {
+                background: transparent;
+                border: none;
+                color: #94a3b8;
+                cursor: pointer;
+                padding: 5px;
+                border-radius: 8px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                transition: all 0.15s;
+            }
+            .icon-btn:hover { color: #ffffff; background: rgba(255, 255, 255, 0.08); }
 
-                /* Core layout utilities scoped to #translate-root */
-                #translate-root .flex { display: flex; }
-                #translate-root .flex-col { flex-direction: column; }
-                #translate-root .items-center { align-items: center; }
-                #translate-root .justify-between { justify-content: space-between; }
-                #translate-root .justify-end { justify-content: flex-end; }
-                #translate-root .w-full { width: 100%; }
-                #translate-root .hidden { display: none !important; }
-                #translate-root .relative { position: relative; }
-                #translate-root .shrink-0 { flex-shrink: 0; }
-                #translate-root .cursor-move { cursor: move; }
-                #translate-root .cursor-pointer { cursor: pointer; }
-                #translate-root .truncate { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+            #widget-body { display: flex; flex-direction: column; gap: 12px; }
 
-                #translate-root .bg-\[\#0f1019\] { background-color: #0f1019; }
-                #translate-root .bg-\[\#1b1c2b\] { background-color: #1b1c2b; }
-                #translate-root .rounded-2xl { border-radius: 16px; }
-                #translate-root .p-3\.5 { padding: 14px; }
-                #translate-root .min-h-\[140px\] { min-height: 140px; }
-                #translate-root .min-h-\[148px\] { min-height: 148px; }
-                #translate-root .border-white\/\[0\.04\] { border-color: rgba(255, 255, 255, 0.04); }
-                #translate-root .border-purple-500\/10 { border-color: rgba(168, 85, 247, 0.1); }
-                #translate-root .border { border-width: 1px; border-style: solid; }
-                #translate-root .border-t { border-top-width: 1px; border-top-style: solid; }
+            /* Language Row */
+            .lang-row { display: flex; align-items: center; justify-content: space-between; gap: 6px; }
+            .bc-dropdown { position: relative; flex: 1; min-width: 0; }
+            .bc-dropdown-trigger {
+                width: 100%;
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                background: rgba(32, 34, 53, 0.95);
+                border: 1px solid rgba(255, 255, 255, 0.07);
+                padding: 8px 11px;
+                border-radius: 12px;
+                font-size: 11.5px;
+                color: #e2e8f0;
+                cursor: pointer;
+                transition: background 0.15s, border-color 0.15s;
+                user-select: none;
+            }
+            .bc-dropdown-trigger:hover, .bc-dropdown-trigger.active {
+                background: #272940;
+                border-color: rgba(139, 92, 246, 0.5);
+            }
+            .trigger-label-wrap { display: flex; align-items: center; gap: 7px; overflow: hidden; }
+            .dot-purple {
+                width: 7px; height: 7px; border-radius: 50%;
+                background: #a855f7; box-shadow: 0 0 8px #a855f7; flex-shrink: 0;
+            }
+            .truncate { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 500; }
+            .bc-dropdown-chevron { width: 14px !important; height: 14px !important; color: #94a3b8; flex-shrink: 0; transition: transform 0.2s; }
+            .bc-dropdown-trigger.active .bc-dropdown-chevron { transform: rotate(180deg); }
 
-                #translate-root .bc-quick-lang {
-                    padding: 3px 10px;
-                    border-radius: 6px;
-                    background: #212335;
-                    color: #cbd5e1;
-                    font-size: 11px;
-                    font-weight: 500;
-                    border: 1px solid rgba(255, 255, 255, 0.05);
-                    cursor: pointer;
-                    transition: all 0.15s ease;
-                }
-                #translate-root .bc-quick-lang:hover {
-                    background: rgba(139, 92, 246, 0.3);
-                    color: #d8b4fe;
-                }
+            .bc-dropdown-menu {
+                position: absolute;
+                top: calc(100% + 6px);
+                left: 0;
+                right: 0;
+                z-index: 9999;
+                background: #1a1b2e;
+                border: 1px solid rgba(139, 92, 246, 0.35);
+                border-radius: 14px;
+                box-shadow: 0 16px 40px -8px rgba(0,0,0,0.8);
+                max-height: 210px;
+                overflow-y: auto;
+                display: none;
+            }
+            .bc-dropdown-menu.open { display: block; }
+            .bc-dropdown-menu::-webkit-scrollbar { width: 4px; }
+            .bc-dropdown-menu::-webkit-scrollbar-thumb { background: rgba(139,92,246,0.4); border-radius: 4px; }
+            .bc-dropdown-item {
+                padding: 8px 12px;
+                font-size: 11.5px;
+                color: #94a3b8;
+                cursor: pointer;
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                transition: background 0.12s, color 0.12s;
+            }
+            .bc-dropdown-item:hover { background: rgba(139,92,246,0.18); color: #e2e8f0; }
+            .bc-dropdown-item.selected { background: rgba(139,92,246,0.25); color: #c4b5fd; font-weight: 600; }
+            .bc-check { width: 12px; height: 12px; opacity: 0; flex-shrink: 0; color: #a78bfa; }
+            .bc-dropdown-item.selected .bc-check { opacity: 1; }
+            .bc-dropdown-divider { height: 1px; background: rgba(255,255,255,0.06); margin: 3px 0; }
 
-                #copy-translation-btn {
-                    display: flex;
-                    align-items: center;
-                    gap: 6px;
-                    background: linear-gradient(to right, #9333ea, #6366f1);
-                    color: #ffffff;
-                    font-weight: 500;
-                    font-size: 12px;
-                    padding: 6px 14px;
-                    border-radius: 12px;
-                    border: none;
-                    box-shadow: 0 0 15px rgba(147, 51, 234, 0.4);
-                    cursor: pointer;
-                    transition: all 0.15s ease;
-                }
-                #copy-translation-btn:hover { background: linear-gradient(to right, #a855f7, #4f46e5); }
-                #copy-translation-btn:active { transform: scale(0.95); }
+            #swap-languages {
+                width: 32px; height: 32px; border-radius: 10px;
+                background: #202235; border: 1px solid rgba(255,255,255,0.06);
+                color: #cbd5e1; display: flex; align-items: center; justify-content: center;
+                cursor: pointer; flex-shrink: 0; transition: all 0.2s;
+            }
+            #swap-languages:hover { background: rgba(139, 92, 246, 0.25); color: #d8b4fe; }
+            #swap-languages svg { width: 15px; height: 15px; }
 
-                #btn-swap {
-                    width: 28px;
-                    height: 28px;
-                    border-radius: 8px;
-                    background: #212335;
-                    color: #94a3b8;
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                    border: 1px solid rgba(255, 255, 255, 0.05);
-                    cursor: pointer;
-                    transition: all 0.15s;
-                }
-                #btn-swap:hover {
-                    background: rgba(139, 92, 246, 0.3);
-                    color: #c084fc;
-                }
+            /* Quick Row */
+            .quick-row { display: flex; align-items: center; gap: 6px; padding: 0 2px; }
+            .quick-label { font-size: 10px; font-weight: 700; color: #64748b; letter-spacing: 0.05em; margin-right: 2px; }
+            .bc-quick-lang {
+                padding: 3px 10px; border-radius: 7px;
+                background: #212335; color: #cbd5e1;
+                font-size: 11px; font-weight: 600;
+                border: 1px solid rgba(255, 255, 255, 0.06);
+                cursor: pointer; transition: all 0.15s;
+            }
+            .bc-quick-lang:hover, .bc-quick-lang.active-quick {
+                background: rgba(139, 92, 246, 0.35);
+                color: #e9d5ff;
+                border-color: rgba(168, 85, 247, 0.4);
+            }
 
-                #clear-input {
-                    background: transparent;
-                    border: none;
-                    color: #71717a;
-                    cursor: pointer;
-                    padding: 2px;
-                    display: flex;
-                    align-items: center;
-                }
-                #clear-input:hover { color: #ffffff; }
+            /* Box Cards */
+            .box-source {
+                background: #0f1019;
+                border-radius: 16px;
+                padding: 12px 14px;
+                border: 1px solid rgba(255, 255, 255, 0.05);
+                display: flex;
+                flex-direction: column;
+                justify-content: space-between;
+                min-height: 130px;
+            }
+            .box-output {
+                background: #1b1c2b;
+                border-radius: 16px;
+                padding: 12px 14px;
+                border: 1px solid rgba(168, 85, 247, 0.15);
+                display: flex;
+                flex-direction: column;
+                justify-content: space-between;
+                min-height: 140px;
+            }
 
-                #btn-minimize, #btn-close {
-                    background: transparent;
-                    border: none;
-                    color: #64748b;
-                    cursor: pointer;
-                    padding: 4px;
-                    border-radius: 6px;
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                    transition: all 0.15s;
-                }
-                #btn-minimize:hover, #btn-close:hover {
-                    color: #ffffff;
-                    background: rgba(255, 255, 255, 0.08);
-                }
+            .bc-widget-textarea {
+                width: 100%;
+                background: transparent !important;
+                border: none !important;
+                outline: none !important;
+                box-shadow: none !important;
+                resize: none !important;
+                color: #f1f5f9 !important;
+                font-size: 13.5px !important;
+                line-height: 1.5 !important;
+                padding: 0 !important;
+                margin: 0 !important;
+            }
+            .bc-widget-textarea::placeholder { color: #64748b !important; opacity: 1; }
+            .bc-widget-textarea.bc-output-muted { color: #71717a !important; }
+            .bc-widget-textarea::-webkit-scrollbar { width: 4px; }
+            .bc-widget-textarea::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.15); border-radius: 4px; }
 
-                /* Custom dropdown */
-                .bc-dropdown { position: relative; flex: 1; }
-                .bc-dropdown-menu {
-                    position: absolute;
-                    top: calc(100% + 6px);
-                    left: 0;
-                    right: 0;
-                    z-index: 9999;
-                    background: #1a1b2e;
-                    border: 1px solid rgba(139, 92, 246, 0.3);
-                    border-radius: 14px;
-                    overflow: hidden;
-                    box-shadow: 0 16px 40px -8px rgba(0,0,0,0.7), 0 0 0 1px rgba(255,255,255,0.05);
-                    transform-origin: top center;
-                    transform: scaleY(0.85) translateY(-6px);
-                    opacity: 0;
-                    pointer-events: none;
-                    transition: transform 0.18s cubic-bezier(0.34,1.56,0.64,1), opacity 0.15s ease;
-                    max-height: 220px;
-                    overflow-y: auto;
-                }
-                .bc-dropdown-menu::-webkit-scrollbar { width: 3px; }
-                .bc-dropdown-menu::-webkit-scrollbar-thumb { background: rgba(139,92,246,0.4); border-radius: 3px; }
-                .bc-dropdown-menu.open {
-                    transform: scaleY(1) translateY(0);
-                    opacity: 1;
-                    pointer-events: auto;
-                }
-                .bc-dropdown-item {
-                    padding: 8px 12px;
-                    font-size: 11px;
-                    color: #94a3b8;
-                    cursor: pointer;
-                    display: flex;
-                    align-items: center;
-                    gap: 8px;
-                    transition: background 0.12s, color 0.12s;
-                    font-family: ui-sans-serif, system-ui, sans-serif;
-                }
-                .bc-dropdown-item:hover { background: rgba(139,92,246,0.15); color: #c4b5fd; }
-                .bc-dropdown-item.selected { background: rgba(139,92,246,0.2); color: #a78bfa; font-weight: 600; }
-                .bc-dropdown-item .bc-check {
-                    width: 12px; height: 12px;
-                    opacity: 0;
-                    transition: opacity 0.12s;
-                    flex-shrink: 0;
-                    color: #a78bfa;
-                }
-                .bc-dropdown-item.selected .bc-check { opacity: 1; }
-                .bc-dropdown-divider { height: 1px; background: rgba(255,255,255,0.06); margin: 2px 0; }
-                .bc-dropdown-trigger {
-                    width: 100%;
-                    display: flex;
-                    align-items: center;
-                    justify-content: space-between;
-                    background: rgba(32,34,53,0.9);
-                    border: 1px solid rgba(255,255,255,0.05);
-                    padding: 8px 12px;
-                    border-radius: 12px;
-                    font-size: 11px;
-                    color: #e2e8f0;
-                    cursor: pointer;
-                    transition: background 0.15s, border-color 0.15s;
-                    font-family: ui-sans-serif, system-ui, sans-serif;
-                    user-select: none;
-                }
-                .bc-dropdown-trigger:hover { background: rgba(39,41,64,1); }
-                .bc-dropdown-trigger.active { border-color: rgba(139,92,246,0.5); background: rgba(39,41,64,1); }
-                .bc-dropdown-chevron {
-                    width: 14px !important;
-                    height: 14px !important;
-                    transition: transform 0.2s cubic-bezier(0.34,1.2,0.64,1);
-                    flex-shrink: 0;
-                }
-                .bc-dropdown-trigger.active .bc-dropdown-chevron { transform: rotate(180deg); }
-            `;
-            document.head.appendChild(style);
-        }
+            /* Correction / Fix the Word Banner */
+            #bc-translate-correction-container {
+                margin-top: 8px;
+                padding: 6px 10px;
+                border-radius: 8px;
+                background: rgba(244, 63, 94, 0.12);
+                border: 1px solid rgba(244, 63, 94, 0.3);
+                font-size: 11.5px;
+                color: #fda4af;
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                gap: 6px;
+            }
+            .bc-spell-error {
+                font-weight: 700;
+                color: #fb7185;
+                text-decoration: underline wavy #f43f5e;
+                text-underline-offset: 3px;
+                cursor: pointer;
+            }
+            .bc-spell-error:hover { color: #fff; }
+            .fix-badge {
+                font-size: 10px;
+                background: rgba(244, 63, 94, 0.25);
+                color: #ffe4e6;
+                padding: 2px 6px;
+                border-radius: 5px;
+                cursor: pointer;
+                font-weight: 600;
+                white-space: nowrap;
+            }
+            .fix-badge:hover { background: #e11d48; color: #fff; }
 
-        const btn = document.createElement("button");
-        btn.id = "bc-google-translate-btn";
-        btn.setAttribute("aria-label", "Google Translate Floating Widget");
-        btn.className = "w-12 h-12 rounded-2xl bg-gradient-to-br from-purple-600 via-indigo-600 to-purple-800 text-white flex items-center justify-center shadow-glow-purple border border-purple-400/40 hover:scale-105 active:scale-95 transition-all duration-200";
-        btn.style.cssText = "position:fixed;top:10px;left:10px;z-index:999999";
-        btn.innerHTML = `
-        <svg class="w-6 h-6 drop-shadow" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path d="M3 5h12M9 3v2m1.048 9.5A18.022 18.022 0 016.412 9m6.088 9h7M11 21l5-10 5 10M12.751 5C11.783 10.77 8.07 15.61 3 18.129" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
-        </svg>`;
-        const popup = document.createElement("div");
-        popup.id = "translate-widget-container";
-        popup.style.position = "fixed";
-        popup.style.top = "70px";
-        popup.style.left = "20px";
-        popup.style.zIndex = "1000000";
-        popup.style.display = "none";
+            .box-footer {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                padding-top: 8px;
+                margin-top: 6px;
+                border-top: 1px solid rgba(255, 255, 255, 0.05);
+            }
+            .detected-badge {
+                font-size: 10.5px;
+                color: #a78bfa;
+                font-weight: 500;
+            }
+
+            .output-header {
+                display: flex;
+                align-items: center;
+                gap: 6px;
+                font-size: 10px;
+                font-weight: 700;
+                color: #c084fc;
+                letter-spacing: 0.06em;
+                margin-bottom: 6px;
+                text-transform: uppercase;
+            }
+            #bc-translate-meta {
+                display: flex;
+                flex-direction: column;
+                gap: 3px;
+                font-size: 11px;
+                color: #94a3b8;
+                margin-top: 6px;
+            }
+            .romaji-val { color: #d8b4fe; }
+
+            #copy-translation-btn {
+                display: flex;
+                align-items: center;
+                gap: 6px;
+                background: linear-gradient(to right, #9333ea, #6366f1);
+                color: #ffffff;
+                font-weight: 600;
+                font-size: 11.5px;
+                padding: 6px 14px;
+                border-radius: 10px;
+                border: none;
+                box-shadow: 0 0 15px rgba(147, 51, 234, 0.4);
+                cursor: pointer;
+                transition: all 0.15s ease;
+                margin-left: auto;
+            }
+            #copy-translation-btn:hover { background: linear-gradient(to right, #a855f7, #4f46e5); }
+            #copy-translation-btn:active { transform: scale(0.95); }
+            #copy-translation-btn svg { width: 14px; height: 14px; }
+
+            .hidden { display: none !important; }
+        `;
+        shadow.appendChild(style);
 
         const LANGUAGES = [
-            { value: "auto",  label: "Auto",           group: "common" },
+            { value: "auto",  label: "Auto Detect",     group: "common" },
             { value: "en",    label: "English (EN)",    group: "common" },
             { value: "id",    label: "Indonesian (ID)", group: "common" },
             { value: "ja",    label: "Japanese (JP)",   group: "common" },
             { value: "zh-CN", label: "Chinese (CN)",    group: "common" },
             { value: "ru",    label: "Russian (RU)",    group: "common" },
-            // all
-            { value: "ar",    label: "Arabic",     group: "all" },
-            { value: "nl",    label: "Dutch",      group: "all" },
-            { value: "tl",    label: "Filipino",   group: "all" },
-            { value: "fr",    label: "French",     group: "all" },
-            { value: "de",    label: "German",     group: "all" },
-            { value: "hi",    label: "Hindi",      group: "all" },
-            { value: "it",    label: "Italian",    group: "all" },
-            { value: "ko",    label: "Korean",     group: "all" },
-            { value: "ms",    label: "Malay",      group: "all" },
-            { value: "pl",    label: "Polish",     group: "all" },
-            { value: "pt",    label: "Portuguese", group: "all" },
-            { value: "es",    label: "Spanish",    group: "all" },
-            { value: "th",    label: "Thai",       group: "all" },
-            { value: "tr",    label: "Turkish",    group: "all" },
-            { value: "uk",    label: "Ukrainian",  group: "all" },
-            { value: "vi",    label: "Vietnamese", group: "all" },
+            { value: "ar",    label: "Arabic",          group: "all" },
+            { value: "nl",    label: "Dutch",           group: "all" },
+            { value: "tl",    label: "Filipino",        group: "all" },
+            { value: "fr",    label: "French",          group: "all" },
+            { value: "de",    label: "German",          group: "all" },
+            { value: "hi",    label: "Hindi",           group: "all" },
+            { value: "it",    label: "Italian",         group: "all" },
+            { value: "ko",    label: "Korean",          group: "all" },
+            { value: "ms",    label: "Malay",           group: "all" },
+            { value: "pl",    label: "Polish",          group: "all" },
+            { value: "pt",    label: "Portuguese",      group: "all" },
+            { value: "es",    label: "Spanish",         group: "all" },
+            { value: "th",    label: "Thai",            group: "all" },
+            { value: "tr",    label: "Turkish",         group: "all" },
+            { value: "uk",    label: "Ukrainian",       group: "all" },
+            { value: "vi",    label: "Vietnamese",      group: "all" },
         ];
 
         const TARGET_LANGS = LANGUAGES.filter(l => l.value !== "auto");
+
+        const wrapper = document.createElement("div");
+        wrapper.innerHTML = `
+            <button id="bc-google-translate-btn" aria-label="Google Translate Floating Widget">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path d="M3 5h12M9 3v2m1.048 9.5A18.022 18.022 0 016.412 9m6.088 9h7M11 21l5-10 5 10M12.751 5C11.783 10.77 8.07 15.61 3 18.129" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
+                </svg>
+            </button>
+
+            <div id="translate-widget-container">
+                <main id="translate-widget">
+                    <header id="widget-header">
+                        <div class="header-left">
+                            <div class="header-icon">
+                                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path d="M3 5h12M9 3v2m1.048 9.5A18.022 18.022 0 016.412 9m6.088 9h7M11 21l5-10 5 10M12.751 5C11.783 10.77 8.07 15.61 3 18.129" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2"></path>
+                                </svg>
+                            </div>
+                            <div class="header-title-wrap">
+                                <h1 class="header-title">Google Translate</h1>
+                                <span class="uwu-badge">UwU</span>
+                            </div>
+                        </div>
+                        <div class="header-controls">
+                            <button class="icon-btn" id="btn-minimize" title="Minimize">
+                                <span style="display:block;width:12px;height:2px;background:currentColor;border-radius:2px;"></span>
+                            </button>
+                            <button class="icon-btn" id="btn-close" title="Close">
+                                <svg style="width:14px;height:14px" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" viewBox="0 0 24 24">
+                                    <line x1="18" x2="6" y1="6" y2="18"></line>
+                                    <line x1="6" x2="18" y1="6" y2="18"></line>
+                                </svg>
+                            </button>
+                        </div>
+                    </header>
+
+                    <div id="widget-body">
+                        <section class="lang-row">
+                            <div class="bc-dropdown" id="source-dropdown">
+                                <button class="bc-dropdown-trigger" id="source-trigger" type="button">
+                                    <div class="trigger-label-wrap">
+                                        <span class="dot-purple"></span>
+                                        <span id="source-lang-label" class="truncate">Auto Detect</span>
+                                    </div>
+                                    <svg class="bc-dropdown-chevron" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path d="M19 9l-7 7-7-7" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"></path>
+                                    </svg>
+                                </button>
+                                <div class="bc-dropdown-menu" id="source-menu"></div>
+                            </div>
+
+                            <button id="swap-languages" type="button" title="Swap Languages">
+                                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
+                                </svg>
+                            </button>
+
+                            <div class="bc-dropdown" id="target-dropdown">
+                                <button class="bc-dropdown-trigger" id="target-trigger" type="button">
+                                    <div class="trigger-label-wrap">
+                                        <span class="dot-purple"></span>
+                                        <span id="target-lang-label" class="truncate">English</span>
+                                    </div>
+                                    <svg class="bc-dropdown-chevron" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path d="M19 9l-7 7-7-7" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"></path>
+                                    </svg>
+                                </button>
+                                <div class="bc-dropdown-menu" id="target-menu"></div>
+                            </div>
+                        </section>
+
+                        <nav class="quick-row">
+                            <span class="quick-label">QUICK:</span>
+                            <button class="bc-quick-lang" data-lang="en" type="button">EN</button>
+                            <button class="bc-quick-lang" data-lang="id" type="button">IND</button>
+                            <button class="bc-quick-lang" data-lang="zh-CN" type="button">CN</button>
+                            <button class="bc-quick-lang" data-lang="ja" type="button">JP</button>
+                        </nav>
+
+                        <section class="box-source">
+                            <textarea class="bc-widget-textarea" id="source-textarea" placeholder="Type text here..." rows="3" spellcheck="true"></textarea>
+                            
+                            <div id="bc-translate-correction-container" class="hidden">
+                                <div>Did you mean: <span id="bc-translate-correction" class="bc-spell-error"></span></div>
+                                <span id="bc-fix-btn" class="fix-badge">Fix word</span>
+                            </div>
+
+                            <div class="box-footer">
+                                <span id="detected-lang-badge" class="detected-badge"></span>
+                                <button class="icon-btn" id="clear-input" type="button" title="Clear text">
+                                    <svg style="width:14px;height:14px" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" viewBox="0 0 24 24">
+                                        <line x1="18" x2="6" y1="6" y2="18"></line>
+                                        <line x1="6" x2="18" y1="6" y2="18"></line>
+                                    </svg>
+                                </button>
+                            </div>
+                        </section>
+
+                        <section class="box-output">
+                            <div>
+                                <div class="output-header">
+                                    <span class="dot-purple" style="width:6px;height:6px;"></span>
+                                    <span>TRANSLATION</span>
+                                </div>
+                                <textarea id="translation-text" class="bc-widget-textarea bc-output-muted" rows="3" readonly placeholder="Translation will appear here..."></textarea>
+                                <div id="bc-translate-meta" class="hidden">
+                                    <div id="bc-translate-src-romaji" class="hidden"></div>
+                                    <div id="bc-translate-tgt-romaji" class="hidden"></div>
+                                </div>
+                            </div>
+                            
+                            <div class="box-footer">
+                                <button id="copy-translation-btn" type="button">
+                                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
+                                    </svg>
+                                    <span>Copy</span>
+                                </button>
+                            </div>
+                        </section>
+                    </div>
+                </main>
+            </div>
+        `;
+        shadow.appendChild(wrapper);
+
+        // --- State ---
+        let sourceLangValue = "auto";
+        let targetLangValue = "en";
+        let lastDetectedLang = "";
+
+        // --- Element refs inside Shadow DOM ---
+        const $ = (id) => shadow.getElementById(id);
+        const btn                 = $("bc-google-translate-btn");
+        const popup               = $("translate-widget-container");
+        const header              = $("widget-header");
+        const bodySection         = $("widget-body");
+        const minimizeBtn         = $("btn-minimize");
+        const closeBtn            = $("btn-close");
+        const sourceLabel         = $("source-lang-label");
+        const targetLabel         = $("target-lang-label");
+        const sourceTrigger       = $("source-trigger");
+        const targetTrigger       = $("target-trigger");
+        const sourceMenu          = $("source-menu");
+        const targetMenu          = $("target-menu");
+        const swapBtn             = $("swap-languages");
+        const inputArea           = $("source-textarea");
+        const outputArea          = $("translation-text");
+        const clearBtn            = $("clear-input");
+        const copyBtn             = $("copy-translation-btn");
+        const correctionContainer = $("bc-translate-correction-container");
+        const correctionBtn       = $("bc-translate-correction");
+        const fixWordBtn          = $("bc-fix-btn");
+        const detectedBadge       = $("detected-lang-badge");
+        const metaDiv             = $("bc-translate-meta");
+        const srcRomaji           = $("bc-translate-src-romaji");
+        const tgtRomaji           = $("bc-translate-tgt-romaji");
+
+        // Isolasi event ketikan agar tidak dibajak oleh listener game Bondage Club atau runtime lain
+        ["keydown", "keyup", "keypress", "input", "paste", "mousedown", "click"].forEach(evt => {
+            inputArea.addEventListener(evt, (e) => e.stopPropagation());
+            outputArea.addEventListener(evt, (e) => e.stopPropagation());
+        });
+
+        function getLangLabel(langs, value) {
+            const lang = langs.find(l => l.value.toLowerCase() === String(value).toLowerCase());
+            return lang ? lang.label.split(" (")[0] : value;
+        }
 
         function buildDropdownItems(langs, currentValue) {
             let html = "";
@@ -375,290 +565,214 @@
             return html;
         }
 
-        popup.innerHTML = `
-<main class="w-full min-w-[360px] max-w-[390px] rounded-[28px] bg-[#161724]/95 backdrop-blur-xl border border-white/10 shadow-widget-depth p-4 flex flex-col gap-3.5 relative" id="translate-widget" style="font-family: ui-sans-serif, system-ui, sans-serif;">
-    <header class="flex items-center justify-between pt-1 pb-0.5 px-1 cursor-move" id="widget-header">
-        <div class="flex items-center space-x-3 pointer-events-none">
-            <div class="relative flex items-center justify-center w-10 h-10 rounded-full bg-gradient-to-tr from-purple-700 via-purple-600 to-violet-400 shadow-[0_0_15px_rgba(168,85,247,0.5)] border border-purple-300/30">
-                <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path d="M3 5h12M9 3v2m1.048 9.5A18.022 18.022 0 016.412 9m6.088 9h7M11 21l5-10 5 10M12.751 5C11.783 10.77 8.07 15.61 3 18.129" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2"></path>
-                </svg>
-            </div>
-            <div>
-                <div class="flex items-center space-x-2">
-                    <h1 class="text-[15px] font-semibold tracking-tight text-white m-0">Google Translate</h1>
-                    <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-purple-900/60 text-purple-300 border border-purple-500/40 tracking-wider uppercase">UwU</span>
-                </div>
-            </div>
-        </div>
-        <div class="flex items-center space-x-2.5 text-zinc-400 pr-1 cursor-default">
-            <button aria-label="Minimize Widget" class="hover:text-white transition-colors p-1 text-base leading-none" id="btn-minimize">
-                <span class="block w-3 h-[2px] bg-zinc-400 rounded-sm"></span>
-            </button>
-            <button aria-label="Close Widget" class="hover:text-white transition-colors p-1" id="btn-close">
-                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" viewBox="0 0 24 24">
-                    <line x1="18" x2="6" y1="6" y2="18"></line>
-                    <line x1="6" x2="18" y1="6" y2="18"></line>
-                </svg>
-            </button>
-        </div>
-    </header>
-
-    <div id="widget-body" class="flex flex-col gap-3.5">
-        <!-- Language Selectors -->
-        <section class="flex items-center justify-between gap-1.5 pt-0.5">
-            <!-- Source dropdown -->
-            <div class="bc-dropdown" id="source-dropdown">
-                <button class="bc-dropdown-trigger" id="source-trigger">
-                    <div class="flex items-center gap-2 truncate">
-                        <span class="w-2 h-2 rounded-full bg-purple-500 shadow-[0_0_8px_#a855f7] shrink-0" style="display:inline-block"></span>
-                        <span id="source-lang-label" class="truncate font-medium">Auto</span>
-                    </div>
-                    <svg class="bc-dropdown-chevron w-3.5 h-3.5 text-zinc-400 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path d="M19 9l-7 7-7-7" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"></path>
-                    </svg>
-                </button>
-                <div class="bc-dropdown-menu" id="source-menu"></div>
-            </div>
-
-            <!-- Swap button -->
-            <button aria-label="Swap Languages" class="w-8 h-8 rounded-xl bg-[#202235] hover:bg-[#2b2d45] border border-white/5 flex items-center justify-center text-slate-300 hover:text-purple-300 active:rotate-180 transition-all duration-200 shrink-0" id="swap-languages" type="button">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
-                </svg>
-            </button>
-
-            <!-- Target dropdown -->
-            <div class="bc-dropdown" id="target-dropdown">
-                <button class="bc-dropdown-trigger" id="target-trigger">
-                    <div class="flex items-center gap-2 truncate">
-                        <span class="w-2 h-2 rounded-full bg-purple-500 shadow-[0_0_8px_#a855f7] shrink-0" style="display:inline-block"></span>
-                        <span id="target-lang-label" class="truncate font-medium">English</span>
-                    </div>
-                    <svg class="bc-dropdown-chevron w-3.5 h-3.5 text-zinc-400 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path d="M19 9l-7 7-7-7" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"></path>
-                    </svg>
-                </button>
-                <div class="bc-dropdown-menu" id="target-menu"></div>
-            </div>
-        </section>
-
-        <!-- Quick presets -->
-        <nav aria-label="Quick languages" class="flex items-center space-x-1.5 px-0.5 text-xs">
-            <span class="text-[10px] font-bold tracking-wider text-[#5f637b] mr-1">QUICK:</span>
-            <button class="bc-quick-lang px-2.5 py-0.5 rounded-md bg-[#212335] text-slate-300 text-[11px] font-medium hover:bg-purple-900/40 hover:text-purple-300 border border-white/5 transition-all" data-lang="en" type="button">EN</button>
-            <button class="bc-quick-lang px-2.5 py-0.5 rounded-md bg-[#212335] text-slate-300 text-[11px] font-medium hover:bg-purple-900/40 hover:text-purple-300 border border-white/5 transition-all" data-lang="id" type="button">IND</button>
-            <button class="bc-quick-lang px-2.5 py-0.5 rounded-md bg-[#212335] text-slate-300 text-[11px] font-medium hover:bg-purple-900/40 hover:text-purple-300 border border-white/5 transition-all" data-lang="zh-CN" type="button">CN</button>
-        </nav>
-
-        <!-- Source input -->
-        <section class="bg-[#0f1019] rounded-2xl p-3.5 border border-white/[0.04] flex flex-col justify-between min-h-[140px] relative">
-            <textarea class="bc-widget-textarea w-full text-[13px] text-slate-200 placeholder-zinc-600 focus:ring-0 p-0 font-normal leading-relaxed bc-translator-scroll" id="source-textarea" placeholder="Type text here..." rows="3"></textarea>
-            
-            <div id="bc-translate-correction-container" class="hidden text-xs text-rose-400 mt-1 pb-1">
-                Did you mean: <span id="bc-translate-correction" class="bc-spell-error"></span>
-            </div>
-
-            <div class="flex items-center justify-end pt-2 border-t border-white/[0.04] text-zinc-400 mt-auto">
-                <button aria-label="Clear text" class="hover:text-white transition-colors" id="clear-input" type="button">
-                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" viewBox="0 0 24 24"><line x1="18" x2="6" y1="6" y2="18"></line><line x1="6" x2="18" y1="6" y2="18"></line></svg>
-                </button>
-            </div>
-        </section>
-
-        <!-- Output -->
-        <section class="bg-[#1b1c2b] rounded-2xl p-3.5 border border-purple-500/10 flex flex-col justify-between min-h-[148px]">
-            <div>
-                <div class="flex items-center space-x-1.5 text-[10px] font-bold text-purple-400 tracking-wider mb-2 uppercase">
-                    <span class="w-1.5 h-1.5 rounded-full bg-purple-500"></span>
-                    <span>TRANSLATION</span>
-                </div>
-                <textarea id="translation-text" class="bc-widget-textarea bc-output-muted w-full font-medium text-[15px] leading-snug bc-translator-scroll p-0" rows="3" readonly placeholder="Translation will appear here..."></textarea>
-                <div id="bc-translate-meta" class="hidden flex-col gap-1 text-[11px] text-[#71768e] font-medium mt-1">
-                    <div id="bc-translate-src-romaji" class="hidden"></div>
-                    <div id="bc-translate-tgt-romaji" class="hidden"></div>
-                </div>
-            </div>
-            
-            <div class="flex items-center justify-end pt-3 border-t border-white/[0.04] mt-2">
-                <button class="flex items-center space-x-1.5 bg-gradient-to-r from-purple-600 via-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-medium text-xs py-1.5 px-3.5 rounded-xl shadow-[0_0_15px_rgba(147,51,234,0.4)] active:scale-95 transition-all" id="copy-translation-btn" type="button">
-                    <svg class="w-3.5 h-3.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path></svg>
-                    <span id="copy-text-span">Copy</span>
-                </button>
-            </div>
-        </section>
-    </div>
-</main>`;
-
-        const root = document.createElement("div");
-        root.id = "translate-root";
-        root.style.cssText = "position:fixed;top:0;left:0;width:0;height:0;overflow:visible;z-index:999990";
-        root.appendChild(btn);
-        root.appendChild(popup);
-        document.body.appendChild(root);
-
-        // --- State ---
-        let sourceLangValue = "auto";
-        let targetLangValue = "en";
-
-        // --- Element refs ---
-        const header          = document.getElementById("widget-header");
-        const bodySection     = document.getElementById("widget-body");
-        const minimizeBtn     = document.getElementById("btn-minimize");
-        const closeBtn        = document.getElementById("btn-close");
-        const sourceLabel     = document.getElementById("source-lang-label");
-        const targetLabel     = document.getElementById("target-lang-label");
-        const sourceTrigger   = document.getElementById("source-trigger");
-        const targetTrigger   = document.getElementById("target-trigger");
-        const sourceMenu      = document.getElementById("source-menu");
-        const targetMenu      = document.getElementById("target-menu");
-        const swapBtn         = document.getElementById("swap-languages");
-        const inputArea       = document.getElementById("source-textarea");
-        const outputArea      = document.getElementById("translation-text");
-        const clearBtn        = document.getElementById("clear-input");
-        const copyBtn         = document.getElementById("copy-translation-btn");
-        const correctionContainer = document.getElementById("bc-translate-correction-container");
-        const correctionBtn   = document.getElementById("bc-translate-correction");
-        const metaDiv         = document.getElementById("bc-translate-meta");
-        const srcRomaji       = document.getElementById("bc-translate-src-romaji");
-        const tgtRomaji       = document.getElementById("bc-translate-tgt-romaji");
-
-        // --- Custom dropdown logic ---
-        function getLangLabel(langs, value) {
-            const lang = langs.find(l => l.value === value);
-            return lang ? lang.label.split(" (")[0] : value;
+        function closeAllDropdowns() {
+            shadow.querySelectorAll(".bc-dropdown-trigger.active").forEach(t => t.classList.remove("active"));
+            shadow.querySelectorAll(".bc-dropdown-menu.open").forEach(m => m.classList.remove("open"));
         }
 
         function renderMenu(menuEl, langs, currentValue, onSelect) {
             menuEl.innerHTML = buildDropdownItems(langs, currentValue);
             menuEl.querySelectorAll(".bc-dropdown-item").forEach(item => {
-                item.addEventListener("click", () => {
+                item.addEventListener("click", (e) => {
+                    e.stopPropagation();
                     onSelect(item.dataset.value);
                     closeAllDropdowns();
                 });
             });
         }
 
-        function openDropdown(triggerEl, menuEl) {
-            closeAllDropdowns();
-            triggerEl.classList.add("active");
-            menuEl.classList.add("open");
-        }
-
-        function closeAllDropdowns() {
-            document.querySelectorAll(".bc-dropdown-trigger.active").forEach(t => t.classList.remove("active"));
-            document.querySelectorAll(".bc-dropdown-menu.open").forEach(m => m.classList.remove("open"));
-        }
-
         function updateSourceLang(value) {
             sourceLangValue = value;
             sourceLabel.innerText = getLangLabel(LANGUAGES, value);
-            renderMenu(sourceMenu, LANGUAGES, value, updateSourceLang);
+            if (value !== "auto") detectedBadge.innerText = "";
+            renderMenu(sourceMenu, LANGUAGES, value, (v) => {
+                updateSourceLang(v);
+                if (inputArea.value.trim()) doTranslate();
+            });
         }
 
         function updateTargetLang(value) {
             targetLangValue = value;
             targetLabel.innerText = getLangLabel(TARGET_LANGS, value);
+            shadow.querySelectorAll(".bc-quick-lang").forEach(b => {
+                b.classList.toggle("active-quick", b.getAttribute("data-lang") === value);
+            });
             renderMenu(targetMenu, TARGET_LANGS, value, updateTargetLang);
             if (inputArea.value.trim()) doTranslate();
         }
 
-        // Initial render
-        renderMenu(sourceMenu, LANGUAGES, sourceLangValue, (v) => { updateSourceLang(v); if (inputArea.value.trim()) doTranslate(); });
-        renderMenu(targetMenu, TARGET_LANGS, targetLangValue, updateTargetLang);
+        renderMenu(sourceMenu, LANGUAGES, sourceLangValue, (v) => {
+            updateSourceLang(v);
+            if (inputArea.value.trim()) doTranslate();
+        });
+        updateTargetLang(targetLangValue);
 
         sourceTrigger.addEventListener("click", (e) => {
             e.stopPropagation();
             const isOpen = sourceMenu.classList.contains("open");
-            if (isOpen) closeAllDropdowns(); else openDropdown(sourceTrigger, sourceMenu);
+            closeAllDropdowns();
+            if (!isOpen) {
+                sourceTrigger.classList.add("active");
+                sourceMenu.classList.add("open");
+            }
         });
 
         targetTrigger.addEventListener("click", (e) => {
             e.stopPropagation();
             const isOpen = targetMenu.classList.contains("open");
-            if (isOpen) closeAllDropdowns(); else openDropdown(targetTrigger, targetMenu);
+            closeAllDropdowns();
+            if (!isOpen) {
+                targetTrigger.classList.add("active");
+                targetMenu.classList.add("open");
+            }
         });
 
-        // Close dropdowns when clicking outside
         document.addEventListener("click", closeAllDropdowns);
-        popup.addEventListener("click", (e) => e.stopPropagation());
+        popup.addEventListener("click", closeAllDropdowns);
 
-        // --- Swap ---
-        swapBtn.onclick = () => {
-            if (sourceLangValue === "auto") return;
-            const temp = sourceLangValue;
-            updateSourceLang(targetLangValue);
-            updateTargetLang(temp);
-        };
-
-        // --- Clear ---
-        clearBtn.onclick = () => {
-            inputArea.value = "";
-            outputArea.value = "";
-            outputArea.classList.add("bc-output-muted");
-            outputArea.classList.remove("bc-output-active");
-            correctionContainer.classList.add("hidden");
-            metaDiv.classList.add("hidden");
-        };
-
-        // --- Copy ---
-        copyBtn.onclick = async () => {
-            try {
-                await navigator.clipboard.writeText(outputArea.value);
-                const originalHtml = copyBtn.innerHTML;
-                copyBtn.innerHTML = `
-                  <svg class="w-3.5 h-3.5 text-emerald-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7" />
-                  </svg>
-                  <span class="text-emerald-200">Copied!</span>
-                `;
-                setTimeout(() => { copyBtn.innerHTML = originalHtml; }, 1500);
-            } catch (err) {
-                console.error("Failed to copy text", err);
+        // --- Swap (Mendukung swap dari bahasa yang terdeteksi otomatis) ---
+        swapBtn.onclick = (e) => {
+            e.stopPropagation();
+            const effectiveSource = sourceLangValue === "auto" ? (lastDetectedLang || "en") : sourceLangValue;
+            const prevTarget = targetLangValue;
+            updateSourceLang(prevTarget);
+            updateTargetLang(effectiveSource);
+            if (outputArea.value && outputArea.value !== "Translating...") {
+                inputArea.value = outputArea.value;
+                doTranslate();
             }
         };
 
+        // --- Clear ---
+        clearBtn.onclick = (e) => {
+            e.stopPropagation();
+            inputArea.value = "";
+            outputArea.value = "";
+            outputArea.classList.add("bc-output-muted");
+            correctionContainer.classList.add("hidden");
+            metaDiv.classList.add("hidden");
+            detectedBadge.innerText = "";
+            inputArea.focus();
+        };
+
+        // --- Copy ---
+        copyBtn.onclick = async (e) => {
+            e.stopPropagation();
+            if (!outputArea.value || outputArea.value === "Translating...") return;
+            const textToCopy = outputArea.value;
+            const showSuccess = () => {
+                const originalHtml = copyBtn.innerHTML;
+                copyBtn.innerHTML = `<span style="color:#6ee7b7">✓ Copied!</span>`;
+                setTimeout(() => { copyBtn.innerHTML = originalHtml; }, 1400);
+            };
+
+            try {
+                await navigator.clipboard.writeText(textToCopy);
+                showSuccess();
+            } catch (err) {
+                try {
+                    const fallbackInput = document.createElement("textarea");
+                    fallbackInput.value = textToCopy;
+                    fallbackInput.style.position = "fixed";
+                    fallbackInput.style.left = "-9999px";
+                    document.body.appendChild(fallbackInput);
+                    fallbackInput.select();
+                    document.execCommand("copy");
+                    fallbackInput.remove();
+                    showSuccess();
+                } catch (fallbackErr) {
+                    console.error("Failed to copy translation text", fallbackErr);
+                }
+            }
+        };
 
         // --- Quick lang presets ---
-        const quickLangBtns = document.querySelectorAll(".bc-quick-lang");
-        quickLangBtns.forEach(langBtn => {
-            langBtn.onclick = () => {
+        shadow.querySelectorAll(".bc-quick-lang").forEach(langBtn => {
+            langBtn.onclick = (e) => {
+                e.stopPropagation();
                 updateTargetLang(langBtn.getAttribute("data-lang"));
             };
         });
 
-        // --- Translation ---
+        // --- Fungsi Terapkan Koreksi Kata (Fix the Word) ---
+        let currentCorrectionText = "";
+        const applyCorrection = (e) => {
+            e.stopPropagation();
+            if (!currentCorrectionText) return;
+            inputArea.value = currentCorrectionText;
+            correctionContainer.classList.add("hidden");
+            doTranslate();
+        };
+        correctionBtn.onclick = applyCorrection;
+        fixWordBtn.onclick = applyCorrection;
+
+        // --- Ekstraktor Spell Check & Deteksi Bahasa ---
+        function extractGoogleData(data) {
+            let translated = "";
+            let srcRm = "";
+            let tgtRm = "";
+            let spellResult = null;
+            let detectedLang = data[2] || "";
+
+            if (Array.isArray(data[0])) {
+                data[0].forEach(item => {
+                    if (item && item[0]) translated += item[0];
+                });
+                const lastItem = data[0][data[0].length - 1];
+                if (lastItem && lastItem[0] === null) {
+                    tgtRm = lastItem[2] || "";
+                    srcRm = lastItem[3] || "";
+                }
+            }
+
+            // Cek semua kemungkinan indeks koreksi ejaan (data[7] atau data[8])
+            for (const idx of [7, 8]) {
+                if (Array.isArray(data[idx])) {
+                    // Biasanya di [idx][1] (berformat teks bersih) atau [idx][0] (dengan tag <b><i>)
+                    const candidate = data[idx][1] || data[idx][0];
+                    if (typeof candidate === "string" && candidate.trim()) {
+                        spellResult = candidate.replace(/<\/?[^>]+(>|$)/g, "").trim();
+                        break;
+                    }
+                }
+            }
+
+            return { translated, srcRm, tgtRm, spellResult, detectedLang };
+        }
+
+        // --- Translation Core ---
         let debounceTimer;
+        let translateReqId = 0;
+
         const doTranslate = async () => {
             const text = inputArea.value.trim();
             if (!text) {
                 outputArea.value = "";
                 outputArea.classList.add("bc-output-muted");
-                outputArea.classList.remove("bc-output-active");
                 correctionContainer.classList.add("hidden");
                 metaDiv.classList.add("hidden");
+                detectedBadge.innerText = "";
                 return;
             }
-            outputArea.classList.add("bc-output-active");
+
+            const reqId = ++translateReqId;
             outputArea.classList.remove("bc-output-muted");
             outputArea.value = "Translating...";
-            metaDiv.classList.add("hidden");
-            srcRomaji.classList.add("hidden");
-            tgtRomaji.classList.add("hidden");
 
             const sl = sourceLangValue;
             const tl = targetLangValue;
             const q  = encodeURIComponent(text);
 
-            const tryGoogle = async (base) => {
-                const r = await fetch(`${base}/translate_a/single?client=gtx&sl=${sl}&tl=${tl}&dt=t&dt=sp&dt=rm&dt=qca&dt=ss&q=${q}`);
+            // Tambahkan dt=qc dan fallback agar spellcheck & language detection selalu terpancing
+            const tryGoogle = async (base, sourceLang) => {
+                const url = `${base}/translate_a/single?client=gtx&sl=${sourceLang}&tl=${tl}&hl=en&dt=t&dt=bd&dt=rm&dt=qca&dt=qc&dt=sp&dt=ss&q=${q}`;
+                const r = await fetch(url);
                 if (!r.ok) throw new Error(`HTTP ${r.status}`);
                 return r.json();
             };
 
             const tryGoogleDict = async () => {
-                // Chrome dict endpoint
-                const r = await fetch(`https://clients5.google.com/translate_a/t?client=dict-chrome-ex&sl=${sl}&tl=${tl}&dt=t&dt=rm&dt=sp&q=${q}`);
+                const r = await fetch(`https://clients5.google.com/translate_a/t?client=dict-chrome-ex&sl=${sl}&tl=${tl}&dt=t&dt=rm&dt=sp&dt=qc&q=${q}`);
                 if (!r.ok) throw new Error(`HTTP ${r.status}`);
                 const d = await r.json();
                 if (d.sentences) {
@@ -668,111 +782,105 @@
                         if (s.src_translit) sRm = s.src_translit;
                         if (s.translit) tRm = s.translit;
                     });
-                    let spell = d.spell && d.spell.spell_res ? d.spell.spell_res : null;
-                    return { translated: t, srcRomaji: sRm, tgtRomaji: tRm, spell: spell };
+                    let spell = d.spell && (d.spell.spell_res || d.spell.spell_html_res)
+                        ? (d.spell.spell_res || d.spell.spell_html_res).replace(/<\/?[^>]+(>|$)/g, "").trim()
+                        : null;
+                    return { translated: t, srcRm: sRm, tgtRm: tRm, spellResult: spell, detectedLang: d.src || "" };
                 }
                 throw new Error("dict: unexpected format");
             };
 
-            const tryMyMemory = async () => {
-                const r = await fetch(`https://api.mymemory.translated.net/get?q=${q}&langpair=${sl}|${tl}`);
-                if (!r.ok) throw new Error(`HTTP ${r.status}`);
-                const mm = await r.json();
-                if (mm.responseStatus !== 200) throw new Error("MyMemory: " + mm.responseStatus);
-                return { translated: mm.responseData.translatedText, srcRomaji: "", tgtRomaji: "", spell: null };
-            };
-
             try {
-                let translated = "";
-                let srcRm = "";
-                let tgtRm = "";
-                let spellResult = null;
+                let res = null;
+                let rawData = null;
 
-                // Try Google first
-                let googleData = null;
-                try { googleData = await tryGoogle("https://translate.googleapis.com"); } catch (_) {}
-                if (!googleData) {
-                    try { googleData = await tryGoogle("https://translate.google.com"); } catch (_) {}
+                try { rawData = await tryGoogle("https://translate.googleapis.com", sl); } catch (_) {}
+                if (!rawData) {
+                    try { rawData = await tryGoogle("https://translate.google.com", sl); } catch (_) {}
                 }
 
-                if (googleData && googleData[0]) {
-                    googleData[0].forEach(item => { if (item[0]) translated += item[0]; });
-                    const lastItem = googleData[0][googleData[0].length - 1];
-                    if (lastItem && lastItem[0] === null) {
-                        tgtRm = lastItem[2] || "";
-                        srcRm = lastItem[3] || "";
+                if (rawData) {
+                    res = extractGoogleData(rawData);
+                    // Jika hasil terjemahan sama persis dengan input (gejala typo yang gagal diterjemahkan saat sl !== 'auto'),
+                    // pancing ulang dengan sl=auto untuk memaksa spell-checker Google keluar
+                    if (!res.spellResult && sl !== "auto" && res.translated.toLowerCase() === text.toLowerCase()) {
+                        try {
+                            const retryAuto = await tryGoogle("https://translate.googleapis.com", "auto");
+                            const autoExtracted = extractGoogleData(retryAuto);
+                            if (autoExtracted.spellResult) res.spellResult = autoExtracted.spellResult;
+                            if (autoExtracted.detectedLang) res.detectedLang = autoExtracted.detectedLang;
+                        } catch (_) {}
                     }
-                    if (googleData[7] && googleData[7][1]) spellResult = googleData[7][1];
-                    else if (googleData[8] && googleData[8][1]) spellResult = googleData[8][1];
                 } else {
-                    // Try Chrome dict endpoint
-                    try { 
-                        const res = await tryGoogleDict(); 
-                        translated = res.translated;
-                        srcRm = res.srcRomaji;
-                        tgtRm = res.tgtRomaji;
-                        spellResult = res.spell;
-                    } catch (_) {}
-                    
-                    if (!translated) {
-                        const res = await tryMyMemory();
-                        translated = res.translated;
+                    res = await tryGoogleDict();
+                }
+
+                if (reqId !== translateReqId) return; // Abaikan response lama jika user masih mengetik
+
+                // Tampilkan Detected Language jika berhasil dideteksi
+                if (res.detectedLang) {
+                    lastDetectedLang = res.detectedLang;
+                    const langName = getLangLabel(LANGUAGES, res.detectedLang);
+                    if (sourceLangValue === "auto") {
+                        detectedBadge.innerText = `Detected: ${langName}`;
+                        sourceLabel.innerText = `Auto (${langName})`;
+                    } else if (res.detectedLang.toLowerCase() !== sourceLangValue.toLowerCase() && text.split(/\s+/).length >= 2) {
+                        detectedBadge.innerText = `Detected: ${langName}`;
+                    } else {
+                        detectedBadge.innerText = "";
                     }
                 }
 
-                if (spellResult) {
-                    spellResult = spellResult.replace(/<\/?b>/gi, ""); // Clean up bold tags
+                // Tampilkan "Did you mean" (Fix the Word) jika ada saran ejaan
+                if (res.spellResult && res.spellResult.toLowerCase() !== text.toLowerCase()) {
+                    currentCorrectionText = res.spellResult;
+                    correctionBtn.innerText = res.spellResult;
                     correctionContainer.classList.remove("hidden");
-                    correctionBtn.innerText = spellResult;
                 } else {
+                    currentCorrectionText = "";
                     correctionContainer.classList.add("hidden");
                 }
 
-                if (srcRm || tgtRm) {
+                // Romaji / Transliteration
+                if (res.srcRm || res.tgtRm) {
                     metaDiv.classList.remove("hidden");
-                    metaDiv.style.display = "flex";
-                    if (srcRm) {
+                    if (res.srcRm) {
                         srcRomaji.classList.remove("hidden");
-                        srcRomaji.innerHTML = `Read (Source): <span class="text-purple-300">${srcRm}</span>`;
+                        srcRomaji.innerHTML = `Read (Source): <span class="romaji-val">${res.srcRm}</span>`;
                     } else {
                         srcRomaji.classList.add("hidden");
                     }
-                    
-                    if (tgtRm) {
+                    if (res.tgtRm) {
                         tgtRomaji.classList.remove("hidden");
-                        tgtRomaji.innerHTML = `Read (Target): <span class="text-purple-300">${tgtRm}</span>`;
+                        tgtRomaji.innerHTML = `Read (Target): <span class="romaji-val">${res.tgtRm}</span>`;
                     } else {
                         tgtRomaji.classList.add("hidden");
                     }
                 } else {
                     metaDiv.classList.add("hidden");
-                    srcRomaji.classList.add("hidden");
-                    tgtRomaji.classList.add("hidden");
                 }
 
-                outputArea.value = translated || "(empty)";
+                outputArea.value = res.translated || "(empty)";
             } catch (err) {
+                if (reqId !== translateReqId) return;
                 outputArea.value = "Error: " + (err.message || "Failed to translate.");
-                console.error("[translate]", err);
             }
         };
 
         inputArea.addEventListener("input", () => {
             clearTimeout(debounceTimer);
-            debounceTimer = setTimeout(doTranslate, 500);
+            debounceTimer = setTimeout(doTranslate, 400);
         });
 
-        correctionBtn.onclick = () => {
-            inputArea.value = correctionBtn.innerText;
-            correctionContainer.classList.add("hidden");
-            doTranslate();
+        // --- Window controls ---
+        closeBtn.onclick = (e) => {
+            e.stopPropagation();
+            popup.style.display = "none";
         };
 
-        // --- Window controls ---
-        closeBtn.onclick = () => { popup.style.display = "none"; };
-
         let isMinimized = false;
-        minimizeBtn.onclick = () => {
+        minimizeBtn.onclick = (e) => {
+            e.stopPropagation();
             isMinimized = !isMinimized;
             bodySection.style.display = isMinimized ? "none" : "flex";
         };
@@ -789,16 +897,15 @@
                 if (Math.abs(dx) > 3 || Math.abs(dy) > 3) btnMoved = true;
                 btn.style.left = `${btnInitX + dx}px`;
                 btn.style.top  = `${btnInitY + dy}px`;
-                btn.style.bottom = "auto"; btn.style.right = "auto";
             } else if (popupDragging) {
                 popup.style.left = `${popupInitX + dx}px`;
                 popup.style.top  = `${popupInitY + dy}px`;
-                popup.style.bottom = "auto"; popup.style.right = "auto";
             }
         };
 
         const onMouseUp = () => {
-            btnDragging = false; popupDragging = false;
+            btnDragging = false;
+            popupDragging = false;
             document.removeEventListener("mousemove", onMouseMove);
             document.removeEventListener("mouseup", onMouseUp);
             document.removeEventListener("touchmove", onMouseMove);
@@ -806,11 +913,14 @@
         };
 
         const onStartDragBtn = (e) => {
-            btnDragging = true; btnMoved = false;
+            btnDragging = true;
+            btnMoved = false;
             const pos = (e.touches && e.touches[0]) ? e.touches[0] : e;
-            startX = pos.clientX; startY = pos.clientY;
-            btnInitX = parseInt(btn.style.left, 10) || 0;
-            btnInitY = parseInt(btn.style.top, 10)  || 0;
+            startX = pos.clientX;
+            startY = pos.clientY;
+            const rect = btn.getBoundingClientRect();
+            btnInitX = rect.left;
+            btnInitY = rect.top;
             document.addEventListener("mousemove", onMouseMove);
             document.addEventListener("mouseup", onMouseUp);
             document.addEventListener("touchmove", onMouseMove, { passive: false });
@@ -824,9 +934,11 @@
             if (e.target.closest("button")) return;
             popupDragging = true;
             const pos = (e.touches && e.touches[0]) ? e.touches[0] : e;
-            startX = pos.clientX; startY = pos.clientY;
-            popupInitX = parseInt(popup.style.left, 10) || 0;
-            popupInitY = parseInt(popup.style.top, 10)  || 0;
+            startX = pos.clientX;
+            startY = pos.clientY;
+            const rect = popup.getBoundingClientRect();
+            popupInitX = rect.left;
+            popupInitY = rect.top;
             document.addEventListener("mousemove", onMouseMove);
             document.addEventListener("mouseup", onMouseUp);
             document.addEventListener("touchmove", onMouseMove, { passive: false });
@@ -838,16 +950,16 @@
 
         btn.onclick = (e) => {
             if (btnMoved) { e.preventDefault(); return; }
-            if (popup.style.display === "none") {
-                popup.style.display = "flex";
-                inputArea.focus();
+            if (popup.style.display === "none" || !popup.style.display) {
+                popup.style.display = "block";
+                setTimeout(() => inputArea.focus(), 50);
             } else {
                 popup.style.display = "none";
             }
         };
 
         window.addEventListener("keydown", (e) => {
-            if ((e.key === "Escape" || e.keyCode === 27) && popup.style.display !== "none") {
+            if ((e.key === "Escape" || e.keyCode === 27) && popup.style.display === "block") {
                 popup.style.display = "none";
                 e.stopPropagation();
             }
