@@ -50,6 +50,7 @@
         enableLceModLoader: false,
         enableFluidColor: false,
         fluidColor: "#547A82",
+        persistentWhisper: true,
     };
     try {
         const saved = localStorage.getItem("BCDesktop_ChatQoL_Config");
@@ -61,6 +62,9 @@
                 defaultEmo,
                 parsed.emoticons || {},
             );
+            if (qolConfig.persistentWhisper === undefined) {
+                qolConfig.persistentWhisper = true;
+            }
         }
     } catch (e) {}
     
@@ -738,6 +742,14 @@
     );
 
     const cat3 = createCategory("Utilities & Animations", false);
+
+    cat3.body.appendChild(
+        createToggle(
+            "persistentWhisper",
+            "Persistent Whisper Focus",
+            "Keeps whisper focus locked after replying so conversations don't leak to public chat. Press Esc or /p to exit.",
+        ),
+    );
 
     cat3.body.appendChild(
         createToggle(
@@ -1509,7 +1521,7 @@
                                     [/^(?:o[._x]o)$/i, { Eyes: 'Surprised', Mouth: 'HalfOpen', Eyebrows: 'Raised' }, 'emoSurprisedO'],
                                     [/^x[_.]?x$/i, { Eyes: 'Dazed', Mouth: 'Sad' }, 'emoDazed'],
                                     [/^@[_.,~-]*@$/, { Eyes: 'Crazy', Mouth: 'Sad' }, 'emoCrazy'],
-                                    [/^(?:>[.,~_]>|<[.,~_]<)$/, { Eyes: 'Dazed', Eyebrows: 'Harsh', Mouth: 'Sad' }, 'emoDazed'],
+                                    [/^(?:>+[.,~_]*>+|<+[.,~_]*<+)$/, { Eyes: 'Dazed', Eyebrows: 'Harsh', Mouth: 'Sad' }, 'emoDazed'],
                                     [/^(?:==|=[_]=|[xq]_[xq]|o_o)$/i, { Eyes: 'Horny' }, 'emoHorny'],
                                     [/^;[pd3>\]]$/i, { Eyes: null, Eyes1: 'Closed', Mouth: 'Ahegao' }, 'emoWink'],
                                     [/^:[pd3>\]]$/i, { Eyes: null, Mouth: 'Ahegao' }, 'emoWink'],
@@ -2635,7 +2647,7 @@
                     Event: "CloseMouth",
                     Keywords: "闭上嘴|Close Mouth|CloseMouth|吞咽口水|Swallow",
                 },
-                { Event: "Spank", Keywords: "拍打|打屁股|Spank|Flick|Bap" },
+                { Event: "Spank", Keywords: "拍打|打屁股|轻拍|轻弹|扇耳光|Spank|Slap|Flick|Bap" },
                 { Event: "Cuddle", Keywords: "拥抱|贴贴|抱|Cuddle|Hug" },
                 { Event: "Pinch", Keywords: "掐|拧|掐住|拧住|Pinch" },
                 { Event: "Hit", Keywords: "Hit" },
@@ -2745,7 +2757,7 @@
 
             const soundMappings = [
                 {
-                    Keywords: "拍打|打屁股|Spank|Flick|Bap|Slap|扇耳光",
+                    Keywords: "拍打|打屁股|轻拍|轻弹|扇耳光|Spank|Flick|Bap|Slap",
                     Sound: "SpankSkin"
                 },
                 {
@@ -2844,4 +2856,145 @@
             };
         }
     })();
+
+    // Persistent Whisper Focus
+    (function () {
+        if (window._bcPersistentWhisperLoaded) return;
+        window._bcPersistentWhisperLoaded = true;
+
+        function lockWhisperTarget(memberNumber) {
+            if (qolConfig.persistentWhisper === false) return;
+            if (typeof memberNumber !== "number" || isNaN(memberNumber) || memberNumber < 0) return;
+
+            if (typeof window.ChatRoomSetTarget === "function") {
+                window.ChatRoomSetTarget(memberNumber);
+            } else {
+                window.ChatRoomTargetMemberNumber = memberNumber;
+            }
+        }
+
+        function unlockWhisperTarget() {
+            if (typeof window.ChatRoomSetTarget === "function") {
+                window.ChatRoomSetTarget(-1);
+            } else {
+                window.ChatRoomTargetMemberNumber = -1;
+            }
+
+            if (typeof window.ChatRoomMessageReplyStop === "function") {
+                window.ChatRoomMessageReplyStop();
+            }
+        }
+
+        function initHooks() {
+            if (typeof window.ChatRoomMessageSetReply === "function" && !window.ChatRoomMessageSetReply._pwHooked) {
+                const origSetReply = window.ChatRoomMessageSetReply;
+                window.ChatRoomMessageSetReply = function (msgId) {
+                    origSetReply.apply(this, arguments);
+
+                    if (qolConfig.persistentWhisper === false) return;
+                    try {
+                        const isWhisper = typeof window.ChatRoomMessageGetType === "function"
+                            ? window.ChatRoomMessageGetType(msgId) === "Whisper"
+                            : false;
+
+                        if (isWhisper) {
+                            const replyMsg = typeof window.ChatRoomMessageGetById === "function"
+                                ? window.ChatRoomMessageGetById(msgId)
+                                : null;
+
+                            if (replyMsg) {
+                                const sender = Number(replyMsg.getAttribute("data-sender"));
+                                const target = Number(replyMsg.getAttribute("data-target"));
+                                const myNumber = typeof window.Player !== "undefined" && window.Player ? window.Player.MemberNumber : -1;
+                                const receiver = (sender === myNumber && !isNaN(target) && target >= 0) ? target : sender;
+
+                                if (!isNaN(receiver) && receiver >= 0) {
+                                    lockWhisperTarget(receiver);
+                                }
+                            }
+                        }
+                    } catch (e) {
+                        console.error("[ChatQoL] Error in Persistent Whisper Reply hook", e);
+                    }
+                };
+                window.ChatRoomMessageSetReply._pwHooked = true;
+            }
+
+            if (typeof window.ChatRoomMessageNameClick === "function" && !window.ChatRoomMessageNameClick._pwHooked) {
+                const origNameClick = window.ChatRoomMessageNameClick;
+                window.ChatRoomMessageNameClick = function () {
+                    origNameClick.apply(this, arguments);
+
+                    if (qolConfig.persistentWhisper === false) return;
+                    try {
+                        const sender = Number.parseInt(this.parentElement?.dataset.sender, 10);
+                        const target = Number.parseInt(this.parentElement?.dataset.target, 10);
+                        const myNumber = typeof window.Player !== "undefined" && window.Player ? window.Player.MemberNumber : -1;
+                        const receiver = (sender === myNumber && !isNaN(target) && target >= 0) ? target : sender;
+
+                        if (!isNaN(receiver) && receiver >= 0) {
+                            lockWhisperTarget(receiver);
+                        }
+                    } catch (e) {
+                        console.error("[ChatQoL] Error in Persistent Whisper NameClick hook", e);
+                    }
+                };
+                window.ChatRoomMessageNameClick._pwHooked = true;
+            }
+
+            if (typeof window.ChatRoomSendWhisper === "function" && !window.ChatRoomSendWhisper._pwHooked) {
+                const origSendWhisper = window.ChatRoomSendWhisper;
+                window.ChatRoomSendWhisper = function (targetNumber, msg) {
+                    const res = origSendWhisper.apply(this, arguments);
+
+                    if (qolConfig.persistentWhisper !== false && res === true && typeof targetNumber === "number" && targetNumber >= 0) {
+                        lockWhisperTarget(targetNumber);
+                    }
+
+                    return res;
+                };
+                window.ChatRoomSendWhisper._pwHooked = true;
+            }
+
+            if (typeof window.CommandParse === "function" && !window.CommandParse._pwHooked) {
+                const origCommandParse = window.CommandParse;
+                window.CommandParse = function (msg) {
+                    if (qolConfig.persistentWhisper !== false && typeof msg === "string") {
+                        const cmd = msg.trim().toLowerCase();
+                        if (cmd === "/p" || cmd === "/public" || cmd === "/all") {
+                            unlockWhisperTarget();
+                            return true;
+                        }
+                    }
+                    return origCommandParse.apply(this, arguments);
+                };
+                window.CommandParse._pwHooked = true;
+            }
+
+            document.addEventListener("keydown", function (e) {
+                if (qolConfig.persistentWhisper === false) return;
+                if (e.key === "Escape") {
+                    if (typeof window.CurrentScreen !== "undefined" && window.CurrentScreen === "ChatRoom") {
+                        if (window.ChatRoomTargetMemberNumber != null && window.ChatRoomTargetMemberNumber >= 0) {
+                            unlockWhisperTarget();
+                        }
+                    }
+                }
+            }, true);
+        }
+
+        const interval = setInterval(() => {
+            if (
+                typeof window.ChatRoomSendWhisper === "function" &&
+                typeof window.ChatRoomSetTarget === "function" &&
+                typeof window.ChatRoomMessageSetReply === "function"
+            ) {
+                clearInterval(interval);
+                initHooks();
+            }
+        }, 400);
+
+        setTimeout(() => clearInterval(interval), 30000);
+    })();
 })();
+
