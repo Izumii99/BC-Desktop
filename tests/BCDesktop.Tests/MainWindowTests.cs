@@ -126,6 +126,17 @@ public class MainWindowTests
     }
 
     [TestMethod]
+    public void ExternalLinks_DelegatedToDefaultBrowser()
+    {
+        string csPath = Path.Combine(ProjectRoot, "MainWindow.xaml.cs");
+        string code = File.ReadAllText(csPath);
+
+        StringAssert.Contains(code, "core.NewWindowRequested +=", "NewWindowRequested must be hooked to intercept popup links.");
+        StringAssert.Contains(code, "args.Handled = true", "New window popup must be marked handled.");
+        StringAssert.Contains(code, "UseShellExecute = true", "External links must be opened via system shell.");
+    }
+
+    [TestMethod]
     public void UnfocusedFpsCap_IsInMemoryAndRestored()
     {
         StringAssert.Contains(MainWindow.CapUnfocusedFpsScript, "MaxUnfocusedFPS=15");
@@ -606,6 +617,9 @@ public class MainWindowTests
         StringAssert.Contains(mainJs, "bc-tint-input", "Linux main.js must include bc-tint-input focus guards.");
         StringAssert.Contains(mainJs, "fieldset[name=\"color-picker\"]", "Linux main.js must protect color picker from focus stealing.");
         StringAssert.Contains(mainJs, "force-gpu-mem-available-mb", "Linux main.js must cap VRAM like Windows.");
+        StringAssert.Contains(mainJs, "disable-notifications", "Linux main.js must disable notifications like Windows.");
+        StringAssert.Contains(mainJs, "max-gum-fps", "Linux main.js must cap fps like Windows.");
+        StringAssert.Contains(mainJs, "setWindowOpenHandler", "Linux main.js must delegate external links to default browser.");
         StringAssert.Contains(mainJs, "KeyC", "Linux main.js must handle physical Ctrl+KeyC.");
         Assert.IsFalse(mainJs.Contains("protocol.handle('http'"), "Intercepting all http traffic is not allowed; local scripts are injected directly like Windows.");
         Assert.IsFalse(mainJs.Contains("clearCache("), "Wiping the HTTP cache on minimize forces game assets to re-download.");

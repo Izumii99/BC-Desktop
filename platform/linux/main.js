@@ -1,4 +1,4 @@
-const { app, BrowserWindow, Menu, session, dialog, clipboard } = require('electron');
+const { app, BrowserWindow, Menu, session, dialog, clipboard, shell } = require('electron');
 const path = require('path');
 const fs = require('fs');
 
@@ -53,7 +53,9 @@ app.commandLine.appendSwitch('disable-background-networking');
 app.commandLine.appendSwitch('disable-component-update');
 app.commandLine.appendSwitch('disable-domain-reliability');
 app.commandLine.appendSwitch('disable-sync');
+app.commandLine.appendSwitch('disable-notifications');
 app.commandLine.appendSwitch('no-pings');
+app.commandLine.appendSwitch('max-gum-fps', '60');
 app.commandLine.appendSwitch('gpu-rasterization-msaa-sample-count', '0');
 app.commandLine.appendSwitch('enable-features', 'PurgeRendererMemoryWhenBackgrounded,IntensiveWakeUpThrottling');
 app.commandLine.appendSwitch('force-gpu-mem-available-mb', '192');
@@ -694,6 +696,7 @@ let deactivationTimeout = null;
 let recentCrashCount = 0;
 let lastCrashTime = 0;
 let forceQuit = false;
+let scriptsInjectedForCurrentPage = false;
 
 function cancelDeactivation() {
     if (deactivationTimeout) {
@@ -704,6 +707,8 @@ function cancelDeactivation() {
 
 function injectScripts() {
     if (!mainWindow || mainWindow.isDestroyed()) return;
+    if (scriptsInjectedForCurrentPage) return;
+    scriptsInjectedForCurrentPage = true;
 
     // 1. Guard against undefined pidx ReferenceError
     mainWindow.webContents.executeJavaScript(
@@ -813,12 +818,28 @@ function createWindow() {
     Menu.setApplicationMenu(null);
     mainWindow.webContents.on('context-menu', (e) => e.preventDefault());
 
-    // Lock zoom levels to prevent accidental Ctrl+Scroll or pinch-zoom changes
-    mainWindow.webContents.on('did-finish-load', () => {
+    // Delegate external links to the default web browser instead of opening blank child windows
+    mainWindow.webContents.setWindowOpenHandler(({ url }) => {
+        if (url.startsWith('http:') || url.startsWith('https:')) {
+            shell.openExternal(url);
+        }
+        return { action: 'deny' };
+    });
+
+    // Lock zoom levels and inject scripts promptly on DOM ready and finish load
+    const setupPage = () => {
+        if (!mainWindow || mainWindow.isDestroyed()) return;
         mainWindow.webContents.setZoomFactor(1.0);
         mainWindow.webContents.setVisualZoomLevelLimits(1, 1);
         injectScripts();
+    };
+    mainWindow.webContents.on('did-start-navigation', (event, url, isInPlace, isMainFrame) => {
+        if (isMainFrame && !isInPlace) {
+            scriptsInjectedForCurrentPage = false;
+        }
     });
+    mainWindow.webContents.on('dom-ready', setupPage);
+    mainWindow.webContents.on('did-finish-load', setupPage);
 
     // Automatically grant clipboard permissions matching WebView2
     session.defaultSession.setPermissionRequestHandler((webContents, permission, callback) => {
@@ -937,7 +958,7 @@ function createWindow() {
     // Auto-recovery if navigating into a 404 dead page
     mainWindow.webContents.on('did-navigate', (event, url, httpResponseCode) => {
         if (httpResponseCode === 404 && url !== lastKnownGoodUrl) {
-            mainWindow.loadURL(lastKnownGoodUrl);
+            mainWindow.loadURL(lastKnownGoodUrl).catch(() => {});
         }
     });
 
@@ -968,11 +989,11 @@ function createWindow() {
 
     resolveGameUrl().then(url => {
         if (mainWindow && !mainWindow.isDestroyed()) {
-            mainWindow.loadURL(url);
+            mainWindow.loadURL(url).catch(() => {});
         }
     }).catch(() => {
         if (mainWindow && !mainWindow.isDestroyed()) {
-            mainWindow.loadURL(lastKnownGoodUrl);
+            mainWindow.loadURL(lastKnownGoodUrl).catch(() => {});
         }
     });
 }

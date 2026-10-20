@@ -644,6 +644,22 @@ public partial class MainWindow : Window
                 args.State = CoreWebView2PermissionState.Allow;
             }
         };
+        core.NewWindowRequested += (s, args) =>
+        {
+            args.Handled = true;
+            if (!string.IsNullOrEmpty(args.Uri) && (args.Uri.StartsWith("http://", StringComparison.OrdinalIgnoreCase) || args.Uri.StartsWith("https://", StringComparison.OrdinalIgnoreCase)))
+            {
+                try
+                {
+                    Process.Start(new ProcessStartInfo
+                    {
+                        FileName = args.Uri,
+                        UseShellExecute = true
+                    });
+                }
+                catch { }
+            }
+        };
 
         core.WebMessageReceived += (s, args) =>
         {
