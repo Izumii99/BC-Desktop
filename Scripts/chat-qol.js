@@ -1521,7 +1521,7 @@
                                     [/^(?:o[._x]o)$/i, { Eyes: 'Surprised', Mouth: 'HalfOpen', Eyebrows: 'Raised' }, 'emoSurprisedO'],
                                     [/^x[_.]?x$/i, { Eyes: 'Dazed', Mouth: 'Sad' }, 'emoDazed'],
                                     [/^@[_.,~-]*@$/, { Eyes: 'Crazy', Mouth: 'Sad' }, 'emoCrazy'],
-                                    [/^(?:>+[.,~_]*>+|<+[.,~_]*<+)$/, { Eyes: 'Dazed', Eyebrows: 'Harsh', Mouth: 'Sad' }, 'emoDazed'],
+                                    [/^(?:>[.,~_]{1,2}>|<[.,~_]{1,2}<|>{2,3}|<{2,3})$/, { Eyes: 'Dazed', Eyebrows: 'Harsh', Mouth: 'Sad' }, 'emoDazed'],
                                     [/^(?:==|=[_]=|[xq]_[xq]|o_o)$/i, { Eyes: 'Horny' }, 'emoHorny'],
                                     [/^;[pd3>\]]$/i, { Eyes: null, Eyes1: 'Closed', Mouth: 'Ahegao' }, 'emoWink'],
                                     [/^:[pd3>\]]$/i, { Eyes: null, Mouth: 'Ahegao' }, 'emoWink'],
@@ -2666,7 +2666,15 @@
             for (const m of mappings) {
                 const processedKeywords = m.Keywords.split('|').map(k => {
                     if (/^[a-z\s]+$/i.test(k)) {
-                        return `(?<=^|[^a-z])(?:${k})(?:s|es|ed|ing)?(?=$|[^a-z])`;
+                        const trimmed = k.trim();
+                        if (/^bite$/i.test(trimmed)) {
+                            return `(?<=^|[^a-z0-9])(?:Bit(?:e|es|ing|ten)?)(?=$|[^a-z0-9])`;
+                        }
+                        if (/e$/i.test(trimmed)) {
+                            const stem = trimmed.slice(0, -1);
+                            return `(?<=^|[^a-z0-9])(?:${stem}(?:e|es|ed|ing)|${trimmed})(?=$|[^a-z0-9])`;
+                        }
+                        return `(?<=^|[^a-z0-9])(?:${trimmed})(?:s|es|ed|ing)?(?=$|[^a-z0-9])`;
                     }
                     return k;
                 }).join('|');
@@ -2766,7 +2774,12 @@
             for (const m of soundMappings) {
                 const processedKeywords = m.Keywords.split('|').map(k => {
                     if (/^[a-z\s]+$/i.test(k)) {
-                        return `(?<=^|[^a-z])(?:${k})(?:s|es|ed|ing)?(?=$|[^a-z])`;
+                        const trimmed = k.trim();
+                        if (/e$/i.test(trimmed)) {
+                            const stem = trimmed.slice(0, -1);
+                            return `(?<=^|[^a-z0-9])(?:${stem}(?:e|es|ed|ing)|${trimmed})(?=$|[^a-z0-9])`;
+                        }
+                        return `(?<=^|[^a-z0-9])(?:${trimmed})(?:s|es|ed|ing)?(?=$|[^a-z0-9])`;
                     }
                     return k;
                 }).join('|');
@@ -2855,6 +2868,16 @@
             if (qolConfig.persistentWhisper === false) return;
             if (typeof memberNumber !== "number" || isNaN(memberNumber) || memberNumber < 0) return;
 
+            // Do not lock onto self
+            const myNumber = typeof window.Player !== "undefined" && window.Player ? window.Player.MemberNumber : -1;
+            if (memberNumber === myNumber) return;
+
+            // Validate that target is still present in the room
+            if (typeof window.ChatRoomCharacter !== "undefined" && Array.isArray(window.ChatRoomCharacter)) {
+                const inRoom = window.ChatRoomCharacter.some(c => c && c.MemberNumber === memberNumber);
+                if (!inRoom) return;
+            }
+
             if (typeof window.ChatRoomSetTarget === "function") {
                 window.ChatRoomSetTarget(memberNumber);
             } else {
@@ -2871,6 +2894,15 @@
 
             if (typeof window.ChatRoomMessageReplyStop === "function") {
                 window.ChatRoomMessageReplyStop();
+            }
+
+            // Strip prefilled /whisper or /w command while preserving the message body typed by user
+            const input = document.getElementById("InputChat");
+            if (input && typeof input.value === "string") {
+                const stripped = input.value.replace(/^\/(?:whisper|w)\s+\d+\s*/i, "");
+                if (stripped !== input.value) {
+                    input.value = stripped;
+                }
             }
         }
 
@@ -2936,8 +2968,17 @@
                 window.ChatRoomSendWhisper = function (targetNumber, msg) {
                     const res = origSendWhisper.apply(this, arguments);
 
-                    if (qolConfig.persistentWhisper !== false && res === true && typeof targetNumber === "number" && targetNumber >= 0) {
-                        lockWhisperTarget(targetNumber);
+                    if (qolConfig.persistentWhisper !== false) {
+                        if (res === true && typeof targetNumber === "number" && targetNumber >= 0) {
+                            lockWhisperTarget(targetNumber);
+                        } else if (res === false && typeof targetNumber === "number" && targetNumber >= 0) {
+                            if (typeof window.ChatRoomCharacter !== "undefined" && Array.isArray(window.ChatRoomCharacter)) {
+                                const inRoom = window.ChatRoomCharacter.some(c => c && c.MemberNumber === targetNumber);
+                                if (!inRoom && typeof window.ChatRoomSendLocal === "function") {
+                                    window.ChatRoomSendLocal(`<div style="color: #ff6b81; font-style: italic;">Target is no longer in the room. Press Esc or type /p to return to public chat.</div>`);
+                                }
+                            }
+                        }
                     }
 
                     return res;
@@ -2949,9 +2990,18 @@
                 const origCommandParse = window.CommandParse;
                 window.CommandParse = function (msg) {
                     if (qolConfig.persistentWhisper !== false && typeof msg === "string") {
-                        const cmd = msg.trim().toLowerCase();
-                        if (cmd === "/p" || cmd === "/public" || cmd === "/all") {
+                        const raw = msg.trim();
+                        const lower = raw.toLowerCase();
+                        if (lower === "/p" || lower === "/public" || lower === "/all") {
                             unlockWhisperTarget();
+                            return true;
+                        }
+                        const match = raw.match(/^\/(?:p|public|all)\s+(.+)$/i);
+                        if (match) {
+                            unlockWhisperTarget();
+                            if (typeof window.ChatRoomSendChat === "function") {
+                                window.ChatRoomSendChat(match[1]);
+                            }
                             return true;
                         }
                     }
@@ -2964,7 +3014,7 @@
                 if (qolConfig.persistentWhisper === false) return;
                 if (e.key === "Escape") {
                     if (typeof window.CurrentScreen !== "undefined" && window.CurrentScreen === "ChatRoom") {
-                        if (window.ChatRoomTargetMemberNumber != null && window.ChatRoomTargetMemberNumber >= 0) {
+                        if (e.target?.id === "InputChat" && window.ChatRoomTargetMemberNumber != null && window.ChatRoomTargetMemberNumber >= 0) {
                             unlockWhisperTarget();
                         }
                     }
