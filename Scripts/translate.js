@@ -638,12 +638,10 @@
             }
         });
 
-        // Cegah kebocoran event dari dalam panel translate ke canvas game atau focus crawler document
-        ["mousedown", "mouseup", "pointerdown", "pointerup"].forEach(evt => {
-            popup.addEventListener(evt, (e) => {
-                e.stopPropagation();
-                registerTranslateFocus();
-            });
+        // Cegah kebocoran event mousedown & click dari dalam panel translate ke canvas game
+        popup.addEventListener("mousedown", (e) => {
+            e.stopPropagation();
+            registerTranslateFocus();
         });
         popup.addEventListener("click", (e) => {
             e.stopPropagation();
@@ -919,11 +917,15 @@
             const dx = pos.clientX - startX;
             const dy = pos.clientY - startY;
             if (btnDragging) {
-                if (Math.abs(dx) > 3 || Math.abs(dy) > 3) btnMoved = true;
-                const newX = Math.max(0, Math.min(btnInitX + dx, window.innerWidth - btn.offsetWidth));
-                const newY = Math.max(0, Math.min(btnInitY + dy, window.innerHeight - btn.offsetHeight));
-                btn.style.left = `${newX}px`;
-                btn.style.top  = `${newY}px`;
+                if (!btnMoved && (Math.abs(dx) > 6 || Math.abs(dy) > 6)) {
+                    btnMoved = true;
+                }
+                if (btnMoved) {
+                    const newX = Math.max(0, Math.min(btnInitX + dx, window.innerWidth - btn.offsetWidth));
+                    const newY = Math.max(0, Math.min(btnInitY + dy, window.innerHeight - btn.offsetHeight));
+                    btn.style.left = `${newX}px`;
+                    btn.style.top  = `${newY}px`;
+                }
             } else if (popupDragging) {
                 const newX = Math.max(0, Math.min(popupInitX + dx, window.innerWidth - popup.offsetWidth));
                 const newY = Math.max(0, Math.min(popupInitY + dy, window.innerHeight - popup.offsetHeight));
@@ -935,14 +937,17 @@
         const onMouseUp = () => {
             btnDragging = false;
             popupDragging = false;
+            window.removeEventListener("mousemove", onMouseMove, true);
+            window.removeEventListener("mouseup", onMouseUp, true);
             document.removeEventListener("mousemove", onMouseMove);
             document.removeEventListener("mouseup", onMouseUp);
             document.removeEventListener("touchmove", onMouseMove);
             document.removeEventListener("touchend", onMouseUp);
+            setTimeout(() => { btnMoved = false; }, 60);
         };
 
         const onStartDragBtn = (e) => {
-            if (e.stopPropagation) e.stopPropagation();
+            if (e.button !== undefined && e.button !== 0) return;
             btnDragging = true;
             btnMoved = false;
             const pos = (e.touches && e.touches[0]) ? e.touches[0] : e;
@@ -950,29 +955,26 @@
             startY = pos.clientY;
             btnInitX = btn.offsetLeft;
             btnInitY = btn.offsetTop;
-            document.addEventListener("mousemove", onMouseMove);
-            document.addEventListener("mouseup", onMouseUp);
+            window.addEventListener("mousemove", onMouseMove, { capture: true, passive: true });
+            window.addEventListener("mouseup", onMouseUp, { capture: true });
             document.addEventListener("touchmove", onMouseMove, { passive: false });
             document.addEventListener("touchend", onMouseUp);
         };
 
         btn.onmousedown = onStartDragBtn;
         btn.ontouchstart = onStartDragBtn;
-        ["mouseup", "pointerdown", "pointerup"].forEach(evt => {
-            btn.addEventListener(evt, (e) => e.stopPropagation());
-        });
 
         const onStartDragHeader = (e) => {
             if (e.target.closest("button")) return;
-            if (e.stopPropagation) e.stopPropagation();
+            if (e.button !== undefined && e.button !== 0) return;
             popupDragging = true;
             const pos = (e.touches && e.touches[0]) ? e.touches[0] : e;
             startX = pos.clientX;
             startY = pos.clientY;
             popupInitX = popup.offsetLeft;
             popupInitY = popup.offsetTop;
-            document.addEventListener("mousemove", onMouseMove);
-            document.addEventListener("mouseup", onMouseUp);
+            window.addEventListener("mousemove", onMouseMove, { capture: true, passive: true });
+            window.addEventListener("mouseup", onMouseUp, { capture: true });
             document.addEventListener("touchmove", onMouseMove, { passive: false });
             document.addEventListener("touchend", onMouseUp);
         };
