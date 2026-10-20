@@ -2661,6 +2661,8 @@
             ];
 
             const aggressiveEvents = ["Spank", "Hit", "Pinch", "ShockLight", "DroolSides", "LipBite"];
+            const mutualEvents = ["LongKiss", "KissOnLips", "Cuddle"];
+
             for (const m of mappings) {
                 const processedKeywords = m.Keywords.split('|').map(k => {
                     if (/^[a-z\s]+$/i.test(k)) {
@@ -2674,61 +2676,48 @@
                     "i",
                 );
                 const textRegex = new RegExp(`(${processedKeywords})`, "i");
-                
-                const matchers = [
-                    {
-                        Tester: {
-                            test(c) {
-                                let matched = false;
-                                let t = "";
-                                if (tagRegex.test(c)) {
-                                    matched = true;
-                                } else if (c && c.includes("Luzi_") && typeof ActivityDictionaryText === "function") {
-                                    t = ActivityDictionaryText(c);
-                                    if (t && textRegex.test(t)) matched = true;
-                                }
 
-                                if (!matched) return false;
-
-                                if (m.Event === "KissOnLips" || m.Event === "LongKiss") {
-                                    if (c && /^Chat(Other|Self)-Item[A-Za-z]+-/i.test(c)) {
-                                        if (!c.includes("ItemMouth")) return false;
-                                    }
-                                    if (!t && typeof ActivityDictionaryText === "function") {
-                                        t = ActivityDictionaryText(c) || "";
-                                    }
-                                    if (t) {
-                                        const nonMouthParts = /(nose|cheek|forehead|neck|ear|hand|foot|arm|leg|chest|breast|belly|stomach|toe|finger|shoulder|back|butt|ass|pussy|dick|cock|vulva|boob|nipple|鼻子|脸颊|脸|额头|脖子|耳朵|手|脚|胳膊|腿|胸|肚子|脚趾|手指|肩膀|背|屁股|阴部|肉棒|阴茎|乳房|乳头)/i;
-                                        if (nonMouthParts.test(t) && !/(lip|mouth|嘴|唇)/i.test(t)) {
-                                            return false;
-                                        }
-                                    }
-                                }
-
-                                return true;
-                            },
-                        },
-                        Criteria: { TargetIsPlayer: true },
+                const testActivity = (c) => {
+                    let matched = false;
+                    let t = "";
+                    if (tagRegex.test(c)) {
+                        matched = true;
+                    } else if (c && c.includes("Luzi_") && typeof ActivityDictionaryText === "function") {
+                        t = ActivityDictionaryText(c);
+                        if (t && textRegex.test(t)) matched = true;
                     }
-                ];
+
+                    if (!matched) return false;
+
+                    if (m.Event === "KissOnLips" || m.Event === "LongKiss") {
+                        if (c && /^Chat(Other|Self)-Item[A-Za-z]+-/i.test(c)) {
+                            if (!c.includes("ItemMouth")) return false;
+                        }
+                        if (!t && typeof ActivityDictionaryText === "function") {
+                            t = ActivityDictionaryText(c) || "";
+                        }
+                        if (t) {
+                            const nonMouthParts = /(nose|cheek|forehead|neck|ear|hand|foot|arm|leg|chest|breast|belly|stomach|toe|finger|shoulder|back|butt|ass|pussy|dick|cock|vulva|boob|nipple|鼻子|脸颊|脸|额头|脖子|耳朵|手|脚|胳膊|腿|胸|肚子|脚趾|手指|肩膀|背|屁股|阴部|肉棒|阴茎|乳房|乳头)/i;
+                            if (nonMouthParts.test(t) && !/(lip|mouth|嘴|唇)/i.test(t)) {
+                                return false;
+                            }
+                        }
+                    }
+
+                    return true;
+                };
+
+                const matchers = [];
+                if (aggressiveEvents.includes(m.Event) || mutualEvents.includes(m.Event)) {
+                    matchers.push({
+                        Tester: { test: testActivity },
+                        Criteria: { TargetIsPlayer: true },
+                    });
+                }
 
                 if (!aggressiveEvents.includes(m.Event)) {
-                    matchers.unshift({
-                        Tester: {
-                            test(c) {
-                                if (tagRegex.test(c)) return true;
-                                if (
-                                    c &&
-                                    c.includes("Luzi_") &&
-                                    typeof ActivityDictionaryText ===
-                                        "function"
-                                ) {
-                                    const t = ActivityDictionaryText(c);
-                                    return t && textRegex.test(t);
-                                }
-                                return false;
-                            },
-                        },
+                    matchers.push({
+                        Tester: { test: testActivity },
                         Criteria: { SenderIsPlayer: true },
                     });
                 }
