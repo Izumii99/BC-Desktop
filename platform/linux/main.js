@@ -1,13 +1,13 @@
-const { app, BrowserWindow, Menu, session, dialog, clipboard, ipcMain, net } = require('electron');
+const { app, BrowserWindow, Menu, session, dialog, clipboard } = require('electron');
 const path = require('path');
 const fs = require('fs');
 
-// Detect hidden mode via CLI flag (--hidden), environment variable (BC_DISCREET=1), or Hangul Filler product name
-const isHidden = process.argv.includes('--hidden') || 
-                 process.env.BC_DISCREET === '1' || 
-                 (typeof app.getName === 'function' ? app.getName() === '\u3164' : app.name === '\u3164');
+// Hidden mode: --hidden flag, BC_DISCREET=1, or the Hangul Filler productName injected by build.js
+const isHidden = process.argv.includes('--hidden') ||
+                 process.env.BC_DISCREET === '1' ||
+                 app.getName() === '\u3164';
 
-const CURRENT_APP_VERSION = "7.1";
+const CURRENT_APP_VERSION = app.getVersion();
 
 function isNewerVersion(latestTag, currentVersion) {
     if (!latestTag || !currentVersion) return false;
@@ -71,10 +71,6 @@ function handleWebMessage(msg) {
         }
     }
 }
-
-ipcMain.on('web-message', (event, msg) => {
-    handleWebMessage(msg);
-});
 
 // Throttling script: caps FPS to 15 and triggers GC when window is unfocused (matches Windows behavior)
 const CapUnfocusedFpsScript =
@@ -724,26 +720,19 @@ function injectScripts() {
         path.resolve(__dirname, "../../Scripts")
     ];
 
+    // ponytail: same as Windows hasLocalScripts — inject every local script directly, no per-addon toggles.
+    // addon-manager.js is skipped so it doesn't pull duplicate copies from the CDN.
     let injectedLocal = false;
     for (const dir of localScriptsDirs) {
-        if (fs.existsSync(dir)) {
-            const jsFiles = fs.readdirSync(dir).filter(f => f.endsWith('.js'));
-            if (jsFiles.length > 0) {
-                // Set list of local files so addon-manager.js recognizes them
-                mainWindow.webContents.executeJavaScript(
-                    `window.bcLocalScripts = ${JSON.stringify(jsFiles)};`
-                ).catch(() => {});
-
-                // Inject addon-manager.js, allowing the manager to toggle addons ON/OFF
-                const managerPath = path.join(dir, 'addon-manager.js');
-                if (fs.existsSync(managerPath)) {
-                    const content = fs.readFileSync(managerPath, 'utf8');
-                    mainWindow.webContents.executeJavaScript(content).catch(() => {});
-                    injectedLocal = true;
-                    break;
-                }
-            }
+        if (!fs.existsSync(dir)) continue;
+        const jsFiles = fs.readdirSync(dir).filter(f => f.endsWith('.js') && f !== 'addon-manager.js');
+        if (jsFiles.length === 0) continue;
+        for (const file of jsFiles) {
+            const content = fs.readFileSync(path.join(dir, file), 'utf8');
+            mainWindow.webContents.executeJavaScript(content).catch(() => {});
         }
+        injectedLocal = true;
+        break;
     }
 
     // 4. Fallback to loader.user.js or remote loader CDN if no local scripts exist
@@ -905,7 +894,6 @@ function createWindow() {
         if (mainWindow && !mainWindow.isDestroyed()) {
             mainWindow.webContents.setBackgroundThrottling(true);
             mainWindow.webContents.executeJavaScript(CapUnfocusedFpsScript).catch(() => {});
-            mainWindow.webContents.session.clearCache().catch(() => {});
         }
     });
 
@@ -917,7 +905,7 @@ function createWindow() {
         }
     });
 
-    // Keyboard Shortcuts (F11 Fullscreen, F12 DevTools, Physical Ctrl+KeyC across layouts)
+    // Keyboard Shortcuts (F11 Fullscreen & F12 DevTools). Physical Ctrl+KeyC is handled in CopyAndFocusScript, same as Windows.
     mainWindow.webContents.on('before-input-event', (event, input) => {
         if (input.type === 'keyDown') {
             if (input.key === 'F11') {
@@ -926,21 +914,6 @@ function createWindow() {
             } else if (input.key === 'F12') {
                 mainWindow.webContents.toggleDevTools();
                 event.preventDefault();
-            } else if (input.control && input.code === 'KeyC') {
-                mainWindow.webContents.executeJavaScript(`(() => {
-                    let activeEl = document.activeElement;
-                    if (activeEl && (activeEl.tagName === 'INPUT' || activeEl.tagName === 'TEXTAREA')) {
-                        try {
-                            if (activeEl.selectionStart !== null && activeEl.selectionStart !== undefined) {
-                                return activeEl.value.substring(activeEl.selectionStart, activeEl.selectionEnd);
-                            }
-                            return activeEl.value;
-                        } catch (_) { return activeEl.value; }
-                    }
-                    return window.getSelection().toString();
-                })()`).then(text => {
-                    if (text) clipboard.writeText(text);
-                }).catch(() => {});
             }
         }
     });
@@ -1006,43 +979,6 @@ function createWindow() {
 
 app.whenReady().then(() => {
     app.setName(isHidden ? "\u3164" : "Bondage Club");
-    if (typeof app.setDesktopName === 'function') {
-        app.setDesktopName(isHidden ? "\u3164" : "bondage-club.desktop");
-    }
-
-    if (session.defaultSession && session.defaultSession.protocol && session.defaultSession.protocol.handle) {
-        session.defaultSession.protocol.handle('http', (request) => {
-            try {
-                const url = new URL(request.url);
-                if (url.hostname === 'bc-desktop.local') {
-                    const scriptName = path.basename(url.pathname);
-                    const localScriptsDirs = [
-                        path.join(path.dirname(process.execPath), "Scripts"),
-                        path.join(__dirname, "Scripts"),
-                        path.resolve(__dirname, "../../Scripts")
-                    ];
-                    for (const dir of localScriptsDirs) {
-                        if (fs.existsSync(dir)) {
-                            const targetFile = path.join(dir, scriptName);
-                            if (fs.existsSync(targetFile)) {
-                                const content = fs.readFileSync(targetFile);
-                                return new Response(content, {
-                                    status: 200,
-                                    headers: {
-                                        'Content-Type': 'application/javascript; charset=utf-8',
-                                        'Access-Control-Allow-Origin': '*'
-                                    }
-                                });
-                            }
-                        }
-                    }
-                    return new Response('Not Found', { status: 404 });
-                }
-            } catch (_) {}
-            return net.fetch(request, { bypassCustomProtocolHandlers: true });
-        });
-    }
-
     createWindow();
 });
 

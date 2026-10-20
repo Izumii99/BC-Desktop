@@ -65,6 +65,7 @@ async function buildAllLinux() {
         config: {
             appId: "com.izumii.bcdesktop.hidden",
             productName: "\u3164",
+            extraMetadata: { productName: "\u3164" },
             publish: null,
             directories: {
                 output: publishDir

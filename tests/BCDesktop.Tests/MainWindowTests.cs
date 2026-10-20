@@ -605,6 +605,13 @@ public class MainWindowTests
         StringAssert.Contains(mainJs, "setAspectRatio(2.0)", "Linux main.js must enforce 2:1 native aspect ratio.");
         StringAssert.Contains(mainJs, "bc-tint-input", "Linux main.js must include bc-tint-input focus guards.");
         StringAssert.Contains(mainJs, "fieldset[name=\"color-picker\"]", "Linux main.js must protect color picker from focus stealing.");
+        StringAssert.Contains(mainJs, "force-gpu-mem-available-mb", "Linux main.js must cap VRAM like Windows.");
+        StringAssert.Contains(mainJs, "KeyC", "Linux main.js must handle physical Ctrl+KeyC.");
+        Assert.IsFalse(mainJs.Contains("protocol.handle('http'"), "Intercepting all http traffic is not allowed; local scripts are injected directly like Windows.");
+        Assert.IsFalse(mainJs.Contains("clearCache("), "Wiping the HTTP cache on minimize forces game assets to re-download.");
+
+        string buildJs = File.ReadAllText(Path.Combine(ProjectRoot, "platform", "linux", "build.js"));
+        StringAssert.Contains(buildJs, "extraMetadata: { productName: \"\\u3164\" }", "Hidden AppImage must ship productName ㅤ so main.js detects stealth mode.");
     }
 }
 
