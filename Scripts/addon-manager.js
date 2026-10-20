@@ -127,7 +127,8 @@
         "fluid-color.js",
         "fusam.js",
         "LikoPlugin.js",
-        "fusam-liko-loader.js"
+        "fusam-liko-loader.js",
+        "wardrobe-pagination.js"
     ];
 
 
@@ -139,7 +140,13 @@
     let userConfig = {};
     try {
         const saved = localStorage.getItem(STORAGE_KEY);
-        if (saved) userConfig = JSON.parse(saved);
+        if (saved) {
+            userConfig = JSON.parse(saved);
+            if ("wardrobe-pagination.js" in userConfig) {
+                delete userConfig["wardrobe-pagination.js"];
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(userConfig));
+            }
+        }
     } catch (e) {
         console.error("BC Desktop: Failed to read Addon Config", e);
     }
