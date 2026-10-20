@@ -2948,8 +2948,9 @@
 
                     if (qolConfig.persistentWhisper === false) return;
                     try {
-                        const sender = Number.parseInt(this.parentElement?.dataset.sender, 10);
-                        const target = Number.parseInt(this.parentElement?.dataset.target, 10);
+                        const el = this?.parentElement ? this : window.event?.currentTarget;
+                        const sender = Number.parseInt(el?.parentElement?.dataset.sender, 10);
+                        const target = Number.parseInt(el?.parentElement?.dataset.target, 10);
                         const myNumber = typeof window.Player !== "undefined" && window.Player ? window.Player.MemberNumber : -1;
                         const receiver = (sender === myNumber && !isNaN(target) && target >= 0) ? target : sender;
 
@@ -2971,12 +2972,9 @@
                     if (qolConfig.persistentWhisper !== false) {
                         if (res === true && typeof targetNumber === "number" && targetNumber >= 0) {
                             lockWhisperTarget(targetNumber);
-                        } else if (res === false && typeof targetNumber === "number" && targetNumber >= 0) {
-                            if (typeof window.ChatRoomCharacter !== "undefined" && Array.isArray(window.ChatRoomCharacter)) {
-                                const inRoom = window.ChatRoomCharacter.some(c => c && c.MemberNumber === targetNumber);
-                                if (!inRoom && typeof window.ChatRoomSendLocal === "function") {
-                                    window.ChatRoomSendLocal(`<div style="color: #ff6b81; font-style: italic;">Target is no longer in the room. Press Esc or type /p to return to public chat.</div>`);
-                                }
+                        } else if (res === "target-gone") {
+                            if (typeof window.ChatRoomSendLocal === "function") {
+                                window.ChatRoomSendLocal(`<div style="color: #ff6b81; font-style: italic;">Target is no longer in the room. Press Esc or type /p to return to public chat.</div>`);
                             }
                         }
                     }
@@ -2994,15 +2992,18 @@
                         const lower = raw.toLowerCase();
                         if (lower === "/p" || lower === "/public" || lower === "/all") {
                             unlockWhisperTarget();
+                            if (typeof window.CommandChangeChatInputContent === "function") {
+                                window.CommandChangeChatInputContent("");
+                            } else {
+                                const input = document.getElementById("InputChat");
+                                if (input) input.value = "";
+                            }
                             return true;
                         }
                         const match = raw.match(/^\/(?:p|public|all)\s+(.+)$/i);
                         if (match) {
                             unlockWhisperTarget();
-                            if (typeof window.ChatRoomSendChat === "function") {
-                                window.ChatRoomSendChat(match[1]);
-                            }
-                            return true;
+                            return match[1];
                         }
                     }
                     return origCommandParse.apply(this, arguments);
@@ -3014,7 +3015,8 @@
                 if (qolConfig.persistentWhisper === false) return;
                 if (e.key === "Escape") {
                     if (typeof window.CurrentScreen !== "undefined" && window.CurrentScreen === "ChatRoom") {
-                        if (e.target?.id === "InputChat" && window.ChatRoomTargetMemberNumber != null && window.ChatRoomTargetMemberNumber >= 0) {
+                        const hasWhisperPrefix = typeof e.target?.value === "string" && /^\/(?:whisper|w)\s+\d+/i.test(e.target.value);
+                        if (e.target?.id === "InputChat" && ((window.ChatRoomTargetMemberNumber != null && window.ChatRoomTargetMemberNumber >= 0) || hasWhisperPrefix)) {
                             unlockWhisperTarget();
                         }
                     }
