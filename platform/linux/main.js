@@ -551,6 +551,51 @@ const CopyAndFocusScript = `
         attributes: true, 
         attributeFilter: ['style', 'class', 'hidden', 'disabled'] 
     });
+
+    let origClipboard = navigator.clipboard;
+    let mockClipboard = {
+        writeText: function(text) {
+            window.chrome.webview.postMessage('COPY_TEXT:' + text);
+            return Promise.resolve();
+        },
+        readText: function() {
+            if (origClipboard && origClipboard.readText) {
+                return origClipboard.readText();
+            }
+            return Promise.resolve('');
+        }
+    };
+    try {
+        Object.defineProperty(navigator, 'clipboard', {
+            value: mockClipboard,
+            configurable: true
+        });
+    } catch(e) {}
+
+    const originalExecCommand = document.execCommand;
+    document.execCommand = function(commandId, showUI, value) {
+        if (commandId && commandId.toLowerCase() === 'copy') {
+            let text = '';
+            let activeEl = document.activeElement;
+            if (activeEl && (activeEl.tagName === 'INPUT' || activeEl.tagName === 'TEXTAREA')) {
+                try {
+                    if (activeEl.selectionStart !== null && activeEl.selectionStart !== undefined) {
+                        text = activeEl.value.substring(activeEl.selectionStart, activeEl.selectionEnd);
+                    } else {
+                        text = activeEl.value;
+                    }
+                } catch (err) {
+                    text = activeEl.value;
+                }
+            } else {
+                text = window.getSelection().toString();
+            }
+            if (text) {
+                window.chrome.webview.postMessage('COPY_TEXT:' + text);
+            }
+        }
+        return originalExecCommand.apply(this, arguments);
+    };
 })();
 `;
 
@@ -633,19 +678,6 @@ async function resolveGameUrl() {
                     currentProbe--;
                     continue;
                 }
-                break;
-            }
-        }
-
-        // Active candidate probing forward (+1 to +8) to detect live versions before redirects
-        for (let offset = 8; offset >= 1; offset--) {
-            const candVer = activeVersion + offset;
-            const { status, nextVer } = await checkVersionStatus(candVer);
-            if (status === 'Active') {
-                activeVersion = candVer;
-                break;
-            } else if (status === 'Outdated' && nextVer !== null) {
-                activeVersion = nextVer;
                 break;
             }
         }
@@ -1007,7 +1039,7 @@ app.whenReady().then(() => {
                     return new Response('Not Found', { status: 404 });
                 }
             } catch (_) {}
-            return net.fetch(request);
+            return net.fetch(request, { bypassCustomProtocolHandlers: true });
         });
     }
 
