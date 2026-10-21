@@ -1,8 +1,10 @@
 using System.Diagnostics;
 using System.IO;
+using System.Net.Http;
 using System.Runtime.InteropServices;
 using System.Text.Json;
 using System.Text.RegularExpressions;
+using System.Threading;
 using System.Windows;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
@@ -438,12 +440,12 @@ public class MainWindowTests
     [TestMethod]
     public void AppVersionComparison_AccuratelyEvaluatesSemanticVersions()
     {
-        Assert.AreEqual("7.1", MainWindow.CurrentAppVersion, "CurrentAppVersion must be 7.1.");
+        Assert.AreEqual("7.2", MainWindow.CurrentAppVersion, "CurrentAppVersion must be 7.2.");
 
-        Assert.IsTrue(MainWindow.IsNewerVersion("v7.2", "7.1"), "v7.2 must be newer than 7.1.");
-        Assert.IsTrue(MainWindow.IsNewerVersion("7.2", "7.1"), "7.2 must be newer than 7.1.");
-        Assert.IsTrue(MainWindow.IsNewerVersion("v7.1.1", "7.1"), "Patch version v7.1.1 must be newer than 7.1.");
-        Assert.IsTrue(MainWindow.IsNewerVersion("v8.0", "7.1"), "Major version v8.0 must be newer than 7.1.");
+        Assert.IsTrue(MainWindow.IsNewerVersion("v7.3", "7.2"), "v7.3 must be newer than 7.2.");
+        Assert.IsTrue(MainWindow.IsNewerVersion("7.3", "7.2"), "7.3 must be newer than 7.2.");
+        Assert.IsTrue(MainWindow.IsNewerVersion("v7.2.1", "7.2"), "Patch version v7.2.1 must be newer than 7.2.");
+        Assert.IsTrue(MainWindow.IsNewerVersion("v8.0", "7.2"), "Major version v8.0 must be newer than 7.2.");
 
         Assert.IsFalse(MainWindow.IsNewerVersion("6.2", "6.2"), "Identical versions must return false.");
         Assert.IsFalse(MainWindow.IsNewerVersion("v6.2", "6.2"), "Identical versions with 'v' prefix must return false.");
@@ -470,6 +472,128 @@ public class MainWindowTests
             Assert.IsNull(window.TitleLabel.ToolTip, "Stealth mode must strictly suppress any update tooltip or notice.");
             Assert.AreEqual(Visibility.Collapsed, window.UpdateBadge.Visibility, "Stealth mode must strictly keep UpdateBadge collapsed.");
         });
+    }
+
+    [TestMethod]
+    public void AppUpdateNotification_ConfiguresInstantUpdateAssetUrl()
+    {
+        RunInSTA(() =>
+        {
+            var window = new MainWindow(initializeWebView: false);
+            string json = """
+            {
+                "tag_name": "v99.0",
+                "html_url": "https://github.com/Izumii99/BC-Desktop/releases/tag/v99.0",
+                "assets": [
+                    {
+                        "name": "BC-Windows.exe",
+                        "browser_download_url": "https://github.com/Izumii99/BC-Desktop/releases/download/v99.0/BC-Windows.exe"
+                    }
+                ]
+            }
+            """;
+
+            var handler = new SimpleMockHttpHandler(_ => new HttpResponseMessage(System.Net.HttpStatusCode.OK)
+            {
+                Content = new StringContent(json, System.Text.Encoding.UTF8, "application/json")
+            });
+            using var client = new HttpClient(handler);
+
+            var checkTask = window.CheckForAppUpdatesAsync(client);
+            checkTask.Wait(1000);
+
+            Assert.AreEqual(Visibility.Visible, window.UpdateBadge.Visibility, "UpdateBadge must be visible when update is available.");
+            Assert.AreEqual("Update v99.0", window.UpdateBadgeText.Text);
+            StringAssert.Contains(window.UpdateBadge.ToolTip.ToString(), "Left-click to instantly download & install");
+            Assert.AreEqual("https://github.com/Izumii99/BC-Desktop/releases/download/v99.0/BC-Windows.exe", MainWindow._newReleaseDownloadUrl);
+        });
+    }
+
+    [TestMethod]
+    public void AppUpdate_InstantUpdateDownloadsAndInvokesRestartLauncher()
+    {
+        RunInSTA(() =>
+        {
+            var window = new MainWindow(initializeWebView: false);
+            string dummyTarget = Path.Combine(Path.GetTempPath(), $"BC-TestTarget-{Guid.NewGuid():N}.exe");
+            File.WriteAllText(dummyTarget, "dummy-binary");
+
+            MainWindow._newReleaseDownloadUrl = "http://mock-github.com/releases/BC-Windows.exe";
+            MainWindow._isUpdating = false;
+
+            byte[] dummyPayload = new byte[1024];
+            new Random(42).NextBytes(dummyPayload);
+
+            var handler = new SimpleMockHttpHandler(_ => new HttpResponseMessage(System.Net.HttpStatusCode.OK)
+            {
+                Content = new ByteArrayContent(dummyPayload)
+            });
+            using var client = new HttpClient(handler);
+
+            bool launcherInvoked = false;
+            string? capturedTemp = null;
+            string? capturedTarget = null;
+
+            try
+            {
+                var updateTask = window.PerformInstantUpdateAsync(
+                    httpClient: client,
+                    targetExePath: dummyTarget,
+                    restartLauncher: (temp, target, pid) =>
+                    {
+                        launcherInvoked = true;
+                        capturedTemp = temp;
+                        capturedTarget = target;
+                        return true;
+                    });
+
+                bool success = updateTask.GetAwaiter().GetResult();
+                Assert.IsTrue(success, "PerformInstantUpdateAsync must succeed with valid payload.");
+                Assert.IsTrue(launcherInvoked, "Restart launcher delegate must be invoked.");
+                Assert.AreEqual(dummyTarget, capturedTarget);
+                Assert.IsNotNull(capturedTemp);
+                Assert.IsTrue(File.Exists(capturedTemp), "Downloaded update file must exist.");
+                Assert.AreEqual(1024, new FileInfo(capturedTemp).Length);
+            }
+            finally
+            {
+                if (File.Exists(dummyTarget)) File.Delete(dummyTarget);
+                if (!string.IsNullOrEmpty(capturedTemp) && File.Exists(capturedTemp)) File.Delete(capturedTemp);
+                MainWindow._isUpdating = false;
+            }
+        });
+    }
+
+    [TestMethod]
+    public void AppUpdate_SuppressedWhenAutoUpdateDisabled()
+    {
+        RunInSTA(() =>
+        {
+            var window = new MainWindow(initializeWebView: false);
+            bool prev = MainWindow.EnableAutoUpdates;
+            try
+            {
+                MainWindow.EnableAutoUpdates = false;
+                Assert.IsFalse(MainWindow.IsAutoUpdateEnabled(), "IsAutoUpdateEnabled must return false when EnableAutoUpdates is false.");
+
+                var checkTask = window.CheckForAppUpdatesAsync();
+                checkTask.Wait(500);
+
+                Assert.AreEqual(Visibility.Collapsed, window.UpdateBadge.Visibility, "UpdateBadge must remain collapsed when auto-updates are disabled.");
+            }
+            finally
+            {
+                MainWindow.EnableAutoUpdates = prev;
+            }
+        });
+    }
+
+    private class SimpleMockHttpHandler : HttpMessageHandler
+    {
+        private readonly Func<HttpRequestMessage, HttpResponseMessage> _responder;
+        public SimpleMockHttpHandler(Func<HttpRequestMessage, HttpResponseMessage> responder) => _responder = responder;
+        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+            => Task.FromResult(_responder(request));
     }
 
     [TestMethod]
@@ -605,7 +729,7 @@ public class MainWindowTests
         var root = doc.RootElement;
 
         Assert.AreEqual("bc-desktop-linux", root.GetProperty("name").GetString());
-        Assert.AreEqual("7.1.0", root.GetProperty("version").GetString());
+        Assert.AreEqual("7.2.0", root.GetProperty("version").GetString());
         Assert.AreEqual("Bondage Club", root.GetProperty("productName").GetString());
         Assert.IsTrue(root.TryGetProperty("keywords", out _), "package.json must specify keywords.");
 

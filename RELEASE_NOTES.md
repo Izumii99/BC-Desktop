@@ -1,9 +1,9 @@
 ### Fixes & Improvements:
 
-- **Feature (Multi-Platform Parity & Update Detection):** Seamless experience across Windows and Linux, including silent update detection, native OS clipboard copy, and physical Ctrl+C support on international keyboard layouts.
-- **Improvement (Memory & Performance):** Added strict GPU VRAM limits and dynamic sleeping tabs to keep background resource consumption ultra-lightweight while idle or minimized.
-- **Fix (Aspect Ratio & Viewport Clamping):** Native 2:1 canvas aspect ratio is strictly preserved across all Linux desktop environments, and in-game translator controls are clamped to stay within the visible screen.
-- **Fix (Smart Focus & Color Controls):** Enhanced focus protection so color pickers, tint inputs, and sliders never lose focus while clicking or dragging.
+- **Feature (Seamless In-App Auto-Updater):** You can now update the application directly from the title bar with a single click. The app downloads the new version in the background, displays real-time download progress, and automatically restarts into the updated version without cluttering your Downloads folder.
+- **Improvement (Linux Multi-Format Support):** Auto-updates now seamlessly support both portable `.AppImage` single files and unpacked `.tar.gz` directories, replacing or updating existing game installations in-place cleanly.
+- **Improvement (Update Controls & Options):** Right-clicking the update badge opens the GitHub release notes in your browser if you wish to read the changelog before updating.
+- **Feature (Tester & Dev Isolation):** Local test versions now run in complete isolation with updates disabled, ensuring developer builds never overwrite or interfere with live production versions.
 
 ### Downloads:
 

@@ -396,9 +396,24 @@ public partial class MainWindow : Window
         return _lastKnownGoodUrl;
     }
 
-    internal const string CurrentAppVersion = "7.1";
+    internal const string CurrentAppVersion = "7.2";
     internal const string GitHubRepo = "Izumii99/BC-Desktop";
+    internal static bool EnableAutoUpdates = true;
     private static string? _newReleaseUrl;
+    internal static string? _newReleaseDownloadUrl;
+    internal static string? _newReleaseTag;
+    internal static bool _isUpdating = false;
+
+    internal static bool IsAutoUpdateEnabled()
+    {
+        if (!EnableAutoUpdates) return false;
+        string scriptsDir = Path.Combine(AppContext.BaseDirectory, "Scripts");
+        if (Directory.Exists(scriptsDir) && Directory.EnumerateFiles(scriptsDir, "*.js").Any())
+        {
+            return false;
+        }
+        return true;
+    }
 
     private static readonly string _builtInLoaderScript = LoadBuiltInLoaderScript();
 
@@ -447,7 +462,7 @@ public partial class MainWindow : Window
 
     internal async Task CheckForAppUpdatesAsync(HttpClient? httpClient = null)
     {
-        if (string.IsNullOrEmpty(_originalTitleLabel)) return;
+        if (!IsAutoUpdateEnabled() || string.IsNullOrEmpty(_originalTitleLabel)) return;
 
         try
         {
@@ -473,16 +488,42 @@ public partial class MainWindow : Window
                         ? (urlElem.GetString() ?? $"https://github.com/{GitHubRepo}/releases/latest")
                         : $"https://github.com/{GitHubRepo}/releases/latest";
 
+                    string? directDownloadUrl = null;
+                    string targetAssetName = string.IsNullOrEmpty(_originalTitleLabel) ? "BC-Windows-Hidden.exe" : "BC-Windows.exe";
+                    if (doc.RootElement.TryGetProperty("assets", out var assetsElem) && assetsElem.ValueKind == System.Text.Json.JsonValueKind.Array)
+                    {
+                        foreach (var asset in assetsElem.EnumerateArray())
+                        {
+                            if (asset.TryGetProperty("name", out var nameProp) &&
+                                string.Equals(nameProp.GetString(), targetAssetName, StringComparison.OrdinalIgnoreCase))
+                            {
+                                if (asset.TryGetProperty("browser_download_url", out var dlProp))
+                                {
+                                    directDownloadUrl = dlProp.GetString();
+                                    break;
+                                }
+                            }
+                        }
+                    }
+
+                    if (string.IsNullOrEmpty(directDownloadUrl))
+                    {
+                        directDownloadUrl = $"https://github.com/{GitHubRepo}/releases/download/{tag}/{targetAssetName}";
+                    }
+
                     Action applyUi = () =>
                     {
                         if (string.IsNullOrEmpty(_originalTitleLabel)) return;
                         _newReleaseUrl = htmlUrl;
+                        _newReleaseDownloadUrl = directDownloadUrl;
+                        _newReleaseTag = tag;
+
                         TitleLabel.ToolTip = $"New desktop release available: {tag}\nClick to view release notes";
                         TitleLabel.Cursor = Cursors.Hand;
                         if (UpdateBadge != null && UpdateBadgeText != null)
                         {
                             UpdateBadgeText.Text = $"Update {tag}";
-                            UpdateBadge.ToolTip = $"New desktop release available: {tag}\nClick to view release notes";
+                            UpdateBadge.ToolTip = $"New desktop release available: {tag}\n• Left-click to instantly download & install\n• Right-click to view release notes";
                             UpdateBadge.Visibility = Visibility.Visible;
                         }
                     };
@@ -504,7 +545,7 @@ public partial class MainWindow : Window
         }
     }
 
-    private void TitleLabel_MouseLeftButtonUp(object sender, MouseButtonEventArgs e)
+    private void OpenReleaseNotesUrl()
     {
         if (!string.IsNullOrEmpty(_newReleaseUrl))
         {
@@ -517,6 +558,172 @@ public partial class MainWindow : Window
                 });
             }
             catch { }
+        }
+    }
+
+    private void TitleLabel_MouseLeftButtonUp(object sender, MouseButtonEventArgs e)
+    {
+        OpenReleaseNotesUrl();
+    }
+
+    private void UpdateBadge_MouseRightButtonUp(object sender, MouseButtonEventArgs e)
+    {
+        e.Handled = true;
+        OpenReleaseNotesUrl();
+    }
+
+    private async void UpdateBadge_MouseLeftButtonUp(object sender, MouseButtonEventArgs e)
+    {
+        e.Handled = true;
+        if (_isUpdating) return;
+        if (UpdateBadgeText?.Text == "Update Failed")
+        {
+            OpenReleaseNotesUrl();
+            return;
+        }
+
+        await PerformInstantUpdateAsync();
+    }
+
+    internal async Task<bool> PerformInstantUpdateAsync(
+        HttpClient? httpClient = null,
+        string? targetExePath = null,
+        Func<string, string, int, bool>? restartLauncher = null)
+    {
+        if (!IsAutoUpdateEnabled() || _isUpdating) return false;
+        if (string.IsNullOrEmpty(_newReleaseDownloadUrl))
+        {
+            OpenReleaseNotesUrl();
+            return false;
+        }
+
+        string currentExe = targetExePath ?? Environment.ProcessPath ?? Process.GetCurrentProcess().MainModule?.FileName ?? "";
+        if (string.IsNullOrEmpty(currentExe) || !File.Exists(currentExe))
+        {
+            OpenReleaseNotesUrl();
+            return false;
+        }
+
+        _isUpdating = true;
+        string tempExe = Path.Combine(Path.GetTempPath(), $"BC-Update-{Guid.NewGuid():N}.exe");
+
+        try
+        {
+            if (UpdateBadgeText != null)
+            {
+                UpdateBadgeText.Text = "Downloading 0%...";
+                UpdateBadge.ToolTip = "Downloading update from GitHub Releases...";
+            }
+
+            using var http = httpClient != null ? null : new HttpClient { Timeout = TimeSpan.FromMinutes(10) };
+            var client = httpClient ?? http!;
+            if (client.DefaultRequestHeaders.UserAgent.Count == 0)
+            {
+                client.DefaultRequestHeaders.UserAgent.ParseAdd("BC-Desktop-Client");
+            }
+
+            using var response = await client.GetAsync(_newReleaseDownloadUrl, HttpCompletionOption.ResponseHeadersRead);
+            response.EnsureSuccessStatusCode();
+
+            long? totalBytes = response.Content.Headers.ContentLength;
+            using (var contentStream = await response.Content.ReadAsStreamAsync())
+            using (var fileStream = new FileStream(tempExe, FileMode.Create, FileAccess.Write, FileShare.None, 81920, true))
+            {
+                byte[] buffer = new byte[81920];
+                long totalRead = 0;
+                int bytesRead;
+                int lastReportedPercent = -1;
+
+                while ((bytesRead = await contentStream.ReadAsync(buffer, 0, buffer.Length)) > 0)
+                {
+                    await fileStream.WriteAsync(buffer, 0, bytesRead);
+                    totalRead += bytesRead;
+
+                    if (totalBytes.HasValue && totalBytes.Value > 0)
+                    {
+                        int percent = (int)((double)totalRead / totalBytes.Value * 100);
+                        if (percent != lastReportedPercent)
+                        {
+                            lastReportedPercent = percent;
+                            Action updateText = () =>
+                            {
+                                if (UpdateBadgeText != null)
+                                {
+                                    UpdateBadgeText.Text = $"Downloading {percent}%...";
+                                }
+                            };
+                            if (Dispatcher.CheckAccess()) updateText();
+                            else await Dispatcher.InvokeAsync(updateText);
+                        }
+                    }
+                }
+            }
+
+            var fileInfo = new FileInfo(tempExe);
+            if (!fileInfo.Exists || fileInfo.Length == 0)
+            {
+                throw new InvalidOperationException("Downloaded update file is empty.");
+            }
+
+            Action notifyRestart = () =>
+            {
+                if (UpdateBadgeText != null)
+                {
+                    UpdateBadgeText.Text = "Restarting...";
+                    UpdateBadge.ToolTip = "Update ready. Relaunching application...";
+                }
+            };
+            if (Dispatcher.CheckAccess()) notifyRestart();
+            else await Dispatcher.InvokeAsync(notifyRestart);
+
+            int pid = Environment.ProcessId;
+            bool launched = false;
+            if (restartLauncher != null)
+            {
+                launched = restartLauncher(tempExe, currentExe, pid);
+            }
+            else
+            {
+                string escapedTemp = tempExe.Replace("'", "''");
+                string escapedTarget = currentExe.Replace("'", "''");
+                string psScript = $"Wait-Process -Id {pid}; Move-Item -Force -Path '{escapedTemp}' -Destination '{escapedTarget}'; Start-Process '{escapedTarget}'";
+
+                Process.Start(new ProcessStartInfo
+                {
+                    FileName = "powershell.exe",
+                    Arguments = $"-NoProfile -WindowStyle Hidden -Command \"{psScript}\"",
+                    CreateNoWindow = true,
+                    UseShellExecute = false
+                });
+                launched = true;
+            }
+
+            if (launched && restartLauncher == null)
+            {
+                Application.Current.Shutdown();
+            }
+            return true;
+        }
+        catch (Exception ex)
+        {
+            _isUpdating = false;
+            try
+            {
+                if (File.Exists(tempExe)) File.Delete(tempExe);
+            }
+            catch { }
+
+            Action showError = () =>
+            {
+                if (UpdateBadgeText != null)
+                {
+                    UpdateBadgeText.Text = "Update Failed";
+                    UpdateBadge.ToolTip = $"Failed to install update: {ex.Message}\nClick to view releases on GitHub.";
+                }
+            };
+            if (Dispatcher.CheckAccess()) showError();
+            else await Dispatcher.InvokeAsync(showError);
+            return false;
         }
     }
 

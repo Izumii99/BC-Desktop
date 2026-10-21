@@ -103,7 +103,8 @@
                         Margin="8,0,0,0"
                         Padding="6,1,6,1"
                         Cursor="Hand"
-                        MouseLeftButtonUp="TitleLabel_MouseLeftButtonUp">
+                        MouseLeftButtonUp="UpdateBadge_MouseLeftButtonUp"
+                        MouseRightButtonUp="UpdateBadge_MouseRightButtonUp">
                     <TextBlock x:Name="UpdateBadgeText"
                                Text="Update"
                                Foreground="#d8b4fe"

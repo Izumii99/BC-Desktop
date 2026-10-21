@@ -1,6 +1,8 @@
-const { app, BrowserWindow, Menu, session, dialog, clipboard, shell } = require('electron');
+const { app, BrowserWindow, Menu, session, dialog, clipboard, shell, Notification } = require('electron');
 const path = require('path');
 const fs = require('fs');
+const os = require('os');
+const child_process = require('child_process');
 
 // Hidden mode: --hidden flag, BC_DISCREET=1, or the Hangul Filler productName injected by build.js
 const isHidden = process.argv.includes('--hidden') ||
@@ -8,6 +10,23 @@ const isHidden = process.argv.includes('--hidden') ||
                  app.getName() === '\u3164';
 
 const CURRENT_APP_VERSION = app.getVersion();
+const ENABLE_AUTO_UPDATES = !process.argv.includes('--no-update') && process.env.BC_NO_UPDATE !== '1';
+
+function isAutoUpdateEnabled() {
+    if (!ENABLE_AUTO_UPDATES) return false;
+    const localScriptsDirs = [
+        path.join(path.dirname(process.execPath), "Scripts"),
+        path.join(__dirname, "Scripts"),
+        path.resolve(__dirname, "../../Scripts")
+    ];
+    for (const dir of localScriptsDirs) {
+        if (fs.existsSync(dir)) {
+            const jsFiles = fs.readdirSync(dir).filter(f => f.endsWith('.js') && f !== 'addon-manager.js');
+            if (jsFiles.length > 0) return false;
+        }
+    }
+    return true;
+}
 
 function isNewerVersion(latestTag, currentVersion) {
     if (!latestTag || !currentVersion) return false;
@@ -26,9 +45,11 @@ function isNewerVersion(latestTag, currentVersion) {
 }
 
 let updateAvailableTag = null;
+let updateDownloadUrl = null;
+let isUpdating = false;
 
 async function checkForAppUpdates() {
-    if (isHidden) return;
+    if (!isAutoUpdateEnabled() || isHidden) return;
     try {
         const res = await fetch("https://api.github.com/repos/Izumii99/BC-Desktop/releases/latest", {
             headers: { "User-Agent": "BC-Desktop-Linux" }
@@ -38,11 +59,209 @@ async function checkForAppUpdates() {
         const latestTag = (data.tag_name || "").trim();
         if (isNewerVersion(latestTag, CURRENT_APP_VERSION)) {
             updateAvailableTag = latestTag.replace(/^v/i, '');
+
+            const isAppImage = Boolean(process.env.APPIMAGE);
+            const targetAssetName = isAppImage ? "BC-Linux.AppImage" : "BC-Linux.tar.gz";
+
+            if (Array.isArray(data.assets)) {
+                const asset = data.assets.find(a => a && a.name && a.name.toLowerCase() === targetAssetName.toLowerCase());
+                if (asset && asset.browser_download_url) {
+                    updateDownloadUrl = asset.browser_download_url;
+                }
+            }
+            if (!updateDownloadUrl) {
+                updateDownloadUrl = `https://github.com/Izumii99/BC-Desktop/releases/download/v${updateAvailableTag}/${targetAssetName}`;
+            }
+
             if (mainWindow && !mainWindow.isDestroyed()) {
                 mainWindow.setTitle(`Bondage Club — Update Available (v${updateAvailableTag})`);
             }
+
+            promptUpdateDialog(updateAvailableTag, updateDownloadUrl, isAppImage);
         }
     } catch (_) {}
+}
+
+function promptUpdateDialog(tag, downloadUrl, isAppImage) {
+    if (!isAutoUpdateEnabled() || isUpdating || isHidden) return;
+
+    const iconName = isHidden ? "transparent.png" : "app_logo.png";
+    const iconCandidates = [
+        path.resolve(__dirname, "../../Assets", iconName),
+        path.join(__dirname, "assets", iconName),
+        path.join(process.resourcesPath || "", "assets", iconName)
+    ];
+    const iconPath = iconCandidates.find(p => fs.existsSync(p));
+
+    if (Notification && Notification.isSupported()) {
+        const notif = new Notification({
+            title: `Bondage Club Update Available (v${tag})`,
+            body: 'Click here to automatically update and restart the application.',
+            icon: iconPath
+        });
+        notif.on('click', () => {
+            performInstantUpdateLinux(tag, downloadUrl, isAppImage);
+        });
+        notif.show();
+    }
+
+    setTimeout(async () => {
+        if (!mainWindow || mainWindow.isDestroyed() || !isAutoUpdateEnabled() || isUpdating) return;
+        const result = await dialog.showMessageBox(mainWindow, {
+            type: 'info',
+            title: 'Update Available',
+            message: `A new version of Bondage Club (v${tag}) is available.`,
+            detail: `Would you like to instantly download and install the update now? (${isAppImage ? 'AppImage' : 'tar.gz'})`,
+            buttons: ['Update Now', 'View Release Notes', 'Later'],
+            defaultId: 0,
+            cancelId: 2,
+            noLink: true
+        });
+
+        if (result.response === 0) {
+            await performInstantUpdateLinux(tag, downloadUrl, isAppImage);
+        } else if (result.response === 1) {
+            shell.openExternal(`https://github.com/Izumii99/BC-Desktop/releases/latest`);
+        }
+    }, 2500);
+}
+
+async function performInstantUpdateLinux(tag, downloadUrl, isAppImage) {
+    if (!isAutoUpdateEnabled() || isUpdating) return;
+    isUpdating = true;
+
+    const tempFileName = `bc-update-${Date.now()}-${isAppImage ? 'appimage' : 'tar.gz'}`;
+    const tempFilePath = path.join(os.tmpdir(), tempFileName);
+
+    try {
+        if (mainWindow && !mainWindow.isDestroyed()) {
+            mainWindow.setTitle(`Bondage Club — Downloading update (0%)...`);
+            mainWindow.setProgressBar(0);
+        }
+
+        const response = await fetch(downloadUrl);
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status} ${response.statusText}`);
+        }
+
+        const contentLength = Number(response.headers.get('content-length')) || 0;
+        const fileStream = fs.createWriteStream(tempFilePath);
+
+        let receivedBytes = 0;
+        let lastReportedPercent = -1;
+
+        const reader = response.body.getReader();
+        while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            fileStream.write(Buffer.from(value));
+            receivedBytes += value.length;
+
+            if (contentLength > 0) {
+                const percent = Math.floor((receivedBytes / contentLength) * 100);
+                if (percent !== lastReportedPercent) {
+                    lastReportedPercent = percent;
+                    if (mainWindow && !mainWindow.isDestroyed()) {
+                        mainWindow.setTitle(`Bondage Club — Downloading update (${percent}%)...`);
+                        mainWindow.setProgressBar(percent / 100);
+                    }
+                }
+            }
+        }
+
+        await new Promise((resolve, reject) => {
+            fileStream.end(resolve);
+            fileStream.on('error', reject);
+        });
+
+        const stats = fs.statSync(tempFilePath);
+        if (stats.size < 1024 * 1024) {
+            throw new Error("Downloaded update file is invalid or incomplete.");
+        }
+
+        if (mainWindow && !mainWindow.isDestroyed()) {
+            mainWindow.setTitle("Bondage Club — Installing update and restarting...");
+            mainWindow.setProgressBar(1.0);
+        }
+
+        if (isAppImage) {
+            const targetAppImage = process.env.APPIMAGE;
+            if (!targetAppImage || !fs.existsSync(targetAppImage)) {
+                throw new Error("Cannot locate running AppImage path (process.env.APPIMAGE is not set).");
+            }
+
+            fs.chmodSync(tempFilePath, 0o755);
+
+            try {
+                fs.renameSync(tempFilePath, targetAppImage);
+            } catch (err) {
+                if (err.code === 'EXDEV') {
+                    fs.copyFileSync(tempFilePath, targetAppImage);
+                    fs.unlinkSync(tempFilePath);
+                } else {
+                    throw err;
+                }
+            }
+
+            const child = child_process.spawn(targetAppImage, process.argv.slice(1), {
+                detached: true,
+                stdio: 'ignore'
+            });
+            child.unref();
+            app.quit();
+        } else {
+            const appDir = path.dirname(process.execPath);
+            const tempExtractDir = path.join(os.tmpdir(), `bc-extract-${Date.now()}`);
+            fs.mkdirSync(tempExtractDir, { recursive: true });
+
+            const extractRes = child_process.spawnSync('tar', ['-xzf', tempFilePath, '-C', tempExtractDir]);
+            if (extractRes.error) {
+                throw extractRes.error;
+            }
+
+            let sourceDir = tempExtractDir;
+            if (!fs.existsSync(path.join(tempExtractDir, 'resources'))) {
+                const subdirs = fs.readdirSync(tempExtractDir).map(n => path.join(tempExtractDir, n)).filter(p => fs.statSync(p).isDirectory());
+                const matching = subdirs.find(p => fs.existsSync(path.join(p, 'resources')));
+                if (matching) sourceDir = matching;
+            }
+
+            if (typeof fs.cpSync === 'function') {
+                fs.cpSync(sourceDir, appDir, { recursive: true, force: true });
+            } else {
+                child_process.spawnSync('cp', ['-rf', path.join(sourceDir, '.'), appDir]);
+            }
+
+            try { fs.rmSync(tempExtractDir, { recursive: true, force: true }); } catch (_) {}
+            try { fs.unlinkSync(tempFilePath); } catch (_) {}
+
+            const child = child_process.spawn(process.execPath, process.argv.slice(1), {
+                detached: true,
+                stdio: 'ignore'
+            });
+            child.unref();
+            app.quit();
+        }
+    } catch (err) {
+        isUpdating = false;
+        try { if (fs.existsSync(tempFilePath)) fs.unlinkSync(tempFilePath); } catch (_) {}
+        if (mainWindow && !mainWindow.isDestroyed()) {
+            mainWindow.setProgressBar(-1);
+            mainWindow.setTitle(`Bondage Club — Update Available (v${tag})`);
+            dialog.showMessageBox(mainWindow, {
+                type: 'error',
+                title: 'Update Failed',
+                message: 'Failed to automatically install the update.',
+                detail: `${err.message}\n\nYou can manually download the update from GitHub Releases.`,
+                buttons: ['Open GitHub Releases', 'Dismiss'],
+                defaultId: 0
+            }).then(r => {
+                if (r.response === 0) {
+                    shell.openExternal(`https://github.com/Izumii99/BC-Desktop/releases/latest`);
+                }
+            });
+        }
+    }
 }
 
 let lastKnownGoodUrl = "https://www.bondage-asia.com/club/R132/";
@@ -858,6 +1077,11 @@ function createWindow() {
 
     // Update title, notification badge "(1)", and flash taskbar frame
     mainWindow.on('page-title-updated', (event, title) => {
+        if (isUpdating) {
+            event.preventDefault();
+            return;
+        }
+
         if (isHidden) {
             event.preventDefault();
             mainWindow.setTitle("");

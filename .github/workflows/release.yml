@@ -8,14 +8,14 @@ name: 'Build and Release'
   workflow_dispatch:
     inputs:
       version:
-        description: 'Release version / tag (e.g., 7.1)'
+        description: 'Release version / tag (e.g., 7.2)'
         required: false
-        default: '7.1'
+        default: '7.2'
         type: string
       title:
         description: 'Release Title Highlight (Title Case)'
         required: false
-        default: 'Multi-Platform Standalone Release (Windows & Linux) & Addon QoL Updates'
+        default: 'In-App Instant Auto-Updater & Multi-Platform Parity'
         type: string
       notes:
         description: 'Custom Release Notes (leave empty to use standard template)'
