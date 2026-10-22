@@ -14,7 +14,7 @@
     <Description>Bondage Club Desktop Client for Windows</Description>
     <RepositoryUrl>https://github.com/Izumii99/BC-Desktop</RepositoryUrl>
     <PackageTags>bondage-club;bc-desktop;game;client</PackageTags>
-    <Version>7.2.0</Version>
+    <Version>7.3.0</Version>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <AllowUnsafeBlocks>false</AllowUnsafeBlocks>

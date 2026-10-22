@@ -440,12 +440,12 @@ public class MainWindowTests
     [TestMethod]
     public void AppVersionComparison_AccuratelyEvaluatesSemanticVersions()
     {
-        Assert.AreEqual("7.2", MainWindow.CurrentAppVersion, "CurrentAppVersion must be 7.2.");
+        Assert.AreEqual("7.3", MainWindow.CurrentAppVersion, "CurrentAppVersion must be 7.3.");
 
-        Assert.IsTrue(MainWindow.IsNewerVersion("v7.3", "7.2"), "v7.3 must be newer than 7.2.");
-        Assert.IsTrue(MainWindow.IsNewerVersion("7.3", "7.2"), "7.3 must be newer than 7.2.");
-        Assert.IsTrue(MainWindow.IsNewerVersion("v7.2.1", "7.2"), "Patch version v7.2.1 must be newer than 7.2.");
-        Assert.IsTrue(MainWindow.IsNewerVersion("v8.0", "7.2"), "Major version v8.0 must be newer than 7.2.");
+        Assert.IsTrue(MainWindow.IsNewerVersion("v7.4", "7.3"), "v7.4 must be newer than 7.3.");
+        Assert.IsTrue(MainWindow.IsNewerVersion("7.4", "7.3"), "7.4 must be newer than 7.3.");
+        Assert.IsTrue(MainWindow.IsNewerVersion("v7.3.1", "7.3"), "Patch version v7.3.1 must be newer than 7.3.");
+        Assert.IsTrue(MainWindow.IsNewerVersion("v8.0", "7.3"), "Major version v8.0 must be newer than 7.3.");
 
         Assert.IsFalse(MainWindow.IsNewerVersion("6.2", "6.2"), "Identical versions must return false.");
         Assert.IsFalse(MainWindow.IsNewerVersion("v6.2", "6.2"), "Identical versions with 'v' prefix must return false.");
@@ -729,7 +729,7 @@ public class MainWindowTests
         var root = doc.RootElement;
 
         Assert.AreEqual("bc-desktop-linux", root.GetProperty("name").GetString());
-        Assert.AreEqual("7.2.0", root.GetProperty("version").GetString());
+        Assert.AreEqual("7.3.0", root.GetProperty("version").GetString());
         Assert.AreEqual("Bondage Club", root.GetProperty("productName").GetString());
         Assert.IsTrue(root.TryGetProperty("keywords", out _), "package.json must specify keywords.");
 
@@ -750,6 +750,29 @@ public class MainWindowTests
 
         string buildJs = File.ReadAllText(Path.Combine(ProjectRoot, "platform", "linux", "build.js"));
         StringAssert.Contains(buildJs, "extraMetadata: { productName: \"\\u3164\" }", "Hidden AppImage must ship productName ㅤ so main.js detects stealth mode.");
+    }
+
+    [TestMethod]
+    public void SafeImageCacheVramOptimization_IsProperlyConfigured()
+    {
+        string csPath = Path.Combine(ProjectRoot, "MainWindow.xaml.cs");
+        string csContent = File.ReadAllText(csPath);
+
+        StringAssert.Contains(csContent, "setupSafeVramOptimization", "MainWindow.xaml.cs must define setupSafeVramOptimization.");
+        StringAssert.Contains(csContent, "ImageCachePurgeDelay", "MainWindow.xaml.cs must tune ImageCachePurgeDelay.");
+        StringAssert.Contains(csContent, "GLDrawImageCache.purge", "MainWindow.xaml.cs must call safe GLDrawImageCache.purge.");
+        StringAssert.Contains(csContent, "DrawImageCache.purge", "MainWindow.xaml.cs must call safe DrawImageCache.purge.");
+        Assert.IsFalse(csContent.Contains("WEBGL_lose_context"), "MainWindow.xaml.cs must never call WEBGL_lose_context.");
+        Assert.IsFalse(csContent.Contains("GLDrawImageCache.clear()"), "MainWindow.xaml.cs must never forcefully wipe GLDrawImageCache.");
+
+        string mainJsPath = Path.Combine(ProjectRoot, "platform", "linux", "main.js");
+        string mainJs = File.ReadAllText(mainJsPath);
+        StringAssert.Contains(mainJs, "setupSafeVramOptimization", "Linux main.js must define setupSafeVramOptimization.");
+        StringAssert.Contains(mainJs, "ImageCachePurgeDelay", "Linux main.js must tune ImageCachePurgeDelay.");
+        StringAssert.Contains(mainJs, "GLDrawImageCache.purge", "Linux main.js must call safe GLDrawImageCache.purge.");
+        StringAssert.Contains(mainJs, "DrawImageCache.purge", "Linux main.js must call safe DrawImageCache.purge.");
+        Assert.IsFalse(mainJs.Contains("WEBGL_lose_context"), "Linux main.js must never call WEBGL_lose_context.");
+        Assert.IsFalse(mainJs.Contains("GLDrawImageCache.clear()"), "Linux main.js must never forcefully wipe GLDrawImageCache.");
     }
 }
 

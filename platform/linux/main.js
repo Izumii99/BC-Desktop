@@ -813,6 +813,56 @@ const CopyAndFocusScript = `
         }
         return originalExecCommand.apply(this, arguments);
     };
+
+    // ponytail: Safe VRAM & texture optimization via BC's native ImageCache
+    (function setupSafeVramOptimization() {
+        const PURGE_DELAY = 3 * 60 * 1000;
+
+        function applyPurgeDelay() {
+            if (typeof window.ImageCachePurgeDelay !== 'undefined') {
+                window.ImageCachePurgeDelay = PURGE_DELAY;
+            }
+        }
+
+        // 1. Periodically prune expired textures (safely handles GLDrawImageCache & DrawImageCache)
+        setInterval(() => {
+            try {
+                applyPurgeDelay();
+                if (typeof window.CurrentScreen !== 'undefined' && window.CurrentScreen === 'Appearance') return;
+
+                if (typeof window.GLDrawImageCache !== 'undefined' && window.GLDrawImageCache && typeof window.GLDrawImageCache.purge === 'function') {
+                    window.GLDrawImageCache.purge(false);
+                }
+                if (typeof window.DrawImageCache !== 'undefined' && window.DrawImageCache && typeof window.DrawImageCache.purge === 'function') {
+                    window.DrawImageCache.purge(false);
+                }
+            } catch (e) {}
+        }, 45 * 1000);
+
+        // 2. Safe gentle prune after leaving Wardrobe (Appearance) once new room assets have safely loaded
+        let lastScreen = null;
+        let screenTimer = null;
+        setInterval(() => {
+            try {
+                applyPurgeDelay();
+                if (typeof window.CurrentScreen !== 'undefined') {
+                    if (lastScreen === 'Appearance' && window.CurrentScreen !== 'Appearance') {
+                        if (screenTimer) clearTimeout(screenTimer);
+                        screenTimer = setTimeout(() => {
+                            if (typeof window.CurrentScreen !== 'undefined' && window.CurrentScreen === 'Appearance') return;
+                            if (typeof window.GLDrawImageCache !== 'undefined' && window.GLDrawImageCache && typeof window.GLDrawImageCache.purge === 'function') {
+                                window.GLDrawImageCache.purge(true);
+                            }
+                            if (typeof window.DrawImageCache !== 'undefined' && window.DrawImageCache && typeof window.DrawImageCache.purge === 'function') {
+                                window.DrawImageCache.purge(true);
+                            }
+                        }, 12000);
+                    }
+                    lastScreen = window.CurrentScreen;
+                }
+            } catch (e) {}
+        }, 1000);
+    })();
 })();
 `;
 

@@ -1,9 +1,9 @@
 ### Fixes & Improvements:
 
-- **Feature (Seamless In-App Auto-Updater):** You can now update the application directly from the title bar with a single click. The app downloads the new version in the background, displays real-time download progress, and automatically restarts into the updated version without cluttering your Downloads folder.
-- **Improvement (Linux Multi-Format Support):** Auto-updates now seamlessly support both portable `.AppImage` single files and unpacked `.tar.gz` directories, replacing or updating existing game installations in-place cleanly.
-- **Improvement (Update Controls & Options):** Right-clicking the update badge opens the GitHub release notes in your browser if you wish to read the changelog before updating.
-- **Feature (Tester & Dev Isolation):** Local test versions now run in complete isolation with updates disabled, ensuring developer builds never overwrite or interfere with live production versions.
+- **Improvement (Memory & Performance):** Implemented safe, automated VRAM and texture memory maintenance. Texture retention is tuned to safely prune unneeded assets (such as clothes browsed in Wardrobe) without freezing the canvas or affecting characters currently in the room.
+- **Improvement (Wardrobe Transition):** Added gentle post-wardrobe cleanup that waits for room characters to finish loading before reclaiming GPU memory, preventing VRAM inflation over extended play sessions.
+- **Fix (Stability & Rendering):** Fully protected the WebGL rendering pipeline so active character models, chat text, and room backgrounds remain fluid and responsive without visual lockups or desynchronization.
+- **Feature (Multi-Platform Parity):** Unified safe texture optimization across Windows and Linux standalone builds.
 
 ### Downloads:
 
