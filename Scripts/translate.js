@@ -783,7 +783,7 @@
             const tl = targetLangValue;
             const q  = encodeURIComponent(text);
 
-            // Tambahkan dt=qc dan fallback agar spellcheck & language detection selalu terpancing
+            // Include dt=qc and fallback parameters to reliably trigger Google spellcheck & language detection
             const tryGoogle = async (base, sourceLang) => {
                 const url = `${base}/translate_a/single?client=gtx&sl=${sourceLang}&tl=${tl}&hl=en&dt=t&dt=bd&dt=rm&dt=qca&dt=qc&dt=sp&dt=ss&q=${q}`;
                 const r = await fetch(url);
@@ -821,8 +821,8 @@
 
                 if (rawData) {
                     res = extractGoogleData(rawData);
-                    // Jika hasil terjemahan sama persis dengan input (gejala typo yang gagal diterjemahkan saat sl !== 'auto'),
-                    // pancing ulang dengan sl=auto untuk memaksa spell-checker Google keluar
+                    // If translation matches input exactly (often caused by typos when sourceLang is not 'auto'),
+                    // retry with auto to trigger Google spellcheck
                     if (!res.spellResult && sl !== "auto" && res.translated.toLowerCase() === text.toLowerCase()) {
                         try {
                             const retryAuto = await tryGoogle("https://translate.googleapis.com", "auto");
@@ -835,9 +835,9 @@
                     res = await tryGoogleDict();
                 }
 
-                if (reqId !== translateReqId) return; // Abaikan response lama jika user masih mengetik
+                if (reqId !== translateReqId) return; // Discard stale response if user typed new input
 
-                // Tampilkan Detected Language jika berhasil dideteksi
+                // Render detected language tag when available
                 if (res.detectedLang) {
                     lastDetectedLang = res.detectedLang;
                     const langName = getLangLabel(LANGUAGES, res.detectedLang);

@@ -15,9 +15,9 @@ namespace BCDesktop;
 
 public partial class MainWindow : Window
 {
-    private static string _lastKnownGoodUrl = "https://www.bondage-asia.com/club/R132/";
+    internal const string BaseGameUrl = "https://www.bondage-asia.com/club/R{0}/";
+    private static string _lastKnownGoodUrl = string.Format(BaseGameUrl, 132);
     private static string FallbackUrl => _lastKnownGoodUrl;
-    private const string VersionApiBase = "https://www.bondage-asia.com/";
 
 
     private string _originalTitleLabel;
@@ -259,49 +259,39 @@ public partial class MainWindow : Window
         }
     }
 
-    private enum VersionStatus
+    // Dynilath UTC calendar version formula (auto-increments every 16th of the month at UTC)
+    internal static int GetCalculatedCalendarVersion(DateTime? utcNow = null)
     {
-        NotFound,
-        Active,
-        Outdated
+        var dt = utcNow ?? DateTime.UtcNow;
+        return ((dt.Year - 2025) * 12 + dt.Month) + 110 + (dt.Day >= 16 ? 1 : 0);
     }
 
-    private static async Task<(VersionStatus Status, int? RedirectTo)> CheckVersionStatusAsync(HttpClient http, int version)
+    // Scrape active official release version number from portal, enforced to bondage-asia
+    internal static async Task<int?> FetchOfficialVersionNumberAsync(HttpClient client)
     {
         try
         {
-            using var res = await http.GetAsync(
-                $"https://www.bondage-asia.com/club/R{version}/", 
-                HttpCompletionOption.ResponseContentRead);
-                
-            if (!res.IsSuccessStatusCode)
-                return (VersionStatus.NotFound, null);
+            using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(4));
+            using var req = new HttpRequestMessage(HttpMethod.Get, "https://bondageprojects.com/club_game/");
+            req.Headers.CacheControl = new System.Net.Http.Headers.CacheControlHeaderValue { NoCache = true, NoStore = true };
 
-            string html = await res.Content.ReadAsStringAsync();
+            using var res = await client.SendAsync(req, cts.Token);
+            if (!res.IsSuccessStatusCode) return null;
 
-            // Match meta refresh to next version (e.g. URL=../R133/ or URL=R133/)
-            var refreshMatch = Regex.Match(
-                html, 
-                @"URL=(?:\.\./)?R(\d+)/", 
-                RegexOptions.IgnoreCase);
+            string html = await res.Content.ReadAsStringAsync(cts.Token);
 
-            if (refreshMatch.Success && int.TryParse(refreshMatch.Groups[1].Value, out int nextVer))
+            // Extract the active Rxxx version number from official portal button
+            var match = Regex.Match(html, @"onclick=""window\.location='https://www\.bondage[^']+/R(\d+)/[^']*'""", RegexOptions.IgnoreCase);
+            if (match.Success && int.TryParse(match.Groups[1].Value, out int vNum))
             {
-                return (VersionStatus.Outdated, nextVer);
+                return vNum;
             }
-
-            if (html.Contains("Outdated Version", StringComparison.OrdinalIgnoreCase))
-            {
-                return (VersionStatus.Outdated, version + 1);
-            }
-
-            // If there is no redirect, this version is officially active
-            return (VersionStatus.Active, null);
         }
         catch
         {
-            return (VersionStatus.NotFound, null);
+            // Return null on failure/timeout to proceed with calendar formula fallback
         }
+        return null;
     }
 
     private static async Task<string> DetectLatestUrlAsync()
@@ -331,58 +321,30 @@ public partial class MainWindow : Window
         // If user locked the version (e.g. "132:lock"), bypass auto-detect directly
         if (isLocked)
         {
-            _lastKnownGoodUrl = $"https://www.bondage-asia.com/club/R{activeVersion}/";
+            _lastKnownGoodUrl = string.Format(BaseGameUrl, activeVersion);
             return _lastKnownGoodUrl;
         }
 
         try
         {
-            using var http = new HttpClient { Timeout = TimeSpan.FromSeconds(4) };
+            using var http = new HttpClient();
             http.DefaultRequestHeaders.UserAgent.ParseAdd(
                 "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36");
 
-            int currentProbe = activeVersion;
-            int maxHops = 10;
-
-            // 2. Follow server redirection chain
-            for (int hop = 0; hop < maxHops; hop++)
+            int? officialVer = await FetchOfficialVersionNumberAsync(http);
+            if (officialVer.HasValue && officialVer.Value >= 132 && officialVer.Value < 500)
             {
-                var (status, nextVer) = await CheckVersionStatusAsync(http, currentProbe);
-
-                if (status == VersionStatus.Active)
+                activeVersion = officialVer.Value;
+            }
+            else
+            {
+                int calVer = GetCalculatedCalendarVersion();
+                if (calVer >= 132 && calVer < 500)
                 {
-                    // Current version is still active and has NOT been redirected by the server
-                    activeVersion = currentProbe;
-                    break;
-                }
-                else if (status == VersionStatus.Outdated && nextVer.HasValue)
-                {
-                    // Server officially instructs to proceed to the next version
-                    var (nextStatus, _) = await CheckVersionStatusAsync(http, nextVer.Value);
-                    if (nextStatus != VersionStatus.NotFound)
-                    {
-                        activeVersion = nextVer.Value;
-                        currentProbe = nextVer.Value;
-                        
-                        if (nextStatus == VersionStatus.Active) break;
-                    }
-                    else
-                    {
-                        break;
-                    }
-                }
-                else
-                {
-                    if (currentProbe > 132)
-                    {
-                        currentProbe--;
-                        continue;
-                    }
-                    break;
+                    activeVersion = calVer;
                 }
             }
 
-            _lastKnownGoodUrl = $"https://www.bondage-asia.com/club/R{activeVersion}/";
             try
             {
                 Directory.CreateDirectory(Path.GetDirectoryName(versionFile)!);
@@ -390,11 +352,18 @@ public partial class MainWindow : Window
             }
             catch { }
         }
-        catch { }
+        catch
+        {
+            if (activeVersion < 132)
+            {
+                activeVersion = GetCalculatedCalendarVersion();
+            }
+        }
 
-        _lastKnownGoodUrl = $"https://www.bondage-asia.com/club/R{activeVersion}/";
+        _lastKnownGoodUrl = string.Format(BaseGameUrl, activeVersion);
         return _lastKnownGoodUrl;
     }
+
 
     internal const string CurrentAppVersion = "7.3";
     internal const string GitHubRepo = "Izumii99/BC-Desktop";

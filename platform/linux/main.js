@@ -866,33 +866,45 @@ const CopyAndFocusScript = `
 })();
 `;
 
-async function checkVersionStatus(version) {
+function getCalendarVersionNumber() {
+    const now = new Date();
+    return Math.floor((now.getUTCFullYear() - 2025) * 12 + now.getUTCMonth()) + 111 + (now.getUTCDate() >= 16 ? 1 : 0);
+}
+
+async function getLatestAsiaUrl() {
+    let versionNum = null;
+
     try {
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 4000);
-        const res = await fetch(`https://www.bondage-asia.com/club/R${version}/`, {
-            signal: controller.signal,
-            headers: { "User-Agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36" }
+        const timeout = setTimeout(() => controller.abort(), 4000);
+
+        const res = await fetch("https://bondageprojects.com/club_game/", {
+            cache: "no-store",
+            signal: controller.signal
         });
-        clearTimeout(timeoutId);
+        clearTimeout(timeout);
 
-        if (!res.ok) return { status: 'NotFound', nextVer: null };
-        const html = await res.text();
-
-        const refreshMatch = html.match(/URL=(?:\.\.\/)?R(\d+)\//i);
-        if (refreshMatch && refreshMatch[1]) {
-            return { status: 'Outdated', nextVer: parseInt(refreshMatch[1], 10) };
+        if (res.ok) {
+            const html = await res.text();
+            const match = html.match(/onclick="window\.location='https:\/\/www\.bondage[^']+\/R(\d+)\/[^']*'"/i);
+            if (match && match[1]) {
+                versionNum = parseInt(match[1], 10);
+            }
         }
-
-        if (html.toLowerCase().includes("outdated version")) {
-            return { status: 'Outdated', nextVer: version + 1 };
-        }
-
-        return { status: 'Active', nextVer: null };
     } catch (_) {
-        return { status: 'NotFound', nextVer: null };
+        // Ignore network errors and fall back to calendar formula
     }
+
+    if (!versionNum) {
+        versionNum = getCalendarVersionNumber();
+    }
+
+    // Enforce bondage-asia.com base URL for stable LocalStorage and addon persistence
+    return `https://www.bondage-asia.com/club/R${versionNum}/`;
 }
+
+// Backward compatibility alias
+const getLatestElementFxUrl = getLatestAsiaUrl;
 
 async function resolveGameUrl() {
     if (process.env.BC_URL) return process.env.BC_URL;
@@ -922,42 +934,22 @@ async function resolveGameUrl() {
     }
 
     try {
-        let currentProbe = activeVersion;
-        const maxHops = 10;
-
-        for (let hop = 0; hop < maxHops; hop++) {
-            const { status, nextVer } = await checkVersionStatus(currentProbe);
-
-            if (status === 'Active') {
-                activeVersion = currentProbe;
-                break;
-            } else if (status === 'Outdated' && nextVer !== null) {
-                const { status: nextStatus } = await checkVersionStatus(nextVer);
-                if (nextStatus !== 'NotFound') {
-                    activeVersion = nextVer;
-                    currentProbe = nextVer;
-                    if (nextStatus === 'Active') break;
-                } else {
-                    break;
-                }
-            } else {
-                if (currentProbe > 132 && currentProbe >= activeVersion - 3) {
-                    currentProbe--;
-                    continue;
-                }
-                break;
-            }
+        const url = await getLatestAsiaUrl();
+        const match = url.match(/\/R(\d+)\//);
+        if (match && match[1]) {
+            activeVersion = parseInt(match[1], 10);
         }
-
         try {
             const dir = path.dirname(versionFile);
             if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
             fs.writeFileSync(versionFile, activeVersion.toString(), "utf8");
         } catch (_) {}
-    } catch (_) {}
-
-    lastKnownGoodUrl = `https://www.bondage-asia.com/club/R${activeVersion}/`;
-    return lastKnownGoodUrl;
+        lastKnownGoodUrl = url;
+        return lastKnownGoodUrl;
+    } catch (_) {
+        lastKnownGoodUrl = `https://www.bondage-asia.com/club/R${activeVersion}/`;
+        return lastKnownGoodUrl;
+    }
 }
 
 let mainWindow = null;

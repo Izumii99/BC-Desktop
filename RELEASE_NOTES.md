@@ -4,6 +4,7 @@
 - **Improvement (Wardrobe Transition):** Added gentle post-wardrobe cleanup that waits for room characters to finish loading before reclaiming GPU memory, preventing VRAM inflation over extended play sessions.
 - **Fix (Stability & Rendering):** Fully protected the WebGL rendering pipeline so active character models, chat text, and room backgrounds remain fluid and responsive without visual lockups or desynchronization.
 - **Feature (Multi-Platform Parity):** Unified safe texture optimization across Windows and Linux standalone builds.
+- **Fix (Update System):** Fixed the auto-update error message on Linux and improved the download progress indicator.
 
 ### Downloads:
 

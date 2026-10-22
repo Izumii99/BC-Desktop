@@ -688,27 +688,38 @@ public class MainWindowTests
     }
 
     [TestMethod]
-    public void VersionDetection_FollowsRedirectionChainAndLock()
+    public void VersionDetection_HybridPortalScraperCalendarAndLock()
     {
         string csPath = Path.Combine(ProjectRoot, "MainWindow.xaml.cs");
         string csContent = File.ReadAllText(csPath);
 
-        // Verify CheckVersionStatusAsync and enum are present
-        StringAssert.Contains(csContent, "CheckVersionStatusAsync", "MainWindow must define CheckVersionStatusAsync.");
-        StringAssert.Contains(csContent, "VersionStatus.Outdated", "Must handle outdated version status.");
-        StringAssert.Contains(csContent, "VersionStatus.Active", "Must handle active version status.");
+        // Verify Hybrid architecture methods and ElementFX lock are present
+        StringAssert.Contains(csContent, "GetCalculatedCalendarVersion", "MainWindow must define GetCalculatedCalendarVersion.");
+        StringAssert.Contains(csContent, "FetchOfficialVersionNumberAsync", "MainWindow must define FetchOfficialVersionNumberAsync.");
+        StringAssert.Contains(csContent, "BaseGameUrl", "MainWindow must define BaseGameUrl.");
         StringAssert.Contains(csContent, "rawContent.EndsWith(\":lock\"", "Must support version lock syntax in version.txt.");
 
-        // Unit test regex matching for outdated version meta redirects
-        string sampleHtml1 = "<html><head><title>Bondage College - Outdated Version</title><meta http-equiv=\"refresh\" content=\"2; URL=../R133/\"></head></html>";
-        var match1 = Regex.Match(sampleHtml1, @"URL=(?:\.\./)?R(\d+)/", RegexOptions.IgnoreCase);
-        Assert.IsTrue(match1.Success, "Must match relative URL=../R133/");
+        // Unit test Dynilath calendar version calculation formula across boundary dates
+        Assert.AreEqual(111, MainWindow.GetCalculatedCalendarVersion(new DateTime(2025, 1, 1, 0, 0, 0, DateTimeKind.Utc)));
+        Assert.AreEqual(112, MainWindow.GetCalculatedCalendarVersion(new DateTime(2025, 1, 16, 0, 0, 0, DateTimeKind.Utc)));
+        Assert.AreEqual(132, MainWindow.GetCalculatedCalendarVersion(new DateTime(2026, 10, 15, 0, 0, 0, DateTimeKind.Utc)));
+        Assert.AreEqual(133, MainWindow.GetCalculatedCalendarVersion(new DateTime(2026, 10, 16, 0, 0, 0, DateTimeKind.Utc)));
+        Assert.AreEqual(133, MainWindow.GetCalculatedCalendarVersion(new DateTime(2026, 10, 22, 0, 0, 0, DateTimeKind.Utc)));
+
+        // Unit test regex matching for official portal buttons
+        string samplePortalHtml1 = "<button onclick=\"window.location='https://www.bondageprojects.elementfx.com/R133/BondageClub/'\">Play</button>";
+        var match1 = Regex.Match(samplePortalHtml1, @"onclick=""window\.location='https://www\.bondage[^']+/R(\d+)/[^']*'""", RegexOptions.IgnoreCase);
+        Assert.IsTrue(match1.Success, "Must match ElementFX portal button");
         Assert.AreEqual("133", match1.Groups[1].Value);
 
-        string sampleHtml2 = "<html><head><meta http-equiv=\"refresh\" content=\"0; URL=R134/\"></head></html>";
-        var match2 = Regex.Match(sampleHtml2, @"URL=(?:\.\./)?R(\d+)/", RegexOptions.IgnoreCase);
-        Assert.IsTrue(match2.Success, "Must match direct URL=R134/");
+        string samplePortalHtml2 = "<button onclick=\"window.location='https://www.bondage-europe.com/club/R134/'\">Play</button>";
+        var match2 = Regex.Match(samplePortalHtml2, @"onclick=""window\.location='https://www\.bondage[^']+/R(\d+)/[^']*'""", RegexOptions.IgnoreCase);
+        Assert.IsTrue(match2.Success, "Must match Europe portal button");
         Assert.AreEqual("134", match2.Groups[1].Value);
+
+        // Unit test BaseGameUrl formatting
+        string formattedUrl = string.Format(MainWindow.BaseGameUrl, 133);
+        Assert.AreEqual("https://www.bondage-asia.com/club/R133/", formattedUrl);
 
         // Unit test version lock string parsing logic
         string lockInput = "132:lock";
@@ -745,6 +756,9 @@ public class MainWindowTests
         StringAssert.Contains(mainJs, "max-gum-fps", "Linux main.js must cap fps like Windows.");
         StringAssert.Contains(mainJs, "setWindowOpenHandler", "Linux main.js must delegate external links to default browser.");
         StringAssert.Contains(mainJs, "KeyC", "Linux main.js must handle physical Ctrl+KeyC.");
+        StringAssert.Contains(mainJs, "getCalendarVersionNumber", "Linux main.js must define getCalendarVersionNumber.");
+        StringAssert.Contains(mainJs, "getLatestElementFxUrl", "Linux main.js must define getLatestElementFxUrl.");
+        StringAssert.Contains(mainJs, "https://www.bondage-asia.com/club/R", "Linux main.js must enforce bondage-asia server lock.");
         Assert.IsFalse(mainJs.Contains("protocol.handle('http'"), "Intercepting all http traffic is not allowed; local scripts are injected directly like Windows.");
         Assert.IsFalse(mainJs.Contains("clearCache("), "Wiping the HTTP cache on minimize forces game assets to re-download.");
 
