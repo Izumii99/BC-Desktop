@@ -17,7 +17,7 @@
 
 ---
 
-A minimal native desktop wrapper for BC, built with **WPF** and **.NET 8**. Uses the OS native webview (Edge WebView2) — no bundled Chromium — keeping the RAM footprint and CPU usage as small as possible.
+A minimal native desktop wrapper for BC, built with **WPF** and **.NET 8**. Uses the OS native webview (Edge WebView2 no bundled Chromium) keeping the RAM footprint and CPU usage as small as possible.
 
 ## Features
 
