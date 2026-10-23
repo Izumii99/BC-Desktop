@@ -22,13 +22,30 @@ A minimal native desktop wrapper for BC, built with **WPF** and **.NET 8**. Uses
 ## Features
 
 - **Auto-detects the latest game version** on every launch
-- **OTA (Over-the-Air) Built-in Remote Loader**: Addon manager and remote scripts are seamlessly embedded into the executable and fetched automatically on startup — no zip extraction or external script setup required!
+- **OTA (Over-the-Air) Built-in Remote Loader**: Addon manager and remote scripts are seamlessly embedded into the executable and fetched automatically on startup
 - **Silent Release Checker**: Background check for newer desktop releases with unobtrusive title bar notifications
 - **Borderless custom title bar** with seamless drag, minimize, maximize, and close
 - **Immersive Fullscreen (F11)** and **Chromium DevTools (F12)** keyboard shortcuts
 - **Sleeping Tabs (Suspend on minimize)** to drastically reduce RAM while in background
 - **Multi-monitor support** with proper DPI scaling bounds
 - **Discreet / Stealth** design for Task Manager and Taskbar
+
+## Adding Custom / Local Scripts Manually
+
+You can load your own custom scripts or community mods offline without using Tampermonkey or bookmarklets by placing them in a local `Scripts/` directory.
+
+### Folder Structure
+
+Place the `Scripts` folder in the same root directory as the executable:
+
+```text
+📁 BC-Desktop/
+├── 📁 Scripts/
+│   ├── my-custom-addon.js
+│   └── another-mod.js
+└── BC.exe (or BC-Windows.exe / BC-Linux.AppImage)
+```
+
 
 ## Included Scripts / Addons
 
