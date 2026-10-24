@@ -568,51 +568,17 @@
             }
         });
     } else {
-        // Desktop / PC triggers: Right-Click or Mouse Long-Press Hold (600ms)
-        let mouseHoldTimer = null;
-        let mouseStartX = 0, mouseStartY = 0;
-
+        // Desktop / PC trigger: Right-Click only in ChatRoom
         function onChatRightClick(e) {
             if (!isChatRoom()) return;
             if (isCheatUi(e.target)) return;
-            if (e.type !== "contextmenu" && e.button !== 2) return;
+            if (e.target && (e.target.tagName === "INPUT" || e.target.tagName === "TEXTAREA")) return;
             e.preventDefault();
             e.stopPropagation();
             openCheatMenu();
         }
 
-        document.addEventListener("mouseup", (e) => {
-            if (mouseHoldTimer) {
-                clearTimeout(mouseHoldTimer);
-                mouseHoldTimer = null;
-            }
-            onChatRightClick(e);
-        }, true);
-
         document.addEventListener("contextmenu", onChatRightClick, true);
-
-        document.addEventListener("mousedown", (e) => {
-            if (!isChatRoom() || isCheatUi(e.target)) return;
-            if (e.button !== 0) return;
-            mouseStartX = e.clientX;
-            mouseStartY = e.clientY;
-            clearTimeout(mouseHoldTimer);
-            mouseHoldTimer = setTimeout(() => {
-                openCheatMenu();
-                mouseHoldTimer = null;
-            }, 600);
-        }, true);
-
-        document.addEventListener("mousemove", (e) => {
-            if (mouseHoldTimer) {
-                const dx = Math.abs(e.clientX - mouseStartX);
-                const dy = Math.abs(e.clientY - mouseStartY);
-                if (dx > 10 || dy > 10) {
-                    clearTimeout(mouseHoldTimer);
-                    mouseHoldTimer = null;
-                }
-            }
-        }, true);
     }
 
     setInterval(() => {
