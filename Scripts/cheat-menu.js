@@ -3,8 +3,33 @@
     if (window !== window.top) return;
     if (window._bcCheatMenuLoaded) return;
     window._bcCheatMenuLoaded = true;
-
     const cheats = [
+        {
+            name: "Instant Struggle Win",
+            desc: "Instantly sets struggle progress to max.",
+            action: () => {
+                if (typeof StruggleProgress !== 'undefined') {
+                    window.StruggleProgress = 1000;
+                    console.log("Cheat applied: Struggle progress maxed.");
+                } else {
+                    alert("You are not currently struggling!");
+                }
+            }
+        },
+        {
+            name: "Remove Blocked Zones",
+            desc: "Bypasses all item zone blocks and prerequisite restrictions. Allows equipping anything anywhere.",
+            action: () => {
+                if (typeof InventoryGroupIsBlocked === 'function') {
+                    window.InventoryGroupIsBlocked = function(C, GroupName) { return false; };
+                    window.InventoryPrerequisiteMessage = function(C, Prerequisit) { return ""; };
+                    console.log("Cheat applied: Blocked zones removed.");
+                    alert("All zone blocks and prerequisites bypassed!");
+                } else {
+                    alert("Game functions not loaded yet!");
+                }
+            }
+        },
         {
             name: "Toggle Auto Mirror Restraints",
             desc: "Automatically removes any restraint someone else puts on you and puts it back on them.",
@@ -143,43 +168,6 @@
                     console.log("Cheat applied: Restraint removed.");
                 } else {
                     alert("Please focus/click on a restraint first!");
-                }
-            }
-        },
-        {
-            name: "Instant Struggle Win",
-            desc: "Instantly sets struggle progress to max.",
-            action: () => {
-                if (typeof StruggleProgress !== 'undefined') {
-                    window.StruggleProgress = 1000;
-                    console.log("Cheat applied: Struggle progress maxed.");
-                } else {
-                    alert("You are not currently struggling!");
-                }
-            }
-        },
-        {
-            name: "Force Full Wardrobe Access",
-            desc: "Allows full wardrobe access, bypassing limits. Useful for NPCs.",
-            action: () => {
-                if (typeof CharacterAppearanceSelection !== 'undefined') {
-                    CharacterAppearanceSelection.OnlineSharedSettings = { AllowFullWardrobeAccess: true };
-                    console.log("Cheat applied: Full wardrobe access granted.");
-                    alert("Wardrobe access unlocked! You can now open the wardrobe.");
-                }
-            }
-        },
-        {
-            name: "Remove Blocked Zones",
-            desc: "Bypasses all item zone blocks and prerequisite restrictions. Allows equipping anything anywhere.",
-            action: () => {
-                if (typeof InventoryGroupIsBlocked === 'function') {
-                    window.InventoryGroupIsBlocked = function(C, GroupName) { return false; };
-                    window.InventoryPrerequisiteMessage = function(C, Prerequisit) { return ""; };
-                    console.log("Cheat applied: Blocked zones removed.");
-                    alert("All zone blocks and prerequisites bypassed!");
-                } else {
-                    alert("Game functions not loaded yet!");
                 }
             }
         },
@@ -436,7 +424,7 @@
         gap: "8px"
     });
 
-    cheats.forEach(cheat => {
+    cheats.sort((a, b) => a.name.localeCompare(b.name)).forEach(cheat => {
         const item = document.createElement("div");
         Object.assign(item.style, {
             padding: "12px 16px",
@@ -474,7 +462,8 @@
 
     let uiAppended = false;
 
-    const BUTTON_SCREENS = ["Login", "InformationSheet", "Appearance"];
+    // Only display the floating menu button on Login and InformationSheet (ESC menu), exactly like Chat QoL
+    const BUTTON_SCREENS = ["Login", "InformationSheet"];
 
     function isChatRoom() {
         return typeof CurrentScreen !== "undefined" && CurrentScreen === "ChatRoom";
@@ -508,54 +497,123 @@
 
     const isMobileDevice = !!window.AndroidBridge || /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent);
 
-    function onChatRightClick(e) {
-        if (!isChatRoom()) return;
-        if (isCheatUi(e.target)) return;
-        if (e.type !== "contextmenu" && e.button !== 2) return;
-        e.preventDefault();
-        e.stopPropagation();
-        openCheatMenu();
-    }
+    if (isMobileDevice) {
+        // Mobile / Android safety trigger: Double-tap & Hold (1st tap quick, 2nd tap held for ~400ms)
+        let firstTapTime = 0;
+        let firstTapX = 0, firstTapY = 0;
+        let touchStartTime = 0;
+        let touchStartX = 0, touchStartY = 0;
+        let holdTimer = null;
 
-    document.addEventListener("mouseup", onChatRightClick, true);
-    document.addEventListener("contextmenu", onChatRightClick, true);
-
-    // Mobile touch support: 2-finger tap or long-press (600ms) in ChatRoom
-    let touchTimer = null;
-    let touchStartX = 0, touchStartY = 0;
-
-    document.addEventListener("touchstart", (e) => {
-        if (!isChatRoom() || isCheatUi(e.target)) return;
-        if (e.touches.length === 2) {
-            e.preventDefault();
-            openCheatMenu();
-            return;
-        }
-        if (e.touches.length === 1) {
-            touchStartX = e.touches[0].clientX;
-            touchStartY = e.touches[0].clientY;
-            clearTimeout(touchTimer);
-            touchTimer = setTimeout(() => {
-                openCheatMenu();
-            }, 600);
-        }
-    }, { passive: false });
-
-    document.addEventListener("touchmove", (e) => {
-        if (touchTimer && e.touches.length > 0) {
-            const dx = Math.abs(e.touches[0].clientX - touchStartX);
-            const dy = Math.abs(e.touches[0].clientY - touchStartY);
-            if (dx > 10 || dy > 10) {
-                clearTimeout(touchTimer);
-                touchTimer = null;
+        document.addEventListener("touchstart", (e) => {
+            if (!isChatRoom() || isCheatUi(e.target)) return;
+            if (e.touches.length !== 1) {
+                clearTimeout(holdTimer);
+                holdTimer = null;
+                firstTapTime = 0;
+                return;
             }
-        }
-    });
 
-    document.addEventListener("touchend", () => {
-        clearTimeout(touchTimer);
-        touchTimer = null;
-    });
+            const touch = e.touches[0];
+            touchStartX = touch.clientX;
+            touchStartY = touch.clientY;
+            touchStartTime = Date.now();
+
+            const timeSinceFirstTap = touchStartTime - firstTapTime;
+            const distFromFirstTap = Math.hypot(touchStartX - firstTapX, touchStartY - firstTapY);
+
+            // Double tap detection: 2nd tap must occur within 450ms near 1st tap, then held for 400ms
+            if (firstTapTime > 0 && timeSinceFirstTap <= 450 && distFromFirstTap < 45) {
+                clearTimeout(holdTimer);
+                holdTimer = setTimeout(() => {
+                    openCheatMenu();
+                    firstTapTime = 0;
+                    holdTimer = null;
+                }, 400);
+            } else {
+                firstTapTime = 0;
+                clearTimeout(holdTimer);
+                holdTimer = null;
+            }
+        }, { passive: false });
+
+        document.addEventListener("touchmove", (e) => {
+            if (e.touches.length > 0) {
+                const dx = Math.abs(e.touches[0].clientX - touchStartX);
+                const dy = Math.abs(e.touches[0].clientY - touchStartY);
+                if (dx > 12 || dy > 12) {
+                    clearTimeout(holdTimer);
+                    holdTimer = null;
+                    firstTapTime = 0;
+                }
+            }
+        });
+
+        document.addEventListener("touchend", () => {
+            const touchDuration = Date.now() - touchStartTime;
+            clearTimeout(holdTimer);
+            holdTimer = null;
+
+            if (touchDuration < 280 && firstTapTime === 0) {
+                firstTapTime = Date.now();
+                firstTapX = touchStartX;
+                firstTapY = touchStartY;
+                setTimeout(() => {
+                    if (Date.now() - firstTapTime >= 450) {
+                        firstTapTime = 0;
+                    }
+                }, 460);
+            } else {
+                firstTapTime = 0;
+            }
+        });
+    } else {
+        // Desktop / PC triggers: Right-Click or Mouse Long-Press Hold (600ms)
+        let mouseHoldTimer = null;
+        let mouseStartX = 0, mouseStartY = 0;
+
+        function onChatRightClick(e) {
+            if (!isChatRoom()) return;
+            if (isCheatUi(e.target)) return;
+            if (e.type !== "contextmenu" && e.button !== 2) return;
+            e.preventDefault();
+            e.stopPropagation();
+            openCheatMenu();
+        }
+
+        document.addEventListener("mouseup", (e) => {
+            if (mouseHoldTimer) {
+                clearTimeout(mouseHoldTimer);
+                mouseHoldTimer = null;
+            }
+            onChatRightClick(e);
+        }, true);
+
+        document.addEventListener("contextmenu", onChatRightClick, true);
+
+        document.addEventListener("mousedown", (e) => {
+            if (!isChatRoom() || isCheatUi(e.target)) return;
+            if (e.button !== 0) return;
+            mouseStartX = e.clientX;
+            mouseStartY = e.clientY;
+            clearTimeout(mouseHoldTimer);
+            mouseHoldTimer = setTimeout(() => {
+                openCheatMenu();
+                mouseHoldTimer = null;
+            }, 600);
+        }, true);
+
+        document.addEventListener("mousemove", (e) => {
+            if (mouseHoldTimer) {
+                const dx = Math.abs(e.clientX - mouseStartX);
+                const dy = Math.abs(e.clientY - mouseStartY);
+                if (dx > 10 || dy > 10) {
+                    clearTimeout(mouseHoldTimer);
+                    mouseHoldTimer = null;
+                }
+            }
+        }, true);
+    }
 
     setInterval(() => {
         try {
@@ -568,7 +626,7 @@
 
             if (
                 typeof CurrentScreen !== "undefined" &&
-                (BUTTON_SCREENS.indexOf(CurrentScreen) !== -1 || (isMobileDevice && isChatRoom()))
+                BUTTON_SCREENS.indexOf(CurrentScreen) !== -1
             ) {
                 cheatBtn.style.display = "flex";
             } else {

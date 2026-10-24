@@ -50,7 +50,7 @@
         enableLceModLoader: false,
         enableFluidColor: false,
         fluidColor: "#547A82",
-        persistentWhisper: true,
+        persistentWhisper: false,
     };
     try {
         const saved = localStorage.getItem("BCDesktop_ChatQoL_Config");
@@ -63,7 +63,7 @@
                 parsed.emoticons || {},
             );
             if (qolConfig.persistentWhisper === undefined) {
-                qolConfig.persistentWhisper = true;
+                qolConfig.persistentWhisper = false;
             }
         }
     } catch (e) {}
@@ -680,99 +680,7 @@
         return { container, body };
     }
 
-    const cat1 = createCategory("Legacy (Merged to LCE)", false);
-    cat1.body.appendChild(
-        createToggle(
-            "enableLceModLoader",
-            "Enable LCE Mod Loader",
-            "Automatically injects the official BC-LCE mod into the game.",
-        ),
-    );
-    cat1.body.appendChild(emoContainer);
-    cat1.body.appendChild(
-        createToggle(
-            "enableEchoMouthPull",
-            "Enable Pull to Side (Mouth)",
-            "Allows pulling to side with mouth if hands are tied (Echo Addon).",
-        ),
-    );
-    cat1.body.appendChild(
-        createToggle(
-            "enableWceEchoBridge",
-            "WCE Echo Animation Bridge",
-            "Triggers WCE animations for Echo Activity buttons (lick, kiss, cuddle, etc.).",
-        ),
-    );
-    cat1.body.appendChild(
-        createToggle(
-            "enableEchoSoundBridge",
-            "Echo Sound Bridge",
-            "Triggers game audio for Echo Activity and LSCG actions (spank, whip, etc.).",
-        ),
-    );
-
-    const cat2 = createCategory("Keyboard Shortcuts & Navigation", false);
-    cat2.body.appendChild(
-        createToggle(
-            "enableWhisperShortcut",
-            "Enable Whisper Shortcut",
-            "Use Alt + 1-9, 0, -, = to whisper people in the room.",
-        ),
-    );
-    cat2.body.appendChild(
-        createToggle(
-            "enableScrollShortcut",
-            "Enable Quick Scroll to Bottom",
-            "Use Ctrl + Space to quick scroll chat.",
-        ),
-    );
-    cat2.body.appendChild(
-        createToggle(
-            "enableLianChatShortcut",
-            "Enable LianChat Nav",
-            "Use Shift+Tab or Tab to navigate LC menus.",
-        ),
-    );
-    cat2.body.appendChild(
-        createToggle(
-            "enableBcarShortcut",
-            "Shortcut Immersion",
-            "Alt + C/V/B: ears, tail, wings (BCAR+). Alt + D: petsuit animation (Chat QoL or LCE).",
-        ),
-    );
-
-    const cat3 = createCategory("Utilities & Animations", false);
-
-    cat3.body.appendChild(
-        createToggle(
-            "persistentWhisper",
-            "Persistent Whisper Focus",
-            "Keeps whisper focus locked after replying so conversations don't leak to public chat. Press Esc or /p to exit.",
-        ),
-    );
-
-    cat3.body.appendChild(
-        createToggle(
-            "smartClosedEyes",
-            "Smart Closed Eyes",
-            "See everyone while your eyes are closed (bypasses expression blindness).",
-        ),
-    );
-    cat3.body.appendChild(
-        createToggle(
-            "forceUngarbled",
-            "Force Ungarbled Messages",
-            "Forces the game to always show ungarbled text.",
-        ),
-    );
-    cat3.body.appendChild(
-        createToggle(
-            "enableFluidColor",
-            "Fluid Color Enforcer",
-            "Forces fluids & tears to stay colored (#547A82). Turned off by default.",
-        ),
-    );
-
+    // --- Petsuit Animation UI container ---
     const petContainer = document.createElement("div");
     const petMain = document.createElement("div");
     Object.assign(petMain.style, {
@@ -923,7 +831,101 @@
 
     petContainer.appendChild(petMain);
     petContainer.appendChild(petSubList);
+
+    // --- Category 1: Legacy (Merged to LCE) - Sorted Alphabetically ---
+    const cat1 = createCategory("Legacy (Merged to LCE)", false);
+    cat1.body.appendChild(
+        createToggle(
+            "enableEchoSoundBridge",
+            "Echo Sound Bridge",
+            "Triggers game audio for Echo Activity and LSCG actions (spank, whip, etc.).",
+        ),
+    );
+    cat1.body.appendChild(emoContainer);
+    cat1.body.appendChild(
+        createToggle(
+            "enableLceModLoader",
+            "Enable LCE Mod Loader",
+            "Automatically injects the official BC-LCE mod into the game.",
+        ),
+    );
+    cat1.body.appendChild(
+        createToggle(
+            "persistentWhisper",
+            "Persistent Whisper Focus",
+            "Keeps whisper focus locked after replying so conversations don't leak to public chat. Press Esc or /p to exit.",
+        ),
+    );
     cat1.body.appendChild(petContainer);
+    cat1.body.appendChild(
+        createToggle(
+            "enableWceEchoBridge",
+            "WCE Echo Animation Bridge",
+            "Triggers WCE animations for Echo Activity buttons (lick, kiss, cuddle, etc.).",
+        ),
+    );
+
+    // --- Category 2: Keyboard Shortcuts & Navigation - Sorted Alphabetically ---
+    const cat2 = createCategory("Keyboard Shortcuts & Navigation", false);
+    cat2.body.appendChild(
+        createToggle(
+            "enableLianChatShortcut",
+            "Enable LianChat Nav",
+            "Use Shift+Tab or Tab to navigate LC menus.",
+        ),
+    );
+    cat2.body.appendChild(
+        createToggle(
+            "enableScrollShortcut",
+            "Enable Quick Scroll to Bottom",
+            "Use Ctrl + Space to quick scroll chat.",
+        ),
+    );
+    cat2.body.appendChild(
+        createToggle(
+            "enableWhisperShortcut",
+            "Enable Whisper Shortcut",
+            "Use Alt + 1-9, 0, -, = to whisper people in the room.",
+        ),
+    );
+    cat2.body.appendChild(
+        createToggle(
+            "enableBcarShortcut",
+            "Shortcut Immersion",
+            "Alt + C/V/B: ears, tail, wings (BCAR+). Alt + D: petsuit animation (Chat QoL or LCE).",
+        ),
+    );
+
+    // --- Category 3: Utilities & Animations - Sorted Alphabetically ---
+    const cat3 = createCategory("Utilities & Animations", false);
+    cat3.body.appendChild(
+        createToggle(
+            "enableEchoMouthPull",
+            "Enable Pull to Side (Mouth)",
+            "Allows pulling to side with mouth if hands are tied (Echo Addon).",
+        ),
+    );
+    cat3.body.appendChild(
+        createToggle(
+            "enableFluidColor",
+            "Fluid Color Enforcer",
+            "Forces fluids & tears to stay colored (#547A82). Turned off by default.",
+        ),
+    );
+    cat3.body.appendChild(
+        createToggle(
+            "forceUngarbled",
+            "Force Ungarbled Messages",
+            "Forces the game to always show ungarbled text.",
+        ),
+    );
+    cat3.body.appendChild(
+        createToggle(
+            "persistIconState",
+            "Persist Chat Icon State",
+            "Remembers your hidden/squint icon preference.",
+        ),
+    );
     cat3.body.appendChild(
         createToggle(
             "enableScreenshotCleaner",
@@ -933,9 +935,9 @@
     );
     cat3.body.appendChild(
         createToggle(
-            "persistIconState",
-            "Persist Chat Icon State",
-            "Remembers your hidden/squint icon preference.",
+            "smartClosedEyes",
+            "Smart Closed Eyes",
+            "See everyone while your eyes are closed (bypasses expression blindness).",
         ),
     );
 
