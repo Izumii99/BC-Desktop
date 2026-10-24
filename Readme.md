@@ -17,18 +17,35 @@
 
 ---
 
-A minimal native desktop wrapper for BC, built with **WPF** and **.NET 8**. Uses the OS native webview (Edge WebView2) — no bundled Chromium — keeping the RAM footprint and CPU usage as small as possible.
+A minimal native desktop wrapper for BC, built with **WPF** and **.NET 8**. Uses the OS native webview (Edge WebView2 no bundled Chromium) keeping the RAM footprint and CPU usage as small as possible.
 
 ## Features
 
 - **Auto-detects the latest game version** on every launch
-- **OTA (Over-the-Air) Built-in Remote Loader**: Addon manager and remote scripts are seamlessly embedded into the executable and fetched automatically on startup — no zip extraction or external script setup required!
+- **OTA (Over-the-Air) Built-in Remote Loader**: Addon manager and remote scripts are seamlessly embedded into the executable and fetched automatically on startup
 - **Silent Release Checker**: Background check for newer desktop releases with unobtrusive title bar notifications
 - **Borderless custom title bar** with seamless drag, minimize, maximize, and close
 - **Immersive Fullscreen (F11)** and **Chromium DevTools (F12)** keyboard shortcuts
 - **Sleeping Tabs (Suspend on minimize)** to drastically reduce RAM while in background
 - **Multi-monitor support** with proper DPI scaling bounds
 - **Discreet / Stealth** design for Task Manager and Taskbar
+
+## Adding Custom / Local Scripts Manually
+
+You can load your own custom scripts or community mods offline without using Tampermonkey or bookmarklets by placing them in a local `Scripts/` directory.
+
+### Folder Structure
+
+Place the `Scripts` folder in the same root directory as the executable:
+
+```text
+📁 BC-Desktop/
+├── 📁 Scripts/
+│   ├── my-custom-addon.js
+│   └── another-mod.js
+└── BC.exe (or BC-Windows.exe / BC-Linux.AppImage)
+```
+
 
 ## Included Scripts / Addons
 
@@ -338,16 +355,17 @@ dotnet test
 ## Project Structure
 
 ```text
-BC-Desktop.sln      — Solution file uniting application and test projects
-BC-Desktop.csproj   — Main client build configuration
-App.xaml / .cs      — Entry point & global settings
-MainWindow.xaml     — Borderless window layout & controls
-MainWindow.xaml.cs  — WebView2 init, version detection, memory optimization, DPI handling
-RELEASE_NOTES.md    — Detailed user-facing changelog and release history
-Assets/             — Application icons and visual assets
-Scripts/            — Mod/addon scripts directory
-tools/              — Local build scripts (Windows & Linux standalone packaging)
-platform/linux/     — Linux client (Electron & electron-builder packaging)
-tests/              — Automated unit test suite (MSTest)
-.github/workflows/  — CI PR validation & release automation workflows
+├── .github/            — CI/CD workflows, Pages deploy & issue templates
+├── Assets/             — Application icons and visual assets
+├── Scripts/            — Standalone & built-in addons (Chat QoL, Neko Dark, etc.)
+├── platform/linux/     — Linux Electron wrapper & build configs
+├── tests/              — Automated unit tests (MSTest)
+├── tools/              — PowerShell build & packaging scripts
+├── App.xaml / .cs      — Application entry point
+├── BC-Desktop.csproj   — .NET 8 WPF project configuration
+├── BC-Desktop.sln      — Visual Studio solution
+├── loader.user.js      — Embedded loader & standalone userscript
+├── MainWindow.xaml     — Borderless window UI & layout
+├── MainWindow.xaml.cs  — Core WebView2 runtime logic & optimizations
+└── RELEASE_NOTES.md    — User-facing changelog & release details
 ```
