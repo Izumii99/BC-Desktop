@@ -697,6 +697,7 @@
     }
 
     function syncPawsPosition() {
+        if (window._bcIsBackground) return;
         const paws = document.getElementById("bcn-soft-paws");
         const log = document.getElementById("TextAreaChatLog");
         if (!paws || !log) return;

@@ -550,6 +550,7 @@
 
     setInterval(() => {
         try {
+            if (window._bcIsBackground) return;
             if (
                 window.CurrentScreen === "Login" ||
                 window.CurrentScreen === "Information" ||

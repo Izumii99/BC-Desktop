@@ -559,6 +559,7 @@
 
     setInterval(() => {
         try {
+            if (window._bcIsBackground) return;
             if (!uiAppended && document.body) {
                 document.body.appendChild(cheatBtn);
                 document.body.appendChild(cheatModal);
