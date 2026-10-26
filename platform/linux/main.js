@@ -886,12 +886,21 @@ const CopyAndFocusScript = `
         return originalExecCommand.apply(this, arguments);
     };
 
-    // ponytail: Safe VRAM, Active-Room Texture Protection & Chat DOM Optimization
+    // ponytail: Safe VRAM, Active-Room Texture Protection & Chat Virtualization
     (function setupSafeVramOptimization() {
         const NORMAL_PURGE_DELAY = 5 * 60 * 1000;
         const WARDROBE_PURGE_DELAY = 90 * 1000;
-        const MAX_CHAT_DOM_MESSAGES = 250;
         const trackedRoomCanvases = new Map();
+
+        // Ensure all users (including those without neko-dark.js) receive chat virtualization without losing chat history
+        function ensureChatVirtualizationCss() {
+            if (!document.head || document.getElementById('bc-desktop-chat-virt')) return;
+            const st = document.createElement('style');
+            st.id = 'bc-desktop-chat-virt';
+            st.textContent = '#TextAreaChatLog > .ChatMessage, #TextAreaChatLog > div { content-visibility: auto; contain-intrinsic-size: auto 42px; contain: layout style paint; }';
+            document.head.appendChild(st);
+        }
+        ensureChatVirtualizationCss();
 
         function applyPurgeDelay() {
             if (typeof window.ImageCachePurgeDelay !== 'undefined') {
@@ -901,9 +910,10 @@ const CopyAndFocusScript = `
             }
         }
 
-        // Protect active room character textures and free VRAM of departed characters
+        // Protect active room character textures and safely free VRAM of departed characters
         function protectActiveRoomTextures() {
             try {
+                ensureChatVirtualizationCss();
                 const now = typeof window.CommonTime === 'function' ? window.CommonTime() : Date.now();
                 const chars = [];
                 if (window.Player) chars.push(window.Player);
@@ -951,48 +961,36 @@ const CopyAndFocusScript = `
                     });
                 }
 
-                // Track room character canvases and immediately release backing textures of departed characters
-                const currentIds = new Set();
-                for (let i = 0; i < chars.length; i++) {
-                    const c = chars[i];
-                    const id = c.MemberNumber || c.ID || i;
-                    currentIds.add(id);
-                    if (c.Canvas || c.CanvasBlink) {
-                        trackedRoomCanvases.set(id, { char: c, canvas: c.Canvas, blink: c.CanvasBlink });
-                    }
-                }
-
-                for (const [id, entry] of trackedRoomCanvases.entries()) {
-                    if (!currentIds.has(id) && entry.char !== window.Player) {
-                        if (entry.canvas && entry.canvas.width > 0) {
-                            entry.canvas.width = 0;
-                            entry.canvas.height = 0;
+                // Only manage character canvas release when actively inside ChatRoom
+                if (window.CurrentScreen === 'ChatRoom') {
+                    const currentIds = new Set();
+                    for (let i = 0; i < chars.length; i++) {
+                        const c = chars[i];
+                        const id = c.MemberNumber || c.ID;
+                        if (id != null) {
+                            currentIds.add(id);
+                            if (c.Canvas || c.CanvasBlink) {
+                                trackedRoomCanvases.set(id, { char: c, canvas: c.Canvas, blink: c.CanvasBlink });
+                            }
                         }
-                        if (entry.blink && entry.blink.width > 0) {
-                            entry.blink.width = 0;
-                            entry.blink.height = 0;
-                        }
-                        trackedRoomCanvases.delete(id);
                     }
-                }
-            } catch (e) {}
-        }
 
-        // Prune excessively old DOM messages if near bottom to keep chat scroll and memory optimal
-        function pruneChatLogDom() {
-            try {
-                const log = document.getElementById('TextAreaChatLog');
-                if (!log || log.offsetParent === null) return;
-                const isNearBottom = (log.scrollHeight - log.scrollTop - log.clientHeight) < 120;
-                if (!isNearBottom) return;
+                    for (const [id, entry] of trackedRoomCanvases.entries()) {
+                        if (!currentIds.has(id) && entry.char !== window.Player) {
+                            // Sever references on character object first so BC recreates a fresh canvas if character rejoins
+                            if (entry.char && entry.char.Canvas === entry.canvas) entry.char.Canvas = null;
+                            if (entry.char && entry.char.CanvasBlink === entry.blink) entry.char.CanvasBlink = null;
 
-                const messages = log.children;
-                if (messages.length > MAX_CHAT_DOM_MESSAGES) {
-                    const toRemove = messages.length - MAX_CHAT_DOM_MESSAGES;
-                    for (let i = 0; i < toRemove; i++) {
-                        const first = log.firstElementChild;
-                        if (!first) break;
-                        first.remove();
+                            if (entry.canvas && entry.canvas.width > 0) {
+                                entry.canvas.width = 0;
+                                entry.canvas.height = 0;
+                            }
+                            if (entry.blink && entry.blink.width > 0) {
+                                entry.blink.width = 0;
+                                entry.blink.height = 0;
+                            }
+                            trackedRoomCanvases.delete(id);
+                        }
                     }
                 }
             } catch (e) {}
@@ -1001,9 +999,9 @@ const CopyAndFocusScript = `
         // 1. Periodically prune expired textures & clean up departed character VRAM
         setInterval(() => {
             try {
+                if (window._bcIsBackground) return;
                 applyPurgeDelay();
                 protectActiveRoomTextures();
-                pruneChatLogDom();
 
                 if (typeof window.GLDrawImageCache !== 'undefined' && window.GLDrawImageCache && typeof window.GLDrawImageCache.purge === 'function') {
                     window.GLDrawImageCache.purge(false);
@@ -1022,6 +1020,7 @@ const CopyAndFocusScript = `
         let screenTimer = null;
         setInterval(() => {
             try {
+                if (window._bcIsBackground) return;
                 applyPurgeDelay();
                 if (typeof window.CurrentScreen !== 'undefined') {
                     if (lastScreen === 'Appearance' && window.CurrentScreen !== 'Appearance') {
