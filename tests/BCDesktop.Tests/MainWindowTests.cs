@@ -98,12 +98,12 @@ public class MainWindowTests
         StringAssert.Contains(code, "--enable-features=CalculateNativeWinOcclusion");
         StringAssert.Contains(code, "--js-flags=");
         StringAssert.Contains(code, "--max-old-space-size=512");
-        StringAssert.Contains(code, "--optimize-for-size");
+        Assert.IsFalse(code.Contains("--optimize-for-size"), "Must not contain --optimize-for-size to prevent GC thrashing.");
         StringAssert.Contains(code, "--expose-gc");
 
         // VRAM capping and memory budget flags
-        StringAssert.Contains(code, "--force-gpu-mem-available-mb=192");
-        StringAssert.Contains(code, "--force-gpu-mem-discardable-limit-mb=32");
+        StringAssert.Contains(code, "--force-gpu-mem-available-mb=384");
+        StringAssert.Contains(code, "--force-gpu-mem-discardable-limit-mb=64");
         StringAssert.Contains(code, "--gpu-rasterization-msaa-sample-count=0");
         StringAssert.Contains(code, "CanvasOopRasterization");
         StringAssert.Contains(code, "AudioServiceOutOfProcess");

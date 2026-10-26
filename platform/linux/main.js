@@ -277,9 +277,9 @@ app.commandLine.appendSwitch('no-pings');
 app.commandLine.appendSwitch('max-gum-fps', '60');
 app.commandLine.appendSwitch('gpu-rasterization-msaa-sample-count', '0');
 app.commandLine.appendSwitch('enable-features', 'PurgeRendererMemoryWhenBackgrounded,IntensiveWakeUpThrottling');
-app.commandLine.appendSwitch('force-gpu-mem-available-mb', '192');
-app.commandLine.appendSwitch('force-gpu-mem-discardable-limit-mb', '32');
-app.commandLine.appendSwitch('js-flags', '--max-old-space-size=512 --optimize-for-size --expose-gc');
+app.commandLine.appendSwitch('force-gpu-mem-available-mb', '384');
+app.commandLine.appendSwitch('force-gpu-mem-discardable-limit-mb', '64');
+app.commandLine.appendSwitch('js-flags', '--max-old-space-size=512 --expose-gc');
 
 function handleWebMessage(msg) {
     if (typeof msg !== 'string') return;
@@ -296,6 +296,7 @@ function handleWebMessage(msg) {
 // Throttling script: caps FPS to 15 and triggers GC when window is unfocused (matches Windows behavior)
 const CapUnfocusedFpsScript =
     "(()=>{" +
+    "window._bcIsBackground=true;" +
     "const g=window.Player&&Player.GraphicsSettings;" +
     "if(g&&!g.MaxUnfocusedFPS&&window.CurrentScreen!=='Preference'){g.MaxUnfocusedFPS=15;window.bcFpsCap=g;}" +
     "if(window.bcFocusMemory&&!window.bcFocusMemory.isConnected)window.bcFocusMemory=null;" +
@@ -305,7 +306,7 @@ const CapUnfocusedFpsScript =
     "})()";
 
 const RestoreUnfocusedFpsScript =
-    "(()=>{const g=window.bcFpsCap;if(g){if(g.MaxUnfocusedFPS===15)g.MaxUnfocusedFPS=0;window.bcFpsCap=null;}})()";
+    "(()=>{window._bcIsBackground=false;const g=window.bcFpsCap;if(g){if(g.MaxUnfocusedFPS===15)g.MaxUnfocusedFPS=0;window.bcFpsCap=null;}})()";
 
 const SmartFocusRestoreScript = `
     (function() {
@@ -793,7 +794,9 @@ const CopyAndFocusScript = `
                     }
                 }
                 if (m.removedNodes.length > 0) {
-                    shouldCheck = true;
+                    if (!document.activeElement || document.activeElement === document.body || (window.bcFocusMemory && !window.bcFocusMemory.isConnected)) {
+                        shouldCheck = true;
+                    }
                 }
             } else if (m.type === 'attributes') {
                 if (m.target && isTextInput(m.target)) {
@@ -908,26 +911,27 @@ const CopyAndFocusScript = `
             } catch (e) {}
         }, 45 * 1000);
 
-        // 2. Safe gentle prune after leaving Wardrobe (Appearance) once new room assets have safely loaded
-        let lastScreen = null;
-        let screenTimer = null;
+        // 2. Safe gentle prune after leaving Wardrobe (Appearance)
         setInterval(() => {
             try {
                 applyPurgeDelay();
                 if (typeof window.CurrentScreen !== 'undefined') {
-                    if (lastScreen === 'Appearance' && window.CurrentScreen !== 'Appearance') {
-                        if (screenTimer) clearTimeout(screenTimer);
-                        screenTimer = setTimeout(() => {
-                            if (typeof window.CurrentScreen !== 'undefined' && window.CurrentScreen === 'Appearance') return;
-                            if (typeof window.GLDrawImageCache !== 'undefined' && window.GLDrawImageCache && typeof window.GLDrawImageCache.purge === 'function') {
-                                window.GLDrawImageCache.purge(true);
-                            }
-                            if (typeof window.DrawImageCache !== 'undefined' && window.DrawImageCache && typeof window.DrawImageCache.purge === 'function') {
-                                window.DrawImageCache.purge(true);
-                            }
-                        }, 12000);
+                    if (window.CurrentScreen === 'Appearance') {
+                        window._bcWasInAppearance = true;
+                        return;
                     }
-                    lastScreen = window.CurrentScreen;
+                    if (window._bcWasInAppearance) {
+                        window._bcWasInAppearance = false;
+                        if (typeof window.GLDrawImageCache !== 'undefined' && window.GLDrawImageCache && typeof window.GLDrawImageCache.purge === 'function') {
+                            window.GLDrawImageCache.purge(true);
+                        }
+                        if (typeof window.DrawImageCache !== 'undefined' && window.DrawImageCache && typeof window.DrawImageCache.purge === 'function') {
+                            window.DrawImageCache.purge(true);
+                        }
+                        if (typeof window.gc === 'function') {
+                            try { window.gc(); } catch (e) {}
+                        }
+                    }
                 }
             } catch (e) {}
         }, 1000);

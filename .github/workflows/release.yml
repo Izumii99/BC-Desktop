@@ -15,7 +15,7 @@ name: 'Build and Release'
       title:
         description: 'Release Title Highlight (Title Case)'
         required: false
-        default: 'Input Focus Overhaul & Addon Quality of Life Updates'
+        default: 'Performance Overhaul, Input Focus & Wardrobe Memory Fixes'
         type: string
       notes:
         description: 'Custom Release Notes (leave empty to use standard template)'
@@ -127,7 +127,7 @@ jobs:
           $ver = if ($inputVer.Length -gt 0) { $inputVer } elseif ($refTag.Length -gt 0) { $refTag } else { "7.4" }
 
           $inputTitle = if ($env:INPUT_TITLE) { $env:INPUT_TITLE.Trim() } else { "" }
-          $title = if ($inputTitle.Length -gt 0) { $inputTitle } else { "Input Focus Overhaul & Addon Quality of Life Updates" }
+          $title = if ($inputTitle.Length -gt 0) { $inputTitle } else { "Performance Overhaul, Input Focus & Wardrobe Memory Fixes" }
 
           $customNotes = if ($env:INPUT_NOTES) { $env:INPUT_NOTES.Trim() } else { "" }
 
@@ -142,6 +142,8 @@ jobs:
             $defaultNotes = @(
               "### Fixes & Improvements:",
               "",
+              "- **Improvement (Performance & Wardrobe Memory):** Overhauled internal memory allocation and GPU texture limits. Fixed high CPU usage and memory accumulation during long play sessions and heavy Wardrobe customization, with instant texture cleanup when returning to the room.",
+              "- **Improvement (Lifecycle & Alt-Tab Responsiveness):** Smoother Alt-Tab switching without disk paging lag, while automatically pausing background addon polling and animations when the app is unfocused.",
               "- **Improvement (Input & Focus Management):** Overhauled input focus tracking and Alt-Tab window restoration. Game chat no longer steals focus from active addon overlays or floating input windows.",
               "- **Fix (Chat & Text Selection):** Fixed text blocking and copying in custom chat overlays and addons like LianChat, preventing accidental deselection when releasing the mouse cursor.",
               "- **Feature (Translate Addon):** Redesigned Google Translate widget into a compact side-by-side layout (480px) with synchronized auto-expanding height, optimized for 2:1 widescreen monitors without covering room characters.",
@@ -171,7 +173,7 @@ jobs:
           $ver = if ($inputVer.Length -gt 0) { $inputVer } elseif ($refTag.Length -gt 0) { $refTag } else { "7.4" }
 
           $inputTitle = if ($env:INPUT_TITLE) { $env:INPUT_TITLE.Trim() } else { "" }
-          $title = if ($inputTitle.Length -gt 0) { $inputTitle } else { "Input Focus Overhaul & Addon Quality of Life Updates" }
+          $title = if ($inputTitle.Length -gt 0) { $inputTitle } else { "Performance Overhaul, Input Focus & Wardrobe Memory Fixes" }
           $releaseTitle = if ($title.Length -gt 0) { "v$ver - $title" } else { "v$ver" }
 
           $releaseAssets = @(

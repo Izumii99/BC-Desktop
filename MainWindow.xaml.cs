@@ -31,6 +31,7 @@ public partial class MainWindow : Window
     // In-memory only: the game persists GraphicsSettings solely when leaving the Preference screen, which is skipped here.
     internal const string CapUnfocusedFpsScript =
         "(()=>{" +
+        "window._bcIsBackground=true;" +
         "const g=window.Player&&Player.GraphicsSettings;" +
         "if(g&&!g.MaxUnfocusedFPS&&window.CurrentScreen!=='Preference'){g.MaxUnfocusedFPS=15;window.bcFpsCap=g;}" +
         "if(window.bcFocusMemory&&!window.bcFocusMemory.isConnected)window.bcFocusMemory=null;" +
@@ -39,7 +40,7 @@ public partial class MainWindow : Window
         "if(typeof window.gc==='function'){try{window.gc();}catch(e){}}" +
         "})()";
     internal const string RestoreUnfocusedFpsScript =
-        "(()=>{const g=window.bcFpsCap;if(g){if(g.MaxUnfocusedFPS===15)g.MaxUnfocusedFPS=0;window.bcFpsCap=null;}})()";
+        "(()=>{window._bcIsBackground=false;const g=window.bcFpsCap;if(g){if(g.MaxUnfocusedFPS===15)g.MaxUnfocusedFPS=0;window.bcFpsCap=null;}})()";
 
     private void CancelDeactivation()
     {
@@ -115,10 +116,7 @@ public partial class MainWindow : Window
             await Task.Delay(3000, token);
             if (!token.IsCancellationRequested && WindowState != WindowState.Minimized && WebView.CoreWebView2 is { } core)
             {
-                core.MemoryUsageTargetLevel = CoreWebView2MemoryUsageTargetLevel.Low;
                 await core.ExecuteScriptAsync(CapUnfocusedFpsScript);
-                await Task.Delay(150, token);
-                TrimAllWebViewProcesses();
             }
         }
         catch (OperationCanceledException)
@@ -736,12 +734,12 @@ public partial class MainWindow : Window
                     "--disable-sync " +
                     "--disable-notifications " +
                     "--no-pings " +
-                    "--force-gpu-mem-available-mb=192 " +
-                    "--force-gpu-mem-discardable-limit-mb=32 " +
+                    "--force-gpu-mem-available-mb=384 " +
+                    "--force-gpu-mem-discardable-limit-mb=64 " +
                     "--gpu-rasterization-msaa-sample-count=0 " +
                     "--max-gum-fps=60 " +
                     "--enable-features=CalculateNativeWinOcclusion,PurgeRendererMemoryWhenBackgrounded,IntensiveWakeUpThrottling " +
-                    "--js-flags=\"--max-old-space-size=512 --optimize-for-size --expose-gc\""
+                    "--js-flags=\"--max-old-space-size=512 --expose-gc\""
             };
 
             var env = await CoreWebView2Environment.CreateAsync(
@@ -1370,7 +1368,9 @@ public partial class MainWindow : Window
                             }
                         }
                         if (m.removedNodes.length > 0) {
-                            shouldCheck = true;
+                            if (!document.activeElement || document.activeElement === document.body || (window.bcFocusMemory && !window.bcFocusMemory.isConnected)) {
+                                shouldCheck = true;
+                            }
                         }
                     } else if (m.type === 'attributes') {
                         if (m.target && isTextInput(m.target)) {
@@ -1485,26 +1485,27 @@ public partial class MainWindow : Window
                     } catch (e) {}
                 }, 45 * 1000);
 
-                // 2. Safe gentle prune after leaving Wardrobe (Appearance) once new room assets have safely loaded
-                let lastScreen = null;
-                let screenTimer = null;
+                // 2. Safe gentle prune after leaving Wardrobe (Appearance)
                 setInterval(() => {
                     try {
                         applyPurgeDelay();
                         if (typeof window.CurrentScreen !== 'undefined') {
-                            if (lastScreen === 'Appearance' && window.CurrentScreen !== 'Appearance') {
-                                if (screenTimer) clearTimeout(screenTimer);
-                                screenTimer = setTimeout(() => {
-                                    if (typeof window.CurrentScreen !== 'undefined' && window.CurrentScreen === 'Appearance') return;
-                                    if (typeof window.GLDrawImageCache !== 'undefined' && window.GLDrawImageCache && typeof window.GLDrawImageCache.purge === 'function') {
-                                        window.GLDrawImageCache.purge(true);
-                                    }
-                                    if (typeof window.DrawImageCache !== 'undefined' && window.DrawImageCache && typeof window.DrawImageCache.purge === 'function') {
-                                        window.DrawImageCache.purge(true);
-                                    }
-                                }, 12000);
+                            if (window.CurrentScreen === 'Appearance') {
+                                window._bcWasInAppearance = true;
+                                return;
                             }
-                            lastScreen = window.CurrentScreen;
+                            if (window._bcWasInAppearance) {
+                                window._bcWasInAppearance = false;
+                                if (typeof window.GLDrawImageCache !== 'undefined' && window.GLDrawImageCache && typeof window.GLDrawImageCache.purge === 'function') {
+                                    window.GLDrawImageCache.purge(true);
+                                }
+                                if (typeof window.DrawImageCache !== 'undefined' && window.DrawImageCache && typeof window.DrawImageCache.purge === 'function') {
+                                    window.DrawImageCache.purge(true);
+                                }
+                                if (typeof window.gc === 'function') {
+                                    try { window.gc(); } catch (e) {}
+                                }
+                            }
                         }
                     } catch (e) {}
                 }, 1000);
