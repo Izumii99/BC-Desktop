@@ -277,9 +277,9 @@ app.commandLine.appendSwitch('no-pings');
 app.commandLine.appendSwitch('max-gum-fps', '60');
 app.commandLine.appendSwitch('gpu-rasterization-msaa-sample-count', '0');
 app.commandLine.appendSwitch('enable-features', 'PurgeRendererMemoryWhenBackgrounded,IntensiveWakeUpThrottling');
-app.commandLine.appendSwitch('force-gpu-mem-available-mb', '384');
-app.commandLine.appendSwitch('force-gpu-mem-discardable-limit-mb', '64');
-app.commandLine.appendSwitch('js-flags', '--max-old-space-size=512 --expose-gc');
+app.commandLine.appendSwitch('force-gpu-mem-available-mb', '192');
+app.commandLine.appendSwitch('force-gpu-mem-discardable-limit-mb', '32');
+app.commandLine.appendSwitch('js-flags', '--max-old-space-size=512 --optimize-for-size --expose-gc');
 
 function handleWebMessage(msg) {
     if (typeof msg !== 'string') return;
@@ -888,19 +888,21 @@ const CopyAndFocusScript = `
 
     // ponytail: Safe VRAM & texture optimization via BC's native ImageCache
     (function setupSafeVramOptimization() {
-        const PURGE_DELAY = 3 * 60 * 1000;
+        const NORMAL_PURGE_DELAY = 3 * 60 * 1000;
+        const WARDROBE_PURGE_DELAY = 90 * 1000;
 
         function applyPurgeDelay() {
             if (typeof window.ImageCachePurgeDelay !== 'undefined') {
-                window.ImageCachePurgeDelay = PURGE_DELAY;
+                window.ImageCachePurgeDelay = (typeof window.CurrentScreen !== 'undefined' && window.CurrentScreen === 'Appearance')
+                    ? WARDROBE_PURGE_DELAY
+                    : NORMAL_PURGE_DELAY;
             }
         }
 
-        // 1. Periodically prune expired textures (safely handles GLDrawImageCache & DrawImageCache)
+        // 1. Periodically prune expired textures (tetap berjalan aman di Wardrobe untuk tekstur >90 detik)
         setInterval(() => {
             try {
                 applyPurgeDelay();
-                if (typeof window.CurrentScreen !== 'undefined' && window.CurrentScreen === 'Appearance') return;
 
                 if (typeof window.GLDrawImageCache !== 'undefined' && window.GLDrawImageCache && typeof window.GLDrawImageCache.purge === 'function') {
                     window.GLDrawImageCache.purge(false);
@@ -908,30 +910,35 @@ const CopyAndFocusScript = `
                 if (typeof window.DrawImageCache !== 'undefined' && window.DrawImageCache && typeof window.DrawImageCache.purge === 'function') {
                     window.DrawImageCache.purge(false);
                 }
+                if (typeof window.CurrentScreen !== 'undefined' && window.CurrentScreen === 'Appearance' && typeof window.gc === 'function') {
+                    try { window.gc(); } catch (e) {}
+                }
             } catch (e) {}
         }, 45 * 1000);
 
-        // 2. Safe gentle prune after leaving Wardrobe (Appearance)
+        // 2. Safe gentle prune 12s after leaving Wardrobe (Appearance) once room assets have settled
+        let lastScreen = null;
+        let screenTimer = null;
         setInterval(() => {
             try {
                 applyPurgeDelay();
                 if (typeof window.CurrentScreen !== 'undefined') {
-                    if (window.CurrentScreen === 'Appearance') {
-                        window._bcWasInAppearance = true;
-                        return;
+                    if (lastScreen === 'Appearance' && window.CurrentScreen !== 'Appearance') {
+                        if (screenTimer) clearTimeout(screenTimer);
+                        screenTimer = setTimeout(() => {
+                            if (typeof window.CurrentScreen !== 'undefined' && window.CurrentScreen === 'Appearance') return;
+                            if (typeof window.GLDrawImageCache !== 'undefined' && window.GLDrawImageCache && typeof window.GLDrawImageCache.purge === 'function') {
+                                window.GLDrawImageCache.purge(true);
+                            }
+                            if (typeof window.DrawImageCache !== 'undefined' && window.DrawImageCache && typeof window.DrawImageCache.purge === 'function') {
+                                window.DrawImageCache.purge(true);
+                            }
+                            if (typeof window.gc === 'function') {
+                                try { window.gc(); } catch (e) {}
+                            }
+                        }, 12000);
                     }
-                    if (window._bcWasInAppearance) {
-                        window._bcWasInAppearance = false;
-                        if (typeof window.GLDrawImageCache !== 'undefined' && window.GLDrawImageCache && typeof window.GLDrawImageCache.purge === 'function') {
-                            window.GLDrawImageCache.purge(true);
-                        }
-                        if (typeof window.DrawImageCache !== 'undefined' && window.DrawImageCache && typeof window.DrawImageCache.purge === 'function') {
-                            window.DrawImageCache.purge(true);
-                        }
-                        if (typeof window.gc === 'function') {
-                            try { window.gc(); } catch (e) {}
-                        }
-                    }
+                    lastScreen = window.CurrentScreen;
                 }
             } catch (e) {}
         }, 1000);
