@@ -440,12 +440,12 @@ public class MainWindowTests
     [TestMethod]
     public void AppVersionComparison_AccuratelyEvaluatesSemanticVersions()
     {
-        Assert.AreEqual("7.3", MainWindow.CurrentAppVersion, "CurrentAppVersion must be 7.3.");
+        Assert.AreEqual("7.4", MainWindow.CurrentAppVersion, "CurrentAppVersion must be 7.4.");
 
-        Assert.IsTrue(MainWindow.IsNewerVersion("v7.4", "7.3"), "v7.4 must be newer than 7.3.");
-        Assert.IsTrue(MainWindow.IsNewerVersion("7.4", "7.3"), "7.4 must be newer than 7.3.");
-        Assert.IsTrue(MainWindow.IsNewerVersion("v7.3.1", "7.3"), "Patch version v7.3.1 must be newer than 7.3.");
-        Assert.IsTrue(MainWindow.IsNewerVersion("v8.0", "7.3"), "Major version v8.0 must be newer than 7.3.");
+        Assert.IsTrue(MainWindow.IsNewerVersion("v7.5", "7.4"), "v7.5 must be newer than 7.4.");
+        Assert.IsTrue(MainWindow.IsNewerVersion("7.5", "7.4"), "7.5 must be newer than 7.4.");
+        Assert.IsTrue(MainWindow.IsNewerVersion("v7.4.1", "7.4"), "Patch version v7.4.1 must be newer than 7.4.");
+        Assert.IsTrue(MainWindow.IsNewerVersion("v8.0", "7.4"), "Major version v8.0 must be newer than 7.4.");
 
         Assert.IsFalse(MainWindow.IsNewerVersion("6.2", "6.2"), "Identical versions must return false.");
         Assert.IsFalse(MainWindow.IsNewerVersion("v6.2", "6.2"), "Identical versions with 'v' prefix must return false.");
@@ -669,6 +669,11 @@ public class MainWindowTests
         StringAssert.Contains(code, "bc-tint-input", "isInteractive and mouseup must protect bc-tint-input.");
         StringAssert.Contains(code, "fieldset[name=\"\"color-picker\"\"]", "mouseup must protect color-picker container from focus stealing.");
         StringAssert.Contains(code, "if (window.bcIsMouseDown) return;", "selectionchange must guard against focus stealing while sliding or dragging.");
+
+        // Strict addon layering, drag selection protection, and time-decayed click intent
+        StringAssert.Contains(code, "getActiveAddonInputStrict()", "getActiveAddonInputStrict helper must be defined for throttled addon detection.");
+        StringAssert.Contains(code, "isDraggingSelection", "mouseup must track drag selection distance to prevent deselecting text.");
+        StringAssert.Contains(code, "recentClick", "wasClicked must be time-decayed to prevent stale click intent leaks.");
     }
 
     [TestMethod]
@@ -740,7 +745,7 @@ public class MainWindowTests
         var root = doc.RootElement;
 
         Assert.AreEqual("bc-desktop-linux", root.GetProperty("name").GetString());
-        Assert.AreEqual("7.3.0", root.GetProperty("version").GetString());
+        Assert.AreEqual("7.4.0", root.GetProperty("version").GetString());
         Assert.AreEqual("Bondage Club", root.GetProperty("productName").GetString());
         Assert.IsTrue(root.TryGetProperty("keywords", out _), "package.json must specify keywords.");
 

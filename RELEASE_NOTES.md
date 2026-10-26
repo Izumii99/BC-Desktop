@@ -1,10 +1,9 @@
 ### Fixes & Improvements:
 
-- **Improvement (Memory & Performance):** Implemented safe, automated VRAM and texture memory maintenance. Texture retention is tuned to safely prune unneeded assets (such as clothes browsed in Wardrobe) without freezing the canvas or affecting characters currently in the room.
-- **Improvement (Wardrobe Transition):** Added gentle post-wardrobe cleanup that waits for room characters to finish loading before reclaiming GPU memory, preventing VRAM inflation over extended play sessions.
-- **Fix (Stability & Rendering):** Fully protected the WebGL rendering pipeline so active character models, chat text, and room backgrounds remain fluid and responsive without visual lockups or desynchronization.
-- **Feature (Multi-Platform Parity):** Unified safe texture optimization across Windows and Linux standalone builds.
-- **Fix (Update System):** Fixed the auto-update error message on Linux and improved the download progress indicator.
+- **Improvement (Input & Focus Management):** Overhauled input focus tracking and Alt-Tab window restoration. Game chat no longer steals focus from active addon overlays or floating input windows.
+- **Fix (Chat & Text Selection):** Fixed text blocking and copying in custom chat overlays and addons like LianChat, preventing accidental deselection when releasing the mouse cursor.
+- **Feature (Translate Addon):** Redesigned Google Translate widget into a compact side-by-side layout (480px) with synchronized auto-expanding height, optimized for 2:1 widescreen monitors without covering room characters.
+- **Improvement (Stability & Lifecycle):** Hardened background focus memory to ensure smooth navigation between game canvas controls and external addon dialogs.
 
 ### Downloads:
 

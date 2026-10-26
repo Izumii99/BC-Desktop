@@ -143,18 +143,24 @@ public partial class MainWindow : Window
         WebView.Focus();
         if (WebView.CoreWebView2 != null)
         {
-                string smartFocusScript = @"
-                    (function() {
-                        if (window.bcLogDebug) window.bcLogDebug('ACTIVATED');
-                        if (window.bcRunFocusCrawler) {
-                            let bestInput = window.bcRunFocusCrawler();
-                            if (bestInput) {
-                                if (window.bcLogDebug) window.bcLogDebug('=> Hybrid focus: ' + bestInput.tagName + '#' + bestInput.id);
-                                bestInput.focus();
-                            }
-                        }
-                    })();
-                ";
+            string smartFocusScript = @"
+                (function() {
+                    if (window.bcLogDebug) window.bcLogDebug('ACTIVATED');
+                    if (window.getSelection && window.getSelection().toString().length > 0) return;
+
+                    let target = null;
+                    if (!window.bcUserPrefersGameChat && window.bcFocusMemory && window.bcFocusMemory.isConnected && window.bcFocusMemory.offsetParent !== null) {
+                        target = window.bcFocusMemory;
+                    } else if (window.bcRunFocusCrawler) {
+                        target = window.bcRunFocusCrawler();
+                    }
+                    if (target) {
+                        window.bcFocusMemory = target;
+                        if (target.id !== 'InputChat') window.bcUserPrefersGameChat = false;
+                        target.focus();
+                    }
+                })();
+            ";
             _ = WebView.CoreWebView2.ExecuteScriptAsync(smartFocusScript);
         }
     }
@@ -365,7 +371,7 @@ public partial class MainWindow : Window
     }
 
 
-    internal const string CurrentAppVersion = "7.3";
+    internal const string CurrentAppVersion = "7.4";
     internal const string GitHubRepo = "Izumii99/BC-Desktop";
     internal static bool EnableAutoUpdates = true;
     private static string? _newReleaseUrl;
@@ -1014,12 +1020,17 @@ public partial class MainWindow : Window
                     
                     if (id === 'descriptioninput' || id.startsWith('preference') || cls.includes('preference') || cls.includes('scroll-box')) return null;
 
+                    // Mencakup LianChat (lc-, lian, bcmod), LCE, BCX, FUSAM, BCOM, dan modal/floating UI
                     if (id.startsWith('lce-') || cls.includes('lce-') ||
+                        id.startsWith('lc-') || cls.includes('lc-') ||
+                        id.includes('lian') || cls.includes('lian') ||
+                        id.includes('bcmod') || cls.includes('bcmod') ||
                         id.includes('bcx') || cls.includes('bcx') ||
                         id.includes('fusam') || cls.includes('fusam') ||
                         id.includes('bcom') || cls.includes('bcom') ||
                         id.includes('modal') || cls.includes('modal') ||
                         id.includes('dialog') || cls.includes('dialog') ||
+                        id.includes('floating') || cls.includes('floating') ||
                         id.includes('im') || cls.includes('im')) {
                         return curr;
                     }
@@ -1037,12 +1048,45 @@ public partial class MainWindow : Window
                 return null;
             }
 
+            function isElementVisibleAndActive(el) {
+                if (!el || !el.isConnected || el.disabled || el.readOnly) return false;
+                if (el.offsetWidth === 0 && el.offsetHeight === 0) {
+                    let rect = el.getBoundingClientRect();
+                    if (rect.width === 0 || rect.height === 0) return false;
+                }
+                let style = window.getComputedStyle(el);
+                return style.visibility !== 'hidden' && style.opacity !== '0' && style.display !== 'none';
+            }
+
+            let lastCrawlerCache = null;
+            let lastCrawlerTime = 0;
+            function getActiveAddonInputStrict() {
+                if (window.bcFocusMemory && window.bcFocusMemory.id !== 'InputChat' && isElementVisibleAndActive(window.bcFocusMemory)) {
+                    return window.bcFocusMemory;
+                }
+                let now = Date.now();
+                if (now - lastCrawlerTime > 150) {
+                    lastCrawlerTime = now;
+                    lastCrawlerCache = window.bcRunFocusCrawler ? window.bcRunFocusCrawler() : null;
+                } else if (lastCrawlerCache && !isElementVisibleAndActive(lastCrawlerCache)) {
+                    lastCrawlerCache = window.bcRunFocusCrawler ? window.bcRunFocusCrawler() : null;
+                }
+                if (lastCrawlerCache && lastCrawlerCache.id !== 'InputChat') {
+                    return lastCrawlerCache;
+                }
+                return null;
+            }
+
             document.addEventListener('focusin', (e) => {
                 if (isInteractive(e.target)) {
-                    window.bcFocusMemory = e.target;
                     if (isChatArea(e.target)) {
-                        window.bcUserPrefersGameChat = true;
+                        let clickedChatRecently = window.bcLastMousedown && isChatArea(window.bcLastMousedown) && (Date.now() - (window.bcLastMousedownTime || 0) < 500);
+                        if (clickedChatRecently || !getActiveAddonInputStrict()) {
+                            window.bcUserPrefersGameChat = true;
+                            window.bcFocusMemory = e.target;
+                        }
                     } else {
+                        window.bcFocusMemory = e.target;
                         window.bcUserPrefersGameChat = false;
                         window.bcForceUnfocusSearch = false;
                     }
@@ -1060,32 +1104,26 @@ public partial class MainWindow : Window
                 window.bcIsMouseDown = true;
                 window.bcLastMousedown = e.target;
                 window.bcLastMousedownTime = Date.now();
+                window.bcMouseDownX = e.clientX;
+                window.bcMouseDownY = e.clientY;
                 
                 let ic = document.getElementById('InputChat');
                 let addonBox = getAddonContainer(e.target);
                 
                 if (ic && isChatArea(e.target)) {
-                    // User explicitly clicked the game chat area: prioritize game chat!
                     window.bcUserPrefersGameChat = true;
                     window.bcFocusMemory = ic;
                     window.bcForceUnfocusSearch = false;
                 } else if (addonBox) {
-                    // User clicked inside an addon dialog/container: switch preference to addon!
                     window.bcUserPrefersGameChat = false;
                     window.bcForceUnfocusSearch = false;
                     if (isInteractive(e.target)) {
                         window.bcFocusMemory = e.target;
                     } else {
-                        // Softly resolve the best text input inside this clicked addon container (e.g. selecting friend in LianChat)
-                        setTimeout(() => {
-                            if (!window.bcUserPrefersGameChat) {
-                                let targetInput = addonBox.querySelector('textarea:not([disabled]):not([readonly]), input[type=text]:not([disabled]):not([readonly]), input[type=search]:not([disabled]):not([readonly]), input:not([type]):not([disabled]):not([readonly])');
-                                if (targetInput) {
-                                    window.bcFocusMemory = targetInput;
-                                    origFocus.call(targetInput);
-                                }
-                            }
-                        }, 40);
+                        let targetInput = addonBox.querySelector('textarea:not([disabled]):not([readonly]), input[type=text]:not([disabled]):not([readonly]), input[type=search]:not([disabled]):not([readonly]), input:not([type]):not([disabled]):not([readonly])');
+                        if (targetInput) {
+                            window.bcFocusMemory = targetInput;
+                        }
                     }
                 } else if (isInteractive(e.target)) {
                     window.bcFocusMemory = e.target;
@@ -1101,23 +1139,26 @@ public partial class MainWindow : Window
 
             document.addEventListener('mouseup', (e) => {
                 window.bcIsMouseDown = false;
+                let moveDist = Math.hypot((e.clientX || 0) - (window.bcMouseDownX || 0), (e.clientY || 0) - (window.bcMouseDownY || 0));
+                let isDraggingSelection = moveDist > 5;
+
                 setTimeout(() => {
                     if (window.bcIsMouseDown) return;
+                    let sel = window.getSelection ? window.getSelection() : null;
+                    if (isDraggingSelection || (sel && (!sel.isCollapsed || sel.toString().length > 0))) return;
+
                     let active = document.activeElement;
                     if (active && isInteractive(active)) {
                         window.bcFocusMemory = active;
                         return;
                     }
-                    if (window.getSelection().toString().length > 0) return;
-                    
                     if (window.bcForceUnfocusSearch) return;
 
-                    // If user clicked inside a DOM scroll box, preference grid, color picker controls, or non-chat container, do NOT steal focus!
                     if (e.target && e.target.closest && e.target.closest('.scroll-box, [id^=""preference-""], .preference-settings-grid, select, option, fieldset[name=""color-picker""], #color-picker, .color-picker, bc-tint-input, input[type=""range""]')) {
                         return;
                     }
                     
-                    let target = (window.bcFocusMemory && isInteractive(window.bcFocusMemory)) 
+                    let target = (window.bcFocusMemory && isElementVisibleAndActive(window.bcFocusMemory)) 
                         ? window.bcFocusMemory 
                         : (window.bcRunFocusCrawler ? window.bcRunFocusCrawler() : null);
                     if (target && document.activeElement !== target) {
@@ -1130,12 +1171,13 @@ public partial class MainWindow : Window
                 if (window.bcSelectionTimeout) clearTimeout(window.bcSelectionTimeout);
                 window.bcSelectionTimeout = setTimeout(() => {
                     if (window.bcIsMouseDown) return;
+                    if ((Date.now() - (window.bcLastMousedownTime || 0)) < 400) return;
                     let active = document.activeElement;
                     if (active && isInteractive(active)) return;
                     if (window.getSelection().toString().length > 0) return;
                     if (window.bcForceUnfocusSearch) return;
                     
-                    let target = (window.bcFocusMemory && isInteractive(window.bcFocusMemory)) 
+                    let target = (window.bcFocusMemory && isElementVisibleAndActive(window.bcFocusMemory)) 
                         ? window.bcFocusMemory 
                         : (window.bcRunFocusCrawler ? window.bcRunFocusCrawler() : null);
                     if (target && document.activeElement !== target) {
@@ -1227,10 +1269,11 @@ public partial class MainWindow : Window
                     window.ElementFocus = function(ID) {
                         let isLayeringInput = typeof ID === 'string' && ID.startsWith('layering-input-');
                         let targetEl = typeof ID === 'string' ? document.getElementById(ID) : ID;
-                        let wasClicked = targetEl && (
+                        let recentClick = (Date.now() - (window.bcLastMousedownTime || 0)) < 350;
+
+                        let wasClicked = recentClick && targetEl && (
                             window.bcLastMousedown === targetEl || 
-                            window.bcFocusMemory === targetEl ||
-                            (ID === 'InputChat' && window.bcLastMousedown && isChatArea(window.bcLastMousedown))
+                            (ID === 'InputChat' && window.bcUserPrefersGameChat && window.bcLastMousedown && isChatArea(window.bcLastMousedown))
                         );
                         if (wasClicked) {
                             origElementFocus(ID);
@@ -1238,18 +1281,26 @@ public partial class MainWindow : Window
                         }
 
                         if (window.bcIsMouseDown && !isLayeringInput) return;
-                        
-                        let active = document.activeElement;
-                        let isUserInAnotherInput = active && isInteractive(active) && active !== targetEl;
-
-                        // Only prevent background InputChat refocusing from hijacking user away from active inputs/search boxes
-                        if (ID === 'InputChat' && isUserInAnotherInput) {
-                            return;
-                        }
-
                         if (!isLayeringInput && window.getSelection().toString().length > 0) return;
 
-                        if (targetEl && targetEl !== document.getElementById('InputChat')) {
+                        // STRICT GUARD: Tolak fokus ke InputChat jika user tidak memilih game chat DAN ada addon aktif di atasnya!
+                        if (ID === 'InputChat') {
+                            let active = document.activeElement;
+                            let isUserInAnotherInput = active && isInteractive(active) && active !== targetEl;
+                            if (isUserInAnotherInput) return;
+
+                            if (!window.bcUserPrefersGameChat) {
+                                let addonInput = getActiveAddonInputStrict();
+                                if (addonInput) {
+                                    if (document.activeElement !== addonInput && document.hasFocus()) {
+                                        origFocus.call(addonInput);
+                                    }
+                                    return;
+                                }
+                            }
+                        }
+
+                        if (targetEl && targetEl.id !== 'InputChat') {
                             window.bcFocusMemory = targetEl;
                             window.bcUserPrefersGameChat = false;
                         }
@@ -1264,11 +1315,12 @@ public partial class MainWindow : Window
             HTMLElement.prototype.focus = function() {
                 try {
                     let isLayeringInput = this.id && this.id.startsWith('layering-input-');
+                    let recentClick = (Date.now() - (window.bcLastMousedownTime || 0)) < 350;
 
-                    // If user explicitly clicked this element or clicked in the chat area, allow focus immediately!
-                    let wasClicked = (window.bcFocusMemory === this || 
-                                      window.bcLastMousedown === this ||
-                                      (this.id === 'InputChat' && window.bcLastMousedown && isChatArea(window.bcLastMousedown)));
+                    let wasClicked = recentClick && (
+                        window.bcLastMousedown === this ||
+                        (this.id === 'InputChat' && window.bcUserPrefersGameChat && window.bcLastMousedown && isChatArea(window.bcLastMousedown))
+                    );
                     if (wasClicked) {
                         origFocus.call(this);
                         return;
@@ -1276,20 +1328,27 @@ public partial class MainWindow : Window
 
                     if (window.bcIsMouseDown && !isLayeringInput) return;
 
-                    // Anti-steal: when layering input is active, block all programmatic focus shifts to other elements
                     let currentActive = document.activeElement;
                     let currentIsLayering = currentActive && currentActive.id && currentActive.id.startsWith('layering-input-');
                     if (currentIsLayering && !isLayeringInput) return;
 
-                    let active = document.activeElement;
-                    let isUserInAnotherInput = active && isInteractive(active) && active !== this;
-
-                    // Only prevent InputChat from stealing focus away from an active search box, dialog, or addon
-                    if (this.id === 'InputChat' && isUserInAnotherInput) {
-                        return;
-                    }
-
                     if (window.getSelection().toString().length > 0) return;
+
+                    if (this.id === 'InputChat') {
+                        let active = document.activeElement;
+                        let isUserInAnotherInput = active && isInteractive(active) && active !== this;
+                        if (isUserInAnotherInput) return;
+
+                        if (!window.bcUserPrefersGameChat) {
+                            let addonInput = getActiveAddonInputStrict();
+                            if (addonInput) {
+                                if (document.activeElement !== addonInput && document.hasFocus()) {
+                                    origFocus.call(addonInput);
+                                }
+                                return;
+                            }
+                        }
+                    }
                 } catch(e) {}
                 origFocus.call(this);
             };

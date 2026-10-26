@@ -50,60 +50,62 @@
 
             #translate-widget-container {
                 position: fixed;
-                top: 70px;
-                left: 20px;
+                top: 66px;
+                left: 16px;
                 z-index: 1000000;
                 display: none;
             }
 
+            /* Compact Floating Pop-up: 480px width */
             #translate-widget {
-                width: 365px;
+                width: 480px;
+                max-width: calc(100vw - 32px);
                 background: rgba(22, 23, 36, 0.96);
                 backdrop-filter: blur(16px);
                 -webkit-backdrop-filter: blur(16px);
                 border: 1px solid rgba(255, 255, 255, 0.1);
-                border-radius: 26px;
-                padding: 16px;
-                box-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.85), 0 0 0 1px rgba(255, 255, 255, 0.07);
+                border-radius: 20px;
+                padding: 12px 14px;
+                box-shadow: 0 20px 50px -12px rgba(0, 0, 0, 0.85), 0 0 0 1px rgba(255, 255, 255, 0.07);
                 color: #f1f5f9;
                 display: flex;
                 flex-direction: column;
-                gap: 14px;
+                gap: 10px;
             }
 
             #widget-header {
                 display: flex;
                 align-items: center;
                 justify-content: space-between;
-                padding: 2px 4px;
+                padding: 0 2px;
                 cursor: move;
                 user-select: none;
             }
             .header-left {
                 display: flex;
                 align-items: center;
-                gap: 10px;
+                gap: 8px;
                 pointer-events: none;
             }
             .header-icon {
-                width: 38px;
-                height: 38px;
+                width: 30px;
+                height: 30px;
                 border-radius: 50%;
                 background: linear-gradient(to top right, #7e22ce, #9333ea, #a78bfa);
-                box-shadow: 0 0 15px rgba(168, 85, 247, 0.5);
+                box-shadow: 0 0 12px rgba(168, 85, 247, 0.45);
                 border: 1px solid rgba(216, 180, 254, 0.3);
                 display: flex;
                 align-items: center;
                 justify-content: center;
                 color: #fff;
             }
-            .header-icon svg { width: 20px; height: 20px; }
-            .header-title-wrap { display: flex; align-items: center; gap: 8px; }
-            .header-title { font-size: 15px; font-weight: 600; color: #fff; margin: 0; }
+            .header-icon svg { width: 16px; height: 16px; }
+            .header-title-wrap { display: flex; align-items: center; gap: 6px; }
+            .header-title { font-size: 13.5px; font-weight: 600; color: #fff; margin: 0; }
             .uwu-badge {
-                font-size: 10px;
+                font-size: 9.5px;
                 font-weight: 700;
-                padding: 2px 8px;
+                padding: 1px 6px;
                 border-radius: 999px;
                 background: rgba(88, 28, 135, 0.6);
                 color: #d8b4fe;
@@ -111,14 +113,14 @@
                 text-transform: uppercase;
                 letter-spacing: 0.05em;
             }
-            .header-controls { display: flex; align-items: center; gap: 6px; }
+            .header-controls { display: flex; align-items: center; gap: 4px; }
             .icon-btn {
                 background: transparent;
                 border: none;
                 color: #94a3b8;
                 cursor: pointer;
-                padding: 5px;
-                border-radius: 8px;
+                padding: 4px;
+                border-radius: 7px;
                 display: flex;
                 align-items: center;
                 justify-content: center;
@@ -126,9 +128,9 @@
             }
             .icon-btn:hover { color: #ffffff; background: rgba(255, 255, 255, 0.08); }
 
-            #widget-body { display: flex; flex-direction: column; gap: 12px; }
+            #widget-body { display: flex; flex-direction: column; gap: 8px; }
 
-            /* Language Row */
+            /* Top Toolbar: Language Dropdowns + Quick Langs in compact layout */
             .lang-row { display: flex; align-items: center; justify-content: space-between; gap: 6px; }
             .bc-dropdown { position: relative; flex: 1; min-width: 0; }
             .bc-dropdown-trigger {
@@ -138,9 +140,9 @@
                 justify-content: space-between;
                 background: rgba(32, 34, 53, 0.95);
                 border: 1px solid rgba(255, 255, 255, 0.07);
-                padding: 8px 11px;
-                border-radius: 12px;
-                font-size: 11.5px;
+                padding: 6px 10px;
+                border-radius: 10px;
+                font-size: 11px;
                 color: #e2e8f0;
                 cursor: pointer;
                 transition: background 0.15s, border-color 0.15s;
@@ -150,10 +152,10 @@
                 background: #272940;
                 border-color: rgba(139, 92, 246, 0.5);
             }
-            .trigger-label-wrap { display: flex; align-items: center; gap: 7px; overflow: hidden; }
+            .trigger-label-wrap { display: flex; align-items: center; gap: 6px; overflow: hidden; }
             .dot-purple {
-                width: 7px; height: 7px; border-radius: 50%;
-                background: #a855f7; box-shadow: 0 0 8px #a855f7; flex-shrink: 0;
+                width: 6px; height: 6px; border-radius: 50%;
+                background: #a855f7; box-shadow: 0 0 6px #a855f7; flex-shrink: 0;
             }
             .truncate { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 500; }
             .bc-dropdown-chevron { width: 14px !important; height: 14px !important; color: #94a3b8; flex-shrink: 0; transition: transform 0.2s; }
@@ -161,15 +163,15 @@
 
             .bc-dropdown-menu {
                 position: absolute;
-                top: calc(100% + 6px);
+                top: calc(100% + 5px);
                 left: 0;
                 right: 0;
                 z-index: 9999;
                 background: #1a1b2e;
                 border: 1px solid rgba(139, 92, 246, 0.35);
-                border-radius: 14px;
+                border-radius: 12px;
                 box-shadow: 0 16px 40px -8px rgba(0,0,0,0.8);
-                max-height: 210px;
+                max-height: 190px;
                 overflow-y: auto;
                 display: none;
             }
@@ -177,37 +179,37 @@
             .bc-dropdown-menu::-webkit-scrollbar { width: 4px; }
             .bc-dropdown-menu::-webkit-scrollbar-thumb { background: rgba(139,92,246,0.4); border-radius: 4px; }
             .bc-dropdown-item {
-                padding: 8px 12px;
-                font-size: 11.5px;
+                padding: 7px 10px;
+                font-size: 11px;
                 color: #94a3b8;
                 cursor: pointer;
                 display: flex;
                 align-items: center;
-                gap: 8px;
+                gap: 7px;
                 transition: background 0.12s, color 0.12s;
             }
             .bc-dropdown-item:hover { background: rgba(139,92,246,0.18); color: #e2e8f0; }
             .bc-dropdown-item.selected { background: rgba(139,92,246,0.25); color: #c4b5fd; font-weight: 600; }
-            .bc-check { width: 12px; height: 12px; opacity: 0; flex-shrink: 0; color: #a78bfa; }
+            .bc-check { width: 11px; height: 11px; opacity: 0; flex-shrink: 0; color: #a78bfa; }
             .bc-dropdown-item.selected .bc-check { opacity: 1; }
             .bc-dropdown-divider { height: 1px; background: rgba(255,255,255,0.06); margin: 3px 0; }
 
             #swap-languages {
-                width: 32px; height: 32px; border-radius: 10px;
+                width: 28px; height: 28px; border-radius: 8px;
                 background: #202235; border: 1px solid rgba(255,255,255,0.06);
                 color: #cbd5e1; display: flex; align-items: center; justify-content: center;
                 cursor: pointer; flex-shrink: 0; transition: all 0.2s;
             }
             #swap-languages:hover { background: rgba(139, 92, 246, 0.25); color: #d8b4fe; }
-            #swap-languages svg { width: 15px; height: 15px; }
+            #swap-languages svg { width: 14px; height: 14px; }
 
             /* Quick Row */
-            .quick-row { display: flex; align-items: center; gap: 6px; padding: 0 2px; }
-            .quick-label { font-size: 10px; font-weight: 700; color: #64748b; letter-spacing: 0.05em; margin-right: 2px; }
+            .quick-row { display: flex; align-items: center; gap: 5px; padding: 0 2px; }
+            .quick-label { font-size: 9.5px; font-weight: 700; color: #64748b; letter-spacing: 0.05em; margin-right: 2px; }
             .bc-quick-lang {
-                padding: 3px 10px; border-radius: 7px;
+                padding: 2px 8px; border-radius: 6px;
                 background: #212335; color: #cbd5e1;
-                font-size: 11px; font-weight: 600;
+                font-size: 10px; font-weight: 600;
                 border: 1px solid rgba(255, 255, 255, 0.06);
                 cursor: pointer; transition: all 0.15s;
             }
@@ -217,74 +219,111 @@
                 border-color: rgba(168, 85, 247, 0.4);
             }
 
+            /* Side-by-Side (Kiri-Kanan) Compact Grid */
+            .boxes-grid {
+                display: grid;
+                grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+                gap: 8px;
+                align-items: stretch;
+            }
+            @media (max-width: 480px) {
+                .boxes-grid { grid-template-columns: 1fr; }
+            }
+
             /* Box Cards */
             .box-source {
                 background: #0f1019;
-                border-radius: 16px;
-                padding: 12px 14px;
+                border-radius: 13px;
+                padding: 9px 11px;
                 border: 1px solid rgba(255, 255, 255, 0.05);
                 display: flex;
                 flex-direction: column;
                 justify-content: space-between;
-                min-height: 130px;
+                transition: border-color 0.15s ease;
+            }
+            .box-source:focus-within {
+                border-color: rgba(168, 85, 247, 0.4);
             }
             .box-output {
                 background: #1b1c2b;
-                border-radius: 16px;
-                padding: 12px 14px;
+                border-radius: 13px;
+                padding: 9px 11px;
                 border: 1px solid rgba(168, 85, 247, 0.15);
                 display: flex;
                 flex-direction: column;
                 justify-content: space-between;
-                min-height: 140px;
+            }
+            .box-top-content {
+                display: flex;
+                flex-direction: column;
+                flex: 1;
             }
 
+            .pane-header, .output-header {
+                display: flex;
+                align-items: center;
+                gap: 5px;
+                font-size: 9.5px;
+                font-weight: 700;
+                letter-spacing: 0.06em;
+                margin-bottom: 5px;
+                text-transform: uppercase;
+                user-select: none;
+            }
+            .source-header { color: #64748b; }
+            .output-header { color: #c084fc; }
+
+            /* Compact Auto-Expanding Textarea (64px initial -> max 160px) */
             .bc-widget-textarea {
                 width: 100%;
+                min-height: 64px;
+                max-height: 160px;
                 background: transparent !important;
                 border: none !important;
                 outline: none !important;
                 box-shadow: none !important;
                 resize: none !important;
                 color: #f1f5f9 !important;
-                font-size: 13.5px !important;
-                line-height: 1.5 !important;
+                font-size: 12.5px !important;
+                line-height: 1.45 !important;
                 padding: 0 !important;
                 margin: 0 !important;
+                overflow-y: auto;
+                transition: height 0.08s ease-out;
             }
             .bc-widget-textarea::placeholder { color: #64748b !important; opacity: 1; }
             .bc-widget-textarea.bc-output-muted { color: #71717a !important; }
             .bc-widget-textarea::-webkit-scrollbar { width: 4px; }
-            .bc-widget-textarea::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.15); border-radius: 4px; }
+            .bc-widget-textarea::-webkit-scrollbar-thumb { background: rgba(168, 85, 247, 0.3); border-radius: 4px; }
 
             /* Correction / Fix the Word Banner */
             #bc-translate-correction-container {
-                margin-top: 8px;
-                padding: 6px 10px;
-                border-radius: 8px;
+                margin-top: 6px;
+                padding: 4px 8px;
+                border-radius: 7px;
                 background: rgba(244, 63, 94, 0.12);
                 border: 1px solid rgba(244, 63, 94, 0.3);
-                font-size: 11.5px;
+                font-size: 10.5px;
                 color: #fda4af;
                 display: flex;
                 align-items: center;
                 justify-content: space-between;
-                gap: 6px;
+                gap: 5px;
             }
             .bc-spell-error {
                 font-weight: 700;
                 color: #fb7185;
                 text-decoration: underline wavy #f43f5e;
-                text-underline-offset: 3px;
+                text-underline-offset: 2px;
                 cursor: pointer;
             }
             .bc-spell-error:hover { color: #fff; }
             .fix-badge {
-                font-size: 10px;
+                font-size: 9.5px;
                 background: rgba(244, 63, 94, 0.25);
                 color: #ffe4e6;
-                padding: 2px 6px;
-                border-radius: 5px;
+                padding: 1px 5px;
+                border-radius: 4px;
                 cursor: pointer;
                 font-weight: 600;
                 white-space: nowrap;
@@ -295,56 +334,51 @@
                 display: flex;
                 align-items: center;
                 justify-content: space-between;
-                padding-top: 8px;
-                margin-top: 6px;
+                padding-top: 6px;
+                margin-top: 5px;
                 border-top: 1px solid rgba(255, 255, 255, 0.05);
+                min-height: 26px;
             }
             .detected-badge {
-                font-size: 10.5px;
+                font-size: 10px;
                 color: #a78bfa;
                 font-weight: 500;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                white-space: nowrap;
             }
 
-            .output-header {
-                display: flex;
-                align-items: center;
-                gap: 6px;
-                font-size: 10px;
-                font-weight: 700;
-                color: #c084fc;
-                letter-spacing: 0.06em;
-                margin-bottom: 6px;
-                text-transform: uppercase;
-            }
             #bc-translate-meta {
                 display: flex;
                 flex-direction: column;
-                gap: 3px;
-                font-size: 11px;
+                gap: 2px;
+                font-size: 10px;
                 color: #94a3b8;
-                margin-top: 6px;
+                margin-top: 5px;
+                max-height: 42px;
+                overflow-y: auto;
             }
             .romaji-val { color: #d8b4fe; }
 
             #copy-translation-btn {
                 display: flex;
                 align-items: center;
-                gap: 6px;
+                gap: 5px;
                 background: linear-gradient(to right, #9333ea, #6366f1);
                 color: #ffffff;
                 font-weight: 600;
-                font-size: 11.5px;
-                padding: 6px 14px;
-                border-radius: 10px;
+                font-size: 10.5px;
+                padding: 4px 10px;
+                border-radius: 8px;
                 border: none;
-                box-shadow: 0 0 15px rgba(147, 51, 234, 0.4);
+                box-shadow: 0 0 12px rgba(147, 51, 234, 0.35);
                 cursor: pointer;
                 transition: all 0.15s ease;
                 margin-left: auto;
             }
             #copy-translation-btn:hover { background: linear-gradient(to right, #a855f7, #4f46e5); }
             #copy-translation-btn:active { transform: scale(0.95); }
-            #copy-translation-btn svg { width: 14px; height: 14px; }
+            #copy-translation-btn svg { width: 12px; height: 12px; }
 
             .hidden { display: none !important; }
         `;
@@ -455,47 +489,55 @@
                             <button class="bc-quick-lang" data-lang="ja" type="button">JP</button>
                         </nav>
 
-                        <section class="box-source">
-                            <textarea class="bc-widget-textarea" id="source-textarea" placeholder="Type text here..." rows="3" spellcheck="true"></textarea>
-                            
-                            <div id="bc-translate-correction-container" class="hidden">
-                                <div>Did you mean: <span id="bc-translate-correction" class="bc-spell-error"></span></div>
-                                <span id="bc-fix-btn" class="fix-badge">Fix word</span>
-                            </div>
-
-                            <div class="box-footer">
-                                <span id="detected-lang-badge" class="detected-badge"></span>
-                                <button class="icon-btn" id="clear-input" type="button" title="Clear text">
-                                    <svg style="width:14px;height:14px" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" viewBox="0 0 24 24">
-                                        <line x1="18" x2="6" y1="6" y2="18"></line>
-                                        <line x1="6" x2="18" y1="6" y2="18"></line>
-                                    </svg>
-                                </button>
-                            </div>
-                        </section>
-
-                        <section class="box-output">
-                            <div>
-                                <div class="output-header">
-                                    <span class="dot-purple" style="width:6px;height:6px;"></span>
-                                    <span>TRANSLATION</span>
+                        <div class="boxes-grid">
+                            <section class="box-source">
+                                <div class="box-top-content">
+                                    <div class="pane-header source-header">
+                                        <span class="dot-purple" style="background:#64748b;box-shadow:none;"></span>
+                                        <span>SOURCE</span>
+                                    </div>
+                                    <textarea class="bc-widget-textarea" id="source-textarea" placeholder="Type text here..." rows="2" spellcheck="true"></textarea>
+                                    
+                                    <div id="bc-translate-correction-container" class="hidden">
+                                        <div>Did you mean: <span id="bc-translate-correction" class="bc-spell-error"></span></div>
+                                        <span id="bc-fix-btn" class="fix-badge">Fix word</span>
+                                    </div>
                                 </div>
-                                <textarea id="translation-text" class="bc-widget-textarea bc-output-muted" rows="3" readonly placeholder="Translation will appear here..."></textarea>
-                                <div id="bc-translate-meta" class="hidden">
-                                    <div id="bc-translate-src-romaji" class="hidden"></div>
-                                    <div id="bc-translate-tgt-romaji" class="hidden"></div>
+
+                                <div class="box-footer">
+                                    <span id="detected-lang-badge" class="detected-badge"></span>
+                                    <button class="icon-btn" id="clear-input" type="button" title="Clear text">
+                                        <svg style="width:13px;height:13px" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" viewBox="0 0 24 24">
+                                            <line x1="18" x2="6" y1="6" y2="18"></line>
+                                            <line x1="6" x2="18" y1="6" y2="18"></line>
+                                        </svg>
+                                    </button>
                                 </div>
-                            </div>
-                            
-                            <div class="box-footer">
-                                <button id="copy-translation-btn" type="button">
-                                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
-                                    </svg>
-                                    <span>Copy</span>
-                                </button>
-                            </div>
-                        </section>
+                            </section>
+
+                            <section class="box-output">
+                                <div class="box-top-content">
+                                    <div class="output-header">
+                                        <span class="dot-purple"></span>
+                                        <span>TRANSLATION</span>
+                                    </div>
+                                    <textarea id="translation-text" class="bc-widget-textarea bc-output-muted" rows="2" readonly placeholder="Translation..."></textarea>
+                                    <div id="bc-translate-meta" class="hidden">
+                                        <div id="bc-translate-src-romaji" class="hidden"></div>
+                                        <div id="bc-translate-tgt-romaji" class="hidden"></div>
+                                    </div>
+                                </div>
+                                
+                                <div class="box-footer">
+                                    <button id="copy-translation-btn" type="button">
+                                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
+                                        </svg>
+                                        <span>Copy</span>
+                                    </button>
+                                </div>
+                            </section>
+                        </div>
                     </div>
                 </main>
             </div>
@@ -533,6 +575,25 @@
         const metaDiv             = $("bc-translate-meta");
         const srcRomaji           = $("bc-translate-src-romaji");
         const tgtRomaji           = $("bc-translate-tgt-romaji");
+
+        // --- Synchronized Auto-Expanding Height (64px min -> 160px max) ---
+        const MIN_TEXTAREA_HEIGHT = 64;
+        const MAX_TEXTAREA_HEIGHT = 160;
+
+        function syncTextareaHeights() {
+            inputArea.style.height = `${MIN_TEXTAREA_HEIGHT}px`;
+            outputArea.style.height = `${MIN_TEXTAREA_HEIGHT}px`;
+
+            const neededHeight = Math.max(
+                inputArea.scrollHeight,
+                outputArea.scrollHeight,
+                MIN_TEXTAREA_HEIGHT
+            );
+            const finalHeight = Math.min(neededHeight, MAX_TEXTAREA_HEIGHT);
+
+            inputArea.style.height = `${finalHeight}px`;
+            outputArea.style.height = `${finalHeight}px`;
+        }
 
         // Isolasi event ketikan, klik, dan fokus agar tidak dibajak oleh listener game Bondage Club atau runtime lain
         ["keydown", "keyup", "keypress", "input", "paste", "mousedown", "mouseup", "click", "pointerdown", "pointerup"].forEach(evt => {
@@ -649,7 +710,7 @@
         });
         document.addEventListener("click", closeAllDropdowns);
 
-        // --- Swap (Mendukung swap dari bahasa yang terdeteksi otomatis) ---
+        // --- Swap ---
         swapBtn.onclick = (e) => {
             e.stopPropagation();
             const effectiveSource = sourceLangValue === "auto" ? (lastDetectedLang || "en") : sourceLangValue;
@@ -658,6 +719,7 @@
             updateTargetLang(effectiveSource);
             if (outputArea.value && outputArea.value !== "Translating...") {
                 inputArea.value = outputArea.value;
+                syncTextareaHeights();
                 doTranslate();
             }
         };
@@ -671,6 +733,7 @@
             correctionContainer.classList.add("hidden");
             metaDiv.classList.add("hidden");
             detectedBadge.innerText = "";
+            syncTextareaHeights();
             registerTranslateFocus();
             inputArea.focus();
         };
@@ -721,6 +784,7 @@
             if (!currentCorrectionText) return;
             inputArea.value = currentCorrectionText;
             correctionContainer.classList.add("hidden");
+            syncTextareaHeights();
             doTranslate();
         };
         correctionBtn.onclick = applyCorrection;
@@ -745,10 +809,8 @@
                 }
             }
 
-            // Cek semua kemungkinan indeks koreksi ejaan (data[7] atau data[8])
             for (const idx of [7, 8]) {
                 if (Array.isArray(data[idx])) {
-                    // Biasanya di [idx][1] (berformat teks bersih) atau [idx][0] (dengan tag <b><i>)
                     const candidate = data[idx][1] || data[idx][0];
                     if (typeof candidate === "string" && candidate.trim()) {
                         spellResult = candidate.replace(/<\/?[^>]+(>|$)/g, "").trim();
@@ -772,18 +834,19 @@
                 correctionContainer.classList.add("hidden");
                 metaDiv.classList.add("hidden");
                 detectedBadge.innerText = "";
+                syncTextareaHeights();
                 return;
             }
 
             const reqId = ++translateReqId;
             outputArea.classList.remove("bc-output-muted");
             outputArea.value = "Translating...";
+            syncTextareaHeights();
 
             const sl = sourceLangValue;
             const tl = targetLangValue;
             const q  = encodeURIComponent(text);
 
-            // Include dt=qc and fallback parameters to reliably trigger Google spellcheck & language detection
             const tryGoogle = async (base, sourceLang) => {
                 const url = `${base}/translate_a/single?client=gtx&sl=${sourceLang}&tl=${tl}&hl=en&dt=t&dt=bd&dt=rm&dt=qca&dt=qc&dt=sp&dt=ss&q=${q}`;
                 const r = await fetch(url);
@@ -821,8 +884,6 @@
 
                 if (rawData) {
                     res = extractGoogleData(rawData);
-                    // If translation matches input exactly (often caused by typos when sourceLang is not 'auto'),
-                    // retry with auto to trigger Google spellcheck
                     if (!res.spellResult && sl !== "auto" && res.translated.toLowerCase() === text.toLowerCase()) {
                         try {
                             const retryAuto = await tryGoogle("https://translate.googleapis.com", "auto");
@@ -835,9 +896,8 @@
                     res = await tryGoogleDict();
                 }
 
-                if (reqId !== translateReqId) return; // Discard stale response if user typed new input
+                if (reqId !== translateReqId) return;
 
-                // Render detected language tag when available
                 if (res.detectedLang) {
                     lastDetectedLang = res.detectedLang;
                     const langName = getLangLabel(LANGUAGES, res.detectedLang);
@@ -851,7 +911,6 @@
                     }
                 }
 
-                // Tampilkan "Did you mean" (Fix the Word) jika ada saran ejaan
                 if (res.spellResult && res.spellResult.toLowerCase() !== text.toLowerCase()) {
                     currentCorrectionText = res.spellResult;
                     correctionBtn.innerText = res.spellResult;
@@ -861,7 +920,6 @@
                     correctionContainer.classList.add("hidden");
                 }
 
-                // Romaji / Transliteration
                 if (res.srcRm || res.tgtRm) {
                     metaDiv.classList.remove("hidden");
                     if (res.srcRm) {
@@ -881,13 +939,16 @@
                 }
 
                 outputArea.value = res.translated || "(empty)";
+                syncTextareaHeights();
             } catch (err) {
                 if (reqId !== translateReqId) return;
                 outputArea.value = "Error: " + (err.message || "Failed to translate.");
+                syncTextareaHeights();
             }
         };
 
         inputArea.addEventListener("input", () => {
+            syncTextareaHeights();
             clearTimeout(debounceTimer);
             debounceTimer = setTimeout(doTranslate, 400);
         });
@@ -1002,6 +1063,7 @@
             if (btnMoved) { e.preventDefault(); return; }
             if (popup.style.display === "none" || !popup.style.display) {
                 popup.style.display = "block";
+                syncTextareaHeights();
                 registerTranslateFocus();
                 setTimeout(() => inputArea.focus(), 60);
             } else {
@@ -1023,7 +1085,6 @@
         }, true);
 
         // Integrasi dengan Focus Crawler platform runtime (WPF / Linux / WebView2)
-        // Memastikan kursor tidak ditarik paksa ke chat game saat widget Translate aktif
         function wrapCrawler(fn) {
             if (typeof fn !== "function") return fn;
             const wrapped = function () {
