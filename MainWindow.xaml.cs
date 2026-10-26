@@ -1476,7 +1476,7 @@ public partial class MainWindow : Window
                     }
                 }
 
-                // 1. Periodically prune expired textures (tetap berjalan aman di Wardrobe untuk tekstur >90 detik)
+                // 1. Periodically prune expired textures (safely runs in Wardrobe for textures >90s)
                 setInterval(() => {
                     try {
                         applyPurgeDelay();
