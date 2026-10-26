@@ -52,6 +52,9 @@
             html body #TextAreaChatLog div.ChatMessage,
             html body #TextAreaChatLog [class*="ChatMessage"]:not(.ChatMessageName):not(button),
             html body #TextAreaChatLog .bcn-card-message {
+                content-visibility: auto !important;
+                contain-intrinsic-size: auto 44px !important;
+                contain: layout style paint !important;
                 font-size: inherit !important;
                 margin: 7px 6px !important;
                 padding: 9px 54px 9px 14px !important;
@@ -380,10 +383,11 @@
                 overflow: hidden !important;
                 pointer-events: none !important;
                 z-index: 8 !important;
+                contain: strict !important;
             }
             html body #bcn-soft-paws span {
                 color: ${P.icon} !important;
-                text-shadow: 0 4px 12px rgba(107, 80, 144, 0.35) !important;
+                text-shadow: none !important;
                 opacity: 0.12 !important;
             }
 

@@ -1079,6 +1079,13 @@
                 }
             }
         } finally {
+            for (const pair of copies) {
+                if (Array.isArray(pair)) {
+                    for (const c of pair) {
+                        if (c) { c.width = 0; c.height = 0; }
+                    }
+                }
+            }
             Object.assign(character, original);
             character.Pose = original.Pose || [];
             character.ActivePose = original.ActivePose || null;

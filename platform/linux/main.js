@@ -518,11 +518,11 @@ const CopyAndFocusScript = `
         }
     }, true);
     
-    document.addEventListener('pointerdown', () => { window.bcIsMouseDown = true; }, true);
-    document.addEventListener('pointerup', () => { window.bcIsMouseDown = false; }, true);
+    document.addEventListener('pointerdown', () => { window.bcIsMouseDown = true; }, { capture: true, passive: true });
+    document.addEventListener('pointerup', () => { window.bcIsMouseDown = false; }, { capture: true, passive: true });
     document.addEventListener('mousemove', (e) => {
         if (e.buttons !== undefined) window.bcIsMouseDown = (e.buttons > 0);
-    }, true);
+    }, { capture: true, passive: true });
     window.addEventListener('blur', () => { window.bcIsMouseDown = false; });
 
     document.addEventListener('mousedown', (e) => {
@@ -799,7 +799,7 @@ const CopyAndFocusScript = `
                     }
                 }
             } else if (m.type === 'attributes') {
-                if (m.target && isTextInput(m.target)) {
+                if (m.target && m.target.id !== 'InputChat' && m.target.id !== 'TextAreaChatLog' && isTextInput(m.target)) {
                     shouldCheck = true;
                 }
             }
@@ -886,10 +886,12 @@ const CopyAndFocusScript = `
         return originalExecCommand.apply(this, arguments);
     };
 
-    // ponytail: Safe VRAM & texture optimization via BC's native ImageCache
+    // ponytail: Safe VRAM, Active-Room Texture Protection & Chat DOM Optimization
     (function setupSafeVramOptimization() {
-        const NORMAL_PURGE_DELAY = 3 * 60 * 1000;
+        const NORMAL_PURGE_DELAY = 5 * 60 * 1000;
         const WARDROBE_PURGE_DELAY = 90 * 1000;
+        const MAX_CHAT_DOM_MESSAGES = 250;
+        const trackedRoomCanvases = new Map();
 
         function applyPurgeDelay() {
             if (typeof window.ImageCachePurgeDelay !== 'undefined') {
@@ -899,10 +901,109 @@ const CopyAndFocusScript = `
             }
         }
 
-        // 1. Periodically prune expired textures (safely runs in Wardrobe for textures >90s)
+        // Protect active room character textures and free VRAM of departed characters
+        function protectActiveRoomTextures() {
+            try {
+                const now = typeof window.CommonTime === 'function' ? window.CommonTime() : Date.now();
+                const chars = [];
+                if (window.Player) chars.push(window.Player);
+                if (window.CurrentCharacter && window.CurrentCharacter !== window.Player) chars.push(window.CurrentCharacter);
+                if (Array.isArray(window.ChatRoomCharacter)) {
+                    for (let i = 0; i < window.ChatRoomCharacter.length; i++) {
+                        if (window.ChatRoomCharacter[i]) chars.push(window.ChatRoomCharacter[i]);
+                    }
+                }
+
+                // Collect active character asset names to only touch textures actually used in the room
+                const activeAssetNames = new Set();
+                for (let i = 0; i < chars.length; i++) {
+                    const c = chars[i];
+                    if (c && Array.isArray(c.Appearance)) {
+                        for (let j = 0; j < c.Appearance.length; j++) {
+                            const a = c.Appearance[j];
+                            if (a && a.Asset) {
+                                if (a.Asset.Name) activeAssetNames.add(a.Asset.Name);
+                                if (a.Asset.Group && a.Asset.Group.Name) activeAssetNames.add(a.Asset.Group.Name);
+                            }
+                        }
+                    }
+                }
+
+                // Touch timestamps of active room assets to prevent visual flickering during purge
+                for (const cacheObj of [window.DrawImageCache, window.GLDrawImageCache]) {
+                    if (!cacheObj || !cacheObj.cache || typeof cacheObj.cache.forEach !== 'function') continue;
+                    cacheObj.cache.forEach((val, key) => {
+                        if (val && typeof val === 'object' && window.CurrentScreen === 'ChatRoom' && val.loaded !== false) {
+                            let isActive = false;
+                            if (typeof key === 'string') {
+                                for (const name of activeAssetNames) {
+                                    if (key.includes(name)) {
+                                        isActive = true;
+                                        break;
+                                    }
+                                }
+                            }
+                            if (isActive) {
+                                if ('lastAccessed' in val) val.lastAccessed = now;
+                                if ('timestamp' in val) val.timestamp = now;
+                            }
+                        }
+                    });
+                }
+
+                // Track room character canvases and immediately release backing textures of departed characters
+                const currentIds = new Set();
+                for (let i = 0; i < chars.length; i++) {
+                    const c = chars[i];
+                    const id = c.MemberNumber || c.ID || i;
+                    currentIds.add(id);
+                    if (c.Canvas || c.CanvasBlink) {
+                        trackedRoomCanvases.set(id, { char: c, canvas: c.Canvas, blink: c.CanvasBlink });
+                    }
+                }
+
+                for (const [id, entry] of trackedRoomCanvases.entries()) {
+                    if (!currentIds.has(id) && entry.char !== window.Player) {
+                        if (entry.canvas && entry.canvas.width > 0) {
+                            entry.canvas.width = 0;
+                            entry.canvas.height = 0;
+                        }
+                        if (entry.blink && entry.blink.width > 0) {
+                            entry.blink.width = 0;
+                            entry.blink.height = 0;
+                        }
+                        trackedRoomCanvases.delete(id);
+                    }
+                }
+            } catch (e) {}
+        }
+
+        // Prune excessively old DOM messages if near bottom to keep chat scroll and memory optimal
+        function pruneChatLogDom() {
+            try {
+                const log = document.getElementById('TextAreaChatLog');
+                if (!log || log.offsetParent === null) return;
+                const isNearBottom = (log.scrollHeight - log.scrollTop - log.clientHeight) < 120;
+                if (!isNearBottom) return;
+
+                const messages = log.children;
+                if (messages.length > MAX_CHAT_DOM_MESSAGES) {
+                    const toRemove = messages.length - MAX_CHAT_DOM_MESSAGES;
+                    for (let i = 0; i < toRemove; i++) {
+                        const first = log.firstElementChild;
+                        if (!first) break;
+                        first.remove();
+                    }
+                }
+            } catch (e) {}
+        }
+
+        // 1. Periodically prune expired textures & clean up departed character VRAM
         setInterval(() => {
             try {
                 applyPurgeDelay();
+                protectActiveRoomTextures();
+                pruneChatLogDom();
 
                 if (typeof window.GLDrawImageCache !== 'undefined' && window.GLDrawImageCache && typeof window.GLDrawImageCache.purge === 'function') {
                     window.GLDrawImageCache.purge(false);
@@ -916,7 +1017,7 @@ const CopyAndFocusScript = `
             } catch (e) {}
         }, 45 * 1000);
 
-        // 2. Safe gentle prune 12s after leaving Wardrobe (Appearance) once room assets have settled
+        // 2. Safe gentle prune 12s after leaving Wardrobe (Appearance)
         let lastScreen = null;
         let screenTimer = null;
         setInterval(() => {
@@ -927,11 +1028,12 @@ const CopyAndFocusScript = `
                         if (screenTimer) clearTimeout(screenTimer);
                         screenTimer = setTimeout(() => {
                             if (typeof window.CurrentScreen !== 'undefined' && window.CurrentScreen === 'Appearance') return;
+                            protectActiveRoomTextures();
                             if (typeof window.GLDrawImageCache !== 'undefined' && window.GLDrawImageCache && typeof window.GLDrawImageCache.purge === 'function') {
-                                window.GLDrawImageCache.purge(true);
+                                window.GLDrawImageCache.purge(false);
                             }
                             if (typeof window.DrawImageCache !== 'undefined' && window.DrawImageCache && typeof window.DrawImageCache.purge === 'function') {
-                                window.DrawImageCache.purge(true);
+                                window.DrawImageCache.purge(false);
                             }
                             if (typeof window.gc === 'function') {
                                 try { window.gc(); } catch (e) {}
