@@ -24,17 +24,7 @@
         beepTxt: "#7eb8f0",
     };
 
-    function injectDarkTheme() {
-        if (!document.head) return;
-
-        let style = document.getElementById("neko-enhancer-dark-theme");
-        if (!style) {
-            style = document.createElement("style");
-            style.id = "neko-enhancer-dark-theme";
-            document.head.appendChild(style);
-        }
-
-        style.textContent = `
+    const DARK_THEME_CSS = `
             /* Variables */
             :root, html, body, body.bcn-enabled {
                 --bcn-panel:  ${P.panel}  !important;
@@ -570,7 +560,35 @@
                 box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.1), 0 3px 0 var(--bcn-glow) !important;
             }
         `;
-        if (document.head.lastElementChild !== style) {
+
+    function injectDarkTheme() {
+        if (!document.head) return;
+
+        let style = document.getElementById("neko-enhancer-dark-theme");
+        if (!style) {
+            style = document.createElement("style");
+            style.id = "neko-enhancer-dark-theme";
+            style.textContent = DARK_THEME_CSS;
+            document.head.appendChild(style);
+            return;
+        }
+
+        // Hanya tulis ulang jika isinya berubah
+        if (style.textContent !== DARK_THEME_CSS) {
+            style.textContent = DARK_THEME_CSS;
+        }
+
+        // Hanya pindahkan ke akhir jika ada elemen <style> atau <link> baru setelahnya (abaikan <script>)
+        let next = style.nextElementSibling;
+        let hasLaterStyle = false;
+        while (next) {
+            if (next.tagName === "STYLE" || (next.tagName === "LINK" && next.rel === "stylesheet")) {
+                hasLaterStyle = true;
+                break;
+            }
+            next = next.nextElementSibling;
+        }
+        if (hasLaterStyle) {
             document.head.appendChild(style);
         }
     }
@@ -581,7 +599,7 @@
                 const text = s.textContent || "";
                 if (text.includes("bcn-") || text.includes("#TextAreaChatLog") || text.includes("--bcn-soft")) {
                     if (text.includes("rgba(255, 255, 255") || text.includes("#fff1f6") || text.includes("#ffffff")) {
-                        s.textContent = text
+                        const updated = text
                             .replace(/--bcn-soft:\s*#fff1f6/g, `--bcn-soft: ${P.soft}`)
                             .replace(/--bcn-panel:\s*#ffffff/g, `--bcn-panel: ${P.panel}`)
                             .replace(/--bcn-text:\s*#8a3f5b/g, `--bcn-text: ${P.text}`)
@@ -589,6 +607,11 @@
                             .replace(/--bcn-border:\s*#ffd4e2/g, `--bcn-border: ${P.border}`)
                             .replace(/--bcn-accent:\s*#f65086/g, `--bcn-accent: ${P.borderAcc}`)
                             .replace(/rgba\(\s*255\s*,\s*255\s*,\s*255\s*,/g, "rgba(30, 24, 41,");
+
+                        // KRUSIAL: Hanya update DOM jika string benar-benar berubah!
+                        if (updated !== text) {
+                            s.textContent = updated;
+                        }
                     }
                 }
             });
@@ -598,12 +621,22 @@
     injectDarkTheme();
     sanitizeStylesheets();
     if (document.head) {
-        new MutationObserver(() => {
-            const style = document.getElementById("neko-enhancer-dark-theme");
-            if (!style || document.head.lastElementChild !== style) {
-                injectDarkTheme();
+        new MutationObserver(mutations => {
+            let hasNewStyle = false;
+            for (const m of mutations) {
+                for (const node of m.addedNodes) {
+                    if (node.nodeType === 1 && (node.tagName === "STYLE" || node.tagName === "LINK")) {
+                        if (node.id !== "neko-enhancer-dark-theme") {
+                            hasNewStyle = true;
+                            break;
+                        }
+                    }
+                }
+                if (hasNewStyle) break;
             }
-            sanitizeStylesheets();
+            if (hasNewStyle) {
+                sanitizeStylesheets();
+            }
         }).observe(document.head, { childList: true });
     }
 
@@ -696,6 +729,7 @@
         }).observe(log, { childList: true });
     }
 
+    let lastPawsRect = { left: -1, top: -1, width: -1, height: -1 };
     function syncPawsPosition() {
         if (window._bcIsBackground) return;
         const paws = document.getElementById("bcn-soft-paws");
@@ -703,10 +737,17 @@
         if (!paws || !log) return;
         const rect = log.getBoundingClientRect();
         if (rect.width > 0 && rect.height > 0) {
-            paws.style.setProperty("left", `${rect.left}px`, "important");
-            paws.style.setProperty("top", `${rect.top}px`, "important");
-            paws.style.setProperty("width", `${rect.width}px`, "important");
-            paws.style.setProperty("height", `${rect.height}px`, "important");
+            const l = Math.round(rect.left);
+            const t = Math.round(rect.top);
+            const w = Math.round(rect.width);
+            const h = Math.round(rect.height);
+            if (l !== lastPawsRect.left || t !== lastPawsRect.top || w !== lastPawsRect.width || h !== lastPawsRect.height) {
+                lastPawsRect = { left: l, top: t, width: w, height: h };
+                paws.style.setProperty("left", `${l}px`, "important");
+                paws.style.setProperty("top", `${t}px`, "important");
+                paws.style.setProperty("width", `${w}px`, "important");
+                paws.style.setProperty("height", `${h}px`, "important");
+            }
         }
     }
     window.addEventListener("resize", syncPawsPosition, { passive: true });

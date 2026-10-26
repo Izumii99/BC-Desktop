@@ -90,6 +90,8 @@
                     window._lastAppearance = window.Player.Appearance.map(a => a.Asset.Name + a.Asset.Group.Name);
                     
                     window._runAutoMirror = function() {
+                        if (window._bcIsBackground) return;
+                        if (typeof CurrentScreen !== "undefined" && CurrentScreen !== "ChatRoom") return;
                         if (!window._autoMirrorActive || !window.Player || !window.Player.Appearance) return;
                         
                         const currentAppearance = window.Player.Appearance;

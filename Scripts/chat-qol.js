@@ -1198,6 +1198,7 @@
 
     setInterval(() => {
         try {
+            if (window._bcIsBackground) return;
             if (
                 typeof Player !== "undefined" &&
                 Player &&
@@ -2153,13 +2154,16 @@
     // ponytail: LCE keeps its petsuit toggle and position private, so the button is located
     // by the 37x37 OverTheHead icon it draws each frame (button rect = icon - 4px).
     // Breaks if LCE changes that icon/size; upgrade path is an exposed LCE API.
-    let lcePetBtn = null;
+    let lcePetBtn = { x: 0, y: 0, t: 0 };
     function hookLcePetIcon() {
         if (hookLcePetIcon.done || typeof window.DrawImageResize !== "function") return;
         hookLcePetIcon.done = true;
         const spy = (a) => {
-            if (a[0] === "Icons/Poses/OverTheHead.png" && a[3] === 37 && a[4] === 37)
-                lcePetBtn = { x: a[1] - 4, y: a[2] - 4, t: Date.now() };
+            if (a[0] === "Icons/Poses/OverTheHead.png" && a[3] === 37 && a[4] === 37) {
+                lcePetBtn.x = a[1] - 4;
+                lcePetBtn.y = a[2] - 4;
+                lcePetBtn.t = Date.now();
+            }
         };
         try {
             window.bcModSdk
