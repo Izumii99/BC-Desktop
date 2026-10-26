@@ -1,11 +1,9 @@
 ### Fixes & Improvements:
 
-- **Improvement (Performance & Wardrobe Memory):** Overhauled internal memory allocation and GPU texture limits. Fixed high CPU usage and memory accumulation during extended play sessions and heavy Wardrobe customization, with intelligent texture cleanup when returning to the room.
-- **Improvement (Room Texture Protection & Canvas VRAM):** Protected active room character textures from flickering during texture purges, while immediately reclaiming GPU backing buffers when characters depart the room.
-- **Improvement (Chat Log Virtualization & Performance):** Implemented modern CSS content-visibility virtualization for chat messages, eliminating layout lag and GPU spikes on large chat histories without deleting scrollback history.
-- **Improvement (Input & High-Polling Mouse):** Added passive pointer listeners for smooth handling on high-polling-rate gaming mice (1000Hz+), and prevented chat input from triggering focus crawlers.
-- **Improvement (Lifecycle & Alt-Tab Responsiveness):** Smoother Alt-Tab switching without disk paging lag, while automatically pausing background addon polling and animations when the app is unfocused.
-- **Fix (Addon Memory Leaks):** Automatically cleaned up temporary canvas allocations in petsuit animations to prevent VRAM accumulation.
+- **Improvement (Room Texture Protection & Canvas VRAM):** Protected active room character textures from flickering during texture maintenance, and immediately reclaim GPU canvas buffers when characters leave the room to prevent VRAM growth.
+- **Improvement (Chat Log Virtualization & Performance):** Modern CSS content-visibility virtualization renders only visible chat messages, eliminating scroll lag and GPU overhead during long conversations without clearing history.
+- **Improvement (Input & High-Polling Mouse):** Passive pointer event listeners deliver smooth responsiveness with high-polling-rate gaming mice (1000Hz+), while preventing chat input from triggering redundant focus checks.
+- **Fix (Addon Memory & Rendering Optimization):** Reclaimed temporary canvas allocations in petsuit animations to prevent VRAM accumulation, and eliminated heavy text-shadow blur layers in HUD overlays.
 
 ### Downloads:
 
