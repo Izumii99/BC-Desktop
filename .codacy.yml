@@ -24,6 +24,18 @@ engines:
       - "obj/**"
       - "Assets/**"
       - "**.min.js"
+  semgrep:
+    exclude_paths:
+      - "publish/**"
+      - "tests/**"
+      - "references/**"
+      - "state/**"
+      - "tools/**"
+      - "bin/**"
+      - "obj/**"
+      - "Assets/**"
+      - "**.min.js"
+
   duplication:
     exclude_paths:
       - "publish/**"
