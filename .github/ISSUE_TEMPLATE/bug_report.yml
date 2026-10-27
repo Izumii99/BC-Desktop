@@ -24,8 +24,8 @@ body:
     id: version
     attributes:
       label: App Version
-      description: What version are you using (e.g. v7.4.1)?
-      placeholder: v7.4.1
+      description: What version are you using (e.g. v7.5.1)?
+      placeholder: v7.5.1
     validations:
       required: true
   - type: dropdown

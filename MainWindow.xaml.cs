@@ -412,7 +412,7 @@ public partial class MainWindow : Window
     }
 
 
-    internal const string CurrentAppVersion = "7.4.1";
+    internal const string CurrentAppVersion = "7.5.1";
     internal const string GitHubRepo = "Izumii99/BC-Desktop";
     internal static bool EnableAutoUpdates = true;
     private static string? _newReleaseUrl;
