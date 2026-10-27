@@ -360,6 +360,24 @@ const CapUnfocusedFpsScript =
     "window._bcIsBackground=true;" +
     "const g=window.Player&&Player.GraphicsSettings;" +
     "if(g&&!g.MaxUnfocusedFPS&&window.CurrentScreen!=='Preference'){g.MaxUnfocusedFPS=15;window.bcFpsCap=g;}" +
+    "if(!window.__bcDrawHooked&&typeof window.DrawProcess==='function'){" +
+    "window.__bcDrawHooked=true;" +
+    "if(!document.__bcOrigHasFocus&&typeof document.hasFocus==='function'){" +
+    "document.__bcOrigHasFocus=document.hasFocus;" +
+    "document.hasFocus=function(){if(window._bcIsBackground)return false;return document.__bcOrigHasFocus.apply(this,arguments);};" +
+    "}" +
+    "const _origDraw=window.DrawProcess;" +
+    "let _lastBgDrawTime=0;" +
+    "window.DrawProcess=function(ts){" +
+    "if(window._bcIsMinimized)return;" +
+    "if(window._bcIsBackground){" +
+    "const now=typeof ts==='number'?ts:performance.now();" +
+    "if(now-_lastBgDrawTime<66)return;" +
+    "_lastBgDrawTime=now;" +
+    "}" +
+    "return _origDraw.apply(this,arguments);" +
+    "};" +
+    "}" +
     "if(window.bcFocusMemory&&!window.bcFocusMemory.isConnected)window.bcFocusMemory=null;" +
     "if(window.bcLastMousedown&&!window.bcLastMousedown.isConnected)window.bcLastMousedown=null;" +
     "if(window.bcLastFocusedLayer&&!window.bcLastFocusedLayer.isConnected)window.bcLastFocusedLayer=null;" +
@@ -406,7 +424,8 @@ const CopyAndFocusScript = `
 
     let origFocus = HTMLElement.prototype.focus;
 
-    if (!window.__bcDrawHooked) {
+    const _attachDrawHookLinux = () => {
+        if (window.__bcDrawHooked || typeof window.DrawProcess !== 'function') return false;
         window.__bcDrawHooked = true;
         if (!document.__bcOrigHasFocus && typeof document.hasFocus === 'function') {
             document.__bcOrigHasFocus = document.hasFocus;
@@ -416,9 +435,9 @@ const CopyAndFocusScript = `
             };
         }
 
-        let _origDrawLinux = window.DrawProcess;
+        const _origDrawLinux = window.DrawProcess;
         let _lastBgDrawTime = 0;
-        const _wrappedDrawLinux = function(ts) {
+        window.DrawProcess = function(ts) {
             if (window._bcIsMinimized) return;
             if (window._bcIsBackground) {
                 const now = typeof ts === 'number' ? ts : performance.now();
@@ -427,14 +446,15 @@ const CopyAndFocusScript = `
             }
             if (typeof _origDrawLinux === 'function') return _origDrawLinux.apply(this, arguments);
         };
-        try {
-            Object.defineProperty(window, 'DrawProcess', {
-                configurable: true,
-                enumerable: true,
-                get: () => _wrappedDrawLinux,
-                set: (fn) => { _origDrawLinux = fn; }
-            });
-        } catch (e) {}
+        return true;
+    };
+
+    if (!_attachDrawHookLinux()) {
+        const _hookIntervalLinux = setInterval(() => {
+            if (_attachDrawHookLinux()) {
+                clearInterval(_hookIntervalLinux);
+            }
+        }, 200);
     }
 
     function isTextInput(el) {

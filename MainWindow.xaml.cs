@@ -35,6 +35,24 @@ public partial class MainWindow : Window
         "window._bcIsBackground=true;" +
         "const g=window.Player&&Player.GraphicsSettings;" +
         "if(g&&!g.MaxUnfocusedFPS&&window.CurrentScreen!=='Preference'){g.MaxUnfocusedFPS=15;window.bcFpsCap=g;}" +
+        "if(!window.__bcDrawHooked&&typeof window.DrawProcess==='function'){" +
+        "window.__bcDrawHooked=true;" +
+        "if(!document.__bcOrigHasFocus&&typeof document.hasFocus==='function'){" +
+        "document.__bcOrigHasFocus=document.hasFocus;" +
+        "document.hasFocus=function(){if(window._bcIsBackground)return false;return document.__bcOrigHasFocus.apply(this,arguments);};" +
+        "}" +
+        "const _origDraw=window.DrawProcess;" +
+        "let _lastBgDrawTime=0;" +
+        "window.DrawProcess=function(ts){" +
+        "if(window._bcIsMinimized)return;" +
+        "if(window._bcIsBackground){" +
+        "const now=typeof ts==='number'?ts:performance.now();" +
+        "if(now-_lastBgDrawTime<66)return;" +
+        "_lastBgDrawTime=now;" +
+        "}" +
+        "return _origDraw.apply(this,arguments);" +
+        "};" +
+        "}" +
         "if(window.bcFocusMemory&&!window.bcFocusMemory.isConnected)window.bcFocusMemory=null;" +
         "if(window.bcLastMousedown&&!window.bcLastMousedown.isConnected)window.bcLastMousedown=null;" +
         "if(window.bcLastFocusedLayer&&!window.bcLastFocusedLayer.isConnected)window.bcLastFocusedLayer=null;" +
@@ -1202,7 +1220,8 @@ public partial class MainWindow : Window
                 if (window.__bcCopyScriptInitialized) return;
                 window.__bcCopyScriptInitialized = true;
 
-                if (!window.__bcDrawHooked) {
+                const _attachDrawHook = () => {
+                    if (window.__bcDrawHooked || typeof window.DrawProcess !== 'function') return false;
                     window.__bcDrawHooked = true;
                     if (!document.__bcOrigHasFocus && typeof document.hasFocus === 'function') {
                         document.__bcOrigHasFocus = document.hasFocus;
@@ -1211,25 +1230,26 @@ public partial class MainWindow : Window
                             return document.__bcOrigHasFocus.apply(this, arguments);
                         };
                     }
-                    let _origDraw = window.DrawProcess;
+                    const _origDraw = window.DrawProcess;
                     let _lastBgDrawTime = 0;
-                    const _wrappedDraw = function(ts) {
+                    window.DrawProcess = function(ts) {
                         if (window._bcIsMinimized) return;
                         if (window._bcIsBackground) {
                             const now = typeof ts === 'number' ? ts : performance.now();
                             if (now - _lastBgDrawTime < 66) return;
                             _lastBgDrawTime = now;
                         }
-                        if (typeof _origDraw === 'function') return _origDraw.apply(this, arguments);
+                        return _origDraw.apply(this, arguments);
                     };
-                    try {
-                        Object.defineProperty(window, 'DrawProcess', {
-                            configurable: true,
-                            enumerable: true,
-                            get: () => _wrappedDraw,
-                            set: (fn) => { _origDraw = fn; }
-                        });
-                    } catch (e) {}
+                    return true;
+                };
+
+                if (!_attachDrawHook()) {
+                    const _hookInterval = setInterval(() => {
+                        if (_attachDrawHook()) {
+                            clearInterval(_hookInterval);
+                        }
+                    }, 200);
                 }
 
                 let origFocus = HTMLElement.prototype.focus;
