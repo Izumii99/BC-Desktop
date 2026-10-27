@@ -1221,7 +1221,8 @@ public partial class MainWindow : Window
                 window.__bcCopyScriptInitialized = true;
 
                 const _attachDrawHook = () => {
-                    if (window.__bcDrawHooked || typeof window.DrawProcess !== 'function') return false;
+                    if (window.__bcDrawHooked) return true;
+                    if (typeof window.DrawProcess !== 'function') return false;
                     window.__bcDrawHooked = true;
                     if (!document.__bcOrigHasFocus && typeof document.hasFocus === 'function') {
                         document.__bcOrigHasFocus = document.hasFocus;
@@ -1244,10 +1245,11 @@ public partial class MainWindow : Window
                     return true;
                 };
 
-                if (!_attachDrawHook()) {
-                    const _hookInterval = setInterval(() => {
+                if (!_attachDrawHook() && !window._bcDrawHookTimer) {
+                    window._bcDrawHookTimer = setInterval(() => {
                         if (_attachDrawHook()) {
-                            clearInterval(_hookInterval);
+                            clearInterval(window._bcDrawHookTimer);
+                            window._bcDrawHookTimer = null;
                         }
                     }, 200);
                 }

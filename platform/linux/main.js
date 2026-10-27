@@ -425,7 +425,8 @@ const CopyAndFocusScript = `
     let origFocus = HTMLElement.prototype.focus;
 
     const _attachDrawHookLinux = () => {
-        if (window.__bcDrawHooked || typeof window.DrawProcess !== 'function') return false;
+        if (window.__bcDrawHooked) return true;
+        if (typeof window.DrawProcess !== 'function') return false;
         window.__bcDrawHooked = true;
         if (!document.__bcOrigHasFocus && typeof document.hasFocus === 'function') {
             document.__bcOrigHasFocus = document.hasFocus;
@@ -449,10 +450,11 @@ const CopyAndFocusScript = `
         return true;
     };
 
-    if (!_attachDrawHookLinux()) {
-        const _hookIntervalLinux = setInterval(() => {
+    if (!_attachDrawHookLinux() && !window._bcDrawHookTimer) {
+        window._bcDrawHookTimer = setInterval(() => {
             if (_attachDrawHookLinux()) {
-                clearInterval(_hookIntervalLinux);
+                clearInterval(window._bcDrawHookTimer);
+                window._bcDrawHookTimer = null;
             }
         }, 200);
     }
