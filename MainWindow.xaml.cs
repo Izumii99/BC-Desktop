@@ -38,7 +38,8 @@ public partial class MainWindow : Window
         "if(window.bcFocusMemory&&!window.bcFocusMemory.isConnected)window.bcFocusMemory=null;" +
         "if(window.bcLastMousedown&&!window.bcLastMousedown.isConnected)window.bcLastMousedown=null;" +
         "if(window.bcLastFocusedLayer&&!window.bcLastFocusedLayer.isConnected)window.bcLastFocusedLayer=null;" +
-        "if(typeof window.gc==='function'){try{window.gc();}catch(e){}}" +
+        "const now=Date.now();" +
+        "if(typeof window.gc==='function'&&(!window._bcLastGc||now-window._bcLastGc>60000)){window._bcLastGc=now;try{window.gc();}catch(e){}}" +
         "})()";
     internal const string RestoreUnfocusedFpsScript =
         "(()=>{window._bcIsBackground=false;window._bcIsMinimized=false;const g=window.bcFpsCap;if(g){if(g.MaxUnfocusedFPS===15)g.MaxUnfocusedFPS=0;window.bcFpsCap=null;}})()";
@@ -140,8 +141,7 @@ public partial class MainWindow : Window
             {
                 core.MemoryUsageTargetLevel = CoreWebView2MemoryUsageTargetLevel.Low;
                 await core.ExecuteScriptAsync(CapUnfocusedFpsScript);
-                await Task.Delay(150, token);
-                TrimAllWebViewProcesses();
+                TrimWorkingSet();
             }
         }
         catch (OperationCanceledException)
@@ -1230,26 +1230,35 @@ public partial class MainWindow : Window
                 if (window.__bcCopyScriptInitialized) return;
                 window.__bcCopyScriptInitialized = true;
 
-                if (!document.__bcOrigHasFocus && typeof document.hasFocus === 'function') {
-                    document.__bcOrigHasFocus = document.hasFocus;
-                    document.hasFocus = function() {
-                        if (window._bcIsBackground) return false;
-                        return document.__bcOrigHasFocus.apply(this, arguments);
+                if (!window.__bcDrawHooked) {
+                    window.__bcDrawHooked = true;
+                    if (!document.__bcOrigHasFocus && typeof document.hasFocus === 'function') {
+                        document.__bcOrigHasFocus = document.hasFocus;
+                        document.hasFocus = function() {
+                            if (window._bcIsBackground) return false;
+                            return document.__bcOrigHasFocus.apply(this, arguments);
+                        };
+                    }
+                    let _origDraw = window.DrawProcess;
+                    let _lastBgDrawTime = 0;
+                    const _wrappedDraw = function(ts) {
+                        if (window._bcIsMinimized) return;
+                        if (window._bcIsBackground) {
+                            const now = typeof ts === 'number' ? ts : performance.now();
+                            if (now - _lastBgDrawTime < 66) return;
+                            _lastBgDrawTime = now;
+                        }
+                        if (typeof _origDraw === 'function') return _origDraw.apply(this, arguments);
                     };
+                    try {
+                        Object.defineProperty(window, 'DrawProcess', {
+                            configurable: true,
+                            enumerable: true,
+                            get: () => _wrappedDraw,
+                            set: (fn) => { _origDraw = fn; }
+                        });
+                    } catch (e) {}
                 }
-
-                let _origDraw = window.DrawProcess;
-                try {
-                    Object.defineProperty(window, 'DrawProcess', {
-                        configurable: true,
-                        enumerable: true,
-                        get: () => function(ts) {
-                            if (window._bcIsMinimized) return;
-                            if (typeof _origDraw === 'function') return _origDraw.apply(this, arguments);
-                        },
-                        set: (fn) => { _origDraw = fn; }
-                    });
-                } catch (e) {}
 
                 let origFocus = HTMLElement.prototype.focus;
 
@@ -1984,19 +1993,32 @@ public partial class MainWindow : Window
         // ponytail: Native WebView2 fallback guard against undefined pidx ReferenceError, background focus, and canvas draw throttling
         await core.AddScriptToExecuteOnDocumentCreatedAsync(@"
             if(typeof window.pidx==='undefined'){try{Object.defineProperty(window,'pidx',{get:()=>0,set:()=>{},configurable:true});}catch(e){}}
-            if(!document.__bcOrigHasFocus&&typeof document.hasFocus==='function'){
-                document.__bcOrigHasFocus=document.hasFocus;
-                document.hasFocus=function(){if(window._bcIsBackground)return false;return document.__bcOrigHasFocus.apply(this,arguments);};
+            if(!window.__bcDrawHooked){
+                window.__bcDrawHooked=true;
+                if(!document.__bcOrigHasFocus&&typeof document.hasFocus==='function'){
+                    document.__bcOrigHasFocus=document.hasFocus;
+                    document.hasFocus=function(){if(window._bcIsBackground)return false;return document.__bcOrigHasFocus.apply(this,arguments);};
+                }
+                let _origDrawInit=window.DrawProcess;
+                let _lastBgDrawTime=0;
+                const _wrappedDrawInit=function(ts){
+                    if(window._bcIsMinimized)return;
+                    if(window._bcIsBackground){
+                        const now=typeof ts==='number'?ts:performance.now();
+                        if(now-_lastBgDrawTime<66)return;
+                        _lastBgDrawTime=now;
+                    }
+                    if(typeof _origDrawInit==='function')return _origDrawInit.apply(this,arguments);
+                };
+                try{
+                    Object.defineProperty(window,'DrawProcess',{
+                        configurable:true,
+                        enumerable:true,
+                        get:()=>_wrappedDrawInit,
+                        set:(fn)=>{_origDrawInit=fn;}
+                    });
+                }catch(e){}
             }
-            let _origDrawInit=window.DrawProcess;
-            try{
-                Object.defineProperty(window,'DrawProcess',{
-                    configurable:true,
-                    enumerable:true,
-                    get:()=>function(ts){if(window._bcIsMinimized)return;if(typeof _origDrawInit==='function')return _origDrawInit.apply(this,arguments);},
-                    set:(fn)=>{_origDrawInit=fn;}
-                });
-            }catch(e){}
         ");
 
         string scriptsDir = Path.Combine(AppContext.BaseDirectory, "Scripts");

@@ -167,6 +167,25 @@ public class MainWindowTests
     }
 
     [TestMethod]
+    public void CanvasThrottlingAndFocusHooks_PreservedInInjectedScripts()
+    {
+        string csPath = Path.Combine(ProjectRoot, "MainWindow.xaml.cs");
+        string linuxPath = Path.Combine(ProjectRoot, "platform", "linux", "main.js");
+
+        string csCode = File.ReadAllText(csPath);
+        string linuxCode = File.ReadAllText(linuxPath);
+
+        foreach (var (code, name) in new[] { (csCode, "MainWindow.xaml.cs"), (linuxCode, "platform/linux/main.js") })
+        {
+            StringAssert.Contains(code, "__bcDrawHooked", $"{name} must guard against duplicate DrawProcess hooking.");
+            StringAssert.Contains(code, "__bcOrigHasFocus", $"{name} must intercept document.hasFocus.");
+            StringAssert.Contains(code, "_bcIsMinimized", $"{name} must check _bcIsMinimized to skip DrawProcess.");
+            StringAssert.Contains(code, "_lastBgDrawTime < 66", $"{name} must enforce ~15 FPS fallback throttle when backgrounded.");
+            StringAssert.Contains(code, "now-window._bcLastGc>60000", $"{name} must enforce 60s cooldown on window.gc().");
+        }
+    }
+
+    [TestMethod]
     public void MemoryOptimization_TrimWorkingSet_ExecutesSuccessfully()
     {
         [DllImport("kernel32.dll")] static extern IntPtr GetCurrentProcess();

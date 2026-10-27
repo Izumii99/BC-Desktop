@@ -363,7 +363,8 @@ const CapUnfocusedFpsScript =
     "if(window.bcFocusMemory&&!window.bcFocusMemory.isConnected)window.bcFocusMemory=null;" +
     "if(window.bcLastMousedown&&!window.bcLastMousedown.isConnected)window.bcLastMousedown=null;" +
     "if(window.bcLastFocusedLayer&&!window.bcLastFocusedLayer.isConnected)window.bcLastFocusedLayer=null;" +
-    "if(typeof window.gc==='function'){try{window.gc();}catch(e){}}" +
+    "const now=Date.now();" +
+    "if(typeof window.gc==='function'&&(!window._bcLastGc||now-window._bcLastGc>60000)){window._bcLastGc=now;try{window.gc();}catch(e){}}" +
     "})()";
 
 const RestoreUnfocusedFpsScript =
@@ -405,26 +406,36 @@ const CopyAndFocusScript = `
 
     let origFocus = HTMLElement.prototype.focus;
 
-    if (!document.__bcOrigHasFocus && typeof document.hasFocus === 'function') {
-        document.__bcOrigHasFocus = document.hasFocus;
-        document.hasFocus = function() {
-            if (window._bcIsBackground) return false;
-            return document.__bcOrigHasFocus.apply(this, arguments);
-        };
-    }
+    if (!window.__bcDrawHooked) {
+        window.__bcDrawHooked = true;
+        if (!document.__bcOrigHasFocus && typeof document.hasFocus === 'function') {
+            document.__bcOrigHasFocus = document.hasFocus;
+            document.hasFocus = function() {
+                if (window._bcIsBackground) return false;
+                return document.__bcOrigHasFocus.apply(this, arguments);
+            };
+        }
 
-    let _origDrawLinux = window.DrawProcess;
-    try {
-        Object.defineProperty(window, 'DrawProcess', {
-            configurable: true,
-            enumerable: true,
-            get: () => function(ts) {
-                if (window._bcIsMinimized) return;
-                if (typeof _origDrawLinux === 'function') return _origDrawLinux.apply(this, arguments);
-            },
-            set: (fn) => { _origDrawLinux = fn; }
-        });
-    } catch (e) {}
+        let _origDrawLinux = window.DrawProcess;
+        let _lastBgDrawTime = 0;
+        const _wrappedDrawLinux = function(ts) {
+            if (window._bcIsMinimized) return;
+            if (window._bcIsBackground) {
+                const now = typeof ts === 'number' ? ts : performance.now();
+                if (now - _lastBgDrawTime < 66) return;
+                _lastBgDrawTime = now;
+            }
+            if (typeof _origDrawLinux === 'function') return _origDrawLinux.apply(this, arguments);
+        };
+        try {
+            Object.defineProperty(window, 'DrawProcess', {
+                configurable: true,
+                enumerable: true,
+                get: () => _wrappedDrawLinux,
+                set: (fn) => { _origDrawLinux = fn; }
+            });
+        } catch (e) {}
+    }
 
     function isTextInput(el) {
         if (!el) return false;
