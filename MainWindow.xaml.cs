@@ -1181,11 +1181,10 @@ public partial class MainWindow : Window
                                 if (OpenClipboard(hwnd))
                                 {
                                     EmptyClipboard();
-                                    IntPtr hGlobal = IntPtr.Zero;
+                                    int bytes = (textToCopy.Length + 1) * 2;
+                                    IntPtr hGlobal = GlobalAlloc(0x0042, (UIntPtr)bytes); // GMEM_MOVEABLE | GMEM_ZEROINIT
                                     try
                                     {
-                                        int bytes = (textToCopy.Length + 1) * 2;
-                                        hGlobal = GlobalAlloc(0x0042, (UIntPtr)bytes); // GMEM_MOVEABLE | GMEM_ZEROINIT
                                         if (hGlobal != IntPtr.Zero)
                                         {
                                             IntPtr target = GlobalLock(hGlobal);
