@@ -334,11 +334,8 @@ app.commandLine.appendSwitch('disable-sync');
 app.commandLine.appendSwitch('disable-notifications');
 app.commandLine.appendSwitch('disable-site-isolation-trials');
 app.commandLine.appendSwitch('no-pings');
-app.commandLine.appendSwitch('enable-zero-copy');
-app.commandLine.appendSwitch('force_high_performance_gpu');
 app.commandLine.appendSwitch('max-gum-fps', '60');
 app.commandLine.appendSwitch('gpu-rasterization-msaa-sample-count', '0');
-app.commandLine.appendSwitch('enable-features', 'PurgeRendererMemoryWhenBackgrounded,IntensiveWakeUpThrottling');
 app.commandLine.appendSwitch('force-gpu-mem-available-mb', '384');
 app.commandLine.appendSwitch('force-gpu-mem-discardable-limit-mb', '128');
 app.commandLine.appendSwitch('js-flags', '--max-old-space-size=512 --expose-gc');
@@ -948,41 +945,6 @@ const CopyAndFocusScript = `
         return originalExecCommand.apply(this, arguments);
     };
 
-    // Smart Adaptive Frame Pacer: 60 FPS saat berinteraksi, 30 FPS saat diam/idle (>2 detik tanpa input)
-    (function setupFramePacer() {
-        if (window._bcFramePacerInstalled || typeof window.requestAnimationFrame !== 'function') return;
-        window._bcFramePacerInstalled = true;
-
-        let lastInputTime = performance.now();
-        const markActive = () => { lastInputTime = performance.now(); };
-        window.addEventListener('mousemove', markActive, { capture: true, passive: true });
-        window.addEventListener('mousedown', markActive, { capture: true, passive: true });
-        window.addEventListener('keydown', markActive, { capture: true, passive: true });
-        window.addEventListener('wheel', markActive, { capture: true, passive: true });
-        window.addEventListener('touchstart', markActive, { capture: true, passive: true });
-
-        const origRAF = window.requestAnimationFrame.bind(window);
-        let lastFrameTime = 0;
-
-        window.requestAnimationFrame = function(callback) {
-            return origRAF(function pacedLoop(timestamp) {
-                const userCap = (window.Player && window.Player.GraphicsSettings && window.Player.GraphicsSettings.MaxFPS > 0)
-                    ? window.Player.GraphicsSettings.MaxFPS
-                    : 0;
-                const isIdle = (timestamp - lastInputTime) > 2000;
-                const targetFps = userCap > 0 ? userCap : (isIdle ? 30 : 60);
-                const minDelta = (1000 / targetFps) - 1.2;
-
-                if (timestamp - lastFrameTime < minDelta) {
-                    origRAF(pacedLoop);
-                    return;
-                }
-                lastFrameTime = timestamp;
-                callback(timestamp);
-            });
-        };
-    })();
-
     // ponytail: Safe VRAM, Active-Room Texture Protection & Chat Virtualization
     (function setupSafeVramOptimization() {
         const NORMAL_PURGE_DELAY = 5 * 60 * 1000;
@@ -1249,21 +1211,10 @@ function injectScripts() {
     if (scriptsInjectedForCurrentPage) return;
     scriptsInjectedForCurrentPage = true;
 
-    // 1. Guard against undefined pidx ReferenceError & MainCanvas { alpha: false } compositing optimization
-    mainWindow.webContents.executeJavaScript(`
-        (function() {
-            if (typeof window.pidx === 'undefined') {
-                try { Object.defineProperty(window, 'pidx', { get: () => 0, set: () => {}, configurable: true }); } catch (e) {}
-            }
-            const origGetContext = HTMLCanvasElement.prototype.getContext;
-            HTMLCanvasElement.prototype.getContext = function(type, attrs) {
-                if (type === '2d' && this.id === 'MainCanvas') {
-                    attrs = Object.assign({}, attrs, { alpha: false });
-                }
-                return origGetContext.call(this, type, attrs);
-            };
-        })();
-    `).catch(() => {});
+    // 1. Guard against undefined pidx ReferenceError
+    mainWindow.webContents.executeJavaScript(
+        "if(typeof window.pidx==='undefined'){try{Object.defineProperty(window,'pidx',{get:()=>0,set:()=>{},configurable:true});}catch(e){}}"
+    ).catch(() => {});
 
     // 2. Inject Smart Focus & Keyboard/Copy Handler
     mainWindow.webContents.executeJavaScript(CopyAndFocusScript).catch(() => {});

@@ -95,24 +95,21 @@ public class MainWindowTests
         StringAssert.Contains(code, "--disable-component-update");
         StringAssert.Contains(code, "--disable-domain-reliability");
         StringAssert.Contains(code, "--disable-sync");
-        StringAssert.Contains(code, "--enable-features=CalculateNativeWinOcclusion");
         StringAssert.Contains(code, "--js-flags=");
         StringAssert.Contains(code, "--max-old-space-size=512");
         Assert.IsFalse(code.Contains("--optimize-for-size"), "Must not disable V8 TurboFan JIT with --optimize-for-size.");
         StringAssert.Contains(code, "--expose-gc");
 
-        // VRAM capping, hardware rendering and zero-copy flags
+        // VRAM capping and memory budget flags
         StringAssert.Contains(code, "--force-gpu-mem-available-mb=384");
         StringAssert.Contains(code, "--force-gpu-mem-discardable-limit-mb=128");
         StringAssert.Contains(code, "--gpu-rasterization-msaa-sample-count=0");
-        StringAssert.Contains(code, "--use-angle=d3d11");
-        StringAssert.Contains(code, "--enable-zero-copy");
-        StringAssert.Contains(code, "--force_high_performance_gpu");
         StringAssert.Contains(code, "--disable-site-isolation-trials");
-        Assert.IsFalse(code.Contains("CanvasOopRasterization"), "CanvasOopRasterization must remain enabled so 2D canvas renders on GPU.");
         StringAssert.Contains(code, "AudioServiceOutOfProcess");
-        StringAssert.Contains(code, "PurgeRendererMemoryWhenBackgrounded");
-        StringAssert.Contains(code, "IntensiveWakeUpThrottling");
+
+        // Must not include aggressive timer or occlusion throttling that chokes multi-window/portrait play
+        Assert.IsFalse(code.Contains("CalculateNativeWinOcclusion"), "Must not treat multi-window as occluded.");
+        Assert.IsFalse(code.Contains("IntensiveWakeUpThrottling"), "Must not cut off JS timer executions.");
 
         // Prohibited flags for 2D canvas apps
         Assert.IsFalse(code.Contains("--enable-gpu-rasterization"), "GPU rasterization flag is prohibited for 2D canvas.");
@@ -153,7 +150,7 @@ public class MainWindowTests
     }
 
     [TestMethod]
-    public void FramePacer_InstalledInInjectedScripts()
+    public void VramOptimization_PreservedInInjectedScripts()
     {
         string csPath = Path.Combine(ProjectRoot, "MainWindow.xaml.cs");
         string linuxPath = Path.Combine(ProjectRoot, "platform", "linux", "main.js");
@@ -163,9 +160,9 @@ public class MainWindowTests
 
         foreach (var (code, name) in new[] { (csCode, "MainWindow.xaml.cs"), (linuxCode, "platform/linux/main.js") })
         {
-            StringAssert.Contains(code, "setupFramePacer", $"{name} must include setupFramePacer.");
-            StringAssert.Contains(code, "_bcFramePacerInstalled", $"{name} must guard against duplicate frame pacer installation.");
-            StringAssert.Contains(code, "Player.GraphicsSettings.MaxFPS", $"{name} must respect custom user MaxFPS setting.");
+            StringAssert.Contains(code, "setupSafeVramOptimization", $"{name} must include setupSafeVramOptimization.");
+            StringAssert.Contains(code, "protectActiveRoomTextures", $"{name} must protect active room textures.");
+            StringAssert.Contains(code, "ensureChatVirtualizationCss", $"{name} must ensure chat virtualization.");
         }
     }
 

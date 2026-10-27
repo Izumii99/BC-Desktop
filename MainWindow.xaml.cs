@@ -926,14 +926,10 @@ public partial class MainWindow : Window
                     "--disable-notifications " +
                     "--disable-site-isolation-trials " +
                     "--no-pings " +
-                    "--use-angle=d3d11 " +
-                    "--enable-zero-copy " +
-                    "--force_high_performance_gpu " +
                     "--force-gpu-mem-available-mb=384 " +
                     "--force-gpu-mem-discardable-limit-mb=128 " +
                     "--gpu-rasterization-msaa-sample-count=0 " +
                     "--max-gum-fps=60 " +
-                    "--enable-features=CalculateNativeWinOcclusion,PurgeRendererMemoryWhenBackgrounded,IntensiveWakeUpThrottling " +
                     "--js-flags=\"--max-old-space-size=512 --expose-gc\""
             };
 
@@ -1655,41 +1651,6 @@ public partial class MainWindow : Window
                 return originalExecCommand.apply(this, arguments);
             };
 
-            // Smart Adaptive Frame Pacer: 60 FPS saat berinteraksi, 30 FPS saat diam/idle (>2 detik tanpa input)
-            (function setupFramePacer() {
-                if (window._bcFramePacerInstalled || typeof window.requestAnimationFrame !== 'function') return;
-                window._bcFramePacerInstalled = true;
-
-                let lastInputTime = performance.now();
-                const markActive = () => { lastInputTime = performance.now(); };
-                window.addEventListener('mousemove', markActive, { capture: true, passive: true });
-                window.addEventListener('mousedown', markActive, { capture: true, passive: true });
-                window.addEventListener('keydown', markActive, { capture: true, passive: true });
-                window.addEventListener('wheel', markActive, { capture: true, passive: true });
-                window.addEventListener('touchstart', markActive, { capture: true, passive: true });
-
-                const origRAF = window.requestAnimationFrame.bind(window);
-                let lastFrameTime = 0;
-
-                window.requestAnimationFrame = function(callback) {
-                    return origRAF(function pacedLoop(timestamp) {
-                        const userCap = (window.Player && window.Player.GraphicsSettings && window.Player.GraphicsSettings.MaxFPS > 0)
-                            ? window.Player.GraphicsSettings.MaxFPS
-                            : 0;
-                        const isIdle = (timestamp - lastInputTime) > 2000;
-                        const targetFps = userCap > 0 ? userCap : (isIdle ? 30 : 60);
-                        const minDelta = (1000 / targetFps) - 1.2;
-
-                        if (timestamp - lastFrameTime < minDelta) {
-                            origRAF(pacedLoop);
-                            return;
-                        }
-                        lastFrameTime = timestamp;
-                        callback(timestamp);
-                    });
-                };
-            })();
-
             // ponytail: Safe VRAM, Active-Room Texture Protection & Chat Virtualization
             (function setupSafeVramOptimization() {
                 const NORMAL_PURGE_DELAY = 5 * 60 * 1000;
@@ -1870,20 +1831,8 @@ public partial class MainWindow : Window
             }
         };
 
-        // Native fallback guard against undefined pidx ReferenceError & MainCanvas { alpha: false } compositing optimization
-        await core.AddScriptToExecuteOnDocumentCreatedAsync(@"
-(function() {
-    if (typeof window.pidx === 'undefined') {
-        try { Object.defineProperty(window, 'pidx', { get: () => 0, set: () => {}, configurable: true }); } catch (e) {}
-    }
-    const origGetContext = HTMLCanvasElement.prototype.getContext;
-    HTMLCanvasElement.prototype.getContext = function(type, attrs) {
-        if (type === '2d' && this.id === 'MainCanvas') {
-            attrs = Object.assign({}, attrs, { alpha: false });
-        }
-        return origGetContext.call(this, type, attrs);
-    };
-})();");
+        // ponytail: Native WebView2 fallback guard against undefined pidx ReferenceError
+        await core.AddScriptToExecuteOnDocumentCreatedAsync("if(typeof window.pidx==='undefined'){try{Object.defineProperty(window,'pidx',{get:()=>0,set:()=>{},configurable:true});}catch(e){}}");
 
         string scriptsDir = Path.Combine(AppContext.BaseDirectory, "Scripts");
         bool hasLocalScripts = Directory.Exists(scriptsDir) && Directory.EnumerateFiles(scriptsDir, "*.js").Any();
