@@ -103,10 +103,10 @@
                         Padding="7,1,7,1"
                         VerticalAlignment="Center"
                         Cursor="Hand"
-                        ToolTip="Version 7.5.1&#x0a;Click to view release notes"
+                        ToolTip="Version 7.5.2&#x0a;Click to view release notes"
                         MouseLeftButtonUp="VersionBadge_MouseLeftButtonUp">
                     <TextBlock x:Name="VersionBadgeText"
-                               Text="v7.5.1"
+                               Text="v7.5.2"
                                Foreground="#bda6e8"
                                FontSize="10"
                                FontFamily="Segoe UI"
