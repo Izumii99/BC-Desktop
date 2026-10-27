@@ -107,6 +107,14 @@ public partial class MainWindow : Window
     {
         InitializeComponent();
         _originalTitleLabel = TitleLabel.Text;
+        if (string.IsNullOrEmpty(_originalTitleLabel))
+        {
+            if (VersionBadge != null) VersionBadge.Visibility = Visibility.Collapsed;
+        }
+        else
+        {
+            if (VersionBadgeText != null) VersionBadgeText.Text = $"v{CurrentAppVersion}";
+        }
         StateChanged += OnWindowStateChanged;
         Activated += MainWindow_Activated;
         Deactivated += MainWindow_Deactivated;
@@ -596,8 +604,9 @@ public partial class MainWindow : Window
             text = text.Substring(0, downloadsIdx);
         }
 
-        text = System.Text.RegularExpressions.Regex.Replace(text, @"^\s*-\s*\*\*([^*]+)\*\*:\s*", "• $1: ", System.Text.RegularExpressions.RegexOptions.Multiline);
+        text = System.Text.RegularExpressions.Regex.Replace(text, @"^\s*-\s*\*\*([^*:]+?)(?:\*\*:|:\*\*|\*?:)\s*", "• $1: ", System.Text.RegularExpressions.RegexOptions.Multiline);
         text = System.Text.RegularExpressions.Regex.Replace(text, @"^\s*-\s*", "• ", System.Text.RegularExpressions.RegexOptions.Multiline);
+        text = text.Replace("`", "");
 
         return text.Trim();
     }
@@ -675,15 +684,68 @@ public partial class MainWindow : Window
             VerticalScrollBarVisibility = System.Windows.Controls.ScrollBarVisibility.Auto,
             Margin = new Thickness(0, 0, 0, 16)
         };
-        var body = new System.Windows.Controls.TextBlock
+
+        var contentPanel = new System.Windows.Controls.StackPanel();
+        var rawItems = notes.Split(new[] { "\r\n\r\n", "\n\n", "\r\r" }, StringSplitOptions.RemoveEmptyEntries);
+        if (rawItems.Length <= 1)
         {
-            Text = notes,
-            FontSize = 13,
-            LineHeight = 20,
-            TextWrapping = TextWrapping.Wrap,
-            Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#d4d4d8"))
-        };
-        scroll.Content = body;
+            rawItems = notes.Split(new[] { "\r\n", "\n", "\r" }, StringSplitOptions.RemoveEmptyEntries);
+        }
+
+        foreach (var rawItem in rawItems)
+        {
+            string line = rawItem.Trim();
+            if (string.IsNullOrWhiteSpace(line)) continue;
+
+            line = System.Text.RegularExpressions.Regex.Replace(line, @"^[-•*]\s*", "");
+
+            var block = new System.Windows.Controls.TextBlock
+            {
+                FontSize = 13,
+                LineHeight = 20,
+                TextWrapping = TextWrapping.Wrap,
+                Margin = new Thickness(0, 0, 0, 12)
+            };
+
+            var titleMatch = System.Text.RegularExpressions.Regex.Match(line, @"^\s*\*\*?([^*:]+?)(?:\*\*:|:\*\*|\*?:)\s*(.*)$", System.Text.RegularExpressions.RegexOptions.Singleline);
+            if (titleMatch.Success)
+            {
+                string title = titleMatch.Groups[1].Value.Trim().Replace("**", "");
+                string desc = titleMatch.Groups[2].Value.Trim().Replace("**", "").Replace("`", "");
+
+                block.Inlines.Add(new System.Windows.Documents.Run("• ")
+                {
+                    Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#c084fc")),
+                    FontWeight = FontWeights.Bold
+                });
+                block.Inlines.Add(new System.Windows.Documents.Run($"{title}: ")
+                {
+                    Foreground = Brushes.White,
+                    FontWeight = FontWeights.SemiBold
+                });
+                block.Inlines.Add(new System.Windows.Documents.Run(desc)
+                {
+                    Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#d4d4d8"))
+                });
+            }
+            else
+            {
+                string clean = line.Replace("**", "").Replace("`", "");
+                block.Inlines.Add(new System.Windows.Documents.Run("• ")
+                {
+                    Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#c084fc")),
+                    FontWeight = FontWeights.Bold
+                });
+                block.Inlines.Add(new System.Windows.Documents.Run(clean)
+                {
+                    Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#d4d4d8"))
+                });
+            }
+
+            contentPanel.Children.Add(block);
+        }
+
+        scroll.Content = contentPanel;
         System.Windows.Controls.Grid.SetRow(scroll, 1);
         grid.Children.Add(scroll);
 
@@ -762,6 +824,16 @@ public partial class MainWindow : Window
     private void TitleLabel_MouseLeftButtonUp(object sender, MouseButtonEventArgs e)
     {
         OpenReleaseNotesUrl();
+    }
+
+    private void VersionBadge_MouseLeftButtonUp(object sender, MouseButtonEventArgs e)
+    {
+        e.Handled = true;
+        _ = Task.Run(async () =>
+        {
+            string notes = await FetchLatestReleaseNotesAsync();
+            await Dispatcher.InvokeAsync(() => ShowChangelogWindow(CurrentAppVersion, notes));
+        });
     }
 
     private void UpdateBadge_MouseRightButtonUp(object sender, MouseButtonEventArgs e)

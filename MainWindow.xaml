@@ -94,6 +94,25 @@
                            FontFamily="Segoe UI"
                            VerticalAlignment="Center"
                            MouseLeftButtonUp="TitleLabel_MouseLeftButtonUp"/>
+                <Border x:Name="VersionBadge"
+                        Background="#252230"
+                        BorderBrush="#443b59"
+                        BorderThickness="1"
+                        CornerRadius="9"
+                        Margin="8,0,0,0"
+                        Padding="7,1,7,1"
+                        VerticalAlignment="Center"
+                        Cursor="Hand"
+                        ToolTip="Version 7.4.1&#x0a;Click to view release notes"
+                        MouseLeftButtonUp="VersionBadge_MouseLeftButtonUp">
+                    <TextBlock x:Name="VersionBadgeText"
+                               Text="v7.4.1"
+                               Foreground="#bda6e8"
+                               FontSize="10"
+                               FontFamily="Segoe UI"
+                               FontWeight="SemiBold"
+                               VerticalAlignment="Center"/>
+                </Border>
                 <Border x:Name="UpdateBadge"
                         Visibility="Collapsed"
                         Background="#2d1b4e"

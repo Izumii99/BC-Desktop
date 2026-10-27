@@ -106,7 +106,9 @@ async function fetchLatestReleaseNotesLinux() {
                 if (fixesIdx >= 0) text = text.substring(fixesIdx + "### Fixes & Improvements:".length);
                 let dlIdx = text.indexOf("### Downloads:");
                 if (dlIdx >= 0) text = text.substring(0, dlIdx);
-                text = text.replace(/^\s*-\s*\*\*([^*]+)\*\*:\s*/gm, "• $1: ").replace(/^\s*-\s*/gm, "• ");
+                text = text.replace(/^\s*-\s*\*\*([^*:]+?)(?:\*\*:|:\*\*|\*?:)\s*/gm, "• $1: ")
+                           .replace(/^\s*-\s*/gm, "• ")
+                           .replace(/`/g, "");
                 return text.trim();
             }
         }
