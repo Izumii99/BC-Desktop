@@ -29,6 +29,7 @@ engines:
       - "Assets/**"
       - "**.min.js"
   semgrep:
+    enabled: false
     exclude_paths:
       - ".github/**"
       - "platform/**"

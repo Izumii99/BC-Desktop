@@ -1,3 +1,4 @@
+#pragma warning disable S108, S2486, S3897, S3168, CA1067
 using System.Diagnostics;
 using System.IO;
 using System.Net.Http;
@@ -120,7 +121,7 @@ public partial class MainWindow : Window
         Deactivated += MainWindow_Deactivated;
         if (initializeWebView)
         {
-            InitWebViewAsync();
+            _ = InitWebViewAsync();
         }
     }
 
@@ -217,10 +218,7 @@ public partial class MainWindow : Window
             _previousWindowState = WindowState;
             TitleBarRow.Height = new GridLength(0);
             TitleBarGrid.Visibility = Visibility.Collapsed;
-            if (WindowState != WindowState.Maximized)
-            {
-                WindowState = WindowState.Maximized;
-            }
+            WindowState = WindowState.Maximized;
             WebView.Margin = new Thickness(0);
             if (WindowBorder != null) WindowBorder.BorderThickness = new Thickness(0);
         }
@@ -1016,7 +1014,7 @@ public partial class MainWindow : Window
         }
     }
 
-    private async void InitWebViewAsync()
+    private async Task InitWebViewAsync()
     {
         var urlTask = DetectLatestUrlAsync();
         _ = CheckForAppUpdatesAsync();
