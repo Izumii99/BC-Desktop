@@ -1,5 +1,9 @@
 ### Fixes & Improvements:
 
+- **Security (Addon Isolation Whitelist):** Replaced legacy opt-out blacklist behavior with an explicit opt-in whitelist (`chat-qol.js`), preventing newly discovered external or experimental scripts on CDN from automatically executing without user authorization.
+- **Addon QoL (Pull to One Side with Mouth):** Consolidated "Pull to One Side with Mouth" natively into Chat QoL with default-enabled state and user-configurable toggle in Settings, eliminating duplicate legacy hooks from Cheat Menu and ensuring conflict-free ModSDK execution.
+- **Client Updater Integrity & Size Check:** The desktop binary updater now strictly validates downloaded payload size against GitHub API metadata and HTTP headers before triggering restarts, preventing incomplete or truncated downloads from executing.
+- **UI & Performance (Dark Theme CSS Containment):** Optimized CSS containment on chat bubbles to prevent clipping on action popups and character detail cards, with smart caching for dynamic stylesheet sanitization.
 - **Improvement (V8 Engine & GPU Memory Scalability):** Enabled full TurboFan JIT compilation and expanded the GPU memory budget to 384MB (with 128MB discardable limit), eliminating CPU bottlenecks, accelerating wardrobe asset loading, and preserving full CSS clipping compatibility for portrait addons (BC-LCE).
 - **Improvement (Room Texture Protection & Canvas VRAM):** Protected active room character textures from flickering during texture maintenance, and immediately reclaim GPU canvas buffers when characters leave the room to prevent VRAM growth.
 - **Improvement (Chat Log Virtualization & Performance):** Modern CSS content-visibility virtualization renders only visible chat messages, eliminating scroll lag and GPU overhead during long conversations without clearing history.

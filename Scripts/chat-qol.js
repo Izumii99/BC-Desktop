@@ -40,7 +40,7 @@
         persistIconState: true,
         smartClosedEyes: true,
         enablePetsuitAnim: false,
-        enableEchoMouthPull: false,
+        enableEchoMouthPull: true,
         animCount: 4,
         animDelay: 350,
         petsuitAlternate: false,

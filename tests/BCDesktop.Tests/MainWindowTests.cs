@@ -458,7 +458,7 @@ public class MainWindowTests
     [TestMethod]
     public void AppVersionComparison_AccuratelyEvaluatesSemanticVersions()
     {
-        Assert.AreEqual("7.4", MainWindow.CurrentAppVersion, "CurrentAppVersion must be 7.4.");
+        Assert.AreEqual("7.4.1", MainWindow.CurrentAppVersion, "CurrentAppVersion must be 7.4.1.");
 
         Assert.IsTrue(MainWindow.IsNewerVersion("v7.5", "7.4"), "v7.5 must be newer than 7.4.");
         Assert.IsTrue(MainWindow.IsNewerVersion("7.5", "7.4"), "7.5 must be newer than 7.4.");
@@ -805,7 +805,7 @@ public class MainWindowTests
         var root = doc.RootElement;
 
         Assert.AreEqual("bc-desktop-linux", root.GetProperty("name").GetString());
-        Assert.AreEqual("7.4.0", root.GetProperty("version").GetString());
+        Assert.AreEqual(MainWindow.CurrentAppVersion, root.GetProperty("version").GetString());
         Assert.AreEqual("Bondage Club", root.GetProperty("productName").GetString());
         Assert.IsTrue(root.TryGetProperty("keywords", out _), "package.json must specify keywords.");
 
