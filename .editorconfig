@@ -20,3 +20,7 @@ dotnet_diagnostic.S108.severity = none
 # S6444: Regex execution timeout specification in desktop environment
 dotnet_diagnostic.S6444.severity = none
 
+# S1854: Unused assignments to local variables
+dotnet_diagnostic.S1854.severity = none
+
+

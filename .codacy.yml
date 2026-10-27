@@ -1,5 +1,7 @@
 ---
 exclude_paths:
+  - ".github/**"
+  - "platform/**"
   - "publish/**"
   - "tests/**"
   - "references/**"
@@ -15,6 +17,8 @@ engines:
     enabled: true
     config: .eslintrc.json
     exclude_paths:
+      - ".github/**"
+      - "platform/**"
       - "publish/**"
       - "tests/**"
       - "references/**"
@@ -26,6 +30,8 @@ engines:
       - "**.min.js"
   semgrep:
     exclude_paths:
+      - ".github/**"
+      - "platform/**"
       - "publish/**"
       - "tests/**"
       - "references/**"
@@ -35,9 +41,14 @@ engines:
       - "obj/**"
       - "Assets/**"
       - "**.min.js"
+  checkov:
+    exclude_paths:
+      - ".github/**"
 
   duplication:
     exclude_paths:
+      - ".github/**"
+      - "platform/**"
       - "publish/**"
       - "tests/**"
       - "references/**"
@@ -49,6 +60,8 @@ engines:
       - "**.min.js"
   metric:
     exclude_paths:
+      - ".github/**"
+      - "platform/**"
       - "publish/**"
       - "tests/**"
       - "references/**"
@@ -62,6 +75,8 @@ engines:
 languages:
   javascript:
     exclude_paths:
+      - ".github/**"
+      - "platform/**"
       - "publish/**"
       - "tests/**"
       - "references/**"
@@ -73,6 +88,7 @@ languages:
       - "**.min.js"
   csharp:
     exclude_paths:
+      - ".github/**"
       - "publish/**"
       - "tests/**"
       - "bin/**"
