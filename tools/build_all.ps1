@@ -97,8 +97,8 @@ if (Test-Path $linuxPlatformDir) {
     } catch {}
 
     if ($hasWsl) {
-        $wslPath = wsl wslpath -a ($linuxPlatformDir.Replace("\", "/"))
-        $wslPublish = wsl wslpath -a ($projectRoot.Replace("\", "/") + "/publish")
+        $wslPath = wsl wslpath -a ($linuxPlatformDir.ToString().Replace("\", "/"))
+        $wslPublish = wsl wslpath -a ($projectRoot.Path.Replace("\", "/") + "/publish")
         wsl bash -c "cd '$wslPath' && export PUBLISH_DIR='$wslPublish' && (npm list electron || npm install) && node build.js"
     } else {
         Push-Location $linuxPlatformDir
