@@ -3,6 +3,23 @@
     if (window !== window.top) return;
     if (window._bcCheatMenuLoaded) return;
     window._bcCheatMenuLoaded = true;
+
+    function getCheatModApi() {
+        if (!window._cheatMenuModApi && typeof window.bcModSdk !== "undefined") {
+            try {
+                window._cheatMenuModApi = window.bcModSdk.registerMod({
+                    name: "BCDesktop_CheatMenu",
+                    fullName: "BC Desktop - Cheat Menu",
+                    version: "1.0.0",
+                    repository: "https://github.com/Izumii99/BC-Desktop"
+                });
+            } catch (e) {
+                console.warn("Failed to register cheat menu with ModSDK:", e);
+            }
+        }
+        return window._cheatMenuModApi;
+    }
+
     const cheats = [
         {
             name: "Instant Struggle Win",
@@ -59,10 +76,7 @@
                     
                     // Track the last person who targeted us
                     window._lastTargeter = null;
-                    const origChatRoomMessage = window.ChatRoomMessage;
-                    window.ChatRoomMessage = function(data) {
-                        if (origChatRoomMessage) origChatRoomMessage(data);
-                        
+                    const handleChatMessage = function(data) {
                         if (data && data.Dictionary) {
                             let otherMember = null;
                             let mentionsUs = false;
@@ -85,6 +99,20 @@
                             }
                         }
                     };
+
+                    const modApi = getCheatModApi();
+                    if (modApi && typeof modApi.hookFunction === "function") {
+                        modApi.hookFunction("ChatRoomMessage", 0, (args, next) => {
+                            next(args);
+                            handleChatMessage(args[0]);
+                        });
+                    } else {
+                        const origChatRoomMessage = window.ChatRoomMessage;
+                        window.ChatRoomMessage = function(data) {
+                            if (origChatRoomMessage) origChatRoomMessage(data);
+                            handleChatMessage(data);
+                        };
+                    }
 
                     // Monitor Appearance changes
                     window._lastAppearance = window.Player.Appearance.map(a => a.Asset.Name + a.Asset.Group.Name);
@@ -202,20 +230,7 @@
                 }
 
                 const TARGET = "拉到身边";
-
-                if (!window._cheatMenuModApi && typeof window.bcModSdk !== "undefined") {
-                    try {
-                        window._cheatMenuModApi = window.bcModSdk.registerMod({
-                            name: "BCDesktop_CheatMenu_EchoMouth",
-                            fullName: "Cheat Menu - Echo Mouth",
-                            version: "1.0.0",
-                            repository: "https://github.com/Izumii99/BC-Desktop"
-                        });
-                    } catch (e) {
-                        console.warn("Failed to register cheat menu with ModSDK:", e);
-                    }
-                }
-                const modApi = window._cheatMenuModApi;
+                const modApi = getCheatModApi();
 
                 const doActivityCheckPrerequisite = (args, next) => {
                     const prereq = args[0], acting = args[1], acted = args[2], group = args[3];

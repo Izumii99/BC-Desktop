@@ -157,20 +157,16 @@
         } catch (e) {}
     }
 
-    const DEFAULT_DISABLED_SCRIPTS = [
-        "FUSAM",
-        "LikoPlugin",
-        "neko-dark.js",
-        "translate.js",
-        "cheat-menu.js"
+    const DEFAULT_ENABLED_SCRIPTS = [
+        "chat-qol.js"
     ];
 
     function isScriptEnabled(scriptName) {
         if (scriptName in userConfig) {
             return userConfig[scriptName] === true;
         }
-        // Disabled by default on clean/first install
-        return !DEFAULT_DISABLED_SCRIPTS.includes(scriptName);
+        // Whitelist by default on clean/first install
+        return DEFAULT_ENABLED_SCRIPTS.includes(scriptName);
     }
 
     const floatingBtn = document.createElement("div");

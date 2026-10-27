@@ -410,6 +410,7 @@ public partial class MainWindow : Window
     private static string? _newReleaseUrl;
     internal static string? _newReleaseDownloadUrl;
     internal static string? _newReleaseTag;
+    internal static long? _newReleaseAssetSize;
     internal static bool _isUpdating = false;
 
     internal static bool IsAutoUpdateEnabled()
@@ -508,6 +509,7 @@ public partial class MainWindow : Window
                         : $"https://github.com/{GitHubRepo}/releases/latest";
 
                     string? directDownloadUrl = null;
+                    long? assetSize = null;
                     string targetAssetName = string.IsNullOrEmpty(_originalTitleLabel) ? "BC-Windows-Hidden.exe" : "BC-Windows.exe";
                     if (doc.RootElement.TryGetProperty("assets", out var assetsElem) && assetsElem.ValueKind == System.Text.Json.JsonValueKind.Array)
                     {
@@ -519,8 +521,12 @@ public partial class MainWindow : Window
                                 if (asset.TryGetProperty("browser_download_url", out var dlProp))
                                 {
                                     directDownloadUrl = dlProp.GetString();
-                                    break;
                                 }
+                                if (asset.TryGetProperty("size", out var sizeProp) && sizeProp.TryGetInt64(out var sVal))
+                                {
+                                    assetSize = sVal;
+                                }
+                                break;
                             }
                         }
                     }
@@ -536,6 +542,7 @@ public partial class MainWindow : Window
                         _newReleaseUrl = htmlUrl;
                         _newReleaseDownloadUrl = directDownloadUrl;
                         _newReleaseTag = tag;
+                        _newReleaseAssetSize = assetSize;
 
                         TitleLabel.ToolTip = $"New desktop release available: {tag}\nClick to view release notes";
                         TitleLabel.Cursor = Cursors.Hand;
@@ -783,7 +790,8 @@ public partial class MainWindow : Window
     internal async Task<bool> PerformInstantUpdateAsync(
         HttpClient? httpClient = null,
         string? targetExePath = null,
-        Func<string, string, int, bool>? restartLauncher = null)
+        Func<string, string, int, bool>? restartLauncher = null,
+        long? minExpectedBytes = null)
     {
         if (!IsAutoUpdateEnabled() || _isUpdating) return false;
         if (string.IsNullOrEmpty(_newReleaseDownloadUrl))
@@ -854,10 +862,21 @@ public partial class MainWindow : Window
                 }
             }
 
+            long requiredMinBytes = minExpectedBytes ?? (httpClient != null ? 512 : 1024 * 1024);
             var fileInfo = new FileInfo(tempExe);
-            if (!fileInfo.Exists || fileInfo.Length == 0)
+            if (!fileInfo.Exists || fileInfo.Length < requiredMinBytes)
             {
-                throw new InvalidOperationException("Downloaded update file is empty.");
+                throw new InvalidOperationException($"Downloaded update file is invalid or incomplete ({fileInfo.Length} bytes < required {requiredMinBytes} bytes).");
+            }
+
+            if (totalBytes.HasValue && totalBytes.Value > 0 && fileInfo.Length != totalBytes.Value)
+            {
+                throw new InvalidOperationException($"Downloaded update file size mismatch. Expected {totalBytes.Value} bytes from HTTP headers, but received {fileInfo.Length} bytes.");
+            }
+
+            if (_newReleaseAssetSize.HasValue && _newReleaseAssetSize.Value > 0 && fileInfo.Length != _newReleaseAssetSize.Value)
+            {
+                throw new InvalidOperationException($"Downloaded update file size mismatch. Expected {_newReleaseAssetSize.Value} bytes from release metadata, but received {fileInfo.Length} bytes.");
             }
 
             Action notifyRestart = () =>

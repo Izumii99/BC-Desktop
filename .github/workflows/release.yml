@@ -168,7 +168,7 @@ jobs:
         run: |
           $inputVer = if ($env:INPUT_VERSION) { $env:INPUT_VERSION.Trim() } else { "" }
           $refTag = if ($env:GITHUB_REF_NAME) { $env:GITHUB_REF_NAME.Trim().TrimStart('v') } else { "" }
-          $ver = if ($inputVer.Length -gt 0) { $inputVer } elseif ($refTag.Length -gt 0) { $refTag } else { "7.4" }
+          $ver = if ($inputVer.Length -gt 0) { $inputVer } elseif ($refTag.Length -gt 0) { $refTag } else { "7.4.0" }
 
           $inputTitle = if ($env:INPUT_TITLE) { $env:INPUT_TITLE.Trim() } else { "" }
           $title = if ($inputTitle.Length -gt 0) { $inputTitle } else { "Performance Overhaul, Texture Protection & Chat Virtualization" }

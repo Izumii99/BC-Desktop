@@ -54,7 +54,7 @@
             html body #TextAreaChatLog .bcn-card-message {
                 content-visibility: auto !important;
                 contain-intrinsic-size: auto 44px !important;
-                contain: layout style paint !important;
+                contain: layout style !important;
                 font-size: inherit !important;
                 margin: 7px 6px !important;
                 padding: 9px 54px 9px 14px !important;
@@ -600,6 +600,7 @@
     function sanitizeStylesheets() {
         try {
             document.querySelectorAll("style:not(#neko-enhancer-dark-theme)").forEach(s => {
+                if (s.dataset.nkSanitized === "1") return;
                 const text = s.textContent || "";
                 if (text.includes("bcn-") || text.includes("#TextAreaChatLog") || text.includes("--bcn-soft")) {
                     if (text.includes("rgba(255, 255, 255") || text.includes("#fff1f6") || text.includes("#ffffff")) {
@@ -618,6 +619,7 @@
                         }
                     }
                 }
+                s.dataset.nkSanitized = "1";
             });
         } catch (e) {}
     }

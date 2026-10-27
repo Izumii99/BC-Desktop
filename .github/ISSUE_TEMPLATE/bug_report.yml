@@ -13,18 +13,19 @@ body:
       label: Build Variant
       description: Which build of BC Desktop are you running?
       options:
-        - Standalone
-        - Lightweight (.NET 8 Runtime)
-        - Standalone-Hidden (Discreet)
-        - Lightweight-Hidden (Discreet)
+        - Windows Standalone (.exe)
+        - Windows Standalone-Hidden (Discreet .exe)
+        - Linux Standalone (.AppImage)
+        - Linux Standalone-Hidden (Discreet .AppImage)
+        - Linux Tarball (.tar.gz)
     validations:
       required: true
   - type: input
     id: version
     attributes:
       label: App Version
-      description: What version are you using (e.g. v6.0)?
-      placeholder: v6.0
+      description: What version are you using (e.g. v7.4.0)?
+      placeholder: v7.4.0
     validations:
       required: true
   - type: dropdown
@@ -34,7 +35,10 @@ body:
       options:
         - Windows 11
         - Windows 10
-        - Other / Windows Server
+        - Linux (Ubuntu / Debian / Mint)
+        - Linux (Fedora / RHEL / Arch / Manjaro)
+        - Linux (Steam Deck / SteamOS)
+        - Other
     validations:
       required: true
   - type: textarea

@@ -368,7 +368,8 @@ BC-Desktop/
 │   ├── addon-manager.js              — In-game mod manager interface
 │   ├── chat-qol.js                   — Emoticons, auto-expand, & chat enhancements
 │   ├── cheat-menu.js                 — Testing shortcuts & debug utility
-│   ├── inject-all.js                 — Unified remote loader hub
+│   ├── devtools-debug.js             — In-game DOM & script debugging console
+│   ├── fusam-liko-loader.js          — Safe loader for external legacy addons
 │   ├── neko-dark.js                  — Sleek dark theme stylesheet & assets
 │   └── translate.js                  — Real-time language translation widget
 ├── platform/linux/                   — Linux portable wrapper (Electron)

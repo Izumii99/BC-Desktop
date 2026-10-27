@@ -585,6 +585,46 @@ public class MainWindowTests
     }
 
     [TestMethod]
+    public void AppUpdate_InstantUpdateRejectsMismatchedPayload()
+    {
+        RunInSTA(() =>
+        {
+            var window = new MainWindow(initializeWebView: false);
+            string dummyTarget = Path.Combine(Path.GetTempPath(), $"BC-TestTarget-{Guid.NewGuid():N}.exe");
+            File.WriteAllText(dummyTarget, "dummy-binary");
+
+            MainWindow._newReleaseDownloadUrl = "http://mock-github.com/releases/BC-Windows.exe";
+            MainWindow._newReleaseAssetSize = 2048; // Expecting 2048 bytes
+            MainWindow._isUpdating = false;
+
+            byte[] smallPayload = new byte[1024]; // Only 1024 bytes provided
+
+            var handler = new SimpleMockHttpHandler(_ => new HttpResponseMessage(System.Net.HttpStatusCode.OK)
+            {
+                Content = new ByteArrayContent(smallPayload)
+            });
+            using var client = new HttpClient(handler);
+
+            try
+            {
+                var updateTask = window.PerformInstantUpdateAsync(
+                    httpClient: client,
+                    targetExePath: dummyTarget,
+                    restartLauncher: (temp, target, pid) => true);
+
+                bool success = updateTask.GetAwaiter().GetResult();
+                Assert.IsFalse(success, "PerformInstantUpdateAsync must return false and fail gracefully on size mismatch.");
+            }
+            finally
+            {
+                if (File.Exists(dummyTarget)) File.Delete(dummyTarget);
+                MainWindow._newReleaseAssetSize = null;
+                MainWindow._isUpdating = false;
+            }
+        });
+    }
+
+    [TestMethod]
     public void AppUpdate_SuppressedWhenAutoUpdateDisabled()
     {
         RunInSTA(() =>
