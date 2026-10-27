@@ -8,14 +8,14 @@ name: 'Build and Release'
   workflow_dispatch:
     inputs:
       version:
-        description: 'Release version / tag (e.g., 7.4.0)'
+        description: 'Release version / tag (e.g., 7.4.1)'
         required: false
-        default: '7.4.0'
+        default: '7.4.1'
         type: string
       title:
         description: 'Release Title Highlight (Title Case)'
         required: false
-        default: 'Performance Overhaul, Texture Protection & Chat Virtualization'
+        default: 'Addon Security Whitelist, Chat QoL Mouth Pull & Focus Loop Fixes'
         type: string
       notes:
         description: 'Custom Release Notes (leave empty to use standard template)'
@@ -124,10 +124,10 @@ jobs:
         run: |
           $inputVer = if ($env:INPUT_VERSION) { $env:INPUT_VERSION.Trim() } else { "" }
           $refTag = if ($env:GITHUB_REF_NAME) { $env:GITHUB_REF_NAME.Trim().TrimStart('v') } else { "" }
-          $ver = if ($inputVer.Length -gt 0) { $inputVer } elseif ($refTag.Length -gt 0) { $refTag } else { "7.4.0" }
+          $ver = if ($inputVer.Length -gt 0) { $inputVer } elseif ($refTag.Length -gt 0) { $refTag } else { "7.4.1" }
 
           $inputTitle = if ($env:INPUT_TITLE) { $env:INPUT_TITLE.Trim() } else { "" }
-          $title = if ($inputTitle.Length -gt 0) { $inputTitle } else { "Performance Overhaul, Texture Protection & Chat Virtualization" }
+          $title = if ($inputTitle.Length -gt 0) { $inputTitle } else { "Addon Security Whitelist, Chat QoL Mouth Pull & Focus Loop Fixes" }
 
           $customNotes = if ($env:INPUT_NOTES) { $env:INPUT_NOTES.Trim() } else { "" }
 
@@ -171,7 +171,7 @@ jobs:
           $ver = if ($inputVer.Length -gt 0) { $inputVer } elseif ($refTag.Length -gt 0) { $refTag } else { "7.4.1" }
 
           $inputTitle = if ($env:INPUT_TITLE) { $env:INPUT_TITLE.Trim() } else { "" }
-          $title = if ($inputTitle.Length -gt 0) { $inputTitle } else { "Performance Overhaul, Texture Protection & Chat Virtualization" }
+          $title = if ($inputTitle.Length -gt 0) { $inputTitle } else { "Addon Security Whitelist, Chat QoL Mouth Pull & Focus Loop Fixes" }
           $releaseTitle = if ($title.Length -gt 0) { "v$ver - $title" } else { "v$ver" }
 
           $releaseAssets = @(
