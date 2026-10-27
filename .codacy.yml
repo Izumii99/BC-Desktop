@@ -1,0 +1,67 @@
+---
+exclude_paths:
+  - "publish/**"
+  - "tests/**"
+  - "references/**"
+  - "state/**"
+  - "tools/**"
+  - "bin/**"
+  - "obj/**"
+  - "Assets/**"
+  - "**.min.js"
+
+engines:
+  eslint:
+    enabled: true
+    config: .eslintrc.json
+    exclude_paths:
+      - "publish/**"
+      - "tests/**"
+      - "references/**"
+      - "state/**"
+      - "tools/**"
+      - "bin/**"
+      - "obj/**"
+      - "Assets/**"
+      - "**.min.js"
+  duplication:
+    exclude_paths:
+      - "publish/**"
+      - "tests/**"
+      - "references/**"
+      - "state/**"
+      - "tools/**"
+      - "bin/**"
+      - "obj/**"
+      - "Assets/**"
+      - "**.min.js"
+  metric:
+    exclude_paths:
+      - "publish/**"
+      - "tests/**"
+      - "references/**"
+      - "state/**"
+      - "tools/**"
+      - "bin/**"
+      - "obj/**"
+      - "Assets/**"
+      - "**.min.js"
+
+languages:
+  javascript:
+    exclude_paths:
+      - "publish/**"
+      - "tests/**"
+      - "references/**"
+      - "state/**"
+      - "tools/**"
+      - "bin/**"
+      - "obj/**"
+      - "Assets/**"
+      - "**.min.js"
+  csharp:
+    exclude_paths:
+      - "publish/**"
+      - "tests/**"
+      - "bin/**"
+      - "obj/**"
