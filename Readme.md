@@ -355,17 +355,38 @@ dotnet test
 ## Project Structure
 
 ```text
-├── .github/            — CI/CD workflows, Pages deploy & issue templates
-├── Assets/             — Application icons and visual assets
-├── Scripts/            — Standalone & built-in addons (Chat QoL, Neko Dark, etc.)
-├── platform/linux/     — Linux Electron wrapper & build configs
-├── tests/              — Automated unit tests (MSTest)
-├── tools/              — PowerShell build & packaging scripts
-├── App.xaml / .cs      — Application entry point
-├── BC-Desktop.csproj   — .NET 8 WPF project configuration
-├── BC-Desktop.sln      — Visual Studio solution
-├── loader.user.js      — Embedded loader & standalone userscript
-├── MainWindow.xaml     — Borderless window UI & layout
-├── MainWindow.xaml.cs  — Core WebView2 runtime logic & optimizations
-└── RELEASE_NOTES.md    — User-facing changelog & release details
+BC-Desktop/
+├── .github/
+│   └── workflows/
+│       ├── checks.yml                — Automated unit test & CI verification
+│       └── release.yml               — Multi-platform binary compile & release
+├── Assets/
+│   ├── app.ico / app_logo.png        — Official client branding & icons
+│   └── transparent.ico / .png        — Discreet stealth mode assets
+├── Scripts/                          — Central upstream addon repository
+│   ├── addon-manager.js              — In-game mod manager interface
+│   ├── chat-qol.js                   — Emoticons, auto-expand, & chat enhancements
+│   ├── cheat-menu.js                 — Testing shortcuts & debug utility
+│   ├── inject-all.js                 — Unified remote loader hub
+│   ├── neko-dark.js                  — Sleek dark theme stylesheet & assets
+│   └── translate.js                  — Real-time language translation widget
+├── platform/linux/                   — Linux portable wrapper (Electron)
+│   ├── main.js                       — Window lifecycle & auto-recovery engine
+│   ├── build.js                      — AppImage & tarball builder
+│   └── package.json                  — Linux dependencies & metadata
+├── tests/
+│   └── BCDesktop.Tests/              — Automated MSTest suite (29+ unit tests)
+│       └── MainWindowTests.cs        — Aspect ratio, SemVer & memory tests
+├── tools/                            — PowerShell build toolchain
+│   ├── build_all.ps1                 — Unified multi-platform release builder
+│   ├── local_window.ps1              — Local Windows compilation
+│   ├── local_linux.ps1               — Local Linux compilation
+│   └── local_tester.ps1              — Rapid internal dev testing runner
+├── App.xaml / App.xaml.cs            — Application entry point
+├── BC-Desktop.csproj                 — .NET 8 WPF project configuration & metadata
+├── BC-Desktop.sln                    — Visual Studio solution file
+├── MainWindow.xaml                   — Borderless custom window & title bar UI
+├── MainWindow.xaml.cs                — Core WebView2 runtime, updater & memory manager
+├── loader.user.js                    — Standalone userscript & embedded offline loader
+└── RELEASE_NOTES.md                  — User-facing changelog & release details
 ```
