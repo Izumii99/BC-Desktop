@@ -328,7 +328,7 @@ public partial class MainWindow : Window
             string html = await res.Content.ReadAsStringAsync(cts.Token);
 
             // Extract the active Rxxx version number from official portal button
-            var match = Regex.Match(html, @"onclick=""window\.location='https://www\.bondage[^']+/R(\d+)/[^']*'""", RegexOptions.IgnoreCase);
+            var match = Regex.Match(html, @"onclick=""window\.location='https://www\.bondage[^']+/R(\d+)/[^']*'""", RegexOptions.IgnoreCase, TimeSpan.FromSeconds(1));
             if (match.Success && int.TryParse(match.Groups[1].Value, out int vNum))
             {
                 return vNum;
@@ -414,12 +414,13 @@ public partial class MainWindow : Window
 
     internal const string CurrentAppVersion = "7.5.1";
     internal const string GitHubRepo = "Izumii99/BC-Desktop";
-    internal static bool EnableAutoUpdates = true;
-    private static string? _newReleaseUrl;
-    internal static string? _newReleaseDownloadUrl;
-    internal static string? _newReleaseTag;
-    internal static long? _newReleaseAssetSize;
-    internal static bool _isUpdating = false;
+    internal static bool EnableAutoUpdates { get; set; } = true;
+    private static string? _newReleaseUrl { get; set; }
+    internal static string? _newReleaseDownloadUrl { get; set; }
+    internal static string? _newReleaseTag { get; set; }
+    internal static long? _newReleaseAssetSize { get; set; }
+    internal static bool _isUpdating { get; set; }
+
 
     internal static bool IsAutoUpdateEnabled()
     {
@@ -604,8 +605,9 @@ public partial class MainWindow : Window
             text = text.Substring(0, downloadsIdx);
         }
 
-        text = System.Text.RegularExpressions.Regex.Replace(text, @"^\s*-\s*\*\*([^*:]+?)(?:\*\*:|:\*\*|\*?:)\s*", "• $1: ", System.Text.RegularExpressions.RegexOptions.Multiline);
-        text = System.Text.RegularExpressions.Regex.Replace(text, @"^\s*-\s*", "• ", System.Text.RegularExpressions.RegexOptions.Multiline);
+        text = System.Text.RegularExpressions.Regex.Replace(text, @"^\s*-\s*\*\*([^*:]+?)(?:\*\*:|:\*\*|\*?:)\s*", "• $1: ", System.Text.RegularExpressions.RegexOptions.Multiline, TimeSpan.FromSeconds(1));
+        text = System.Text.RegularExpressions.Regex.Replace(text, @"^\s*-\s*", "• ", System.Text.RegularExpressions.RegexOptions.Multiline, TimeSpan.FromSeconds(1));
+
         text = text.Replace("`", "");
 
         return text.Trim();
@@ -697,7 +699,7 @@ public partial class MainWindow : Window
             string line = rawItem.Trim();
             if (string.IsNullOrWhiteSpace(line)) continue;
 
-            line = System.Text.RegularExpressions.Regex.Replace(line, @"^[-•*]\s*", "");
+            line = System.Text.RegularExpressions.Regex.Replace(line, @"^[-•*]\s*", "", System.Text.RegularExpressions.RegexOptions.None, TimeSpan.FromSeconds(1));
 
             var block = new System.Windows.Controls.TextBlock
             {
@@ -707,7 +709,8 @@ public partial class MainWindow : Window
                 Margin = new Thickness(0, 0, 0, 12)
             };
 
-            var titleMatch = System.Text.RegularExpressions.Regex.Match(line, @"^\s*\*\*?([^*:]+?)(?:\*\*:|:\*\*|\*?:)\s*(.*)$", System.Text.RegularExpressions.RegexOptions.Singleline);
+            var titleMatch = System.Text.RegularExpressions.Regex.Match(line, @"^\s*\*\*?([^*:]+?)(?:\*\*:|:\*\*|\*?:)\s*(.*)$", System.Text.RegularExpressions.RegexOptions.Singleline, TimeSpan.FromSeconds(1));
+
             if (titleMatch.Success)
             {
                 string title = titleMatch.Groups[1].Value.Trim().Replace("**", "");
@@ -2286,34 +2289,56 @@ public partial class MainWindow : Window
 
 
     [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Auto)]
-    private struct MONITORINFO
+    private struct MONITORINFO : IEquatable<MONITORINFO>
     {
         public int  cbSize;
         public RECT rcMonitor;
         public RECT rcWork;
         public uint dwFlags;
+        public bool Equals(MONITORINFO other) => cbSize == other.cbSize && dwFlags == other.dwFlags;
+        public override bool Equals(object? obj) => obj is MONITORINFO other && Equals(other);
+        public override int GetHashCode() => HashCode.Combine(cbSize, dwFlags);
     }
 
     [StructLayout(LayoutKind.Sequential)]
-    private struct RECT { public int Left, Top, Right, Bottom; }
+    private struct RECT : IEquatable<RECT>
+    {
+        public int Left, Top, Right, Bottom;
+        public bool Equals(RECT other) => Left == other.Left && Top == other.Top && Right == other.Right && Bottom == other.Bottom;
+        public override bool Equals(object? obj) => obj is RECT other && Equals(other);
+        public override int GetHashCode() => HashCode.Combine(Left, Top, Right, Bottom);
+    }
 
     [StructLayout(LayoutKind.Sequential)]
-    private struct MINMAXINFO
+    private struct MINMAXINFO : IEquatable<MINMAXINFO>
     {
         public POINT ptReserved, ptMaxSize, ptMaxPosition, ptMinTrackSize, ptMaxTrackSize;
+        public bool Equals(MINMAXINFO other) => ptReserved.Equals(other.ptReserved) && ptMaxSize.Equals(other.ptMaxSize);
+        public override bool Equals(object? obj) => obj is MINMAXINFO other && Equals(other);
+        public override int GetHashCode() => HashCode.Combine(ptReserved, ptMaxSize);
     }
 
     [StructLayout(LayoutKind.Sequential)]
-    private struct POINT { public int X, Y; }
+    private struct POINT : IEquatable<POINT>
+    {
+        public int X, Y;
+        public bool Equals(POINT other) => X == other.X && Y == other.Y;
+        public override bool Equals(object? obj) => obj is POINT other && Equals(other);
+        public override int GetHashCode() => HashCode.Combine(X, Y);
+    }
     
     [StructLayout(LayoutKind.Sequential)]
-    private struct WINDOWPOS
+    private struct WINDOWPOS : IEquatable<WINDOWPOS>
     {
         public IntPtr hwnd;
         public IntPtr hwndInsertAfter;
         public int x, y, cx, cy;
         public uint flags;
+        public bool Equals(WINDOWPOS other) => hwnd == other.hwnd && flags == other.flags;
+        public override bool Equals(object? obj) => obj is WINDOWPOS other && Equals(other);
+        public override int GetHashCode() => HashCode.Combine(hwnd, flags);
     }
+
 
     private void Core_DocumentTitleChanged(object? sender, object e)
     {
@@ -2329,7 +2354,7 @@ public partial class MainWindow : Window
         }
 
         // Check if there is a notification badge like "(1)"
-        var match = Regex.Match(title, @"^\((\d+)\)");
+        var match = Regex.Match(title, @"^\((\d+)\)", RegexOptions.None, TimeSpan.FromSeconds(1));
         
         if (TaskbarItemInfo == null)
             TaskbarItemInfo = new TaskbarItemInfo();
@@ -2426,14 +2451,18 @@ public partial class MainWindow : Window
     private static extern bool FlashWindowEx(ref FLASHWINFO pwfi);
 
     [StructLayout(LayoutKind.Sequential)]
-    private struct FLASHWINFO
+    private struct FLASHWINFO : IEquatable<FLASHWINFO>
     {
         public uint cbSize;
         public IntPtr hwnd;
         public uint dwFlags;
         public uint uCount;
         public uint dwTimeout;
+        public bool Equals(FLASHWINFO other) => hwnd == other.hwnd && dwFlags == other.dwFlags;
+        public override bool Equals(object? obj) => obj is FLASHWINFO other && Equals(other);
+        public override int GetHashCode() => HashCode.Combine(hwnd, dwFlags);
     }
+
 
     private const uint FLASHW_STOP = 0;
     private const uint FLASHW_TRAY = 2;
