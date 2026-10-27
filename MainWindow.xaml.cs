@@ -77,29 +77,6 @@ public partial class MainWindow : Window
         }
     }
 
-    private void TrimAllWebViewProcesses()
-    {
-        _ = Task.Run(() =>
-        {
-            TrimWorkingSet();
-            try
-            {
-                foreach (var proc in Process.GetProcessesByName("msedgewebview2"))
-                {
-                    try
-                    {
-                        SetProcessWorkingSetSize(proc.Handle, (IntPtr)(-1), (IntPtr)(-1));
-                    }
-                    catch { }
-                    finally
-                    {
-                        proc.Dispose();
-                    }
-                }
-            }
-            catch { }
-        });
-    }
 
     public MainWindow() : this(initializeWebView: true)
     {
@@ -265,13 +242,8 @@ public partial class MainWindow : Window
                 CancelDeactivation();
                 _wantsResume = false;
                 core.MemoryUsageTargetLevel = CoreWebView2MemoryUsageTargetLevel.Low;
-                await core.ExecuteScriptAsync("(()=>{" +
-                    "window._bcIsMinimized=true;" +
-                    "window._bcIsBackground=true;" +
-                    "const g=window.Player&&Player.GraphicsSettings;" +
-                    "if(g&&!g.MaxUnfocusedFPS&&window.CurrentScreen!=='Preference'){g.MaxUnfocusedFPS=15;window.bcFpsCap=g;}" +
-                    "if(typeof window.gc==='function'){try{window.gc();}catch(e){}}" +
-                    "})()");
+                await core.ExecuteScriptAsync("(()=>{window._bcIsMinimized=true;})()");
+                await core.ExecuteScriptAsync(CapUnfocusedFpsScript);
 
                 if (!_isSuspending)
                 {
@@ -294,7 +266,7 @@ public partial class MainWindow : Window
                         return;
                     }
                 }
-                TrimAllWebViewProcesses();
+                TrimWorkingSet();
             }
             else if (_wasMinimized)
             {
@@ -1985,7 +1957,7 @@ public partial class MainWindow : Window
                 _ = Task.Run(async () =>
                 {
                     await Task.Delay(5000);
-                    TrimAllWebViewProcesses();
+                    TrimWorkingSet();
                 });
             }
         };
