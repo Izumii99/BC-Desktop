@@ -532,6 +532,116 @@ public partial class MainWindow : Window
         }
     }
 
+    internal const string CurrentReleaseNotes =
+        "• Room Texture Protection: Protected active character textures from flickering during maintenance, and immediately reclaim GPU canvas buffers on departure.\n\n" +
+        "• Chat Log Virtualization: Modern CSS content-visibility virtualization renders only visible messages, eliminating scroll lag and GPU overhead.\n\n" +
+        "• High-Polling Mouse Optimization: Passive pointer listeners deliver smooth responsiveness with 1000Hz+ gaming mice.\n\n" +
+        "• Addon Memory & Rendering: Reclaimed temporary canvas allocations in petsuit animations and eliminated heavy text blur layers.\n\n" +
+        "• Post-Update Changelog Window: Interactive changelog window now automatically introduces newly released features after each update.";
+
+    internal void ShowChangelogWindow(string version, string notes)
+    {
+        if (string.IsNullOrEmpty(_originalTitleLabel)) return;
+
+        var win = new Window
+        {
+            Title = $"What's New in v{version}",
+            Width = 540,
+            Height = 440,
+            WindowStyle = WindowStyle.None,
+            AllowsTransparency = true,
+            Background = Brushes.Transparent,
+            WindowStartupLocation = WindowStartupLocation.CenterOwner,
+            Owner = this,
+            ShowInTaskbar = false
+        };
+
+        var border = new System.Windows.Controls.Border
+        {
+            Background = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#141416")),
+            BorderBrush = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#a855f7")),
+            BorderThickness = new Thickness(1.5),
+            CornerRadius = new CornerRadius(8),
+            Padding = new Thickness(24)
+        };
+
+        var grid = new System.Windows.Controls.Grid();
+        grid.RowDefinitions.Add(new System.Windows.Controls.RowDefinition { Height = System.Windows.GridLength.Auto });
+        grid.RowDefinitions.Add(new System.Windows.Controls.RowDefinition { Height = new System.Windows.GridLength(1, System.Windows.GridUnitType.Star) });
+        grid.RowDefinitions.Add(new System.Windows.Controls.RowDefinition { Height = System.Windows.GridLength.Auto });
+
+        var header = new System.Windows.Controls.TextBlock
+        {
+            Text = $"What's New in v{version}",
+            FontSize = 18,
+            FontWeight = FontWeights.Bold,
+            Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#f3e8ff")),
+            Margin = new Thickness(0, 0, 0, 16)
+        };
+        System.Windows.Controls.Grid.SetRow(header, 0);
+        grid.Children.Add(header);
+
+        var scroll = new System.Windows.Controls.ScrollViewer
+        {
+            VerticalScrollBarVisibility = System.Windows.Controls.ScrollBarVisibility.Auto,
+            Margin = new Thickness(0, 0, 0, 16)
+        };
+        var body = new System.Windows.Controls.TextBlock
+        {
+            Text = notes,
+            FontSize = 13,
+            LineHeight = 20,
+            TextWrapping = TextWrapping.Wrap,
+            Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#d4d4d8"))
+        };
+        scroll.Content = body;
+        System.Windows.Controls.Grid.SetRow(scroll, 1);
+        grid.Children.Add(scroll);
+
+        var closeBtn = new System.Windows.Controls.Button
+        {
+            Content = "Got It!",
+            Width = 100,
+            Height = 32,
+            HorizontalAlignment = HorizontalAlignment.Right,
+            Background = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#7e22ce")),
+            Foreground = Brushes.White,
+            BorderThickness = new Thickness(0),
+            Cursor = Cursors.Hand,
+            FontWeight = FontWeights.SemiBold
+        };
+        closeBtn.Click += (s, e) => win.Close();
+        System.Windows.Controls.Grid.SetRow(closeBtn, 2);
+        grid.Children.Add(closeBtn);
+
+        border.Child = grid;
+        win.Content = border;
+        win.ShowDialog();
+    }
+
+    internal void CheckPostUpdateChangelog()
+    {
+        if (string.IsNullOrEmpty(_originalTitleLabel)) return;
+
+        try
+        {
+            string dir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "BCClient");
+            Directory.CreateDirectory(dir);
+            string versionFile = Path.Combine(dir, "last_seen_version.txt");
+
+            if (File.Exists(versionFile))
+            {
+                string lastSeen = File.ReadAllText(versionFile).Trim();
+                if (!string.IsNullOrEmpty(lastSeen) && IsNewerVersion(CurrentAppVersion, lastSeen))
+                {
+                    Dispatcher.InvokeAsync(() => ShowChangelogWindow(CurrentAppVersion, CurrentReleaseNotes));
+                }
+            }
+            File.WriteAllText(versionFile, CurrentAppVersion);
+        }
+        catch { }
+    }
+
     private void OpenReleaseNotesUrl()
     {
         if (!string.IsNullOrEmpty(_newReleaseUrl))
@@ -546,6 +656,10 @@ public partial class MainWindow : Window
             }
             catch { }
         }
+        else
+        {
+            ShowChangelogWindow(CurrentAppVersion, CurrentReleaseNotes);
+        }
     }
 
     private void TitleLabel_MouseLeftButtonUp(object sender, MouseButtonEventArgs e)
@@ -556,7 +670,7 @@ public partial class MainWindow : Window
     private void UpdateBadge_MouseRightButtonUp(object sender, MouseButtonEventArgs e)
     {
         e.Handled = true;
-        OpenReleaseNotesUrl();
+        ShowChangelogWindow(CurrentAppVersion, CurrentReleaseNotes);
     }
 
     private async void UpdateBadge_MouseLeftButtonUp(object sender, MouseButtonEventArgs e)
@@ -718,6 +832,7 @@ public partial class MainWindow : Window
     {
         var urlTask = DetectLatestUrlAsync();
         _ = CheckForAppUpdatesAsync();
+        CheckPostUpdateChangelog();
 
         string userDataFolder = Path.Combine(
             Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),

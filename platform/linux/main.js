@@ -82,6 +82,36 @@ async function checkForAppUpdates() {
     } catch (_) {}
 }
 
+function checkPostUpdateChangelog() {
+    if (isHidden) return;
+    try {
+        const versionFile = path.join(app.getPath('userData'), 'last_seen_version.txt');
+        let lastSeen = null;
+        if (fs.existsSync(versionFile)) {
+            lastSeen = fs.readFileSync(versionFile, 'utf8').trim();
+        }
+        fs.writeFileSync(versionFile, CURRENT_APP_VERSION, 'utf8');
+
+        if (lastSeen && isNewerVersion(CURRENT_APP_VERSION, lastSeen)) {
+            setTimeout(() => {
+                if (!mainWindow || mainWindow.isDestroyed()) return;
+                dialog.showMessageBox(mainWindow, {
+                    type: 'info',
+                    title: `What's New in v${CURRENT_APP_VERSION}`,
+                    message: `Bondage Club updated to v${CURRENT_APP_VERSION}!`,
+                    detail: "• Room Texture Protection: Protected active character textures from flickering during maintenance, and immediately reclaim GPU canvas buffers on departure.\n\n" +
+                            "• Chat Log Virtualization: Modern CSS content-visibility virtualization renders only visible messages, eliminating scroll lag and GPU overhead.\n\n" +
+                            "• High-Polling Mouse Optimization: Passive pointer listeners deliver smooth responsiveness with 1000Hz+ gaming mice.\n\n" +
+                            "• Addon Memory & Rendering: Reclaimed temporary canvas allocations in petsuit animations and eliminated heavy text blur layers.\n\n" +
+                            "• Post-Update Changelog Window: Interactive changelog window now automatically introduces newly released features after each update.",
+                    buttons: ['Got It!'],
+                    defaultId: 0
+                });
+            }, 1200);
+        }
+    } catch (_) {}
+}
+
 function promptUpdateDialog(tag, downloadUrl, isAppImage) {
     if (!isAutoUpdateEnabled() || isUpdating || isHidden) return;
 
@@ -1296,6 +1326,8 @@ function createWindow() {
     mainWindow.once('ready-to-show', () => {
         mainWindow.maximize();
         mainWindow.show();
+        checkForAppUpdates();
+        checkPostUpdateChangelog();
     });
 
     // Update title, notification badge "(1)", and flash taskbar frame
