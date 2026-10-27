@@ -418,7 +418,18 @@ public partial class MainWindow : Window
         string cleanLatest = latestTag.Trim().TrimStart('v', 'V');
         string cleanCurrent = currentVersion.Trim().TrimStart('v', 'V');
 
-        if (Version.TryParse(cleanLatest, out var vLatest) && Version.TryParse(cleanCurrent, out var vCurrent))
+        static string Normalize(string v)
+        {
+            var parts = v.Split('.');
+            if (parts.Length == 1) return $"{v}.0.0";
+            if (parts.Length == 2) return $"{v}.0";
+            return v;
+        }
+
+        string normLatest = Normalize(cleanLatest);
+        string normCurrent = Normalize(cleanCurrent);
+
+        if (Version.TryParse(normLatest, out var vLatest) && Version.TryParse(normCurrent, out var vCurrent))
         {
             return vLatest > vCurrent;
         }

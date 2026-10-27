@@ -447,6 +447,8 @@ public class MainWindowTests
         Assert.IsTrue(MainWindow.IsNewerVersion("v7.4.1", "7.4"), "Patch version v7.4.1 must be newer than 7.4.");
         Assert.IsTrue(MainWindow.IsNewerVersion("v8.0", "7.4"), "Major version v8.0 must be newer than 7.4.");
 
+        Assert.IsFalse(MainWindow.IsNewerVersion("7.4.0", "7.4"), "7.4.0 must be equal to 7.4 (no false update prompt).");
+        Assert.IsFalse(MainWindow.IsNewerVersion("v7.4.0", "7.4"), "v7.4.0 must be equal to 7.4.");
         Assert.IsFalse(MainWindow.IsNewerVersion("6.2", "6.2"), "Identical versions must return false.");
         Assert.IsFalse(MainWindow.IsNewerVersion("v6.2", "6.2"), "Identical versions with 'v' prefix must return false.");
         Assert.IsFalse(MainWindow.IsNewerVersion("v6.1", "6.2"), "Older version v6.1 must return false.");
