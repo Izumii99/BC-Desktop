@@ -813,6 +813,25 @@ public class MainWindowTests
         Assert.IsFalse(mainJs.Contains("WEBGL_lose_context"), "Linux main.js must never call WEBGL_lose_context.");
         Assert.IsFalse(mainJs.Contains("GLDrawImageCache.clear()"), "Linux main.js must never forcefully wipe GLDrawImageCache.");
     }
+
+    [TestMethod]
+    public void VirtualDesktop_FocusPingPongProtection_IsImplemented()
+    {
+        string csPath = Path.Combine(ProjectRoot, "MainWindow.xaml.cs");
+        string cs = File.ReadAllText(csPath);
+
+        StringAssert.Contains(cs, "CancelActivation()", "MainWindow must cancel pending activation on deactivation.");
+        StringAssert.Contains(cs, "IsWindowActiveAndVisibleOnCurrentDesktop", "MainWindow must verify window is foreground and uncloaked before focusing.");
+        StringAssert.Contains(cs, "GetForegroundWindow", "MainWindow must check GetForegroundWindow.");
+        StringAssert.Contains(cs, "DwmGetWindowAttribute", "MainWindow must check DwmGetWindowAttribute for virtual desktop cloaking.");
+        StringAssert.Contains(cs, "DWMWA_CLOAKED", "MainWindow must check DWMWA_CLOAKED.");
+
+        string linuxPath = Path.Combine(ProjectRoot, "platform", "linux", "main.js");
+        string linux = File.ReadAllText(linuxPath);
+
+        StringAssert.Contains(linux, "cancelActivation()", "Linux main.js must cancel pending activation on blur.");
+        StringAssert.Contains(linux, "mainWindow.isFocused()", "Linux main.js must check isFocused before executing focus.");
+    }
 }
 
 

@@ -42,6 +42,18 @@ public partial class MainWindow : Window
     internal const string RestoreUnfocusedFpsScript =
         "(()=>{window._bcIsBackground=false;const g=window.bcFpsCap;if(g){if(g.MaxUnfocusedFPS===15)g.MaxUnfocusedFPS=0;window.bcFpsCap=null;}})()";
 
+    private CancellationTokenSource? _activationCts;
+
+    private void CancelActivation()
+    {
+        if (_activationCts is { } cts)
+        {
+            _activationCts = null;
+            cts.Cancel();
+            cts.Dispose();
+        }
+    }
+
     private void CancelDeactivation()
     {
         if (_deactivationCts is { } cts)
@@ -106,6 +118,7 @@ public partial class MainWindow : Window
 
     private async void MainWindow_Deactivated(object? sender, EventArgs e)
     {
+        CancelActivation();
         CancelDeactivation();
         var cts = new CancellationTokenSource();
         _deactivationCts = cts;
@@ -132,6 +145,7 @@ public partial class MainWindow : Window
 
     private async void MainWindow_Activated(object? sender, EventArgs e)
     {
+        CancelActivation();
         CancelDeactivation();
 
         if (WebView.CoreWebView2 is { } core)
@@ -140,29 +154,47 @@ public partial class MainWindow : Window
             _ = core.ExecuteScriptAsync(RestoreUnfocusedFpsScript);
         }
 
-        await Task.Delay(100);
-        WebView.Focus();
-        if (WebView.CoreWebView2 != null)
-        {
-            string smartFocusScript = @"
-                (function() {
-                    if (window.bcLogDebug) window.bcLogDebug('ACTIVATED');
-                    if (window.getSelection && window.getSelection().toString().length > 0) return;
+        var cts = new CancellationTokenSource();
+        _activationCts = cts;
+        var token = cts.Token;
 
-                    let target = null;
-                    if (!window.bcUserPrefersGameChat && window.bcFocusMemory && window.bcFocusMemory.isConnected && window.bcFocusMemory.offsetParent !== null) {
-                        target = window.bcFocusMemory;
-                    } else if (window.bcRunFocusCrawler) {
-                        target = window.bcRunFocusCrawler();
-                    }
-                    if (target) {
-                        window.bcFocusMemory = target;
-                        if (target.id !== 'InputChat') window.bcUserPrefersGameChat = false;
-                        target.focus();
-                    }
-                })();
-            ";
-            _ = WebView.CoreWebView2.ExecuteScriptAsync(smartFocusScript);
+        try
+        {
+            await Task.Delay(100, token);
+            if (token.IsCancellationRequested || !IsWindowActiveAndVisibleOnCurrentDesktop())
+            {
+                return;
+            }
+
+            WebView.Focus();
+            if (WebView.CoreWebView2 != null && IsWindowActiveAndVisibleOnCurrentDesktop())
+            {
+                string smartFocusScript = @"
+                    (function() {
+                        if (window.bcLogDebug) window.bcLogDebug('ACTIVATED');
+                        if (window.getSelection && window.getSelection().toString().length > 0) return;
+
+                        let target = null;
+                        if (!window.bcUserPrefersGameChat && window.bcFocusMemory && window.bcFocusMemory.isConnected && window.bcFocusMemory.offsetParent !== null) {
+                            target = window.bcFocusMemory;
+                        } else if (window.bcRunFocusCrawler) {
+                            target = window.bcRunFocusCrawler();
+                        }
+                        if (target) {
+                            window.bcFocusMemory = target;
+                            if (target.id !== 'InputChat') window.bcUserPrefersGameChat = false;
+                            target.focus();
+                        }
+                    })();
+                ";
+                _ = WebView.CoreWebView2.ExecuteScriptAsync(smartFocusScript);
+            }
+        }
+        catch (OperationCanceledException)
+        {
+        }
+        catch
+        {
         }
     }
 
@@ -2110,6 +2142,35 @@ public partial class MainWindow : Window
 
     [DllImport("user32.dll")] private static extern IntPtr MonitorFromWindow(IntPtr hwnd, uint flags);
     [DllImport("user32.dll")] private static extern bool   GetMonitorInfo(IntPtr hMon, ref MONITORINFO mi);
+    [DllImport("user32.dll")] private static extern IntPtr GetForegroundWindow();
+    [DllImport("dwmapi.dll")] private static extern int DwmGetWindowAttribute(IntPtr hwnd, int dwAttribute, out int pvAttribute, int cbAttribute);
+    private const int DWMWA_CLOAKED = 14;
+
+    private bool IsWindowActiveAndVisibleOnCurrentDesktop()
+    {
+        if (!IsActive || WindowState == WindowState.Minimized)
+            return false;
+
+        var hwnd = new WindowInteropHelper(this).Handle;
+        if (hwnd == IntPtr.Zero)
+            return false;
+
+        if (GetForegroundWindow() != hwnd)
+            return false;
+
+        try
+        {
+            if (DwmGetWindowAttribute(hwnd, DWMWA_CLOAKED, out int cloaked, sizeof(int)) == 0 && cloaked != 0)
+            {
+                return false;
+            }
+        }
+        catch
+        {
+        }
+
+        return true;
+    }
 
     [DllImport("user32.dll", SetLastError = true)]
     private static extern bool OpenClipboard(IntPtr hWndNewOwner);

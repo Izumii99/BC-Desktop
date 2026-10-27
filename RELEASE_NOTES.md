@@ -5,6 +5,7 @@
 - **Improvement (Chat Log Virtualization & Performance):** Modern CSS content-visibility virtualization renders only visible chat messages, eliminating scroll lag and GPU overhead during long conversations without clearing history.
 - **Improvement (Input & High-Polling Mouse):** Passive pointer event listeners deliver smooth responsiveness with high-polling-rate gaming mice (1000Hz+), while preventing chat input from triggering redundant focus checks.
 - **Improvement (Post-Update Changelog Window):** The client now automatically displays an in-app "What's New" changelog popup window after an update or when right-clicking the update badge, providing immediate visibility into all new features and fixes.
+- **Fix (Virtual Desktop Focus Ping-Pong):** Resolved an issue where switching between Windows Virtual Desktops (`Win + Tab`) with multiple instances running caused an infinite rapid desktop-switching loop, by validating foreground window ownership, canceling in-flight activations, and checking DWM cloaked state before focusing.
 - **Fix (Addon Memory & Rendering Optimization):** Reclaimed temporary canvas allocations in petsuit animations to prevent VRAM accumulation, and eliminated heavy text-shadow blur layers in HUD overlays.
 
 ### Downloads:

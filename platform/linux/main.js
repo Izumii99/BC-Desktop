@@ -1199,6 +1199,14 @@ let lastCrashTime = 0;
 let forceQuit = false;
 let scriptsInjectedForCurrentPage = false;
 
+let activationTimeout = null;
+function cancelActivation() {
+    if (activationTimeout) {
+        clearTimeout(activationTimeout);
+        activationTimeout = null;
+    }
+}
+
 function cancelDeactivation() {
     if (deactivationTimeout) {
         clearTimeout(deactivationTimeout);
@@ -1396,6 +1404,7 @@ function createWindow() {
 
     // Smart focus and unfocused FPS throttling (Blur / Focus / Minimize / Restore)
     mainWindow.on('blur', () => {
+        cancelActivation();
         cancelDeactivation();
         deactivationTimeout = setTimeout(() => {
             if (mainWindow && !mainWindow.isDestroyed() && !mainWindow.isMinimized()) {
@@ -1405,12 +1414,13 @@ function createWindow() {
     });
 
     mainWindow.on('focus', () => {
+        cancelActivation();
         cancelDeactivation();
         mainWindow.flashFrame(false);
         if (mainWindow && !mainWindow.isDestroyed()) {
             mainWindow.webContents.executeJavaScript(RestoreUnfocusedFpsScript).catch(() => {});
-            setTimeout(() => {
-                if (mainWindow && !mainWindow.isDestroyed()) {
+            activationTimeout = setTimeout(() => {
+                if (mainWindow && !mainWindow.isDestroyed() && mainWindow.isFocused() && !mainWindow.isMinimized()) {
                     mainWindow.webContents.focus();
                     mainWindow.webContents.executeJavaScript(SmartFocusRestoreScript).catch(() => {});
                 }
