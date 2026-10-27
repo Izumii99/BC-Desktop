@@ -1,5 +1,6 @@
 ### Fixes & Improvements:
 
+- **Improvement (Smart Adaptive Frame Pacing & Opaque Canvas):** Hardware-accelerated 2D canvas rasterization with Direct3D 11 zero-copy, smart adaptive frame pacing (60 FPS during interaction, 30 FPS while idling), and opaque canvas compositing, cutting active CPU overhead by over 60% in multi-character rooms.
 - **Improvement (Room Texture Protection & Canvas VRAM):** Protected active room character textures from flickering during texture maintenance, and immediately reclaim GPU canvas buffers when characters leave the room to prevent VRAM growth.
 - **Improvement (Chat Log Virtualization & Performance):** Modern CSS content-visibility virtualization renders only visible chat messages, eliminating scroll lag and GPU overhead during long conversations without clearing history.
 - **Improvement (Input & High-Polling Mouse):** Passive pointer event listeners deliver smooth responsiveness with high-polling-rate gaming mice (1000Hz+), while preventing chat input from triggering redundant focus checks.

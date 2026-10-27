@@ -533,11 +533,61 @@ public partial class MainWindow : Window
     }
 
     internal const string CurrentReleaseNotes =
+        "• GPU Canvas Acceleration & 60 FPS Pacing: Hardware-accelerated 2D canvas rasterization and active 60 FPS pacing slash in-focus CPU usage on high-refresh displays (144Hz+).\n\n" +
         "• Room Texture Protection: Protected active character textures from flickering during maintenance, and immediately reclaim GPU canvas buffers on departure.\n\n" +
         "• Chat Log Virtualization: Modern CSS content-visibility virtualization renders only visible messages, eliminating scroll lag and GPU overhead.\n\n" +
         "• High-Polling Mouse Optimization: Passive pointer listeners deliver smooth responsiveness with 1000Hz+ gaming mice.\n\n" +
         "• Addon Memory & Rendering: Reclaimed temporary canvas allocations in petsuit animations and eliminated heavy text blur layers.\n\n" +
         "• Post-Update Changelog Window: Interactive changelog window now automatically introduces newly released features after each update.";
+
+    internal static string FormatReleaseNotesForDisplay(string raw)
+    {
+        if (string.IsNullOrWhiteSpace(raw)) return CurrentReleaseNotes;
+        string text = raw;
+
+        int fixesIdx = text.IndexOf("### Fixes & Improvements:", StringComparison.OrdinalIgnoreCase);
+        if (fixesIdx >= 0)
+        {
+            text = text.Substring(fixesIdx + "### Fixes & Improvements:".Length);
+        }
+
+        int downloadsIdx = text.IndexOf("### Downloads:", StringComparison.OrdinalIgnoreCase);
+        if (downloadsIdx >= 0)
+        {
+            text = text.Substring(0, downloadsIdx);
+        }
+
+        text = System.Text.RegularExpressions.Regex.Replace(text, @"^\s*-\s*\*\*([^*]+)\*\*:\s*", "• $1: ", System.Text.RegularExpressions.RegexOptions.Multiline);
+        text = System.Text.RegularExpressions.Regex.Replace(text, @"^\s*-\s*", "• ", System.Text.RegularExpressions.RegexOptions.Multiline);
+
+        return text.Trim();
+    }
+
+    internal static async Task<string> FetchLatestReleaseNotesAsync(HttpClient? httpClient = null)
+    {
+        try
+        {
+            using var http = httpClient != null ? null : new HttpClient { Timeout = TimeSpan.FromSeconds(3) };
+            var client = httpClient ?? http!;
+            if (client.DefaultRequestHeaders.UserAgent.Count == 0)
+            {
+                client.DefaultRequestHeaders.UserAgent.ParseAdd("BC-Desktop-Client");
+            }
+
+            string cdnUrl = $"https://cdn.jsdelivr.net/gh/{GitHubRepo}@main/RELEASE_NOTES.md";
+            var res = await client.GetAsync(cdnUrl);
+            if (res.IsSuccessStatusCode)
+            {
+                string raw = await res.Content.ReadAsStringAsync();
+                if (!string.IsNullOrWhiteSpace(raw))
+                {
+                    return FormatReleaseNotesForDisplay(raw);
+                }
+            }
+        }
+        catch { }
+        return CurrentReleaseNotes;
+    }
 
     internal void ShowChangelogWindow(string version, string notes)
     {
@@ -634,7 +684,11 @@ public partial class MainWindow : Window
                 string lastSeen = File.ReadAllText(versionFile).Trim();
                 if (!string.IsNullOrEmpty(lastSeen) && IsNewerVersion(CurrentAppVersion, lastSeen))
                 {
-                    Dispatcher.InvokeAsync(() => ShowChangelogWindow(CurrentAppVersion, CurrentReleaseNotes));
+                    _ = Task.Run(async () =>
+                    {
+                        string notes = await FetchLatestReleaseNotesAsync();
+                        await Dispatcher.InvokeAsync(() => ShowChangelogWindow(CurrentAppVersion, notes));
+                    });
                 }
             }
             File.WriteAllText(versionFile, CurrentAppVersion);
@@ -658,7 +712,11 @@ public partial class MainWindow : Window
         }
         else
         {
-            ShowChangelogWindow(CurrentAppVersion, CurrentReleaseNotes);
+            _ = Task.Run(async () =>
+            {
+                string notes = await FetchLatestReleaseNotesAsync();
+                await Dispatcher.InvokeAsync(() => ShowChangelogWindow(CurrentAppVersion, notes));
+            });
         }
     }
 
@@ -670,7 +728,11 @@ public partial class MainWindow : Window
     private void UpdateBadge_MouseRightButtonUp(object sender, MouseButtonEventArgs e)
     {
         e.Handled = true;
-        ShowChangelogWindow(CurrentAppVersion, CurrentReleaseNotes);
+        _ = Task.Run(async () =>
+        {
+            string notes = await FetchLatestReleaseNotesAsync();
+            await Dispatcher.InvokeAsync(() => ShowChangelogWindow(CurrentAppVersion, notes));
+        });
     }
 
     private async void UpdateBadge_MouseLeftButtonUp(object sender, MouseButtonEventArgs e)
@@ -856,19 +918,23 @@ public partial class MainWindow : Window
             var options = new CoreWebView2EnvironmentOptions
             {
                 AdditionalBrowserArguments =
-                    "--disable-features=Translate,OptimizationHints,MediaRouter,DialMediaRouteProvider,SpareRendererForSitePerProcess,CanvasOopRasterization,AudioServiceOutOfProcess,AutofillServerCommunication " +
+                    "--disable-features=Translate,OptimizationHints,MediaRouter,DialMediaRouteProvider,SpareRendererForSitePerProcess,AudioServiceOutOfProcess,AutofillServerCommunication " +
                     "--disable-background-networking " +
                     "--disable-component-update " +
                     "--disable-domain-reliability " +
                     "--disable-sync " +
                     "--disable-notifications " +
+                    "--disable-site-isolation-trials " +
                     "--no-pings " +
-                    "--force-gpu-mem-available-mb=192 " +
-                    "--force-gpu-mem-discardable-limit-mb=32 " +
+                    "--use-angle=d3d11 " +
+                    "--enable-zero-copy " +
+                    "--force_high_performance_gpu " +
+                    "--force-gpu-mem-available-mb=384 " +
+                    "--force-gpu-mem-discardable-limit-mb=128 " +
                     "--gpu-rasterization-msaa-sample-count=0 " +
                     "--max-gum-fps=60 " +
                     "--enable-features=CalculateNativeWinOcclusion,PurgeRendererMemoryWhenBackgrounded,IntensiveWakeUpThrottling " +
-                    "--js-flags=\"--max-old-space-size=512 --optimize-for-size --expose-gc\""
+                    "--js-flags=\"--max-old-space-size=512 --expose-gc\""
             };
 
             var env = await CoreWebView2Environment.CreateAsync(
@@ -1589,6 +1655,41 @@ public partial class MainWindow : Window
                 return originalExecCommand.apply(this, arguments);
             };
 
+            // Smart Adaptive Frame Pacer: 60 FPS saat berinteraksi, 30 FPS saat diam/idle (>2 detik tanpa input)
+            (function setupFramePacer() {
+                if (window._bcFramePacerInstalled || typeof window.requestAnimationFrame !== 'function') return;
+                window._bcFramePacerInstalled = true;
+
+                let lastInputTime = performance.now();
+                const markActive = () => { lastInputTime = performance.now(); };
+                window.addEventListener('mousemove', markActive, { capture: true, passive: true });
+                window.addEventListener('mousedown', markActive, { capture: true, passive: true });
+                window.addEventListener('keydown', markActive, { capture: true, passive: true });
+                window.addEventListener('wheel', markActive, { capture: true, passive: true });
+                window.addEventListener('touchstart', markActive, { capture: true, passive: true });
+
+                const origRAF = window.requestAnimationFrame.bind(window);
+                let lastFrameTime = 0;
+
+                window.requestAnimationFrame = function(callback) {
+                    return origRAF(function pacedLoop(timestamp) {
+                        const userCap = (window.Player && window.Player.GraphicsSettings && window.Player.GraphicsSettings.MaxFPS > 0)
+                            ? window.Player.GraphicsSettings.MaxFPS
+                            : 0;
+                        const isIdle = (timestamp - lastInputTime) > 2000;
+                        const targetFps = userCap > 0 ? userCap : (isIdle ? 30 : 60);
+                        const minDelta = (1000 / targetFps) - 1.2;
+
+                        if (timestamp - lastFrameTime < minDelta) {
+                            origRAF(pacedLoop);
+                            return;
+                        }
+                        lastFrameTime = timestamp;
+                        callback(timestamp);
+                    });
+                };
+            })();
+
             // ponytail: Safe VRAM, Active-Room Texture Protection & Chat Virtualization
             (function setupSafeVramOptimization() {
                 const NORMAL_PURGE_DELAY = 5 * 60 * 1000;
@@ -1769,8 +1870,20 @@ public partial class MainWindow : Window
             }
         };
 
-        // ponytail: Native WebView2 fallback guard against undefined pidx ReferenceError
-        await core.AddScriptToExecuteOnDocumentCreatedAsync("if(typeof window.pidx==='undefined'){try{Object.defineProperty(window,'pidx',{get:()=>0,set:()=>{},configurable:true});}catch(e){}}");
+        // Native fallback guard against undefined pidx ReferenceError & MainCanvas { alpha: false } compositing optimization
+        await core.AddScriptToExecuteOnDocumentCreatedAsync(@"
+(function() {
+    if (typeof window.pidx === 'undefined') {
+        try { Object.defineProperty(window, 'pidx', { get: () => 0, set: () => {}, configurable: true }); } catch (e) {}
+    }
+    const origGetContext = HTMLCanvasElement.prototype.getContext;
+    HTMLCanvasElement.prototype.getContext = function(type, attrs) {
+        if (type === '2d' && this.id === 'MainCanvas') {
+            attrs = Object.assign({}, attrs, { alpha: false });
+        }
+        return origGetContext.call(this, type, attrs);
+    };
+})();");
 
         string scriptsDir = Path.Combine(AppContext.BaseDirectory, "Scripts");
         bool hasLocalScripts = Directory.Exists(scriptsDir) && Directory.EnumerateFiles(scriptsDir, "*.js").Any();

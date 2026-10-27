@@ -82,6 +82,38 @@ async function checkForAppUpdates() {
     } catch (_) {}
 }
 
+const FALLBACK_LINUX_RELEASE_NOTES =
+    "• GPU Canvas Acceleration & 60 FPS Pacing: Hardware-accelerated 2D canvas rasterization and active 60 FPS pacing slash in-focus CPU usage on high-refresh displays (144Hz+).\n\n" +
+    "• Room Texture Protection: Protected active character textures from flickering during maintenance, and immediately reclaim GPU canvas buffers on departure.\n\n" +
+    "• Chat Log Virtualization: Modern CSS content-visibility virtualization renders only visible messages, eliminating scroll lag and GPU overhead.\n\n" +
+    "• High-Polling Mouse Optimization: Passive pointer listeners deliver smooth responsiveness with 1000Hz+ gaming mice.\n\n" +
+    "• Addon Memory & Rendering: Reclaimed temporary canvas allocations in petsuit animations and eliminated heavy text blur layers.\n\n" +
+    "• Post-Update Changelog Window: Interactive changelog window now automatically introduces newly released features after each update.";
+
+async function fetchLatestReleaseNotesLinux() {
+    try {
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 3000);
+        const res = await fetch("https://cdn.jsdelivr.net/gh/Izumii99/BC-Desktop@main/RELEASE_NOTES.md", {
+            signal: controller.signal,
+            headers: { "User-Agent": "BC-Desktop-Linux" }
+        });
+        clearTimeout(timeout);
+        if (res.ok) {
+            let text = await res.text();
+            if (text && text.trim()) {
+                let fixesIdx = text.indexOf("### Fixes & Improvements:");
+                if (fixesIdx >= 0) text = text.substring(fixesIdx + "### Fixes & Improvements:".length);
+                let dlIdx = text.indexOf("### Downloads:");
+                if (dlIdx >= 0) text = text.substring(0, dlIdx);
+                text = text.replace(/^\s*-\s*\*\*([^*]+)\*\*:\s*/gm, "• $1: ").replace(/^\s*-\s*/gm, "• ");
+                return text.trim();
+            }
+        }
+    } catch (_) {}
+    return FALLBACK_LINUX_RELEASE_NOTES;
+}
+
 function checkPostUpdateChangelog() {
     if (isHidden) return;
     try {
@@ -93,17 +125,14 @@ function checkPostUpdateChangelog() {
         fs.writeFileSync(versionFile, CURRENT_APP_VERSION, 'utf8');
 
         if (lastSeen && isNewerVersion(CURRENT_APP_VERSION, lastSeen)) {
-            setTimeout(() => {
+            setTimeout(async () => {
                 if (!mainWindow || mainWindow.isDestroyed()) return;
+                const notes = await fetchLatestReleaseNotesLinux();
                 dialog.showMessageBox(mainWindow, {
                     type: 'info',
                     title: `What's New in v${CURRENT_APP_VERSION}`,
                     message: `Bondage Club updated to v${CURRENT_APP_VERSION}!`,
-                    detail: "• Room Texture Protection: Protected active character textures from flickering during maintenance, and immediately reclaim GPU canvas buffers on departure.\n\n" +
-                            "• Chat Log Virtualization: Modern CSS content-visibility virtualization renders only visible messages, eliminating scroll lag and GPU overhead.\n\n" +
-                            "• High-Polling Mouse Optimization: Passive pointer listeners deliver smooth responsiveness with 1000Hz+ gaming mice.\n\n" +
-                            "• Addon Memory & Rendering: Reclaimed temporary canvas allocations in petsuit animations and eliminated heavy text blur layers.\n\n" +
-                            "• Post-Update Changelog Window: Interactive changelog window now automatically introduces newly released features after each update.",
+                    detail: notes,
                     buttons: ['Got It!'],
                     defaultId: 0
                 });
@@ -297,19 +326,22 @@ async function performInstantUpdateLinux(tag, downloadUrl, isAppImage) {
 let lastKnownGoodUrl = "https://www.bondage-asia.com/club/R132/";
 
 // 1. Match Chromium & Memory Optimization Flags with WebView2 on Windows
-app.commandLine.appendSwitch('disable-features', 'Translate,OptimizationHints,MediaRouter,DialMediaRouteProvider,SpareRendererForSitePerProcess,CanvasOopRasterization,AudioServiceOutOfProcess,AutofillServerCommunication');
+app.commandLine.appendSwitch('disable-features', 'Translate,OptimizationHints,MediaRouter,DialMediaRouteProvider,SpareRendererForSitePerProcess,AudioServiceOutOfProcess,AutofillServerCommunication');
 app.commandLine.appendSwitch('disable-background-networking');
 app.commandLine.appendSwitch('disable-component-update');
 app.commandLine.appendSwitch('disable-domain-reliability');
 app.commandLine.appendSwitch('disable-sync');
 app.commandLine.appendSwitch('disable-notifications');
+app.commandLine.appendSwitch('disable-site-isolation-trials');
 app.commandLine.appendSwitch('no-pings');
+app.commandLine.appendSwitch('enable-zero-copy');
+app.commandLine.appendSwitch('force_high_performance_gpu');
 app.commandLine.appendSwitch('max-gum-fps', '60');
 app.commandLine.appendSwitch('gpu-rasterization-msaa-sample-count', '0');
 app.commandLine.appendSwitch('enable-features', 'PurgeRendererMemoryWhenBackgrounded,IntensiveWakeUpThrottling');
-app.commandLine.appendSwitch('force-gpu-mem-available-mb', '192');
-app.commandLine.appendSwitch('force-gpu-mem-discardable-limit-mb', '32');
-app.commandLine.appendSwitch('js-flags', '--max-old-space-size=512 --optimize-for-size --expose-gc');
+app.commandLine.appendSwitch('force-gpu-mem-available-mb', '384');
+app.commandLine.appendSwitch('force-gpu-mem-discardable-limit-mb', '128');
+app.commandLine.appendSwitch('js-flags', '--max-old-space-size=512 --expose-gc');
 
 function handleWebMessage(msg) {
     if (typeof msg !== 'string') return;
@@ -916,6 +948,41 @@ const CopyAndFocusScript = `
         return originalExecCommand.apply(this, arguments);
     };
 
+    // Smart Adaptive Frame Pacer: 60 FPS saat berinteraksi, 30 FPS saat diam/idle (>2 detik tanpa input)
+    (function setupFramePacer() {
+        if (window._bcFramePacerInstalled || typeof window.requestAnimationFrame !== 'function') return;
+        window._bcFramePacerInstalled = true;
+
+        let lastInputTime = performance.now();
+        const markActive = () => { lastInputTime = performance.now(); };
+        window.addEventListener('mousemove', markActive, { capture: true, passive: true });
+        window.addEventListener('mousedown', markActive, { capture: true, passive: true });
+        window.addEventListener('keydown', markActive, { capture: true, passive: true });
+        window.addEventListener('wheel', markActive, { capture: true, passive: true });
+        window.addEventListener('touchstart', markActive, { capture: true, passive: true });
+
+        const origRAF = window.requestAnimationFrame.bind(window);
+        let lastFrameTime = 0;
+
+        window.requestAnimationFrame = function(callback) {
+            return origRAF(function pacedLoop(timestamp) {
+                const userCap = (window.Player && window.Player.GraphicsSettings && window.Player.GraphicsSettings.MaxFPS > 0)
+                    ? window.Player.GraphicsSettings.MaxFPS
+                    : 0;
+                const isIdle = (timestamp - lastInputTime) > 2000;
+                const targetFps = userCap > 0 ? userCap : (isIdle ? 30 : 60);
+                const minDelta = (1000 / targetFps) - 1.2;
+
+                if (timestamp - lastFrameTime < minDelta) {
+                    origRAF(pacedLoop);
+                    return;
+                }
+                lastFrameTime = timestamp;
+                callback(timestamp);
+            });
+        };
+    })();
+
     // ponytail: Safe VRAM, Active-Room Texture Protection & Chat Virtualization
     (function setupSafeVramOptimization() {
         const NORMAL_PURGE_DELAY = 5 * 60 * 1000;
@@ -1182,10 +1249,21 @@ function injectScripts() {
     if (scriptsInjectedForCurrentPage) return;
     scriptsInjectedForCurrentPage = true;
 
-    // 1. Guard against undefined pidx ReferenceError
-    mainWindow.webContents.executeJavaScript(
-        "if(typeof window.pidx==='undefined'){try{Object.defineProperty(window,'pidx',{get:()=>0,set:()=>{},configurable:true});}catch(e){}}"
-    ).catch(() => {});
+    // 1. Guard against undefined pidx ReferenceError & MainCanvas { alpha: false } compositing optimization
+    mainWindow.webContents.executeJavaScript(`
+        (function() {
+            if (typeof window.pidx === 'undefined') {
+                try { Object.defineProperty(window, 'pidx', { get: () => 0, set: () => {}, configurable: true }); } catch (e) {}
+            }
+            const origGetContext = HTMLCanvasElement.prototype.getContext;
+            HTMLCanvasElement.prototype.getContext = function(type, attrs) {
+                if (type === '2d' && this.id === 'MainCanvas') {
+                    attrs = Object.assign({}, attrs, { alpha: false });
+                }
+                return origGetContext.call(this, type, attrs);
+            };
+        })();
+    `).catch(() => {});
 
     // 2. Inject Smart Focus & Keyboard/Copy Handler
     mainWindow.webContents.executeJavaScript(CopyAndFocusScript).catch(() => {});

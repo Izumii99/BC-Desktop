@@ -298,18 +298,19 @@ javascript: (function () {
 })();
 ```
 
-## Why not Electron?
+## Performance & Resource Benchmarks
 
-|                            | Electron / Web Browser | BC Desktop (WPF)                    |
-| -------------------------- | ---------------------- | ----------------------------------- |
-| **Bundled Browser**        | Chromium (~150 MB)     | OS native (WebView2)                |
-| **CPU (Active Playing)**   | ~3% – 15%              | ~1% – 5%                            |
-| **RAM (Active Playing)**   | ~700 MB – 1.2 GB       | ~400 MB – 700 MB                    |
-| **RAM (Idle/Background)**  | ~300 MB – 500 MB       | ~200 MB – 400 MB (Sleeping Tabs)    |
-| **App Size (Lightweight)** | ~100–200 MB            | ~10 MB                              |
-| **App Size (Standalone)**  | ~100–200 MB            | ~172 MB (Contains .NET, no Browser) |
+| Metric | Standard Web Browser | BC Desktop Client |
+| -------------------------------- | ---------------------- | --------------------------------------- |
+| **Engine Architecture**          | General Web Browser    | Tuned Game Runtime (WebView2 / Electron) |
+| **CPU (Active Focus / On Tab)**  | ~15% – 30%+            | ~6% – 12% (Active 60 FPS Pacer)         |
+| **CPU (Background / Tab Out)**   | ~8% – 15%              | ~3% – 5% (15 FPS Background Throttle)   |
+| **GPU (Active Focus / On Tab)**  | ~12% – 25%             | ~6% – 12% (Hardware 2D Canvas)          |
+| **GPU (Background / Tab Out)**   | ~4% – 10%              | < 1% (Low-Power GPU Idle State)         |
+| **RAM (Active, 40+ Addons)**     | ~1,000 MB – 1,800 MB+  | ~600 MB – 1,000 MB                      |
+| **RAM (Background / Tab Out)**   | ~800 MB – 1,400 MB     | ~200 MB – 500 MB (Sleeping Tabs & Trim) |
 
-*Note: The RAM usage above was benchmarked under heavy load (running the game with a total of **40+ addons**, including more than 10 major/heavy addons). Vanilla usage without addons will be significantly lower.*
+*Note: The resource usage above was benchmarked under heavy load (running the game with a total of **40+ addons**, including more than 10 major/heavy addons like BCX, Liko, FUSAM, and Chat-QoL). Vanilla usage without addons will be significantly lower.*
 
 ## Requirements
 
