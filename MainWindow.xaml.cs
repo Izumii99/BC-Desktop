@@ -41,7 +41,7 @@ public partial class MainWindow : Window
         "if(typeof window.gc==='function'){try{window.gc();}catch(e){}}" +
         "})()";
     internal const string RestoreUnfocusedFpsScript =
-        "(()=>{window._bcIsBackground=false;const g=window.bcFpsCap;if(g){if(g.MaxUnfocusedFPS===15)g.MaxUnfocusedFPS=0;window.bcFpsCap=null;}})()";
+        "(()=>{window._bcIsBackground=false;window._bcIsMinimized=false;const g=window.bcFpsCap;if(g){if(g.MaxUnfocusedFPS===15)g.MaxUnfocusedFPS=0;window.bcFpsCap=null;}})()";
 
     private CancellationTokenSource? _activationCts;
 
@@ -265,7 +265,13 @@ public partial class MainWindow : Window
                 CancelDeactivation();
                 _wantsResume = false;
                 core.MemoryUsageTargetLevel = CoreWebView2MemoryUsageTargetLevel.Low;
-                await core.ExecuteScriptAsync(CapUnfocusedFpsScript);
+                await core.ExecuteScriptAsync("(()=>{" +
+                    "window._bcIsMinimized=true;" +
+                    "window._bcIsBackground=true;" +
+                    "const g=window.Player&&Player.GraphicsSettings;" +
+                    "if(g&&!g.MaxUnfocusedFPS&&window.CurrentScreen!=='Preference'){g.MaxUnfocusedFPS=15;window.bcFpsCap=g;}" +
+                    "if(typeof window.gc==='function'){try{window.gc();}catch(e){}}" +
+                    "})()");
 
                 if (!_isSuspending)
                 {
@@ -1224,6 +1230,27 @@ public partial class MainWindow : Window
                 if (window.__bcCopyScriptInitialized) return;
                 window.__bcCopyScriptInitialized = true;
 
+                if (!document.__bcOrigHasFocus && typeof document.hasFocus === 'function') {
+                    document.__bcOrigHasFocus = document.hasFocus;
+                    document.hasFocus = function() {
+                        if (window._bcIsBackground) return false;
+                        return document.__bcOrigHasFocus.apply(this, arguments);
+                    };
+                }
+
+                let _origDraw = window.DrawProcess;
+                try {
+                    Object.defineProperty(window, 'DrawProcess', {
+                        configurable: true,
+                        enumerable: true,
+                        get: () => function(ts) {
+                            if (window._bcIsMinimized) return;
+                            if (typeof _origDraw === 'function') return _origDraw.apply(this, arguments);
+                        },
+                        set: (fn) => { _origDraw = fn; }
+                    });
+                } catch (e) {}
+
                 let origFocus = HTMLElement.prototype.focus;
 
             function isTextInput(el) {
@@ -1954,8 +1981,23 @@ public partial class MainWindow : Window
             }
         };
 
-        // ponytail: Native WebView2 fallback guard against undefined pidx ReferenceError
-        await core.AddScriptToExecuteOnDocumentCreatedAsync("if(typeof window.pidx==='undefined'){try{Object.defineProperty(window,'pidx',{get:()=>0,set:()=>{},configurable:true});}catch(e){}}");
+        // ponytail: Native WebView2 fallback guard against undefined pidx ReferenceError, background focus, and canvas draw throttling
+        await core.AddScriptToExecuteOnDocumentCreatedAsync(@"
+            if(typeof window.pidx==='undefined'){try{Object.defineProperty(window,'pidx',{get:()=>0,set:()=>{},configurable:true});}catch(e){}}
+            if(!document.__bcOrigHasFocus&&typeof document.hasFocus==='function'){
+                document.__bcOrigHasFocus=document.hasFocus;
+                document.hasFocus=function(){if(window._bcIsBackground)return false;return document.__bcOrigHasFocus.apply(this,arguments);};
+            }
+            let _origDrawInit=window.DrawProcess;
+            try{
+                Object.defineProperty(window,'DrawProcess',{
+                    configurable:true,
+                    enumerable:true,
+                    get:()=>function(ts){if(window._bcIsMinimized)return;if(typeof _origDrawInit==='function')return _origDrawInit.apply(this,arguments);},
+                    set:(fn)=>{_origDrawInit=fn;}
+                });
+            }catch(e){}
+        ");
 
         string scriptsDir = Path.Combine(AppContext.BaseDirectory, "Scripts");
         bool hasLocalScripts = Directory.Exists(scriptsDir) && Directory.EnumerateFiles(scriptsDir, "*.js").Any();

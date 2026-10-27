@@ -367,7 +367,7 @@ const CapUnfocusedFpsScript =
     "})()";
 
 const RestoreUnfocusedFpsScript =
-    "(()=>{window._bcIsBackground=false;const g=window.bcFpsCap;if(g){if(g.MaxUnfocusedFPS===15)g.MaxUnfocusedFPS=0;window.bcFpsCap=null;}})()";
+    "(()=>{window._bcIsBackground=false;window._bcIsMinimized=false;const g=window.bcFpsCap;if(g){if(g.MaxUnfocusedFPS===15)g.MaxUnfocusedFPS=0;window.bcFpsCap=null;}})()";
 
 const SmartFocusRestoreScript = `
     (function() {
@@ -404,6 +404,27 @@ const CopyAndFocusScript = `
     }
 
     let origFocus = HTMLElement.prototype.focus;
+
+    if (!document.__bcOrigHasFocus && typeof document.hasFocus === 'function') {
+        document.__bcOrigHasFocus = document.hasFocus;
+        document.hasFocus = function() {
+            if (window._bcIsBackground) return false;
+            return document.__bcOrigHasFocus.apply(this, arguments);
+        };
+    }
+
+    let _origDrawLinux = window.DrawProcess;
+    try {
+        Object.defineProperty(window, 'DrawProcess', {
+            configurable: true,
+            enumerable: true,
+            get: () => function(ts) {
+                if (window._bcIsMinimized) return;
+                if (typeof _origDrawLinux === 'function') return _origDrawLinux.apply(this, arguments);
+            },
+            set: (fn) => { _origDrawLinux = fn; }
+        });
+    } catch (e) {}
 
     function isTextInput(el) {
         if (!el) return false;
@@ -1434,6 +1455,7 @@ function createWindow() {
         cancelDeactivation();
         if (mainWindow && !mainWindow.isDestroyed()) {
             mainWindow.webContents.setBackgroundThrottling(true);
+            mainWindow.webContents.executeJavaScript("(() => { window._bcIsMinimized = true; })()").catch(() => {});
             mainWindow.webContents.executeJavaScript(CapUnfocusedFpsScript).catch(() => {});
         }
     });
