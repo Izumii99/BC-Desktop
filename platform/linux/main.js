@@ -340,7 +340,7 @@ app.commandLine.appendSwitch('max-gum-fps', '60');
 app.commandLine.appendSwitch('gpu-rasterization-msaa-sample-count', '0');
 app.commandLine.appendSwitch('force-gpu-mem-available-mb', '512');
 app.commandLine.appendSwitch('force-gpu-mem-discardable-limit-mb', '128');
-app.commandLine.appendSwitch('js-flags', '--max-old-space-size=512 --expose-gc');
+app.commandLine.appendSwitch('js-flags', '--max-old-space-size=1536 --expose-gc');
 
 function handleWebMessage(msg) {
     if (typeof msg !== 'string') return;
@@ -1163,6 +1163,32 @@ const CopyAndFocusScript = `
                         const _origRoomLeave = window.ChatRoomLeave;
                         window.ChatRoomLeave = function(clearCharacters) {
                             return _origRoomLeave.call(this, true);
+                        };
+                    }
+                    if (typeof window.ImageCache === 'function' && window.ImageCache.prototype && !window.ImageCache.prototype.__bcFastGetHooked) {
+                        window.ImageCache.prototype.__bcFastGetHooked = true;
+                        const _origGet = window.ImageCache.prototype.get;
+                        window.ImageCache.prototype.get = function(url) {
+                            const image = this.cache && typeof this.cache.get === 'function' ? this.cache.get(url) : null;
+                            if (image && ((typeof image.isDoneLoading === 'function' && image.isDoneLoading()) || (typeof image.isLoading === 'function' && image.isLoading()))) {
+                                if (typeof window.CommonTime === 'function') image.lastUsed = window.CommonTime();
+                                return image;
+                            }
+                            return _origGet.apply(this, arguments);
+                        };
+                    }
+                    if (typeof window.ElementButton === 'object' && window.ElementButton && typeof window.ElementButton.SetImage === 'function' && !window.ElementButton.__bcFastSetImageHooked) {
+                        window.ElementButton.__bcFastSetImageHooked = true;
+                        const _origSetImage = window.ElementButton.SetImage;
+                        window.ElementButton.SetImage = function(button, src) {
+                            if (typeof src === 'string' && typeof window.ElementWrap === 'function') {
+                                const el = window.ElementWrap(button);
+                                const img = el && (el.matches && el.matches('.button-image') ? el : (el.querySelector ? el.querySelector('.button-image') : null));
+                                if (img && img.tagName === 'IMG' && img.getAttribute('src') === src) {
+                                    return img;
+                                }
+                            }
+                            return _origSetImage.apply(this, arguments);
                         };
                     }
                 }

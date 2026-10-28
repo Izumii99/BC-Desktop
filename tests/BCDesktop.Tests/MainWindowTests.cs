@@ -96,7 +96,7 @@ public class MainWindowTests
         StringAssert.Contains(code, "--disable-domain-reliability");
         StringAssert.Contains(code, "--disable-sync");
         StringAssert.Contains(code, "--js-flags=");
-        StringAssert.Contains(code, "--max-old-space-size=512");
+        StringAssert.Contains(code, "--max-old-space-size=1536");
         Assert.IsFalse(code.Contains("--optimize-for-size"), "Must not disable V8 TurboFan JIT with --optimize-for-size.");
         StringAssert.Contains(code, "--expose-gc");
 
@@ -870,6 +870,8 @@ public class MainWindowTests
         StringAssert.Contains(csContent, "DrawImageCache.purge", "MainWindow.xaml.cs must call safe DrawImageCache.purge.");
         StringAssert.Contains(csContent, "DrawnAssets", "MainWindow.xaml.cs must warm active room textures via DrawnAssets.");
         StringAssert.Contains(csContent, ".lastUsed = now", "MainWindow.xaml.cs must update BC's native .lastUsed property.");
+        StringAssert.Contains(csContent, "__bcFastGetHooked", "MainWindow.xaml.cs must guard ImageCache.prototype.get against per-frame new Error() allocations on cache hits.");
+        StringAssert.Contains(csContent, "__bcFastSetImageHooked", "MainWindow.xaml.cs must guard ElementButton.SetImage against redundant per-frame img.src assignments.");
         Assert.IsFalse(csContent.Contains("WEBGL_lose_context"), "MainWindow.xaml.cs must never call WEBGL_lose_context.");
         Assert.IsFalse(csContent.Contains("GLDrawImageCache.clear()"), "MainWindow.xaml.cs must never forcefully wipe GLDrawImageCache.");
 
@@ -882,6 +884,8 @@ public class MainWindowTests
         StringAssert.Contains(mainJs, "CharacterDelete", "Linux main.js must invoke CharacterDelete to evict ghost characters from memory.");
         StringAssert.Contains(mainJs, "GLDrawImageCache.purge", "Linux main.js must call safe GLDrawImageCache.purge.");
         StringAssert.Contains(mainJs, "DrawImageCache.purge", "Linux main.js must call safe DrawImageCache.purge.");
+        StringAssert.Contains(mainJs, "__bcFastGetHooked", "Linux main.js must guard ImageCache.prototype.get against per-frame new Error() allocations on cache hits.");
+        StringAssert.Contains(mainJs, "__bcFastSetImageHooked", "Linux main.js must guard ElementButton.SetImage against redundant per-frame img.src assignments.");
         Assert.IsFalse(mainJs.Contains("WEBGL_lose_context"), "Linux main.js must never call WEBGL_lose_context.");
         Assert.IsFalse(mainJs.Contains("GLDrawImageCache.clear()"), "Linux main.js must never forcefully wipe GLDrawImageCache.");
     }
