@@ -482,7 +482,7 @@ public class MainWindowTests
     [TestMethod]
     public void AppVersionComparison_AccuratelyEvaluatesSemanticVersions()
     {
-        Assert.AreEqual("7.5.2", MainWindow.CurrentAppVersion, "CurrentAppVersion must be 7.5.2.");
+        Assert.AreEqual("7.5.3", MainWindow.CurrentAppVersion, "CurrentAppVersion must be 7.5.3.");
 
         Assert.IsTrue(MainWindow.IsNewerVersion("v7.5", "7.4"), "v7.5 must be newer than 7.4.");
         Assert.IsTrue(MainWindow.IsNewerVersion("7.5", "7.4"), "7.5 must be newer than 7.4.");
