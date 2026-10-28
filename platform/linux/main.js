@@ -372,10 +372,21 @@ const CapUnfocusedFpsScript =
     "if(window._bcIsMinimized)return;" +
     "if(window._bcIsBackground){" +
     "const now=typeof ts==='number'?ts:performance.now();" +
-    "if(now-_lastBgDrawTime<66)return;" +
+    "if(now-_lastBgDrawTime<1000)return;" +
     "_lastBgDrawTime=now;" +
     "}" +
     "return _origDraw.apply(this,arguments);" +
+    "};" +
+    "}" +
+    "if(!window.__bcBuildCanvasHooked&&typeof window.CharacterAppearanceBuildCanvas==='function'){" +
+    "window.__bcBuildCanvasHooked=true;" +
+    "const _origBuild=window.CharacterAppearanceBuildCanvas;" +
+    "window.CharacterAppearanceBuildCanvas=function(C){" +
+    "if(window._bcIsMinimized||window._bcIsBackground){" +
+    "if(C)C._bcPendingCanvasBuild=true;" +
+    "return;" +
+    "}" +
+    "return _origBuild.apply(this,arguments);" +
     "};" +
     "}" +
     "if(window.bcFocusMemory&&!window.bcFocusMemory.isConnected)window.bcFocusMemory=null;" +
@@ -386,7 +397,7 @@ const CapUnfocusedFpsScript =
     "})()";
 
 const RestoreUnfocusedFpsScript =
-    "(()=>{window._bcIsBackground=false;window._bcIsMinimized=false;const g=window.bcFpsCap;if(g){if(g.MaxUnfocusedFPS===15)g.MaxUnfocusedFPS=0;window.bcFpsCap=null;}})()";
+    "(()=>{window._bcIsBackground=false;window._bcIsMinimized=false;const g=window.bcFpsCap;if(g){if(g.MaxUnfocusedFPS===15)g.MaxUnfocusedFPS=0;window.bcFpsCap=null;}const chars=(Array.isArray(window.ChatRoomCharacter)?window.ChatRoomCharacter.slice():[]);if(window.Player&&!chars.includes(window.Player))chars.push(window.Player);for(let i=0;i<chars.length;i++){const c=chars[i];if(c&&c._bcPendingCanvasBuild){delete c._bcPendingCanvasBuild;if(typeof window.CharacterAppearanceBuildCanvas==='function'){try{window.CharacterAppearanceBuildCanvas(c);}catch(e){}}}}})()";
 
 const SmartFocusRestoreScript = `
     (function() {
@@ -442,11 +453,22 @@ const CopyAndFocusScript = `
             if (window._bcIsMinimized) return;
             if (window._bcIsBackground) {
                 const now = typeof ts === 'number' ? ts : performance.now();
-                if (now - _lastBgDrawTime < 66) return;
+                if (now - _lastBgDrawTime < 1000) return;
                 _lastBgDrawTime = now;
             }
             if (typeof _origDrawLinux === 'function') return _origDrawLinux.apply(this, arguments);
         };
+        if (!window.__bcBuildCanvasHooked && typeof window.CharacterAppearanceBuildCanvas === 'function') {
+            window.__bcBuildCanvasHooked = true;
+            const _origBuild = window.CharacterAppearanceBuildCanvas;
+            window.CharacterAppearanceBuildCanvas = function(C) {
+                if (window._bcIsMinimized || window._bcIsBackground) {
+                    if (C) C._bcPendingCanvasBuild = true;
+                    return;
+                }
+                return _origBuild.apply(this, arguments);
+            };
+        }
         return true;
     };
 

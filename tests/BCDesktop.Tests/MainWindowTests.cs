@@ -180,7 +180,9 @@ public class MainWindowTests
             StringAssert.Contains(code, "__bcDrawHooked", $"{name} must guard against duplicate DrawProcess hooking.");
             StringAssert.Contains(code, "__bcOrigHasFocus", $"{name} must intercept document.hasFocus.");
             StringAssert.Contains(code, "_bcIsMinimized", $"{name} must check _bcIsMinimized to skip DrawProcess.");
-            StringAssert.Contains(code, "_lastBgDrawTime < 66", $"{name} must enforce ~15 FPS fallback throttle when backgrounded.");
+            StringAssert.Contains(code, "_lastBgDrawTime < 1000", $"{name} must enforce ~1 FPS fallback throttle when backgrounded.");
+            StringAssert.Contains(code, "_bcPendingCanvasBuild", $"{name} must defer canvas building when backgrounded or minimized.");
+            StringAssert.Contains(code, "__bcBuildCanvasHooked", $"{name} must intercept CharacterAppearanceBuildCanvas.");
             StringAssert.Contains(code, "now-window._bcLastGc>60000", $"{name} must enforce 60s cooldown on window.gc().");
         }
     }
@@ -890,6 +892,8 @@ public class MainWindowTests
         StringAssert.Contains(cs, "GetForegroundWindow", "MainWindow must check GetForegroundWindow.");
         StringAssert.Contains(cs, "DwmGetWindowAttribute", "MainWindow must check DwmGetWindowAttribute for virtual desktop cloaking.");
         StringAssert.Contains(cs, "DWMWA_CLOAKED", "MainWindow must check DWMWA_CLOAKED.");
+        StringAssert.Contains(cs, "_dwmWatcherTimer", "MainWindow must define periodic DWM cloaking watcher timer.");
+        StringAssert.Contains(cs, "DwmWatcherTimer_Tick", "MainWindow must periodically verify cloaking and minimize status.");
 
         string linuxPath = Path.Combine(ProjectRoot, "platform", "linux", "main.js");
         string linux = File.ReadAllText(linuxPath);

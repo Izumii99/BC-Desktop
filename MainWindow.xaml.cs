@@ -10,6 +10,7 @@ using System.Windows.Interop;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Shell;
+using System.Windows.Threading;
 using Microsoft.Web.WebView2.Core;
 
 namespace BCDesktop;
@@ -47,10 +48,21 @@ public partial class MainWindow : Window
         "if(window._bcIsMinimized)return;" +
         "if(window._bcIsBackground){" +
         "const now=typeof ts==='number'?ts:performance.now();" +
-        "if(now-_lastBgDrawTime<66)return;" +
+        "if(now-_lastBgDrawTime<1000)return;" +
         "_lastBgDrawTime=now;" +
         "}" +
         "return _origDraw.apply(this,arguments);" +
+        "};" +
+        "}" +
+        "if(!window.__bcBuildCanvasHooked&&typeof window.CharacterAppearanceBuildCanvas==='function'){" +
+        "window.__bcBuildCanvasHooked=true;" +
+        "const _origBuild=window.CharacterAppearanceBuildCanvas;" +
+        "window.CharacterAppearanceBuildCanvas=function(C){" +
+        "if(window._bcIsMinimized||window._bcIsBackground){" +
+        "if(C)C._bcPendingCanvasBuild=true;" +
+        "return;" +
+        "}" +
+        "return _origBuild.apply(this,arguments);" +
         "};" +
         "}" +
         "if(window.bcFocusMemory&&!window.bcFocusMemory.isConnected)window.bcFocusMemory=null;" +
@@ -60,9 +72,99 @@ public partial class MainWindow : Window
         "if(typeof window.gc==='function'&&(!window._bcLastGc||now-window._bcLastGc>60000)){window._bcLastGc=now;try{window.gc();}catch(e){}}" +
         "})()";
     internal const string RestoreUnfocusedFpsScript =
-        "(()=>{window._bcIsBackground=false;window._bcIsMinimized=false;const g=window.bcFpsCap;if(g){if(g.MaxUnfocusedFPS===15)g.MaxUnfocusedFPS=0;window.bcFpsCap=null;}})()";
+        "(()=>{" +
+        "window._bcIsBackground=false;window._bcIsMinimized=false;const g=window.bcFpsCap;if(g){if(g.MaxUnfocusedFPS===15)g.MaxUnfocusedFPS=0;window.bcFpsCap=null;}" +
+        "const chars=(Array.isArray(window.ChatRoomCharacter)?window.ChatRoomCharacter.slice():[]);" +
+        "if(window.Player&&!chars.includes(window.Player))chars.push(window.Player);" +
+        "for(let i=0;i<chars.length;i++){" +
+        "const c=chars[i];" +
+        "if(c&&c._bcPendingCanvasBuild){" +
+        "delete c._bcPendingCanvasBuild;" +
+        "if(typeof window.CharacterAppearanceBuildCanvas==='function'){" +
+        "try{window.CharacterAppearanceBuildCanvas(c);}catch(e){}" +
+        "}" +
+        "}" +
+        "}" +
+        "})()";
 
     private CancellationTokenSource? _activationCts;
+    private DispatcherTimer? _dwmWatcherTimer;
+    private int _lastThrottleState; // 1: Active, 2: Background, 3: Cloaked/Minimized
+    private DateTime _unfocusedStartTime = DateTime.MinValue;
+
+    private void StartDwmWatcherTimer()
+    {
+        _dwmWatcherTimer = new DispatcherTimer(DispatcherPriority.Background)
+        {
+            Interval = TimeSpan.FromMilliseconds(1500)
+        };
+        _dwmWatcherTimer.Tick += DwmWatcherTimer_Tick;
+        _dwmWatcherTimer.Start();
+    }
+
+    private void DwmWatcherTimer_Tick(object? sender, EventArgs e)
+    {
+        if (WebView.CoreWebView2 is not { } core) return;
+
+        bool isCloaked = false;
+        var hwnd = new WindowInteropHelper(this).Handle;
+        if (hwnd != IntPtr.Zero)
+        {
+            try
+            {
+                if (DwmGetWindowAttribute(hwnd, DWMWA_CLOAKED, out int cloaked, sizeof(int)) == 0 && cloaked != 0)
+                {
+                    isCloaked = true;
+                }
+            }
+            catch { }
+        }
+
+        bool isMinimizedOrCloaked = WindowState == WindowState.Minimized || isCloaked;
+
+        if (isMinimizedOrCloaked)
+        {
+            _unfocusedStartTime = DateTime.MinValue;
+            if (_lastThrottleState != 3)
+            {
+                _lastThrottleState = 3;
+                core.MemoryUsageTargetLevel = CoreWebView2MemoryUsageTargetLevel.Low;
+                _ = core.ExecuteScriptAsync("(()=>{window._bcIsMinimized=true;window._bcIsBackground=true;})()");
+                TrimWorkingSet();
+            }
+            return;
+        }
+
+        bool isForeground = IsWindowActiveAndVisibleOnCurrentDesktop();
+
+        if (isForeground)
+        {
+            _unfocusedStartTime = DateTime.MinValue;
+            if (_lastThrottleState != 1)
+            {
+                _lastThrottleState = 1;
+                core.MemoryUsageTargetLevel = CoreWebView2MemoryUsageTargetLevel.Normal;
+                _ = core.ExecuteScriptAsync(RestoreUnfocusedFpsScript);
+            }
+        }
+        else
+        {
+            if (_unfocusedStartTime == DateTime.MinValue)
+            {
+                _unfocusedStartTime = DateTime.UtcNow;
+            }
+            else if ((DateTime.UtcNow - _unfocusedStartTime).TotalSeconds >= 3)
+            {
+                if (_lastThrottleState != 2)
+                {
+                    _lastThrottleState = 2;
+                    core.MemoryUsageTargetLevel = CoreWebView2MemoryUsageTargetLevel.Low;
+                    _ = core.ExecuteScriptAsync(CapUnfocusedFpsScript);
+                    TrimWorkingSet();
+                }
+            }
+        }
+    }
 
     private void CancelActivation()
     {
@@ -115,6 +217,7 @@ public partial class MainWindow : Window
         StateChanged += OnWindowStateChanged;
         Activated += MainWindow_Activated;
         Deactivated += MainWindow_Deactivated;
+        StartDwmWatcherTimer();
         if (initializeWebView)
         {
             _ = InitWebViewAsync();
@@ -134,6 +237,7 @@ public partial class MainWindow : Window
             await Task.Delay(3000, token);
             if (!token.IsCancellationRequested && WindowState != WindowState.Minimized && WebView.CoreWebView2 is { } core)
             {
+                _lastThrottleState = 2;
                 core.MemoryUsageTargetLevel = CoreWebView2MemoryUsageTargetLevel.Low;
                 await core.ExecuteScriptAsync(CapUnfocusedFpsScript);
                 TrimWorkingSet();
@@ -150,13 +254,6 @@ public partial class MainWindow : Window
     private async void MainWindow_Activated(object? sender, EventArgs e)
     {
         CancelActivation();
-        CancelDeactivation();
-
-        if (WebView.CoreWebView2 is { } core)
-        {
-            core.MemoryUsageTargetLevel = CoreWebView2MemoryUsageTargetLevel.Normal;
-            _ = core.ExecuteScriptAsync(RestoreUnfocusedFpsScript);
-        }
 
         var cts = new CancellationTokenSource();
         _activationCts = cts;
@@ -168,6 +265,15 @@ public partial class MainWindow : Window
             if (token.IsCancellationRequested || !IsWindowActiveAndVisibleOnCurrentDesktop())
             {
                 return;
+            }
+
+            CancelDeactivation();
+
+            if (WebView.CoreWebView2 is { } core)
+            {
+                _lastThrottleState = 1;
+                core.MemoryUsageTargetLevel = CoreWebView2MemoryUsageTargetLevel.Normal;
+                _ = core.ExecuteScriptAsync(RestoreUnfocusedFpsScript);
             }
 
             WebView.Focus();
@@ -1237,11 +1343,22 @@ public partial class MainWindow : Window
                         if (window._bcIsMinimized) return;
                         if (window._bcIsBackground) {
                             const now = typeof ts === 'number' ? ts : performance.now();
-                            if (now - _lastBgDrawTime < 66) return;
+                            if (now - _lastBgDrawTime < 1000) return;
                             _lastBgDrawTime = now;
                         }
                         return _origDraw.apply(this, arguments);
                     };
+                    if (!window.__bcBuildCanvasHooked && typeof window.CharacterAppearanceBuildCanvas === 'function') {
+                        window.__bcBuildCanvasHooked = true;
+                        const _origBuild = window.CharacterAppearanceBuildCanvas;
+                        window.CharacterAppearanceBuildCanvas = function(C) {
+                            if (window._bcIsMinimized || window._bcIsBackground) {
+                                if (C) C._bcPendingCanvasBuild = true;
+                                return;
+                            }
+                            return _origBuild.apply(this, arguments);
+                        };
+                    }
                     return true;
                 };
 
@@ -2094,7 +2211,7 @@ public partial class MainWindow : Window
                     if(window._bcIsMinimized)return;
                     if(window._bcIsBackground){
                         const now=typeof ts==='number'?ts:performance.now();
-                        if(now-_lastBgDrawTime<66)return;
+                        if(now-_lastBgDrawTime<1000)return;
                         _lastBgDrawTime=now;
                     }
                     if(typeof _origDrawInit==='function')return _origDrawInit.apply(this,arguments);
@@ -2106,6 +2223,25 @@ public partial class MainWindow : Window
                         get:()=>_wrappedDrawInit,
                         set:(fn)=>{_origDrawInit=fn;}
                     });
+                }catch(e){}
+            }
+            if(!window.__bcBuildCanvasHooked){
+                let _origBuildInit=window.CharacterAppearanceBuildCanvas;
+                const _wrappedBuildInit=function(C){
+                    if(window._bcIsMinimized||window._bcIsBackground){
+                        if(C)C._bcPendingCanvasBuild=true;
+                        return;
+                    }
+                    if(typeof _origBuildInit==='function')return _origBuildInit.apply(this,arguments);
+                };
+                try{
+                    Object.defineProperty(window,'CharacterAppearanceBuildCanvas',{
+                        configurable:true,
+                        enumerable:true,
+                        get:()=>_wrappedBuildInit,
+                        set:(fn)=>{_origBuildInit=fn;}
+                    });
+                    window.__bcBuildCanvasHooked=true;
                 }catch(e){}
             }
         ");
