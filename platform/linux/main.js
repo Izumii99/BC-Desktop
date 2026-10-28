@@ -338,7 +338,7 @@ app.commandLine.appendSwitch('disable-site-isolation-trials');
 app.commandLine.appendSwitch('no-pings');
 app.commandLine.appendSwitch('max-gum-fps', '60');
 app.commandLine.appendSwitch('gpu-rasterization-msaa-sample-count', '0');
-app.commandLine.appendSwitch('force-gpu-mem-available-mb', '384');
+app.commandLine.appendSwitch('force-gpu-mem-available-mb', '512');
 app.commandLine.appendSwitch('force-gpu-mem-discardable-limit-mb', '128');
 app.commandLine.appendSwitch('js-flags', '--max-old-space-size=512 --expose-gc');
 
@@ -360,12 +360,12 @@ const CapUnfocusedFpsScript =
     "window._bcIsBackground=true;" +
     "const g=window.Player&&Player.GraphicsSettings;" +
     "if(g&&!g.MaxUnfocusedFPS&&window.CurrentScreen!=='Preference'){g.MaxUnfocusedFPS=15;window.bcFpsCap=g;}" +
-    "if(!window.__bcDrawHooked&&typeof window.DrawProcess==='function'){" +
-    "window.__bcDrawHooked=true;" +
     "if(!document.__bcOrigHasFocus&&typeof document.hasFocus==='function'){" +
     "document.__bcOrigHasFocus=document.hasFocus;" +
     "document.hasFocus=function(){if(window._bcIsBackground)return false;return document.__bcOrigHasFocus.apply(this,arguments);};" +
     "}" +
+    "if(!window.__bcDrawHooked&&typeof window.DrawProcess==='function'){" +
+    "window.__bcDrawHooked=true;" +
     "const _origDraw=window.DrawProcess;" +
     "let _lastBgDrawTime=0;" +
     "window.DrawProcess=function(ts){" +
@@ -376,6 +376,26 @@ const CapUnfocusedFpsScript =
     "_lastBgDrawTime=now;" +
     "}" +
     "return _origDraw.apply(this,arguments);" +
+    "};" +
+    "}" +
+    "if(!window.__bcLoadCanvasHooked&&typeof window.CharacterLoadCanvas==='function'){" +
+    "window.__bcLoadCanvasHooked=true;" +
+    "const _origLoad=window.CharacterLoadCanvas;" +
+    "window.CharacterLoadCanvas=function(C){" +
+    "if(window._bcIsMinimized||window._bcIsBackground){" +
+    "if(C)C._bcPendingCanvasBuild=true;" +
+    "return;" +
+    "}" +
+    "if(C&&C!==window.Player&&C!==window.CurrentCharacter&&C.Canvas&&C.CanvasBlink&&window.CurrentScreen==='ChatRoom'){" +
+    "const now=performance.now();" +
+    "const elapsed=now-(C._bcLastCanvasBuild||0);" +
+    "if(elapsed<150){" +
+    "if(!C._bcBuildTimer){C._bcBuildTimer=setTimeout(()=>{C._bcBuildTimer=null;if(typeof window.CharacterLoadCanvas==='function')window.CharacterLoadCanvas(C);},150-elapsed);}" +
+    "return;" +
+    "}" +
+    "C._bcLastCanvasBuild=now;" +
+    "}" +
+    "return _origLoad.apply(this,arguments);" +
     "};" +
     "}" +
     "if(!window.__bcBuildCanvasHooked&&typeof window.CharacterAppearanceBuildCanvas==='function'){" +
@@ -397,7 +417,7 @@ const CapUnfocusedFpsScript =
     "})()";
 
 const RestoreUnfocusedFpsScript =
-    "(()=>{window._bcIsBackground=false;window._bcIsMinimized=false;const g=window.bcFpsCap;if(g){if(g.MaxUnfocusedFPS===15)g.MaxUnfocusedFPS=0;window.bcFpsCap=null;}const chars=(Array.isArray(window.ChatRoomCharacter)?window.ChatRoomCharacter.slice():[]);if(window.Player&&!chars.includes(window.Player))chars.push(window.Player);for(let i=0;i<chars.length;i++){const c=chars[i];if(c&&c._bcPendingCanvasBuild){delete c._bcPendingCanvasBuild;if(typeof window.CharacterAppearanceBuildCanvas==='function'){try{window.CharacterAppearanceBuildCanvas(c);}catch(e){}}}}})()";
+    "(()=>{window._bcIsBackground=false;window._bcIsMinimized=false;const g=window.bcFpsCap;if(g){if(g.MaxUnfocusedFPS===15)g.MaxUnfocusedFPS=0;window.bcFpsCap=null;}const now=typeof window.CommonTime==='function'?window.CommonTime():Date.now();if(window.DrawImageCache)window.DrawImageCache.lastPurge=now;if(window.GLDrawImageCache)window.GLDrawImageCache.lastPurge=now;const chars=(Array.isArray(window.ChatRoomCharacter)?window.ChatRoomCharacter.slice():[]);if(window.Player&&!chars.includes(window.Player))chars.push(window.Player);for(let i=0;i<chars.length;i++){const c=chars[i];if(c&&c._bcPendingCanvasBuild){delete c._bcPendingCanvasBuild;if(typeof window.CharacterLoadCanvas==='function'){try{window.CharacterLoadCanvas(c);}catch(e){}}else if(typeof window.CharacterAppearanceBuildCanvas==='function'){try{window.CharacterAppearanceBuildCanvas(c);}catch(e){}}}}})()";
 
 const SmartFocusRestoreScript = `
     (function() {
@@ -436,9 +456,6 @@ const CopyAndFocusScript = `
     let origFocus = HTMLElement.prototype.focus;
 
     const _attachDrawHookLinux = () => {
-        if (window.__bcDrawHooked) return true;
-        if (typeof window.DrawProcess !== 'function') return false;
-        window.__bcDrawHooked = true;
         if (!document.__bcOrigHasFocus && typeof document.hasFocus === 'function') {
             document.__bcOrigHasFocus = document.hasFocus;
             document.hasFocus = function() {
@@ -446,18 +463,45 @@ const CopyAndFocusScript = `
                 return document.__bcOrigHasFocus.apply(this, arguments);
             };
         }
-
-        const _origDrawLinux = window.DrawProcess;
-        let _lastBgDrawTime = 0;
-        window.DrawProcess = function(ts) {
-            if (window._bcIsMinimized) return;
-            if (window._bcIsBackground) {
-                const now = typeof ts === 'number' ? ts : performance.now();
-                if (now - _lastBgDrawTime < 1000) return;
-                _lastBgDrawTime = now;
-            }
-            if (typeof _origDrawLinux === 'function') return _origDrawLinux.apply(this, arguments);
-        };
+        if (!window.__bcDrawHooked && typeof window.DrawProcess === 'function') {
+            window.__bcDrawHooked = true;
+            const _origDrawLinux = window.DrawProcess;
+            let _lastBgDrawTime = 0;
+            window.DrawProcess = function(ts) {
+                if (window._bcIsMinimized) return;
+                if (window._bcIsBackground) {
+                    const now = typeof ts === 'number' ? ts : performance.now();
+                    if (now - _lastBgDrawTime < 1000) return;
+                    _lastBgDrawTime = now;
+                }
+                if (typeof _origDrawLinux === 'function') return _origDrawLinux.apply(this, arguments);
+            };
+        }
+        if (!window.__bcLoadCanvasHooked && typeof window.CharacterLoadCanvas === 'function') {
+            window.__bcLoadCanvasHooked = true;
+            const _origLoad = window.CharacterLoadCanvas;
+            window.CharacterLoadCanvas = function(C) {
+                if (window._bcIsMinimized || window._bcIsBackground) {
+                    if (C) C._bcPendingCanvasBuild = true;
+                    return;
+                }
+                if (C && C !== window.Player && C !== window.CurrentCharacter && C.Canvas && C.CanvasBlink && window.CurrentScreen === 'ChatRoom') {
+                    const now = performance.now();
+                    const elapsed = now - (C._bcLastCanvasBuild || 0);
+                    if (elapsed < 150) {
+                        if (!C._bcBuildTimer) {
+                            C._bcBuildTimer = setTimeout(() => {
+                                C._bcBuildTimer = null;
+                                if (typeof window.CharacterLoadCanvas === 'function') window.CharacterLoadCanvas(C);
+                            }, 150 - elapsed);
+                        }
+                        return;
+                    }
+                    C._bcLastCanvasBuild = now;
+                }
+                return _origLoad.apply(this, arguments);
+            };
+        }
         if (!window.__bcBuildCanvasHooked && typeof window.CharacterAppearanceBuildCanvas === 'function') {
             window.__bcBuildCanvasHooked = true;
             const _origBuild = window.CharacterAppearanceBuildCanvas;
@@ -469,7 +513,7 @@ const CopyAndFocusScript = `
                 return _origBuild.apply(this, arguments);
             };
         }
-        return true;
+        return Boolean(window.__bcDrawHooked && window.__bcLoadCanvasHooked && window.__bcBuildCanvasHooked);
     };
 
     if (!_attachDrawHookLinux() && !window._bcDrawHookTimer) {
@@ -730,6 +774,7 @@ const CopyAndFocusScript = `
     });
 
     document.addEventListener('selectionchange', () => {
+        if (window._bcIsMinimized || window._bcIsBackground || !document.hasFocus()) return;
         if (window.bcSelectionTimeout) clearTimeout(window.bcSelectionTimeout);
         window.bcSelectionTimeout = setTimeout(() => {
             if (window.bcIsMouseDown) return;
@@ -915,6 +960,7 @@ const CopyAndFocusScript = `
     };
 
     let focusObserver = new MutationObserver((mutations) => {
+        if (window._bcIsMinimized || window._bcIsBackground || !document.hasFocus()) return;
         let chatLog = document.getElementById('TextAreaChatLog');
         let shouldCheck = false;
         let addedInputs = false;
@@ -1026,7 +1072,7 @@ const CopyAndFocusScript = `
     // ponytail: Safe VRAM, Active-Room Texture Protection & Chat Virtualization
     (function setupSafeVramOptimization() {
         window.__bcLifecycleGuardActive = true;
-        const NORMAL_PURGE_DELAY = 5 * 60 * 1000;
+        const NORMAL_PURGE_DELAY = 6 * 60 * 1000;
         const WARDROBE_PURGE_DELAY = 90 * 1000;
         const trackedRoomCanvases = new Map();
 
@@ -1051,6 +1097,10 @@ const CopyAndFocusScript = `
                 function cleanUpDepartedCharacter(targetChar) {
                     if (!targetChar || targetChar === window.Player || (targetChar.IsPlayer && targetChar.IsPlayer())) return;
                     try {
+                        if (targetChar._bcBuildTimer) {
+                            clearTimeout(targetChar._bcBuildTimer);
+                            targetChar._bcBuildTimer = null;
+                        }
                         const memberNum = targetChar.MemberNumber;
                         if (window.CurrentCharacter === targetChar) {
                             if (typeof window.DialogLeave === 'function') {
@@ -1118,12 +1168,11 @@ const CopyAndFocusScript = `
                 }
                 attachRoomHooks();
 
-        // Protect active room character textures and safely free VRAM of departed characters
+        // Safely free VRAM of departed characters (BC's CommonDrawWarmDrawnAssets handles active texture warming natively)
         function protectActiveRoomTextures() {
             try {
                 attachRoomHooks();
                 ensureChatVirtualizationCss();
-                const now = typeof window.CommonTime === 'function' ? window.CommonTime() : Date.now();
                 const chars = [];
                 if (window.Player) chars.push(window.Player);
                 if (window.CurrentCharacter && window.CurrentCharacter !== window.Player) chars.push(window.CurrentCharacter);
@@ -1133,44 +1182,21 @@ const CopyAndFocusScript = `
                     }
                 }
 
-                // Collect active character asset names to only touch textures actually used in the room
-                const activeAssetNames = new Set();
+                // Safely purge departed room characters and release their GPU canvas buffers
+                const now = typeof window.CommonTime === 'function' ? window.CommonTime() : Date.now();
+                const drawMap = window.DrawImageCache && window.DrawImageCache.cache;
+                const glMap = window.GLDrawImageCache && window.GLDrawImageCache.cache;
                 for (let i = 0; i < chars.length; i++) {
-                    const c = chars[i];
-                    if (c && Array.isArray(c.Appearance)) {
-                        for (let j = 0; j < c.Appearance.length; j++) {
-                            const a = c.Appearance[j];
-                            if (a && a.Asset) {
-                                if (a.Asset.Name) activeAssetNames.add(a.Asset.Name);
-                                if (a.Asset.Group && a.Asset.Group.Name) activeAssetNames.add(a.Asset.Group.Name);
-                            }
-                        }
+                    const drawn = chars[i] && chars[i].DrawnAssets;
+                    if (drawn && typeof drawn.forEach === 'function') {
+                        drawn.forEach(url => {
+                            const dImg = drawMap && typeof drawMap.get === 'function' ? drawMap.get(url) : null;
+                            if (dImg) dImg.lastUsed = now;
+                            const gImg = glMap && typeof glMap.get === 'function' ? glMap.get(url) : null;
+                            if (gImg) gImg.lastUsed = now;
+                        });
                     }
                 }
-
-                // Touch timestamps of active room assets to prevent visual flickering during purge
-                for (const cacheObj of [window.DrawImageCache, window.GLDrawImageCache]) {
-                    if (!cacheObj || !cacheObj.cache || typeof cacheObj.cache.forEach !== 'function') continue;
-                    cacheObj.cache.forEach((val, key) => {
-                        if (val && typeof val === 'object' && window.CurrentScreen === 'ChatRoom' && val.loaded !== false) {
-                            let isActive = false;
-                            if (typeof key === 'string') {
-                                for (const name of activeAssetNames) {
-                                    if (key.includes(name)) {
-                                        isActive = true;
-                                        break;
-                                    }
-                                }
-                            }
-                            if (isActive) {
-                                if ('lastAccessed' in val) val.lastAccessed = now;
-                                if ('timestamp' in val) val.timestamp = now;
-                            }
-                        }
-                    });
-                }
-
-                // Safely purge departed room characters and release their GPU canvas buffers
                 if (window.CurrentScreen === 'ChatRoom') {
                     const currentIds = new Set();
                     for (let i = 0; i < chars.length; i++) {
@@ -1190,6 +1216,8 @@ const CopyAndFocusScript = `
                             trackedRoomCanvases.delete(id);
                         }
                     }
+                } else if (trackedRoomCanvases.size > 0) {
+                    trackedRoomCanvases.clear();
                 }
 
                 // Scavenger: remove any orphaned ghost characters in window.Character who are not in the room

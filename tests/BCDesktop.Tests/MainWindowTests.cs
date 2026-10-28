@@ -100,8 +100,8 @@ public class MainWindowTests
         Assert.IsFalse(code.Contains("--optimize-for-size"), "Must not disable V8 TurboFan JIT with --optimize-for-size.");
         StringAssert.Contains(code, "--expose-gc");
 
-        // VRAM capping and memory budget flags
-        StringAssert.Contains(code, "--force-gpu-mem-available-mb=384");
+        // VRAM capping and memory budget flags (sized for multi-instance shared GPU process)
+        StringAssert.Contains(code, "--force-gpu-mem-available-mb=512");
         StringAssert.Contains(code, "--force-gpu-mem-discardable-limit-mb=128");
         StringAssert.Contains(code, "--gpu-rasterization-msaa-sample-count=0");
         StringAssert.Contains(code, "--disable-site-isolation-trials");
@@ -182,9 +182,12 @@ public class MainWindowTests
             StringAssert.Contains(code, "_bcIsMinimized", $"{name} must check _bcIsMinimized to skip DrawProcess.");
             StringAssert.Contains(code, "_lastBgDrawTime < 1000", $"{name} must enforce ~1 FPS fallback throttle when backgrounded.");
             StringAssert.Contains(code, "_bcPendingCanvasBuild", $"{name} must defer canvas building when backgrounded or minimized.");
+            StringAssert.Contains(code, "__bcLoadCanvasHooked", $"{name} must intercept CharacterLoadCanvas.");
             StringAssert.Contains(code, "__bcBuildCanvasHooked", $"{name} must intercept CharacterAppearanceBuildCanvas.");
             StringAssert.Contains(code, "now-window._bcLastGc>60000", $"{name} must enforce 60s cooldown on window.gc().");
         }
+        Assert.IsFalse(csCode.Contains("Object.defineProperty(window,'DrawProcess'"), "Must not define configurable accessor on DrawProcess in document-created script (overwritten by BC function declaration).");
+        Assert.IsFalse(csCode.Contains("Object.defineProperty(window,'CharacterAppearanceBuildCanvas'"), "Must not define configurable accessor on CharacterAppearanceBuildCanvas in document-created script.");
     }
 
     [TestMethod]
@@ -865,6 +868,8 @@ public class MainWindowTests
         StringAssert.Contains(csContent, "CharacterDelete", "MainWindow.xaml.cs must invoke CharacterDelete to evict ghost characters from memory.");
         StringAssert.Contains(csContent, "GLDrawImageCache.purge", "MainWindow.xaml.cs must call safe GLDrawImageCache.purge.");
         StringAssert.Contains(csContent, "DrawImageCache.purge", "MainWindow.xaml.cs must call safe DrawImageCache.purge.");
+        StringAssert.Contains(csContent, "DrawnAssets", "MainWindow.xaml.cs must warm active room textures via DrawnAssets.");
+        StringAssert.Contains(csContent, ".lastUsed = now", "MainWindow.xaml.cs must update BC's native .lastUsed property.");
         Assert.IsFalse(csContent.Contains("WEBGL_lose_context"), "MainWindow.xaml.cs must never call WEBGL_lose_context.");
         Assert.IsFalse(csContent.Contains("GLDrawImageCache.clear()"), "MainWindow.xaml.cs must never forcefully wipe GLDrawImageCache.");
 

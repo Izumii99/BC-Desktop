@@ -1180,7 +1180,7 @@
         animInterval = setInterval(() => {
             try {
                 // Purely local rendering, bypass CharacterSetActivePose
-                if (typeof CharacterRefresh === "function") CharacterRefresh(Player, false);
+                if (!window._bcIsMinimized && !window._bcIsBackground && typeof CharacterRefresh === "function") CharacterRefresh(Player, false);
                 setEyeExpr("Daydream", eyeRefreshSec); // Refresh eye timer each tick
             } catch (e) {
                 console.error("Anim error", e);
@@ -1195,7 +1195,7 @@
                 animInterval = null;
                 animBtn.style.backgroundColor = "#ffffff";
                 try {
-                    if (typeof CharacterRefresh === "function") CharacterRefresh(Player, false);
+                    if (typeof CharacterRefresh === "function") { CharacterRefresh(Player, false); }
                     // Only restore if there was a prior expression; null = let timer expire naturally
                     if (savedEyeExpr) setEyeExpr(savedEyeExpr, null);
                 } catch (e) {}
@@ -1270,7 +1270,7 @@
                         
                         if (data && data.Type === 'Hidden' && data.Content === 'ChatQol_PetsuitAnim') {
                     const id = data.Sender;
-                    if (typeof id !== 'number' || id === window.Player?.MemberNumber) return;
+                    if (typeof id !== 'number' || id === window.Player?.MemberNumber || window._bcIsMinimized || window._bcIsBackground) return;
                     
                     const dict = Array.isArray(data.Dictionary) ? data.Dictionary[0] : data.Dictionary;
                     if (!dict || typeof dict.delay !== 'number' || typeof dict.cycles !== 'number') return;
@@ -1288,7 +1288,7 @@
                     
                     let frame = 0;
                     function step() {
-                        if (window.CurrentScreen !== 'ChatRoom' || frame >= cycles * 2) {
+                        if (window.CurrentScreen !== 'ChatRoom' || window._bcIsMinimized || window._bcIsBackground || frame >= cycles * 2) {
                             remoteAnims.delete(id);
                             if (typeof window.CharacterRefresh === 'function') window.CharacterRefresh(char, false);
                             return;
@@ -1303,7 +1303,7 @@
 
                 if (data && data.Type === 'Hidden' && data.Content && data.Content.startsWith(HIDDEN_MSG_PREFIX)) {
                             const id = data.Sender;
-                            if (typeof id !== 'number' || id === window.Player?.MemberNumber) return;
+                            if (typeof id !== 'number' || id === window.Player?.MemberNumber || window._bcIsMinimized || window._bcIsBackground) return;
                             
                             const dict = Array.isArray(data.Dictionary) ? data.Dictionary[0] : data.Dictionary;
                             if (!dict || !dict.type || !dict.state1 || !dict.state2) return;
@@ -1383,7 +1383,7 @@
                                     return;
                                 }
                                 
-                                if (i >= cycles * 2) {
+                                if (i >= cycles * 2 || window._bcIsMinimized || window._bcIsBackground) {
                                     applyState(char, slot, originalState);
                                     if (typeof window.CharacterRefresh === 'function') window.CharacterRefresh(char, false, false);
                                     renderers.delete(id + dict.type);
@@ -1410,6 +1410,7 @@
                     window._chatQol_BuildCanvasHooked = true;
                     const origBuildCanvas = window.CharacterAppearanceBuildCanvas;
                     window.CharacterAppearanceBuildCanvas = function (C) {
+                        if (window._bcIsMinimized || window._bcIsBackground) { if (C) C._bcPendingCanvasBuild = true; return; }
                         const isLocal = (C === Player && animInterval);
                         const remoteAnim = window._chatQol_PetsuitRemoteAnims ? window._chatQol_PetsuitRemoteAnims.get(C.MemberNumber) : null;
                         
