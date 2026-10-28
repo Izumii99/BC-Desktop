@@ -858,6 +858,9 @@ public class MainWindowTests
 
         StringAssert.Contains(csContent, "setupSafeVramOptimization", "MainWindow.xaml.cs must define setupSafeVramOptimization.");
         StringAssert.Contains(csContent, "ImageCachePurgeDelay", "MainWindow.xaml.cs must tune ImageCachePurgeDelay.");
+        StringAssert.Contains(csContent, "cleanUpDepartedCharacter", "MainWindow.xaml.cs must define cleanUpDepartedCharacter.");
+        StringAssert.Contains(csContent, "ChatRoomSyncMemberLeave", "MainWindow.xaml.cs must hook ChatRoomSyncMemberLeave to purge departed members.");
+        StringAssert.Contains(csContent, "CharacterDelete", "MainWindow.xaml.cs must invoke CharacterDelete to evict ghost characters from memory.");
         StringAssert.Contains(csContent, "GLDrawImageCache.purge", "MainWindow.xaml.cs must call safe GLDrawImageCache.purge.");
         StringAssert.Contains(csContent, "DrawImageCache.purge", "MainWindow.xaml.cs must call safe DrawImageCache.purge.");
         Assert.IsFalse(csContent.Contains("WEBGL_lose_context"), "MainWindow.xaml.cs must never call WEBGL_lose_context.");
@@ -867,6 +870,9 @@ public class MainWindowTests
         string mainJs = File.ReadAllText(mainJsPath);
         StringAssert.Contains(mainJs, "setupSafeVramOptimization", "Linux main.js must define setupSafeVramOptimization.");
         StringAssert.Contains(mainJs, "ImageCachePurgeDelay", "Linux main.js must tune ImageCachePurgeDelay.");
+        StringAssert.Contains(mainJs, "cleanUpDepartedCharacter", "Linux main.js must define cleanUpDepartedCharacter.");
+        StringAssert.Contains(mainJs, "ChatRoomSyncMemberLeave", "Linux main.js must hook ChatRoomSyncMemberLeave to purge departed members.");
+        StringAssert.Contains(mainJs, "CharacterDelete", "Linux main.js must invoke CharacterDelete to evict ghost characters from memory.");
         StringAssert.Contains(mainJs, "GLDrawImageCache.purge", "Linux main.js must call safe GLDrawImageCache.purge.");
         StringAssert.Contains(mainJs, "DrawImageCache.purge", "Linux main.js must call safe DrawImageCache.purge.");
         Assert.IsFalse(mainJs.Contains("WEBGL_lose_context"), "Linux main.js must never call WEBGL_lose_context.");

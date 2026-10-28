@@ -1003,6 +1003,7 @@ const CopyAndFocusScript = `
 
     // ponytail: Safe VRAM, Active-Room Texture Protection & Chat Virtualization
     (function setupSafeVramOptimization() {
+        window.__bcLifecycleGuardActive = true;
         const NORMAL_PURGE_DELAY = 5 * 60 * 1000;
         const WARDROBE_PURGE_DELAY = 90 * 1000;
         const trackedRoomCanvases = new Map();
@@ -1025,9 +1026,80 @@ const CopyAndFocusScript = `
             }
         }
 
+                function cleanUpDepartedCharacter(targetChar) {
+                    if (!targetChar || targetChar === window.Player || (targetChar.IsPlayer && targetChar.IsPlayer())) return;
+                    try {
+                        const memberNum = targetChar.MemberNumber;
+                        if (window.CurrentCharacter === targetChar) {
+                            if (typeof window.DialogLeave === 'function') {
+                                try { window.DialogLeave(); } catch (e) {}
+                            }
+                            window.CurrentCharacter = null;
+                        }
+                        if (memberNum && window._chatQol_PetsuitRemoteAnims) {
+                            if (typeof window._chatQol_PetsuitRemoteAnims.delete === 'function' && window._chatQol_PetsuitRemoteAnims.has(memberNum)) {
+                                const entry = window._chatQol_PetsuitRemoteAnims.get(memberNum);
+                                if (entry && entry.timer) clearTimeout(entry.timer);
+                                window._chatQol_PetsuitRemoteAnims.delete(memberNum);
+                            } else if (window._chatQol_PetsuitRemoteAnims[memberNum]) {
+                                clearInterval(window._chatQol_PetsuitRemoteAnims[memberNum]);
+                                delete window._chatQol_PetsuitRemoteAnims[memberNum];
+                            }
+                        }
+                        targetChar.MustDraw = false;
+                        if (targetChar.Canvas) {
+                            targetChar.Canvas.width = 0;
+                            targetChar.Canvas.height = 0;
+                            targetChar.Canvas = null;
+                        }
+                        if (targetChar.CanvasBlink) {
+                            targetChar.CanvasBlink.width = 0;
+                            targetChar.CanvasBlink.height = 0;
+                            targetChar.CanvasBlink = null;
+                        }
+                        if (typeof window.AnimationPurge === 'function') {
+                            try { window.AnimationPurge(targetChar, true); } catch (e) {}
+                        }
+                        if (typeof window.CharacterDelete === 'function') {
+                            try { window.CharacterDelete(targetChar); } catch (e) {}
+                        } else if (Array.isArray(window.Character)) {
+                            const idx = window.Character.indexOf(targetChar);
+                            if (idx >= 0) window.Character.splice(idx, 1);
+                        }
+                    } catch (e) {}
+                }
+
+                function attachRoomHooks() {
+                    if (typeof window.ChatRoomSyncMemberLeave === 'function' && !window.__bcMemberLeaveHooked) {
+                        window.__bcMemberLeaveHooked = true;
+                        const _origLeave = window.ChatRoomSyncMemberLeave;
+                        window.ChatRoomSyncMemberLeave = function(data) {
+                            const targetId = data && typeof data.SourceMemberNumber === 'number' ? data.SourceMemberNumber : null;
+                            const char = targetId != null
+                                ? ((window.ChatRoomCharacter || []).find(c => c && c.MemberNumber === targetId) ||
+                                   (window.Character || []).find(c => c && c.MemberNumber === targetId))
+                                : null;
+                            try {
+                                return _origLeave.apply(this, arguments);
+                            } finally {
+                                if (char) cleanUpDepartedCharacter(char);
+                            }
+                        };
+                    }
+                    if (typeof window.ChatRoomLeave === 'function' && !window.__bcRoomLeaveHooked) {
+                        window.__bcRoomLeaveHooked = true;
+                        const _origRoomLeave = window.ChatRoomLeave;
+                        window.ChatRoomLeave = function(clearCharacters) {
+                            return _origRoomLeave.call(this, true);
+                        };
+                    }
+                }
+                attachRoomHooks();
+
         // Protect active room character textures and safely free VRAM of departed characters
         function protectActiveRoomTextures() {
             try {
+                attachRoomHooks();
                 ensureChatVirtualizationCss();
                 const now = typeof window.CommonTime === 'function' ? window.CommonTime() : Date.now();
                 const chars = [];
@@ -1076,7 +1148,7 @@ const CopyAndFocusScript = `
                     });
                 }
 
-                // Only manage character canvas release when actively inside ChatRoom
+                // Safely purge departed room characters and release their GPU canvas buffers
                 if (window.CurrentScreen === 'ChatRoom') {
                     const currentIds = new Set();
                     for (let i = 0; i < chars.length; i++) {
@@ -1092,20 +1164,43 @@ const CopyAndFocusScript = `
 
                     for (const [id, entry] of trackedRoomCanvases.entries()) {
                         if (!currentIds.has(id) && entry.char !== window.Player) {
-                            // Sever references on character object first so BC recreates a fresh canvas if character rejoins
-                            if (entry.char && entry.char.Canvas === entry.canvas) entry.char.Canvas = null;
-                            if (entry.char && entry.char.CanvasBlink === entry.blink) entry.char.CanvasBlink = null;
-
-                            if (entry.canvas && entry.canvas.width > 0) {
-                                entry.canvas.width = 0;
-                                entry.canvas.height = 0;
-                            }
-                            if (entry.blink && entry.blink.width > 0) {
-                                entry.blink.width = 0;
-                                entry.blink.height = 0;
-                            }
+                            cleanUpDepartedCharacter(entry.char);
                             trackedRoomCanvases.delete(id);
                         }
+                    }
+                }
+
+                // Scavenger: remove any orphaned ghost characters in window.Character who are not in the room
+                if (Array.isArray(window.Character)) {
+                    const inChatRoom = (typeof window.ServerPlayerIsInChatRoom === 'function' && window.ServerPlayerIsInChatRoom()) ||
+                                       window.CurrentScreen === 'ChatRoom' ||
+                                       (window.ChatRoomData != null && Array.isArray(window.ChatRoomCharacter) && window.ChatRoomCharacter.length > 0);
+
+                    const activeMemberNums = new Set();
+                    if (window.Player && window.Player.MemberNumber) activeMemberNums.add(window.Player.MemberNumber);
+                    if (Array.isArray(window.ChatRoomCharacter)) {
+                        for (let i = 0; i < window.ChatRoomCharacter.length; i++) {
+                            const m = window.ChatRoomCharacter[i]?.MemberNumber;
+                            if (m) activeMemberNums.add(m);
+                        }
+                    }
+
+                    const ghosts = window.Character.filter(c => {
+                        if (!c || c === window.Player || (c.IsPlayer && c.IsPlayer())) return false;
+                        if (c === window.CurrentCharacter) return false;
+                        const isOnline = (c.AccountName && c.AccountName.startsWith('Online-')) || (typeof c.MemberNumber === 'number' && c.MemberNumber > 0);
+                        if (!isOnline) return false;
+                        if (inChatRoom) {
+                            return !activeMemberNums.has(c.MemberNumber);
+                        }
+                        if (window.CurrentScreen === 'ChatSearch' || window.CurrentScreen === 'MainHall') {
+                            return true;
+                        }
+                        return false;
+                    });
+
+                    for (let i = 0; i < ghosts.length; i++) {
+                        cleanUpDepartedCharacter(ghosts[i]);
                     }
                 }
             } catch (e) {}
