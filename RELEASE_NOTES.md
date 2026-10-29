@@ -1,8 +1,8 @@
 ### Fixes & Improvements:
 
-- **Performance (Fix V8 MajorGC Worker Thread Thrashing):** Calibrated JavaScript Old Space heap limits to 1536MB (`--max-old-space-size=1536`), completely resolving the emergency garbage collection thrashing loop where Chromium's parallel GC worker threads consumed 35%–43% CPU in active multiplayer rooms with heavy mod stacks (`BCX`, `WCE`, `BC-LCE`, `BC-HSC`, `Echo`, `Neko`, `NotifyPlus`).
-- **Performance (Fix R133 ImageCache Per-Frame Error Allocations):** Integrated a fast-path cache guard for Bondage Club R133's image cache engine (`ImageCache.prototype.get`), eliminating over 1,500 redundant `new Error()` stack-trace captures and Promise allocations per second on already-cached assets during 2D canvas drawing.
-- **Performance (Fix R133 Top Menu DOM Attribute Thrashing):** Bypassed redundant `img.src` attribute writes in `ElementButton.SetImage` during per-frame chatroom top-menu visual sync (`ChatRoomTopMenuSync`), preventing Chromium Blink from re-parsing identical icon URLs and allocating Oilpan/CppGC objects 480 times per second.
+- **Feature (Smart Background Character Pre-Loading):** Players joining or changing outfits in a room now load and build their character appearance in the background while you are Alt-Tabbed, ensuring characters are already visible without pop-in delays when you look at or return to the window.
+- **Improvement (Activity-Aware Background Animation Burst):** Automatic and manual JSON-driven animations from `BCAR`, `BC-LCE`, and `BC-HSC` now wake the background renderer into a temporary ~15 FPS burst only while active and automatically return to 1 FPS deep-idle mode afterward, preserving low RAM, CPU, and GPU usage with full anti-leak protection.
+- **Improvement (Smoother Foreground Animations & Overlay Responsiveness):** Raised foreground character canvas animation responsiveness to 30+ FPS and eliminated layout stutters when hypnosis or visual overlay effects (`BC-HSC`, `BC-LCE`) add or remove screen elements.
 
 ### Downloads:
 

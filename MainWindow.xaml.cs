@@ -40,6 +40,9 @@ public partial class MainWindow : Window
         "document.__bcOrigHasFocus=document.hasFocus;" +
         "document.hasFocus=function(){if(window._bcIsBackground)return false;return document.__bcOrigHasFocus.apply(this,arguments);};" +
         "}" +
+        "if(!window._bcRequestBgBurst){" +
+        "window._bcRequestBgBurst=function(ms){const t=performance.now()+(ms||2500);if(t>(window._bcBgBurstUntil||0))window._bcBgBurstUntil=t;};" +
+        "}" +
         "if(!window.__bcDrawHooked&&typeof window.DrawProcess==='function'){" +
         "window.__bcDrawHooked=true;" +
         "const _origDraw=window.DrawProcess;" +
@@ -48,7 +51,8 @@ public partial class MainWindow : Window
         "if(window._bcIsMinimized)return;" +
         "if(window._bcIsBackground){" +
         "const now=typeof ts==='number'?ts:performance.now();" +
-        "if(now-_lastBgDrawTime<1000)return;" +
+        "const isBurst=now<(window._bcBgBurstUntil||0);" +
+        "if(isBurst?(now-_lastBgDrawTime<66):(now-_lastBgDrawTime<1000))return;" +
         "_lastBgDrawTime=now;" +
         "}" +
         "return _origDraw.apply(this,arguments);" +
@@ -58,15 +62,17 @@ public partial class MainWindow : Window
         "window.__bcLoadCanvasHooked=true;" +
         "const _origLoad=window.CharacterLoadCanvas;" +
         "window.CharacterLoadCanvas=function(C){" +
-        "if(window._bcIsMinimized||window._bcIsBackground){" +
+        "if(window._bcIsMinimized){" +
         "if(C)C._bcPendingCanvasBuild=true;" +
         "return;" +
         "}" +
-        "if(C&&C!==window.Player&&C!==window.CurrentCharacter&&C.Canvas&&C.CanvasBlink&&window.CurrentScreen==='ChatRoom'){" +
+        "if(window._bcIsBackground&&window._bcRequestBgBurst)window._bcRequestBgBurst(2500);" +
+        "if(C&&C!==window.CurrentCharacter&&C.Canvas&&C.CanvasBlink&&window.CurrentScreen==='ChatRoom'){" +
+        "const minInterval=window._bcIsBackground?120:(C===window.Player?16:32);" +
         "const now=performance.now();" +
         "const elapsed=now-(C._bcLastCanvasBuild||0);" +
-        "if(elapsed<150){" +
-        "if(!C._bcBuildTimer){C._bcBuildTimer=setTimeout(()=>{C._bcBuildTimer=null;if(typeof window.CharacterLoadCanvas==='function')window.CharacterLoadCanvas(C);},150-elapsed);}" +
+        "if(elapsed<minInterval){" +
+        "if(!C._bcBuildTimer){C._bcBuildTimer=setTimeout(()=>{C._bcBuildTimer=null;if(typeof window.CharacterLoadCanvas==='function')window.CharacterLoadCanvas(C);},minInterval-elapsed);}" +
         "return;" +
         "}" +
         "C._bcLastCanvasBuild=now;" +
@@ -78,10 +84,11 @@ public partial class MainWindow : Window
         "window.__bcBuildCanvasHooked=true;" +
         "const _origBuild=window.CharacterAppearanceBuildCanvas;" +
         "window.CharacterAppearanceBuildCanvas=function(C){" +
-        "if(window._bcIsMinimized||window._bcIsBackground){" +
+        "if(window._bcIsMinimized){" +
         "if(C)C._bcPendingCanvasBuild=true;" +
         "return;" +
         "}" +
+        "if(window._bcIsBackground&&window._bcRequestBgBurst)window._bcRequestBgBurst(2500);" +
         "return _origBuild.apply(this,arguments);" +
         "};" +
         "}" +
@@ -536,7 +543,7 @@ public partial class MainWindow : Window
     }
 
 
-    internal const string CurrentAppVersion = "7.5.3";
+    internal const string CurrentAppVersion = "7.5.4";
     internal const string GitHubRepo = "Izumii99/BC-Desktop";
     internal static bool EnableAutoUpdates { get; set; } = true;
     private static string? _newReleaseUrl { get; set; }
@@ -1358,6 +1365,12 @@ public partial class MainWindow : Window
                             return document.__bcOrigHasFocus.apply(this, arguments);
                         };
                     }
+                    if (!window._bcRequestBgBurst) {
+                        window._bcRequestBgBurst = function(ms) {
+                            const t = performance.now() + (ms || 2500);
+                            if (t > (window._bcBgBurstUntil || 0)) window._bcBgBurstUntil = t;
+                        };
+                    }
                     if (!window.__bcDrawHooked && typeof window.DrawProcess === 'function') {
                         window.__bcDrawHooked = true;
                         const _origDraw = window.DrawProcess;
@@ -1366,7 +1379,8 @@ public partial class MainWindow : Window
                             if (window._bcIsMinimized) return;
                             if (window._bcIsBackground) {
                                 const now = typeof ts === 'number' ? ts : performance.now();
-                                if (now - _lastBgDrawTime < 1000) return;
+                                const isBurst = now < (window._bcBgBurstUntil || 0);
+                                if (isBurst ? (now - _lastBgDrawTime < 66) : (now - _lastBgDrawTime < 1000)) return;
                                 _lastBgDrawTime = now;
                             }
                             return _origDraw.apply(this, arguments);
@@ -1376,19 +1390,21 @@ public partial class MainWindow : Window
                         window.__bcLoadCanvasHooked = true;
                         const _origLoad = window.CharacterLoadCanvas;
                         window.CharacterLoadCanvas = function(C) {
-                            if (window._bcIsMinimized || window._bcIsBackground) {
+                            if (window._bcIsMinimized) {
                                 if (C) C._bcPendingCanvasBuild = true;
                                 return;
                             }
-                            if (C && C !== window.Player && C !== window.CurrentCharacter && C.Canvas && C.CanvasBlink && window.CurrentScreen === 'ChatRoom') {
+                            if (window._bcIsBackground && window._bcRequestBgBurst) window._bcRequestBgBurst(2500);
+                            if (C && C !== window.CurrentCharacter && C.Canvas && C.CanvasBlink && window.CurrentScreen === 'ChatRoom') {
+                                const minInterval = window._bcIsBackground ? 120 : (C === window.Player ? 16 : 32);
                                 const now = performance.now();
                                 const elapsed = now - (C._bcLastCanvasBuild || 0);
-                                if (elapsed < 150) {
+                                if (elapsed < minInterval) {
                                     if (!C._bcBuildTimer) {
                                         C._bcBuildTimer = setTimeout(() => {
                                             C._bcBuildTimer = null;
                                             if (typeof window.CharacterLoadCanvas === 'function') window.CharacterLoadCanvas(C);
-                                        }, 150 - elapsed);
+                                        }, minInterval - elapsed);
                                     }
                                     return;
                                 }
@@ -1401,10 +1417,11 @@ public partial class MainWindow : Window
                         window.__bcBuildCanvasHooked = true;
                         const _origBuild = window.CharacterAppearanceBuildCanvas;
                         window.CharacterAppearanceBuildCanvas = function(C) {
-                            if (window._bcIsMinimized || window._bcIsBackground) {
+                            if (window._bcIsMinimized) {
                                 if (C) C._bcPendingCanvasBuild = true;
                                 return;
                             }
+                            if (window._bcIsBackground && window._bcRequestBgBurst) window._bcRequestBgBurst(2500);
                             return _origBuild.apply(this, arguments);
                         };
                     }
@@ -1880,8 +1897,16 @@ public partial class MainWindow : Window
                             }
                         }
                         if (m.removedNodes.length > 0) {
-                            if (!document.activeElement || document.activeElement === document.body || (window.bcFocusMemory && !window.bcFocusMemory.isConnected)) {
+                            if (window.bcFocusMemory && !window.bcFocusMemory.isConnected) {
                                 shouldCheck = true;
+                            } else {
+                                for (let i = 0; i < m.removedNodes.length; i++) {
+                                    let n = m.removedNodes[i];
+                                    if (isTextInput(n) || (n.querySelector && n.querySelector('textarea, input[type=text], input[type=search], input:not([type])'))) {
+                                        shouldCheck = true;
+                                        break;
+                                    }
+                                }
                             }
                         }
                     } else if (m.type === 'attributes') {
@@ -2094,6 +2119,26 @@ public partial class MainWindow : Window
                             return _origSetImage.apply(this, arguments);
                         };
                     }
+                    if (typeof window.ChatRoomMessage === 'function' && !window.__bcMsgBurstHooked) {
+                        window.__bcMsgBurstHooked = true;
+                        const _origMsg = window.ChatRoomMessage;
+                        window.ChatRoomMessage = function(data) {
+                            if (window._bcIsBackground && !window._bcIsMinimized && window._bcRequestBgBurst) {
+                                window._bcRequestBgBurst(2500);
+                            }
+                            return _origMsg.apply(this, arguments);
+                        };
+                    }
+                    if (typeof window.ServerSend === 'function' && !window.__bcSendBurstHooked) {
+                        window.__bcSendBurstHooked = true;
+                        const _origSend = window.ServerSend;
+                        window.ServerSend = function(msg, data) {
+                            if (window._bcIsBackground && !window._bcIsMinimized && window._bcRequestBgBurst) {
+                                window._bcRequestBgBurst(2500);
+                            }
+                            return _origSend.apply(this, arguments);
+                        };
+                    }
                 }
                 attachRoomHooks();
 
@@ -2188,7 +2233,7 @@ public partial class MainWindow : Window
                 // 1. Periodically prune expired textures & clean up departed character VRAM
                 setInterval(() => {
                     try {
-                        if (window._bcIsBackground) return;
+                        if (window._bcIsMinimized) return;
                         applyPurgeDelay();
                         protectActiveRoomTextures();
 

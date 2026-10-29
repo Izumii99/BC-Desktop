@@ -1180,7 +1180,7 @@
         animInterval = setInterval(() => {
             try {
                 // Purely local rendering, bypass CharacterSetActivePose
-                if (!window._bcIsMinimized && !window._bcIsBackground && typeof CharacterRefresh === "function") CharacterRefresh(Player, false);
+                if (!window._bcIsMinimized && typeof CharacterRefresh === "function") { if (window._bcIsBackground && window._bcRequestBgBurst) window._bcRequestBgBurst(2500); CharacterRefresh(Player, false); }
                 setEyeExpr("Daydream", eyeRefreshSec); // Refresh eye timer each tick
             } catch (e) {
                 console.error("Anim error", e);
@@ -1205,7 +1205,7 @@
 
     setInterval(() => {
         try {
-            if (window._bcIsBackground) return;
+            if (window._bcIsMinimized) return;
             if (
                 typeof Player !== "undefined" &&
                 Player &&
@@ -1270,7 +1270,7 @@
                         
                         if (data && data.Type === 'Hidden' && data.Content === 'ChatQol_PetsuitAnim') {
                     const id = data.Sender;
-                    if (typeof id !== 'number' || id === window.Player?.MemberNumber || window._bcIsMinimized || window._bcIsBackground) return;
+                    if (typeof id !== 'number' || id === window.Player?.MemberNumber || window._bcIsMinimized) return;
                     
                     const dict = Array.isArray(data.Dictionary) ? data.Dictionary[0] : data.Dictionary;
                     if (!dict || typeof dict.delay !== 'number' || typeof dict.cycles !== 'number') return;
@@ -1288,7 +1288,7 @@
                     
                     let frame = 0;
                     function step() {
-                        if (window.CurrentScreen !== 'ChatRoom' || window._bcIsMinimized || window._bcIsBackground || frame >= cycles * 2) {
+                        if (window.CurrentScreen !== 'ChatRoom' || window._bcIsMinimized || frame >= cycles * 2) {
                             remoteAnims.delete(id);
                             if (typeof window.CharacterRefresh === 'function') window.CharacterRefresh(char, false);
                             return;
@@ -1303,7 +1303,7 @@
 
                 if (data && data.Type === 'Hidden' && data.Content && data.Content.startsWith(HIDDEN_MSG_PREFIX)) {
                             const id = data.Sender;
-                            if (typeof id !== 'number' || id === window.Player?.MemberNumber || window._bcIsMinimized || window._bcIsBackground) return;
+                            if (typeof id !== 'number' || id === window.Player?.MemberNumber || window._bcIsMinimized) return;
                             
                             const dict = Array.isArray(data.Dictionary) ? data.Dictionary[0] : data.Dictionary;
                             if (!dict || !dict.type || !dict.state1 || !dict.state2) return;
@@ -1383,7 +1383,7 @@
                                     return;
                                 }
                                 
-                                if (i >= cycles * 2 || window._bcIsMinimized || window._bcIsBackground) {
+                                if (i >= cycles * 2 || window._bcIsMinimized) {
                                     applyState(char, slot, originalState);
                                     if (typeof window.CharacterRefresh === 'function') window.CharacterRefresh(char, false, false);
                                     renderers.delete(id + dict.type);
@@ -1410,7 +1410,8 @@
                     window._chatQol_BuildCanvasHooked = true;
                     const origBuildCanvas = window.CharacterAppearanceBuildCanvas;
                     window.CharacterAppearanceBuildCanvas = function (C) {
-                        if (window._bcIsMinimized || window._bcIsBackground) { if (C) C._bcPendingCanvasBuild = true; return; }
+                        if (window._bcIsMinimized) { if (C) C._bcPendingCanvasBuild = true; return; }
+                        if (window._bcIsBackground && window._bcRequestBgBurst) window._bcRequestBgBurst(2500);
                         const isLocal = (C === Player && animInterval);
                         const remoteAnim = window._chatQol_PetsuitRemoteAnims ? window._chatQol_PetsuitRemoteAnims.get(C.MemberNumber) : null;
                         
