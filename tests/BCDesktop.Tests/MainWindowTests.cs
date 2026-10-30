@@ -14,6 +14,8 @@ namespace BCDesktop.Tests;
 public class MainWindowTests
 {
     private static string ProjectRoot => FindProjectRoot();
+    private static string MainWindowSourceCode =>
+        string.Join("\n", Directory.GetFiles(ProjectRoot, "MainWindow*.cs").OrderBy(f => f).Select(File.ReadAllText));
 
     private static string FindProjectRoot()
     {
@@ -85,8 +87,7 @@ public class MainWindowTests
     [TestMethod]
     public void ChromiumFlags_ContainAllRequiredOptimizations()
     {
-        string csPath = Path.Combine(ProjectRoot, "MainWindow.xaml.cs");
-        string code = File.ReadAllText(csPath);
+        string code = MainWindowSourceCode;
 
         // Required background reduction and occlusion flags
         StringAssert.Contains(code, "--disable-features=Translate,OptimizationHints,MediaRouter,DialMediaRouteProvider");
@@ -119,8 +120,7 @@ public class MainWindowTests
     [TestMethod]
     public void ProcessFailure_AutoRecoveryIsHooked()
     {
-        string csPath = Path.Combine(ProjectRoot, "MainWindow.xaml.cs");
-        string code = File.ReadAllText(csPath);
+        string code = MainWindowSourceCode;
 
         StringAssert.Contains(code, "core.ProcessFailed +=", "ProcessFailed event must be hooked for auto-recovery.");
         StringAssert.Contains(code, "CoreWebView2ProcessFailedKind.RenderProcessExited");
@@ -131,8 +131,7 @@ public class MainWindowTests
     [TestMethod]
     public void ExternalLinks_DelegatedToDefaultBrowser()
     {
-        string csPath = Path.Combine(ProjectRoot, "MainWindow.xaml.cs");
-        string code = File.ReadAllText(csPath);
+        string code = MainWindowSourceCode;
 
         StringAssert.Contains(code, "core.NewWindowRequested +=", "NewWindowRequested must be hooked to intercept popup links.");
         StringAssert.Contains(code, "args.Handled = true", "New window popup must be marked handled.");
@@ -155,10 +154,10 @@ public class MainWindowTests
         string csPath = Path.Combine(ProjectRoot, "MainWindow.xaml.cs");
         string linuxPath = Path.Combine(ProjectRoot, "platform", "linux", "main.js");
 
-        string csCode = File.ReadAllText(csPath);
+        string csCode = MainWindowSourceCode;
         string linuxCode = File.ReadAllText(linuxPath);
 
-        foreach (var (code, name) in new[] { (csCode, "MainWindow.xaml.cs"), (linuxCode, "platform/linux/main.js") })
+        foreach (var (code, name) in new[] { (csCode, "MainWindow"), (linuxCode, "platform/linux/main.js") })
         {
             StringAssert.Contains(code, "setupSafeVramOptimization", $"{name} must include setupSafeVramOptimization.");
             StringAssert.Contains(code, "protectActiveRoomTextures", $"{name} must protect active room textures.");
@@ -172,10 +171,10 @@ public class MainWindowTests
         string csPath = Path.Combine(ProjectRoot, "MainWindow.xaml.cs");
         string linuxPath = Path.Combine(ProjectRoot, "platform", "linux", "main.js");
 
-        string csCode = File.ReadAllText(csPath);
+        string csCode = MainWindowSourceCode;
         string linuxCode = File.ReadAllText(linuxPath);
 
-        foreach (var (code, name) in new[] { (csCode, "MainWindow.xaml.cs"), (linuxCode, "platform/linux/main.js") })
+        foreach (var (code, name) in new[] { (csCode, "MainWindow"), (linuxCode, "platform/linux/main.js") })
         {
             StringAssert.Contains(code, "__bcDrawHooked", $"{name} must guard against duplicate DrawProcess hooking.");
             StringAssert.Contains(code, "__bcOrigHasFocus", $"{name} must intercept document.hasFocus.");
@@ -206,8 +205,17 @@ public class MainWindowTests
     {
         int activeVersion = 132;
         var candidates = new HashSet<int>();
-        for (int i = 0; i <= 8; i++) candidates.Add(activeVersion + i);
-        for (int i = 1; i <= 3; i++) if (activeVersion - i >= 132) candidates.Add(activeVersion - i);
+        for (int i = 0; i <= 8; i++)
+        {
+            candidates.Add(activeVersion + i);
+        }
+        for (int i = 1; i <= 3; i++)
+        {
+            if (activeVersion - i >= 132)
+            {
+                candidates.Add(activeVersion - i);
+            }
+        }
 
         Assert.IsTrue(candidates.Contains(132), "Active version must be probed.");
         Assert.IsTrue(candidates.Contains(133), "Next version must be probed.");
@@ -340,8 +348,7 @@ public class MainWindowTests
     [TestMethod]
     public void WindowStateManagement_DpiAndHitTestGuardsAreEnforced()
     {
-        string csPath = Path.Combine(ProjectRoot, "MainWindow.xaml.cs");
-        string code = File.ReadAllText(csPath);
+        string code = MainWindowSourceCode;
 
         // Maximize/Restore button and Margin must synchronize through unified helper
         StringAssert.Contains(code, "UpdateWindowStateUI()", "Window state UI must have a unified update method.");
@@ -372,8 +379,7 @@ public class MainWindowTests
         StringAssert.Contains(xaml, "RenderOptions.ClearTypeHint=\"Enabled\"", "ClearType hint must be Enabled.");
         StringAssert.Contains(xaml, "x:Name=\"WindowBorder\"", "WindowBorder container must be defined.");
 
-        string csPath = Path.Combine(ProjectRoot, "MainWindow.xaml.cs");
-        string cs = File.ReadAllText(csPath);
+        string cs = MainWindowSourceCode;
 
         StringAssert.Contains(cs, "ToggleFullscreen()", "Fullscreen toggle method must be implemented.");
         StringAssert.Contains(cs, "TOGGLE_FULLSCREEN", "Fullscreen message bridge must be connected.");
@@ -602,8 +608,14 @@ public class MainWindowTests
             }
             finally
             {
-                if (File.Exists(dummyTarget)) File.Delete(dummyTarget);
-                if (!string.IsNullOrEmpty(capturedTemp) && File.Exists(capturedTemp)) File.Delete(capturedTemp);
+                if (File.Exists(dummyTarget))
+                {
+                    File.Delete(dummyTarget);
+                }
+                if (!string.IsNullOrEmpty(capturedTemp) && File.Exists(capturedTemp))
+                {
+                    File.Delete(capturedTemp);
+                }
                 MainWindow._isUpdating = false;
             }
         });
@@ -642,7 +654,10 @@ public class MainWindowTests
             }
             finally
             {
-                if (File.Exists(dummyTarget)) File.Delete(dummyTarget);
+                if (File.Exists(dummyTarget))
+                {
+                    File.Delete(dummyTarget);
+                }
                 MainWindow._newReleaseAssetSize = null;
                 MainWindow._isUpdating = false;
             }
@@ -735,8 +750,7 @@ public class MainWindowTests
     [TestMethod]
     public void FocusAndInputIntegrity_EnterAndScrollGuardsAreEnforced()
     {
-        string csPath = Path.Combine(ProjectRoot, "MainWindow.xaml.cs");
-        string code = File.ReadAllText(csPath);
+        string code = MainWindowSourceCode;
 
         // Enter key in editable controls must not be blocked or blurred
         StringAssert.Contains(code, "isInteractive(active) || isInteractive(e.target)", "Enter key handler must exempt interactive elements.");
@@ -780,8 +794,7 @@ public class MainWindowTests
     [TestMethod]
     public void VersionDetection_HybridPortalScraperCalendarAndLock()
     {
-        string csPath = Path.Combine(ProjectRoot, "MainWindow.xaml.cs");
-        string csContent = File.ReadAllText(csPath);
+        string csContent = MainWindowSourceCode;
 
         // Verify Hybrid architecture methods and ElementFX lock are present
         StringAssert.Contains(csContent, "GetCalculatedCalendarVersion", "MainWindow must define GetCalculatedCalendarVersion.");
@@ -863,25 +876,24 @@ public class MainWindowTests
     [TestMethod]
     public void SafeImageCacheVramOptimization_IsProperlyConfigured()
     {
-        string csPath = Path.Combine(ProjectRoot, "MainWindow.xaml.cs");
-        string csContent = File.ReadAllText(csPath);
-
-        StringAssert.Contains(csContent, "setupSafeVramOptimization", "MainWindow.xaml.cs must define setupSafeVramOptimization.");
-        StringAssert.Contains(csContent, "ImageCachePurgeDelay", "MainWindow.xaml.cs must tune ImageCachePurgeDelay.");
-        StringAssert.Contains(csContent, "cleanUpDepartedCharacter", "MainWindow.xaml.cs must define cleanUpDepartedCharacter.");
-        StringAssert.Contains(csContent, "ChatRoomSyncMemberLeave", "MainWindow.xaml.cs must hook ChatRoomSyncMemberLeave to purge departed members.");
-        StringAssert.Contains(csContent, "CharacterDelete", "MainWindow.xaml.cs must invoke CharacterDelete to evict ghost characters from memory.");
-        StringAssert.Contains(csContent, "GLDrawImageCache.purge", "MainWindow.xaml.cs must call safe GLDrawImageCache.purge.");
-        StringAssert.Contains(csContent, "DrawImageCache.purge", "MainWindow.xaml.cs must call safe DrawImageCache.purge.");
-        StringAssert.Contains(csContent, "DrawnAssets", "MainWindow.xaml.cs must warm active room textures via DrawnAssets.");
-        StringAssert.Contains(csContent, ".lastUsed = now", "MainWindow.xaml.cs must update BC's native .lastUsed property.");
-        StringAssert.Contains(csContent, "__bcFastGetHooked", "MainWindow.xaml.cs must guard ImageCache.prototype.get against per-frame new Error() allocations on cache hits.");
-        StringAssert.Contains(csContent, "__bcFastSetImageHooked", "MainWindow.xaml.cs must guard ElementButton.SetImage against redundant per-frame img.src assignments.");
-        Assert.IsFalse(csContent.Contains("WEBGL_lose_context"), "MainWindow.xaml.cs must never call WEBGL_lose_context.");
-        Assert.IsFalse(csContent.Contains("GLDrawImageCache.clear()"), "MainWindow.xaml.cs must never forcefully wipe GLDrawImageCache.");
-
+        string csContent = MainWindowSourceCode;
         string mainJsPath = Path.Combine(ProjectRoot, "platform", "linux", "main.js");
         string mainJs = File.ReadAllText(mainJsPath);
+
+        StringAssert.Contains(csContent, "setupSafeVramOptimization", "MainWindow must define setupSafeVramOptimization.");
+        StringAssert.Contains(csContent, "ImageCachePurgeDelay", "MainWindow must tune ImageCachePurgeDelay.");
+        StringAssert.Contains(csContent, "cleanUpDepartedCharacter", "MainWindow must define cleanUpDepartedCharacter.");
+        StringAssert.Contains(csContent, "ChatRoomSyncMemberLeave", "MainWindow must hook ChatRoomSyncMemberLeave to purge departed members.");
+        StringAssert.Contains(csContent, "CharacterDelete", "MainWindow must invoke CharacterDelete to evict ghost characters from memory.");
+        StringAssert.Contains(csContent, "GLDrawImageCache.purge", "MainWindow must call safe GLDrawImageCache.purge.");
+        StringAssert.Contains(csContent, "DrawImageCache.purge", "MainWindow must call safe DrawImageCache.purge.");
+        StringAssert.Contains(csContent, "DrawnAssets", "MainWindow must warm active room textures via DrawnAssets.");
+        StringAssert.Contains(csContent, ".lastUsed = now", "MainWindow must update BC's native .lastUsed property.");
+        StringAssert.Contains(csContent, "__bcFastGetHooked", "MainWindow must guard ImageCache.prototype.get against per-frame new Error() allocations on cache hits.");
+        StringAssert.Contains(csContent, "__bcFastSetImageHooked", "MainWindow must guard ElementButton.SetImage against redundant per-frame img.src assignments.");
+        Assert.IsFalse(csContent.Contains("WEBGL_lose_context"), "MainWindow must never call WEBGL_lose_context.");
+        Assert.IsFalse(csContent.Contains("GLDrawImageCache.clear()"), "MainWindow must never forcefully wipe GLDrawImageCache.");
+
         StringAssert.Contains(mainJs, "setupSafeVramOptimization", "Linux main.js must define setupSafeVramOptimization.");
         StringAssert.Contains(mainJs, "ImageCachePurgeDelay", "Linux main.js must tune ImageCachePurgeDelay.");
         StringAssert.Contains(mainJs, "cleanUpDepartedCharacter", "Linux main.js must define cleanUpDepartedCharacter.");
@@ -898,8 +910,7 @@ public class MainWindowTests
     [TestMethod]
     public void VirtualDesktop_FocusPingPongProtection_IsImplemented()
     {
-        string csPath = Path.Combine(ProjectRoot, "MainWindow.xaml.cs");
-        string cs = File.ReadAllText(csPath);
+        string cs = MainWindowSourceCode;
 
         StringAssert.Contains(cs, "CancelActivation()", "MainWindow must cancel pending activation on deactivation.");
         StringAssert.Contains(cs, "IsWindowActiveAndVisibleOnCurrentDesktop", "MainWindow must verify window is foreground and uncloaked before focusing.");

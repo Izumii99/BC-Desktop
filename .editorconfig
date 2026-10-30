@@ -2,10 +2,6 @@
 root = true
 
 [*.cs]
-# S3897 / CA1067: Win32 P/Invoke interop structs do not require IEquatable<T>
-dotnet_diagnostic.S3897.severity = none
-dotnet_diagnostic.CA1067.severity = none
-
 # S2696 / S3010: Intentional static fallback cache variables
 dotnet_diagnostic.S2696.severity = none
 dotnet_diagnostic.S3010.severity = none
