@@ -51,6 +51,7 @@
         enableFluidColor: false,
         fluidColor: "#547A82",
         persistentWhisper: false,
+        autoResumeBio: false,
     };
     try {
         const saved = localStorage.getItem("BCDesktop_ChatQoL_Config");
@@ -64,6 +65,9 @@
             );
             if (qolConfig.persistentWhisper === undefined) {
                 qolConfig.persistentWhisper = false;
+            }
+            if (qolConfig.autoResumeBio === undefined) {
+                qolConfig.autoResumeBio = false;
             }
         }
     } catch (e) {}
@@ -940,6 +944,13 @@
             "See everyone while your eyes are closed (bypasses expression blindness).",
         ),
     );
+    cat3.body.appendChild(
+        createToggle(
+            "autoResumeBio",
+            "Auto-Resume Bio Screen",
+            "Automatically reopens your Bio description screen after reconnecting or rejoining a room if you were in Bio before disconnect.",
+        ),
+    );
 
     qolBody.appendChild(cat1.container);
     qolBody.appendChild(cat2.container);
@@ -1253,8 +1264,69 @@
                                     ? window.qolSavedIconState
                                     : 1;
                         }
+                        if (qolConfig.autoResumeBio) {
+                            let shouldResume = false;
+                            try {
+                                shouldResume = sessionStorage.getItem("BC_Bio_AutoResume") === "1";
+                            } catch (e) {}
+
+                            if (shouldResume) {
+                                setTimeout(function () {
+                                    if (
+                                        window.CurrentScreen === "ChatRoom" &&
+                                        typeof window.InformationSheetLoadCharacter === "function" &&
+                                        window.Player
+                                    ) {
+                                        window.InformationSheetLoadCharacter(window.Player);
+                                        if (typeof window.CommonSetScreen === "function") {
+                                            window.CommonSetScreen("Character", "OnlineProfile");
+                                        }
+                                    }
+                                }, 350);
+                            }
+                        }
                     };
                     window.ChatRoomLoad.hasQolHook = true;
+                }
+
+                if (
+                    typeof window.CommonSetScreen === "function" &&
+                    !window.CommonSetScreen.hasQolBioHook
+                ) {
+                    const origCommonSetScreen = window.CommonSetScreen;
+                    window.CommonSetScreen = function (NewModule, NewScreen) {
+                        if (qolConfig.autoResumeBio) {
+                            try {
+                                if (NewScreen === "OnlineProfile") {
+                                    if (
+                                        window.InformationSheetSelection &&
+                                        window.Player &&
+                                        window.InformationSheetSelection.MemberNumber === window.Player.MemberNumber
+                                    ) {
+                                        sessionStorage.setItem("BC_Bio_AutoResume", "1");
+                                    }
+                                } else if (window.CurrentScreen === "OnlineProfile") {
+                                    sessionStorage.removeItem("BC_Bio_AutoResume");
+                                }
+                            } catch (e) {}
+                        }
+                        return origCommonSetScreen.apply(this, arguments);
+                    };
+                    window.CommonSetScreen.hasQolBioHook = true;
+                }
+
+                if (
+                    typeof window.OnlineProfileExit === "function" &&
+                    !window.OnlineProfileExit.hasQolBioHook
+                ) {
+                    const origOnlineProfileExit = window.OnlineProfileExit;
+                    window.OnlineProfileExit = function () {
+                        try {
+                            sessionStorage.removeItem("BC_Bio_AutoResume");
+                        } catch (e) {}
+                        return origOnlineProfileExit.apply(this, arguments);
+                    };
+                    window.OnlineProfileExit.hasQolBioHook = true;
                 }
 
                 if (!window._chatQol_AnimalReceiverHooked && typeof window.ChatRoomMessage === "function") {
