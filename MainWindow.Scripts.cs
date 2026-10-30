@@ -36,21 +36,7 @@ internal static class ScriptHelpers
         "window.__bcLoadCanvasHooked=true;" +
         "const _origLoad=window.CharacterLoadCanvas;" +
         "window.CharacterLoadCanvas=function(C){" +
-        "if(window._bcIsMinimized){" +
-        "if(C)C._bcPendingCanvasBuild=true;" +
-        "return;" +
-        "}" +
         "if(window._bcIsBackground&&window._bcRequestBgBurst)window._bcRequestBgBurst(2500);" +
-        "if(C&&C!==window.CurrentCharacter&&C.Canvas&&C.CanvasBlink&&window.CurrentScreen==='ChatRoom'){" +
-        "const minInterval=window._bcIsBackground?120:(C===window.Player?16:32);" +
-        "const now=performance.now();" +
-        "const elapsed=now-(C._bcLastCanvasBuild||0);" +
-        "if(elapsed<minInterval){" +
-        "if(!C._bcBuildTimer){C._bcBuildTimer=setTimeout(()=>{C._bcBuildTimer=null;if(typeof window.CharacterLoadCanvas==='function')window.CharacterLoadCanvas(C);},minInterval-elapsed);}" +
-        "return;" +
-        "}" +
-        "C._bcLastCanvasBuild=now;" +
-        "}" +
         "return _origLoad.apply(this,arguments);" +
         "};" +
         "}" +
@@ -58,10 +44,6 @@ internal static class ScriptHelpers
         "window.__bcBuildCanvasHooked=true;" +
         "const _origBuild=window.CharacterAppearanceBuildCanvas;" +
         "window.CharacterAppearanceBuildCanvas=function(C){" +
-        "if(window._bcIsMinimized){" +
-        "if(C)C._bcPendingCanvasBuild=true;" +
-        "return;" +
-        "}" +
         "if(window._bcIsBackground&&window._bcRequestBgBurst)window._bcRequestBgBurst(2500);" +
         "return _origBuild.apply(this,arguments);" +
         "};" +
@@ -153,26 +135,7 @@ internal static class ScriptHelpers
                         window.__bcLoadCanvasHooked = true;
                         const _origLoad = window.CharacterLoadCanvas;
                         window.CharacterLoadCanvas = function(C) {
-                            if (window._bcIsMinimized) {
-                                if (C) C._bcPendingCanvasBuild = true;
-                                return;
-                            }
                             if (window._bcIsBackground && window._bcRequestBgBurst) window._bcRequestBgBurst(2500);
-                            if (C && C !== window.CurrentCharacter && C.Canvas && C.CanvasBlink && window.CurrentScreen === 'ChatRoom') {
-                                const minInterval = window._bcIsBackground ? 120 : (C === window.Player ? 16 : 32);
-                                const now = performance.now();
-                                const elapsed = now - (C._bcLastCanvasBuild || 0);
-                                if (elapsed < minInterval) {
-                                    if (!C._bcBuildTimer) {
-                                        C._bcBuildTimer = setTimeout(() => {
-                                            C._bcBuildTimer = null;
-                                            if (typeof window.CharacterLoadCanvas === 'function') window.CharacterLoadCanvas(C);
-                                        }, minInterval - elapsed);
-                                    }
-                                    return;
-                                }
-                                C._bcLastCanvasBuild = now;
-                            }
                             return _origLoad.apply(this, arguments);
                         };
                     }
@@ -180,10 +143,6 @@ internal static class ScriptHelpers
                         window.__bcBuildCanvasHooked = true;
                         const _origBuild = window.CharacterAppearanceBuildCanvas;
                         window.CharacterAppearanceBuildCanvas = function(C) {
-                            if (window._bcIsMinimized) {
-                                if (C) C._bcPendingCanvasBuild = true;
-                                return;
-                            }
                             if (window._bcIsBackground && window._bcRequestBgBurst) window._bcRequestBgBurst(2500);
                             return _origBuild.apply(this, arguments);
                         };
@@ -810,16 +769,6 @@ internal static class ScriptHelpers
                             }
                         }
                         targetChar.MustDraw = false;
-                        if (targetChar.Canvas) {
-                            targetChar.Canvas.width = 0;
-                            targetChar.Canvas.height = 0;
-                            targetChar.Canvas = null;
-                        }
-                        if (targetChar.CanvasBlink) {
-                            targetChar.CanvasBlink.width = 0;
-                            targetChar.CanvasBlink.height = 0;
-                            targetChar.CanvasBlink = null;
-                        }
                         if (typeof window.AnimationPurge === 'function') {
                             try { window.AnimationPurge(targetChar, true); } catch (e) {}
                         }
@@ -853,7 +802,7 @@ internal static class ScriptHelpers
                         window.__bcRoomLeaveHooked = true;
                         const _origRoomLeave = window.ChatRoomLeave;
                         window.ChatRoomLeave = function(clearCharacters) {
-                            return _origRoomLeave.call(this, true);
+                            return _origRoomLeave.apply(this, arguments);
                         };
                     }
                     if (typeof window.ImageCache === 'function' && window.ImageCache.prototype && !window.ImageCache.prototype.__bcFastGetHooked) {

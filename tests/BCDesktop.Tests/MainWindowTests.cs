@@ -863,6 +863,7 @@ public class MainWindowTests
         StringAssert.Contains(mainJs, "getLatestElementFxUrl", "Linux main.js must define getLatestElementFxUrl.");
         StringAssert.Contains(mainJs, "https://www.bondage-asia.com/club/R", "Linux main.js must enforce bondage-asia server lock.");
         StringAssert.Contains(mainJs, "input.key === 'F5'", "Linux main.js must handle F5 reload key.");
+        StringAssert.Contains(mainJs, "will-prevent-unload", "Linux main.js must handle will-prevent-unload to bypass chatroom reload blocks.");
         StringAssert.Contains(mainJs, "canonicalUserData", "Linux main.js must pin canonical userData path.");
         StringAssert.Contains(mainJs, "FLUSH_STORAGE", "Linux main.js must handle FLUSH_STORAGE bridge event.");
         StringAssert.Contains(mainJs, "flushStorageData", "Linux main.js must invoke flushStorageData on storage commit.");
