@@ -9,6 +9,15 @@ const isHidden = process.argv.includes('--hidden') ||
                  process.env.BC_DISCREET === '1' ||
                  app.getName() === '\u3164';
 
+// Set application name and lock canonical userData path at top-level before app.whenReady()
+app.setName(isHidden ? "\u3164" : "Bondage Club");
+
+const canonicalUserData = path.join(os.homedir(), '.config', 'bondage-club-desktop');
+if (!fs.existsSync(canonicalUserData)) {
+    try { fs.mkdirSync(canonicalUserData, { recursive: true }); } catch (_) {}
+}
+app.setPath('userData', canonicalUserData);
+
 const CURRENT_APP_VERSION = app.getVersion();
 const ENABLE_AUTO_UPDATES = !process.argv.includes('--no-update') && process.env.BC_NO_UPDATE !== '1';
 
@@ -351,6 +360,12 @@ function handleWebMessage(msg) {
         if (mainWindow && !mainWindow.isDestroyed()) {
             mainWindow.setFullScreen(!mainWindow.isFullScreen());
         }
+    } else if (msg === 'FLUSH_STORAGE') {
+        try {
+            if (session.defaultSession && typeof session.defaultSession.flushStorageData === 'function') {
+                session.defaultSession.flushStorageData();
+            }
+        } catch (_) {}
     }
 }
 
@@ -459,6 +474,20 @@ const CopyAndFocusScript = `
             }
         };
     }
+
+    try {
+        const origSetItem = Storage.prototype.setItem;
+        let flushTimer = null;
+        Storage.prototype.setItem = function(key, val) {
+            origSetItem.apply(this, arguments);
+            if (flushTimer) clearTimeout(flushTimer);
+            flushTimer = setTimeout(() => {
+                if (window.chrome && window.chrome.webview && typeof window.chrome.webview.postMessage === 'function') {
+                    window.chrome.webview.postMessage('FLUSH_STORAGE');
+                }
+            }, 250);
+        };
+    } catch (_) {}
 
     let origFocus = HTMLElement.prototype.focus;
 
@@ -1717,7 +1746,7 @@ function createWindow() {
         }
     });
 
-    // Keyboard Shortcuts (F11 Fullscreen & F12 DevTools). Physical Ctrl+KeyC is handled in CopyAndFocusScript, same as Windows.
+    // Keyboard Shortcuts (F11 Fullscreen, F12 DevTools, F5 / Ctrl+R Reload). Physical Ctrl+KeyC is handled in CopyAndFocusScript, same as Windows.
     mainWindow.webContents.on('before-input-event', (event, input) => {
         if (input.type === 'keyDown') {
             if (input.key === 'F11') {
@@ -1726,6 +1755,17 @@ function createWindow() {
             } else if (input.key === 'F12') {
                 mainWindow.webContents.toggleDevTools();
                 event.preventDefault();
+            } else {
+                const isF5 = input.key === 'F5' && !input.control && !input.alt;
+                const isCtrlR = (input.control || input.meta) && !input.alt && input.key.toLowerCase() === 'r';
+                if (isF5 || isCtrlR) {
+                    if (input.shift) {
+                        mainWindow.webContents.reloadIgnoringCache();
+                    } else {
+                        mainWindow.webContents.reload();
+                    }
+                    event.preventDefault();
+                }
             }
         }
     });
@@ -1769,8 +1809,19 @@ function createWindow() {
         if (choice !== 0) {
             e.preventDefault();
         } else {
+            e.preventDefault();
             forceQuit = true;
             cancelDeactivation();
+            try {
+                if (session.defaultSession && typeof session.defaultSession.flushStorageData === 'function') {
+                    session.defaultSession.flushStorageData();
+                }
+            } catch (_) {}
+            setTimeout(() => {
+                if (mainWindow && !mainWindow.isDestroyed()) {
+                    mainWindow.destroy();
+                }
+            }, 120);
         }
     });
 
@@ -1789,8 +1840,15 @@ function createWindow() {
     });
 }
 
+app.on('before-quit', () => {
+    try {
+        if (session.defaultSession && typeof session.defaultSession.flushStorageData === 'function') {
+            session.defaultSession.flushStorageData();
+        }
+    } catch (_) {}
+});
+
 app.whenReady().then(() => {
-    app.setName(isHidden ? "\u3164" : "Bondage Club");
     createWindow();
 });
 
