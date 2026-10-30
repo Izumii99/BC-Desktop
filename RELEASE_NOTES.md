@@ -1,6 +1,6 @@
 ### Fixes & Improvements:
 
-- **Fix (Virtual Desktop Background Reconnect & Bio Auto-Resume):** Fixed an issue where running dummy accounts on another Virtual Desktop would freeze background auto-reconnection timers, and resolved online description screen restoration so your profile reliably reopens upon reconnecting to a room.
+- **Fix (Virtual Desktop Background Reconnect):** Fixed an issue where running dummy accounts on another Virtual Desktop would freeze background auto-reconnection timers, allowing automatic reconnection to work seamlessly in the background.
 - **Fix (Linux Standalone F5 Reload & Addon Settings Memory):** Fixed an issue on Linux where pressing F5 failed to refresh the game, and resolved an issue where turning on addon mod loaders (such as Liko Plugin or FUSAM) would reset back to disabled after closing the app.
 - **Feature (Smart Background Character Pre-Loading):** Players joining or changing outfits in a room now load and build their character appearance in the background while you are Alt-Tabbed, ensuring characters are already visible without pop-in delays when you look at or return to the window.
 - **Improvement (Activity-Aware Background Animation Burst):** Automatic and manual JSON-driven animations from `BCAR`, `BC-LCE`, and `BC-HSC` now wake the background renderer into a temporary ~15 FPS burst only while active and automatically return to 1 FPS deep-idle mode afterward, preserving low RAM, CPU, and GPU usage with full anti-leak protection.

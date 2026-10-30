@@ -51,7 +51,6 @@
         enableFluidColor: false,
         fluidColor: "#547A82",
         persistentWhisper: false,
-        autoResumeBio: false,
     };
     try {
         const saved = localStorage.getItem("BCDesktop_ChatQoL_Config");
@@ -66,13 +65,7 @@
             if (qolConfig.persistentWhisper === undefined) {
                 qolConfig.persistentWhisper = false;
             }
-            if (qolConfig.autoResumeBio === undefined) {
-                qolConfig.autoResumeBio = false;
-            }
         }
-    } catch (e) {}
-    try {
-        sessionStorage.removeItem("BC_Bio_AutoResume");
     } catch (e) {}
     
     if (qolConfig.enableLceModLoader) {
@@ -947,13 +940,6 @@
             "See everyone while your eyes are closed (bypasses expression blindness).",
         ),
     );
-    cat3.body.appendChild(
-        createToggle(
-            "autoResumeBio",
-            "Auto-Resume Bio Screen",
-            "Automatically reopens your Bio description screen after reconnecting or rejoining a room if you were in Bio before disconnect.",
-        ),
-    );
 
     qolBody.appendChild(cat1.container);
     qolBody.appendChild(cat2.container);
@@ -1217,186 +1203,8 @@
         }, speed);
     };
 
-    window._chatQol_IsInBio = false;
-
-    function triggerBioResume() {
-        if (window._chatQol_BioResumeTimer) {
-            clearTimeout(window._chatQol_BioResumeTimer);
-            window._chatQol_BioResumeTimer = null;
-        }
-        let retries = 25;
-        function poll() {
-            if (!qolConfig.autoResumeBio) return;
-            if (
-                window.CurrentScreen === "ChatRoom" &&
-                window.ChatRoomData &&
-                window.Player &&
-                window.Player.MemberNumber &&
-                typeof window.InformationSheetLoadCharacter === "function"
-            ) {
-                window.InformationSheetLoadCharacter(window.Player);
-                if (typeof window.CommonSetScreen === "function") {
-                    window.CommonSetScreen("Character", "OnlineProfile");
-                }
-                window._chatQol_IsInBio = true;
-                window._chatQol_PendingBioResume = false;
-                try {
-                    sessionStorage.removeItem("BC_Bio_PendingDisconnectResume");
-                } catch (e) {}
-            } else if (retries-- > 0) {
-                window._chatQol_BioResumeTimer = setTimeout(poll, 200);
-            }
-        }
-        window._chatQol_BioResumeTimer = setTimeout(poll, 600);
-    }
-
-    function installBioLifecycleHooks() {
-        if (
-            typeof window.ChatRoomLoad === "function" &&
-            !window.ChatRoomLoad.hasQolHook
-        ) {
-            const origChatRoomLoad = window.ChatRoomLoad;
-            window.ChatRoomLoad = function () {
-                origChatRoomLoad.apply(this, arguments);
-                if (
-                    qolConfig.persistIconState &&
-                    typeof window.ChatRoomHideIconState !== "undefined"
-                ) {
-                    window.ChatRoomHideIconState =
-                        typeof window.qolSavedIconState !== "undefined"
-                            ? window.qolSavedIconState
-                            : 1;
-                }
-                if (qolConfig.autoResumeBio) {
-                    let shouldResume = false;
-                    try {
-                        shouldResume =
-                            window._chatQol_PendingBioResume ||
-                            sessionStorage.getItem("BC_Bio_PendingDisconnectResume") === "1";
-                        if (shouldResume) {
-                            triggerBioResume();
-                        }
-                    } catch (e) {}
-                }
-            };
-            window.ChatRoomLoad.hasQolHook = true;
-        }
-
-        if (
-            typeof window.CommonSetScreen === "function" &&
-            !window.CommonSetScreen.hasQolBioHook
-        ) {
-            const origCommonSetScreen = window.CommonSetScreen;
-            window.CommonSetScreen = function (NewModule, NewScreen) {
-                if (NewScreen === "OnlineProfile" || NewScreen === "InformationSheet") {
-                    window._chatQol_IsInBio = true;
-                }
-                if (qolConfig.autoResumeBio) {
-                    try {
-                        if (
-                            window._chatQol_IsInBio &&
-                            (NewScreen === "Relog" || NewScreen === "Login" || NewScreen === "ChatSearch")
-                        ) {
-                            window._chatQol_PendingBioResume = true;
-                            sessionStorage.setItem("BC_Bio_PendingDisconnectResume", "1");
-                        } else if (NewScreen === "ChatRoom") {
-                            let shouldResume =
-                                window._chatQol_PendingBioResume ||
-                                sessionStorage.getItem("BC_Bio_PendingDisconnectResume") === "1";
-                            if (shouldResume) {
-                                triggerBioResume();
-                            }
-                        }
-                    } catch (e) {}
-                }
-                return origCommonSetScreen.apply(this, arguments);
-            };
-            window.CommonSetScreen.hasQolBioHook = true;
-        }
-
-        if (
-            typeof window.ServerDisconnect === "function" &&
-            !window.ServerDisconnect.hasQolBioHook
-        ) {
-            const origServerDisconnect = window.ServerDisconnect;
-            window.ServerDisconnect = function () {
-                if (qolConfig.autoResumeBio) {
-                    try {
-                        if (
-                            window._chatQol_IsInBio ||
-                            window.CurrentScreen === "OnlineProfile" ||
-                            window.CurrentScreen === "InformationSheet"
-                        ) {
-                            window._chatQol_PendingBioResume = true;
-                            sessionStorage.setItem("BC_Bio_PendingDisconnectResume", "1");
-                        }
-                    } catch (e) {}
-                }
-                return origServerDisconnect.apply(this, arguments);
-            };
-            window.ServerDisconnect.hasQolBioHook = true;
-        }
-
-        if (
-            typeof window.LoginDoLogin === "function" &&
-            !window.LoginDoLogin.hasQolBioHook
-        ) {
-            const origLoginDoLogin = window.LoginDoLogin;
-            window.LoginDoLogin = function () {
-                window._chatQol_IsInBio = false;
-                window._chatQol_PendingBioResume = false;
-                try {
-                    sessionStorage.removeItem("BC_Bio_PendingDisconnectResume");
-                    sessionStorage.removeItem("BC_Bio_AutoResume");
-                } catch (e) {}
-                return origLoginDoLogin.apply(this, arguments);
-            };
-            window.LoginDoLogin.hasQolBioHook = true;
-        }
-
-        if (
-            typeof window.OnlineProfileExit === "function" &&
-            !window.OnlineProfileExit.hasQolBioHook
-        ) {
-            const origOnlineProfileExit = window.OnlineProfileExit;
-            window.OnlineProfileExit = function () {
-                window._chatQol_IsInBio = false;
-                window._chatQol_PendingBioResume = false;
-                try {
-                    sessionStorage.removeItem("BC_Bio_PendingDisconnectResume");
-                } catch (e) {}
-                return origOnlineProfileExit.apply(this, arguments);
-            };
-            window.OnlineProfileExit.hasQolBioHook = true;
-        }
-
-        if (
-            typeof window.InformationSheetExit === "function" &&
-            !window.InformationSheetExit.hasQolBioHook
-        ) {
-            const origInformationSheetExit = window.InformationSheetExit;
-            window.InformationSheetExit = function () {
-                window._chatQol_IsInBio = false;
-                window._chatQol_PendingBioResume = false;
-                try {
-                    sessionStorage.removeItem("BC_Bio_PendingDisconnectResume");
-                } catch (e) {}
-                return origInformationSheetExit.apply(this, arguments);
-            };
-            window.InformationSheetExit.hasQolBioHook = true;
-        }
-    }
-
-    // Install immediately on script load
-    try {
-        installBioLifecycleHooks();
-    } catch (e) {}
-
     setInterval(() => {
         try {
-            // Keep lifecycle hooks installed at all times regardless of minimize/cloak state
-            installBioLifecycleHooks();
-
             if (window._bcIsMinimized) return;
             if (
                 typeof Player !== "undefined" &&
@@ -1427,6 +1235,26 @@
                     ) {
                         window.ChatRoomHideIconState = 1;
                     }
+                }
+
+                if (
+                    typeof window.ChatRoomLoad === "function" &&
+                    !window.ChatRoomLoad.hasQolHook
+                ) {
+                    const origChatRoomLoad = window.ChatRoomLoad;
+                    window.ChatRoomLoad = function () {
+                        origChatRoomLoad.apply(this, arguments);
+                        if (
+                            qolConfig.persistIconState &&
+                            typeof window.ChatRoomHideIconState !== "undefined"
+                        ) {
+                            window.ChatRoomHideIconState =
+                                typeof window.qolSavedIconState !== "undefined"
+                                    ? window.qolSavedIconState
+                                    : 1;
+                        }
+                    };
+                    window.ChatRoomLoad.hasQolHook = true;
                 }
 
                 if (!window._chatQol_AnimalReceiverHooked && typeof window.ChatRoomMessage === "function") {
