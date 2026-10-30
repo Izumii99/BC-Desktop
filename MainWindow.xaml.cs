@@ -91,9 +91,8 @@ public partial class MainWindow : Window // NOSONAR
             }
         }
 
-        bool isMinimizedOrCloaked = WindowState == WindowState.Minimized || isCloaked;
-
-        if (isMinimizedOrCloaked)
+        // 1. Minimized murni (taskbar minimize) -> State 3 (Suspend & Low memory)
+        if (WindowState == WindowState.Minimized)
         {
             _unfocusedStartTime = DateTime.MinValue;
             if (_lastThrottleState != 3)
@@ -107,7 +106,8 @@ public partial class MainWindow : Window // NOSONAR
             return;
         }
 
-        bool isForeground = IsWindowActiveAndVisibleOnCurrentDesktop();
+        // 2. Cloaked (Virtual Desktop 2) atau Tab-Out -> State 2 (15 FPS Background, game loop & timer TETAP jalan)
+        bool isForeground = IsWindowActiveAndVisibleOnCurrentDesktop() && !isCloaked;
 
         if (isForeground)
         {
@@ -121,19 +121,20 @@ public partial class MainWindow : Window // NOSONAR
         }
         else
         {
-            if (_unfocusedStartTime == DateTime.MinValue)
-            {
-                _unfocusedStartTime = DateTime.UtcNow;
-            }
-            else if ((DateTime.UtcNow - _unfocusedStartTime).TotalSeconds >= 3)
+            if (isCloaked || (_unfocusedStartTime != DateTime.MinValue && (DateTime.UtcNow - _unfocusedStartTime).TotalSeconds >= 3))
             {
                 if (_lastThrottleState != 2)
                 {
                     _lastThrottleState = 2;
                     core.MemoryUsageTargetLevel = CoreWebView2MemoryUsageTargetLevel.Low;
+                    _ = core.ExecuteScriptAsync("(()=>{window._bcIsMinimized=false;window._bcIsBackground=true;})()");
                     _ = core.ExecuteScriptAsync(ScriptHelpers.CapUnfocusedFpsScript);
                     NativeMethods.TrimWorkingSet();
                 }
+            }
+            else if (_unfocusedStartTime == DateTime.MinValue)
+            {
+                _unfocusedStartTime = DateTime.UtcNow;
             }
         }
     }
@@ -227,13 +228,15 @@ public partial class MainWindow : Window // NOSONAR
             {
                 AdditionalBrowserArguments =
                     "--disable-features=Translate,OptimizationHints,MediaRouter,DialMediaRouteProvider,SpareRendererForSitePerProcess,AudioServiceOutOfProcess,AutofillServerCommunication " +
-                    "--disable-background-networking " +
                     "--disable-component-update " +
                     "--disable-domain-reliability " +
                     "--disable-sync " +
                     "--disable-notifications " +
                     "--disable-site-isolation-trials " +
+                    "--disable-background-networking " +
                     "--no-pings " +
+                    "--disable-background-timer-throttling " +
+                    "--disable-backgrounding-occluded-windows " +
                     "--force-gpu-mem-available-mb=512 " +
                     "--force-gpu-mem-discardable-limit-mb=128 " +
                     "--gpu-rasterization-msaa-sample-count=0 " +

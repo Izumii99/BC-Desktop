@@ -25,7 +25,7 @@ internal static class ScriptHelpers
         "if(window._bcIsMinimized)return;" +
         "if(window._bcIsBackground){" +
         "const now=typeof ts==='number'?ts:performance.now();" +
-        "const isBurst=now<(window._bcBgBurstUntil||0);" +
+        "const isBurst=now<(window._bcBgBurstUntil||0)||window.CurrentScreen==='Relog'||window.CurrentScreen==='ChatSearch'||window.CurrentScreen==='Login';" +
         "if(isBurst?(now-_lastBgDrawTime<66):(now-_lastBgDrawTime<1000))return;" +
         "_lastBgDrawTime=now;" +
         "}" +
@@ -126,7 +126,7 @@ internal static class ScriptHelpers
                             if (window._bcIsMinimized) return;
                             if (window._bcIsBackground) {
                                 const now = typeof ts === 'number' ? ts : performance.now();
-                                const isBurst = now < (window._bcBgBurstUntil || 0);
+                                const isBurst = now < (window._bcBgBurstUntil || 0) || window.CurrentScreen === 'Relog' || window.CurrentScreen === 'ChatSearch' || window.CurrentScreen === 'Login';
                                 if (isBurst ? (now - _lastBgDrawTime < 66) : (now - _lastBgDrawTime < 1000)) return;
                                 _lastBgDrawTime = now;
                             }

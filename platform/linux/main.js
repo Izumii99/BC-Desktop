@@ -383,6 +383,8 @@ app.commandLine.appendSwitch('disable-sync');
 app.commandLine.appendSwitch('disable-notifications');
 app.commandLine.appendSwitch('disable-site-isolation-trials');
 app.commandLine.appendSwitch('no-pings');
+app.commandLine.appendSwitch('disable-background-timer-throttling');
+app.commandLine.appendSwitch('disable-backgrounding-occluded-windows');
 app.commandLine.appendSwitch('max-gum-fps', '60');
 app.commandLine.appendSwitch('gpu-rasterization-msaa-sample-count', '0');
 app.commandLine.appendSwitch('force-gpu-mem-available-mb', '512');
@@ -446,7 +448,7 @@ const CapUnfocusedFpsScript =
     "if(window._bcIsMinimized)return;" +
     "if(window._bcIsBackground){" +
     "const now=typeof ts==='number'?ts:performance.now();" +
-    "const isBurst=now<(window._bcBgBurstUntil||0);" +
+    "const isBurst=now<(window._bcBgBurstUntil||0)||window.CurrentScreen==='Relog'||window.CurrentScreen==='ChatSearch'||window.CurrentScreen==='Login';" +
     "if(isBurst?(now-_lastBgDrawTime<66):(now-_lastBgDrawTime<1000))return;" +
     "_lastBgDrawTime=now;" +
     "}" +
@@ -570,7 +572,7 @@ const CopyAndFocusScript = `
                 if (window._bcIsMinimized) return;
                 if (window._bcIsBackground) {
                     const now = typeof ts === 'number' ? ts : performance.now();
-                    const isBurst = now < (window._bcBgBurstUntil || 0);
+                    const isBurst = now < (window._bcBgBurstUntil || 0) || window.CurrentScreen === 'Relog' || window.CurrentScreen === 'ChatSearch' || window.CurrentScreen === 'Login';
                     if (isBurst ? (now - _lastBgDrawTime < 66) : (now - _lastBgDrawTime < 1000)) return;
                     _lastBgDrawTime = now;
                 }
