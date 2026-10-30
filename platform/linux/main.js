@@ -519,24 +519,19 @@ const CopyAndFocusScript = `
         const origSetItem = Storage.prototype.setItem;
         const origRemoveItem = Storage.prototype.removeItem;
         const origClear = Storage.prototype.clear;
-        let flushTimer = null;
 
         Storage.prototype.setItem = function(key, val) {
             origSetItem.apply(this, arguments);
+            if (this !== window.localStorage || window.__bcRestoringMirror) return;
             const strVal = String(val);
             if (window.chrome && window.chrome.webview && typeof window.chrome.webview.postMessage === 'function') {
                 window.chrome.webview.postMessage('SYNC_STORAGE_KEY:' + JSON.stringify({ k: key, v: strVal }));
             }
-            if (flushTimer) clearTimeout(flushTimer);
-            flushTimer = setTimeout(() => {
-                if (window.chrome && window.chrome.webview && typeof window.chrome.webview.postMessage === 'function') {
-                    window.chrome.webview.postMessage('FLUSH_STORAGE');
-                }
-            }, 500);
         };
 
         Storage.prototype.removeItem = function(key) {
             origRemoveItem.apply(this, arguments);
+            if (this !== window.localStorage || window.__bcRestoringMirror) return;
             if (window.chrome && window.chrome.webview && typeof window.chrome.webview.postMessage === 'function') {
                 window.chrome.webview.postMessage('SYNC_STORAGE_KEY:' + JSON.stringify({ k: key, del: true }));
             }
@@ -544,6 +539,7 @@ const CopyAndFocusScript = `
 
         Storage.prototype.clear = function() {
             origClear.apply(this, arguments);
+            if (this !== window.localStorage || window.__bcRestoringMirror) return;
             if (window.chrome && window.chrome.webview && typeof window.chrome.webview.postMessage === 'function') {
                 window.chrome.webview.postMessage('CLEAR_STORAGE');
             }
@@ -1547,6 +1543,7 @@ let recentCrashCount = 0;
 let lastCrashTime = 0;
 let forceQuit = false;
 let scriptsInjectedForCurrentPage = false;
+let mirrorRestoredForCurrentPage = false;
 
 let activationTimeout = null;
 function cancelActivation() {
@@ -1685,20 +1682,24 @@ function createWindow() {
     });
 
     function restoreStorageMirror() {
-        if (!mainWindow || mainWindow.isDestroyed()) return;
+        if (!mainWindow || mainWindow.isDestroyed() || mirrorRestoredForCurrentPage) return;
+        mirrorRestoredForCurrentPage = true;
         const mirror = getStorageMirror();
         if (!mirror || Object.keys(mirror).length === 0) return;
         const jsonStr = JSON.stringify(mirror);
         mainWindow.webContents.executeJavaScript(`
             (() => {
                 try {
+                    window.__bcRestoringMirror = true;
                     const m = ${jsonStr};
                     for (const k in m) {
                         if (localStorage.getItem(k) !== m[k]) {
                             localStorage.setItem(k, m[k]);
                         }
                     }
-                } catch (_) {}
+                } catch (_) {} finally {
+                    window.__bcRestoringMirror = false;
+                }
             })();
         `).catch(() => {});
     }
@@ -1714,6 +1715,7 @@ function createWindow() {
     mainWindow.webContents.on('did-start-navigation', (event, url, isInPlace, isMainFrame) => {
         if (isMainFrame && !isInPlace) {
             scriptsInjectedForCurrentPage = false;
+            mirrorRestoredForCurrentPage = false;
         }
     });
     mainWindow.webContents.on('dom-ready', setupPage);
