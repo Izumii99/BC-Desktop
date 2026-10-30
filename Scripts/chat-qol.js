@@ -73,7 +73,6 @@
     } catch (e) {}
     try {
         sessionStorage.removeItem("BC_Bio_AutoResume");
-        sessionStorage.removeItem("BC_Bio_PendingDisconnectResume");
     } catch (e) {}
     
     if (qolConfig.enableLceModLoader) {
@@ -1274,27 +1273,75 @@
                                 shouldResume =
                                     window._chatQol_PendingBioResume ||
                                     sessionStorage.getItem("BC_Bio_PendingDisconnectResume") === "1";
-                                window._chatQol_PendingBioResume = false;
-                                sessionStorage.removeItem("BC_Bio_PendingDisconnectResume");
+                                if (shouldResume) {
+                                    window._chatQol_PendingBioResume = false;
+                                    sessionStorage.removeItem("BC_Bio_PendingDisconnectResume");
+                                    triggerBioResume();
+                                }
                             } catch (e) {}
-
-                            if (shouldResume) {
-                                setTimeout(function () {
-                                    if (
-                                        window.CurrentScreen === "ChatRoom" &&
-                                        typeof window.InformationSheetLoadCharacter === "function" &&
-                                        window.Player
-                                    ) {
-                                        window.InformationSheetLoadCharacter(window.Player);
-                                        if (typeof window.CommonSetScreen === "function") {
-                                            window.CommonSetScreen("Character", "OnlineProfile");
-                                        }
-                                    }
-                                }, 350);
-                            }
                         }
                     };
                     window.ChatRoomLoad.hasQolHook = true;
+                }
+
+                function triggerBioResume() {
+                    let retries = 20;
+                    function poll() {
+                        if (!qolConfig.autoResumeBio) return;
+                        if (
+                            window.CurrentScreen === "ChatRoom" &&
+                            window.Player &&
+                            typeof window.InformationSheetLoadCharacter === "function"
+                        ) {
+                            window.InformationSheetLoadCharacter(window.Player);
+                            if (typeof window.CommonSetScreen === "function") {
+                                window.CommonSetScreen("Character", "OnlineProfile");
+                            }
+                        } else if (retries-- > 0) {
+                            setTimeout(poll, 150);
+                        }
+                    }
+                    setTimeout(poll, 200);
+                }
+
+                if (
+                    typeof window.CommonSetScreen === "function" &&
+                    !window.CommonSetScreen.hasQolBioHook
+                ) {
+                    const origCommonSetScreen = window.CommonSetScreen;
+                    window.CommonSetScreen = function (NewModule, NewScreen) {
+                        if (qolConfig.autoResumeBio) {
+                            try {
+                                if (NewScreen === "Relog") {
+                                    if (
+                                        window.CurrentScreen === "OnlineProfile" ||
+                                        window.CurrentScreen === "InformationSheet"
+                                    ) {
+                                        window._chatQol_PendingBioResume = true;
+                                        sessionStorage.setItem("BC_Bio_PendingDisconnectResume", "1");
+                                    }
+                                } else if (NewScreen === "ChatRoom") {
+                                    let shouldResume =
+                                        window._chatQol_PendingBioResume ||
+                                        sessionStorage.getItem("BC_Bio_PendingDisconnectResume") === "1";
+                                    if (shouldResume) {
+                                        window._chatQol_PendingBioResume = false;
+                                        sessionStorage.removeItem("BC_Bio_PendingDisconnectResume");
+                                        triggerBioResume();
+                                    }
+                                } else if (
+                                    (window.CurrentScreen === "OnlineProfile" || window.CurrentScreen === "InformationSheet") &&
+                                    NewScreen !== "OnlineProfile" &&
+                                    NewScreen !== "InformationSheet"
+                                ) {
+                                    window._chatQol_PendingBioResume = false;
+                                    sessionStorage.removeItem("BC_Bio_PendingDisconnectResume");
+                                }
+                            } catch (e) {}
+                        }
+                        return origCommonSetScreen.apply(this, arguments);
+                    };
+                    window.CommonSetScreen.hasQolBioHook = true;
                 }
 
                 if (
@@ -1306,10 +1353,8 @@
                         if (qolConfig.autoResumeBio) {
                             try {
                                 if (
-                                    window.CurrentScreen === "OnlineProfile" &&
-                                    window.InformationSheetSelection &&
-                                    window.Player &&
-                                    window.InformationSheetSelection.MemberNumber === window.Player.MemberNumber
+                                    window.CurrentScreen === "OnlineProfile" ||
+                                    window.CurrentScreen === "InformationSheet"
                                 ) {
                                     window._chatQol_PendingBioResume = true;
                                     sessionStorage.setItem("BC_Bio_PendingDisconnectResume", "1");
@@ -1330,6 +1375,7 @@
                         window._chatQol_PendingBioResume = false;
                         try {
                             sessionStorage.removeItem("BC_Bio_PendingDisconnectResume");
+                            sessionStorage.removeItem("BC_Bio_AutoResume");
                         } catch (e) {}
                         return origLoginDoLogin.apply(this, arguments);
                     };
