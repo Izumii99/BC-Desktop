@@ -1410,6 +1410,7 @@
                     window._chatQol_BuildCanvasHooked = true;
                     const origBuildCanvas = window.CharacterAppearanceBuildCanvas;
                     window.CharacterAppearanceBuildCanvas = function (C) {
+                        if (window._bcIsMinimized) { if (C) C._bcPendingCanvasBuild = true; return; }
                         if (window._bcIsBackground && window._bcRequestBgBurst) window._bcRequestBgBurst(2500);
                         const isLocal = (C === Player && animInterval);
                         const remoteAnim = window._chatQol_PetsuitRemoteAnims ? window._chatQol_PetsuitRemoteAnims.get(C.MemberNumber) : null;

@@ -36,6 +36,7 @@ internal static class ScriptHelpers
         "window.__bcLoadCanvasHooked=true;" +
         "const _origLoad=window.CharacterLoadCanvas;" +
         "window.CharacterLoadCanvas=function(C){" +
+        "if(window._bcIsMinimized){if(C)C._bcPendingCanvasBuild=true;return;}" +
         "if(window._bcIsBackground&&window._bcRequestBgBurst)window._bcRequestBgBurst(2500);" +
         "return _origLoad.apply(this,arguments);" +
         "};" +
@@ -44,6 +45,7 @@ internal static class ScriptHelpers
         "window.__bcBuildCanvasHooked=true;" +
         "const _origBuild=window.CharacterAppearanceBuildCanvas;" +
         "window.CharacterAppearanceBuildCanvas=function(C){" +
+        "if(window._bcIsMinimized){if(C)C._bcPendingCanvasBuild=true;return;}" +
         "if(window._bcIsBackground&&window._bcRequestBgBurst)window._bcRequestBgBurst(2500);" +
         "return _origBuild.apply(this,arguments);" +
         "};" +
@@ -135,6 +137,10 @@ internal static class ScriptHelpers
                         window.__bcLoadCanvasHooked = true;
                         const _origLoad = window.CharacterLoadCanvas;
                         window.CharacterLoadCanvas = function(C) {
+                            if (window._bcIsMinimized) {
+                                if (C) C._bcPendingCanvasBuild = true;
+                                return;
+                            }
                             if (window._bcIsBackground && window._bcRequestBgBurst) window._bcRequestBgBurst(2500);
                             return _origLoad.apply(this, arguments);
                         };
@@ -143,6 +149,10 @@ internal static class ScriptHelpers
                         window.__bcBuildCanvasHooked = true;
                         const _origBuild = window.CharacterAppearanceBuildCanvas;
                         window.CharacterAppearanceBuildCanvas = function(C) {
+                            if (window._bcIsMinimized) {
+                                if (C) C._bcPendingCanvasBuild = true;
+                                return;
+                            }
                             if (window._bcIsBackground && window._bcRequestBgBurst) window._bcRequestBgBurst(2500);
                             return _origBuild.apply(this, arguments);
                         };
@@ -769,6 +779,14 @@ internal static class ScriptHelpers
                             }
                         }
                         targetChar.MustDraw = false;
+                        if (targetChar.Canvas) {
+                            targetChar.Canvas.width = 1;
+                            targetChar.Canvas.height = 1;
+                        }
+                        if (targetChar.CanvasBlink) {
+                            targetChar.CanvasBlink.width = 1;
+                            targetChar.CanvasBlink.height = 1;
+                        }
                         if (typeof window.AnimationPurge === 'function') {
                             try { window.AnimationPurge(targetChar, true); } catch (e) {}
                         }
@@ -802,7 +820,11 @@ internal static class ScriptHelpers
                         window.__bcRoomLeaveHooked = true;
                         const _origRoomLeave = window.ChatRoomLeave;
                         window.ChatRoomLeave = function(clearCharacters) {
-                            return _origRoomLeave.apply(this, arguments);
+                            try {
+                                return _origRoomLeave.apply(this, arguments);
+                            } finally {
+                                trackedRoomCanvases.clear();
+                            }
                         };
                     }
                     if (typeof window.ImageCache === 'function' && window.ImageCache.prototype && !window.ImageCache.prototype.__bcFastGetHooked) {
