@@ -71,6 +71,10 @@
             }
         }
     } catch (e) {}
+    try {
+        sessionStorage.removeItem("BC_Bio_AutoResume");
+        sessionStorage.removeItem("BC_Bio_PendingDisconnectResume");
+    } catch (e) {}
     
     if (qolConfig.enableLceModLoader) {
         const s = document.createElement("script");
@@ -1267,7 +1271,11 @@
                         if (qolConfig.autoResumeBio) {
                             let shouldResume = false;
                             try {
-                                shouldResume = sessionStorage.getItem("BC_Bio_AutoResume") === "1";
+                                shouldResume =
+                                    window._chatQol_PendingBioResume ||
+                                    sessionStorage.getItem("BC_Bio_PendingDisconnectResume") === "1";
+                                window._chatQol_PendingBioResume = false;
+                                sessionStorage.removeItem("BC_Bio_PendingDisconnectResume");
                             } catch (e) {}
 
                             if (shouldResume) {
@@ -1290,29 +1298,42 @@
                 }
 
                 if (
-                    typeof window.CommonSetScreen === "function" &&
-                    !window.CommonSetScreen.hasQolBioHook
+                    typeof window.ServerDisconnect === "function" &&
+                    !window.ServerDisconnect.hasQolBioHook
                 ) {
-                    const origCommonSetScreen = window.CommonSetScreen;
-                    window.CommonSetScreen = function (NewModule, NewScreen) {
+                    const origServerDisconnect = window.ServerDisconnect;
+                    window.ServerDisconnect = function () {
                         if (qolConfig.autoResumeBio) {
                             try {
-                                if (NewScreen === "OnlineProfile") {
-                                    if (
-                                        window.InformationSheetSelection &&
-                                        window.Player &&
-                                        window.InformationSheetSelection.MemberNumber === window.Player.MemberNumber
-                                    ) {
-                                        sessionStorage.setItem("BC_Bio_AutoResume", "1");
-                                    }
-                                } else if (window.CurrentScreen === "OnlineProfile") {
-                                    sessionStorage.removeItem("BC_Bio_AutoResume");
+                                if (
+                                    window.CurrentScreen === "OnlineProfile" &&
+                                    window.InformationSheetSelection &&
+                                    window.Player &&
+                                    window.InformationSheetSelection.MemberNumber === window.Player.MemberNumber
+                                ) {
+                                    window._chatQol_PendingBioResume = true;
+                                    sessionStorage.setItem("BC_Bio_PendingDisconnectResume", "1");
                                 }
                             } catch (e) {}
                         }
-                        return origCommonSetScreen.apply(this, arguments);
+                        return origServerDisconnect.apply(this, arguments);
                     };
-                    window.CommonSetScreen.hasQolBioHook = true;
+                    window.ServerDisconnect.hasQolBioHook = true;
+                }
+
+                if (
+                    typeof window.LoginDoLogin === "function" &&
+                    !window.LoginDoLogin.hasQolBioHook
+                ) {
+                    const origLoginDoLogin = window.LoginDoLogin;
+                    window.LoginDoLogin = function () {
+                        window._chatQol_PendingBioResume = false;
+                        try {
+                            sessionStorage.removeItem("BC_Bio_PendingDisconnectResume");
+                        } catch (e) {}
+                        return origLoginDoLogin.apply(this, arguments);
+                    };
+                    window.LoginDoLogin.hasQolBioHook = true;
                 }
 
                 if (
@@ -1321,8 +1342,9 @@
                 ) {
                     const origOnlineProfileExit = window.OnlineProfileExit;
                     window.OnlineProfileExit = function () {
+                        window._chatQol_PendingBioResume = false;
                         try {
-                            sessionStorage.removeItem("BC_Bio_AutoResume");
+                            sessionStorage.removeItem("BC_Bio_PendingDisconnectResume");
                         } catch (e) {}
                         return origOnlineProfileExit.apply(this, arguments);
                     };
