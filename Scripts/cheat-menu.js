@@ -218,19 +218,19 @@
     ];
 
     const cheatBtn = document.createElement("div");
-    cheatBtn.innerHTML = `<img src="https://raw.githubusercontent.com/Izumii99/BC-Desktop/main/Assets/cheat_ui.png" style="width: 100%; height: 100%; object-fit: cover; display: block; border-radius: 10px;">`;
+    cheatBtn.innerHTML = `<img src="https://raw.githubusercontent.com/Izumii99/BC-Desktop/main/Assets/cheat_ui.png?v=2" alt="Cheat Menu" style="width: 100%; height: 100%; object-fit: contain; display: block; border-radius: 10px;">`;
     Object.assign(cheatBtn.style, {
         position: "fixed",
         top: "76px",
         left: "20px",
         width: "44px",
         height: "44px",
-        backgroundColor: "#14121E",
+        backgroundColor: "transparent",
         borderRadius: "10px",
         padding: "0",
         overflow: "hidden",
-        boxShadow: "0 4px 12px rgba(0,0,0,0.3)",
-        border: "1px solid #1A1825",
+        boxShadow: "0 4px 14px rgba(168, 85, 247, 0.25)",
+        border: "none",
         display: "none",
         justifyContent: "center",
         alignItems: "center",
