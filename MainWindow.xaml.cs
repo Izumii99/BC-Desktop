@@ -11,7 +11,7 @@ namespace BCDesktop;
 
 public partial class MainWindow : Window
 {
-    private string _originalTitleLabel;
+    private readonly string _originalTitleLabel;
     private CancellationTokenSource? _deactivationCts;
     private CancellationTokenSource? _activationCts;
     private bool _isSuspending;
@@ -80,13 +80,14 @@ public partial class MainWindow : Window
         {
             try
             {
-                if (DwmGetWindowAttribute(hwnd, DWMWA_CLOAKED, out int cloaked, sizeof(int)) == 0 && cloaked != 0)
+                if (NativeMethods.DwmGetWindowAttribute(hwnd, NativeMethods.DWMWA_CLOAKED, out int cloaked, sizeof(int)) == 0 && cloaked != 0)
                 {
                     isCloaked = true;
                 }
             }
-            catch
+            catch (Exception)
             {
+                // Ignored intentionally: DwmGetWindowAttribute query failed.
             }
         }
 
@@ -99,9 +100,9 @@ public partial class MainWindow : Window
             {
                 _lastThrottleState = 3;
                 core.MemoryUsageTargetLevel = CoreWebView2MemoryUsageTargetLevel.Low;
-                _ = core.ExecuteScriptAsync(CapUnfocusedFpsScript);
+                _ = core.ExecuteScriptAsync(ScriptHelpers.CapUnfocusedFpsScript);
                 _ = core.ExecuteScriptAsync("(()=>{window._bcIsMinimized=true;window._bcIsBackground=true;})()");
-                TrimWorkingSet();
+                NativeMethods.TrimWorkingSet();
             }
             return;
         }
@@ -115,7 +116,7 @@ public partial class MainWindow : Window
             {
                 _lastThrottleState = 1;
                 core.MemoryUsageTargetLevel = CoreWebView2MemoryUsageTargetLevel.Normal;
-                _ = core.ExecuteScriptAsync(RestoreUnfocusedFpsScript);
+                _ = core.ExecuteScriptAsync(ScriptHelpers.RestoreUnfocusedFpsScript);
             }
         }
         else
@@ -130,8 +131,8 @@ public partial class MainWindow : Window
                 {
                     _lastThrottleState = 2;
                     core.MemoryUsageTargetLevel = CoreWebView2MemoryUsageTargetLevel.Low;
-                    _ = core.ExecuteScriptAsync(CapUnfocusedFpsScript);
-                    TrimWorkingSet();
+                    _ = core.ExecuteScriptAsync(ScriptHelpers.CapUnfocusedFpsScript);
+                    NativeMethods.TrimWorkingSet();
                 }
             }
         }
@@ -187,8 +188,9 @@ public partial class MainWindow : Window
         {
             WebView?.Dispose();
         }
-        catch
+        catch (Exception)
         {
+            // Ignored intentionally: WebView2 disposal during window teardown.
         }
         base.OnClosing(e);
     }
@@ -214,8 +216,9 @@ public partial class MainWindow : Window
                 }
             }
         }
-        catch
+        catch (Exception)
         {
+            // Ignored intentionally: crash reports directory cleanup.
         }
 
         try
@@ -264,8 +267,9 @@ public partial class MainWindow : Window
                         UseShellExecute = true
                     });
                 }
-                catch
+                catch (Exception)
                 {
+                    // Ignored intentionally: opening external browser download link failed.
                 }
             }
         }
@@ -333,8 +337,9 @@ public partial class MainWindow : Window
                         UseShellExecute = true
                     });
                 }
-                catch
+                catch (Exception)
                 {
+                    // Ignored intentionally: opening external popup link in default browser failed.
                 }
             }
         };
@@ -354,12 +359,14 @@ public partial class MainWindow : Window
 
             if (args.IsSuccess)
             {
-                await core.ExecuteScriptAsync(GetCopyAndOptimizationScript());
-                _ = Task.Run(async () =>
+                await core.ExecuteScriptAsync(ScriptHelpers.GetCopyAndOptimizationScript());
+#pragma warning disable CS4014
+                Task.Run(async () =>
                 {
                     await Task.Delay(5000);
-                    TrimWorkingSet();
+                    NativeMethods.TrimWorkingSet();
                 });
+#pragma warning restore CS4014
             }
         };
 
@@ -389,7 +396,7 @@ public partial class MainWindow : Window
         else
         {
             // 🚀 Single-File Standalone Release Mode: Inject embedded remote loader
-            string builtInLoader = GetBuiltInLoaderScript();
+            string builtInLoader = ScriptHelpers.GetBuiltInLoaderScript();
             if (!string.IsNullOrWhiteSpace(builtInLoader))
             {
                 await core.AddScriptToExecuteOnDocumentCreatedAsync(builtInLoader);
@@ -424,8 +431,9 @@ public partial class MainWindow : Window
                 _ = Application.Current.Dispatcher.InvokeAsync(ToggleFullscreen);
             }
         }
-        catch
+        catch (Exception)
         {
+            // Ignored intentionally: handling incoming web message payload.
         }
     }
 
@@ -436,21 +444,21 @@ public partial class MainWindow : Window
         {
             try
             {
-                if (OpenClipboard(hwnd))
+                if (NativeMethods.OpenClipboard(hwnd))
                 {
-                    EmptyClipboard();
+                    NativeMethods.EmptyClipboard();
                     int bytes = (textToCopy.Length + 1) * 2;
-                    IntPtr hGlobal = GlobalAlloc(0x0042, (UIntPtr)bytes); // GMEM_MOVEABLE | GMEM_ZEROINIT
+                    IntPtr hGlobal = NativeMethods.GlobalAlloc(0x0042, (UIntPtr)bytes); // GMEM_MOVEABLE | GMEM_ZEROINIT
                     try
                     {
                         if (hGlobal != IntPtr.Zero)
                         {
-                            IntPtr target = GlobalLock(hGlobal);
+                            IntPtr target = NativeMethods.GlobalLock(hGlobal);
                             if (target != IntPtr.Zero)
                             {
                                 Marshal.Copy(textToCopy.ToCharArray(), 0, target, textToCopy.Length);
-                                GlobalUnlock(hGlobal);
-                                SetClipboardData(13, hGlobal); // CF_UNICODETEXT
+                                NativeMethods.GlobalUnlock(hGlobal);
+                                NativeMethods.SetClipboardData(13, hGlobal); // CF_UNICODETEXT
                                 hGlobal = IntPtr.Zero; // Clipboard owns it now
                             }
                         }
@@ -459,18 +467,25 @@ public partial class MainWindow : Window
                     {
                         if (hGlobal != IntPtr.Zero)
                         {
-                            GlobalFree(hGlobal);
+                            NativeMethods.GlobalFree(hGlobal);
                         }
-                        CloseClipboard();
+                        NativeMethods.CloseClipboard();
                     }
                     break;
                 }
             }
-            catch
+            catch (Exception)
             {
+                // Ignored intentionally: Win32 clipboard access retry.
             }
 
             await Task.Delay(50);
         }
     }
+
+    internal const string CapUnfocusedFpsScript = ScriptHelpers.CapUnfocusedFpsScript;
+    internal const string RestoreUnfocusedFpsScript = ScriptHelpers.RestoreUnfocusedFpsScript;
+    internal static string GetBuiltInLoaderScript() => ScriptHelpers.GetBuiltInLoaderScript();
+    internal static string GetCopyAndOptimizationScript() => ScriptHelpers.GetCopyAndOptimizationScript();
+    internal static void TrimWorkingSet() => NativeMethods.TrimWorkingSet();
 }

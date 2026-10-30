@@ -699,19 +699,19 @@ public class MainWindowTests
     [TestMethod]
     public void Win32Structures_HaveCorrectMemoryFootprintAndLayout()
     {
-        Type monitorInfoType = typeof(MainWindow).GetNestedType("MONITORINFO", System.Reflection.BindingFlags.NonPublic)!;
+        Type monitorInfoType = (typeof(NativeMethods).GetNestedType("MONITORINFO", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Public) ?? typeof(MainWindow).GetNestedType("MONITORINFO", System.Reflection.BindingFlags.NonPublic))!;
         Assert.IsNotNull(monitorInfoType, "MONITORINFO struct must be defined.");
         Assert.AreEqual(40, Marshal.SizeOf(monitorInfoType), "MONITORINFO must be 40 bytes.");
 
-        Type rectType = typeof(MainWindow).GetNestedType("RECT", System.Reflection.BindingFlags.NonPublic)!;
+        Type rectType = (typeof(NativeMethods).GetNestedType("RECT", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Public) ?? typeof(MainWindow).GetNestedType("RECT", System.Reflection.BindingFlags.NonPublic))!;
         Assert.IsNotNull(rectType, "RECT struct must be defined.");
         Assert.AreEqual(16, Marshal.SizeOf(rectType), "RECT must be 16 bytes.");
 
-        Type minmaxInfoType = typeof(MainWindow).GetNestedType("MINMAXINFO", System.Reflection.BindingFlags.NonPublic)!;
+        Type minmaxInfoType = (typeof(NativeMethods).GetNestedType("MINMAXINFO", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Public) ?? typeof(MainWindow).GetNestedType("MINMAXINFO", System.Reflection.BindingFlags.NonPublic))!;
         Assert.IsNotNull(minmaxInfoType, "MINMAXINFO struct must be defined.");
         Assert.AreEqual(40, Marshal.SizeOf(minmaxInfoType), "MINMAXINFO must be 40 bytes.");
 
-        Type flashwInfoType = typeof(MainWindow).GetNestedType("FLASHWINFO", System.Reflection.BindingFlags.NonPublic)!;
+        Type flashwInfoType = (typeof(NativeMethods).GetNestedType("FLASHWINFO", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Public) ?? typeof(MainWindow).GetNestedType("FLASHWINFO", System.Reflection.BindingFlags.NonPublic))!;
         Assert.IsNotNull(flashwInfoType, "FLASHWINFO struct must be defined.");
         Assert.IsTrue(Marshal.SizeOf(flashwInfoType) >= 20, "FLASHWINFO must be at least 20 bytes.");
     }

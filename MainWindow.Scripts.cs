@@ -2,7 +2,7 @@ using System.IO;
 
 namespace BCDesktop;
 
-public partial class MainWindow
+internal static class ScriptHelpers
 {
     // In-memory only: the game persists GraphicsSettings solely when leaving the Preference screen, which is skipped here.
     internal const string CapUnfocusedFpsScript =
@@ -100,7 +100,7 @@ public partial class MainWindow
     {
         try
         {
-            using var stream = typeof(MainWindow).Assembly.GetManifestResourceStream("BuiltInLoader.js");
+            using var stream = typeof(ScriptHelpers).Assembly.GetManifestResourceStream("BuiltInLoader.js");
             if (stream == null)
             {
                 return string.Empty;
@@ -108,13 +108,14 @@ public partial class MainWindow
             using var reader = new StreamReader(stream);
             return reader.ReadToEnd();
         }
-        catch
+        catch (Exception)
         {
+            // Ignored intentionally: BuiltInLoader.js stream reading failed.
             return string.Empty;
         }
     }
 
-    private static string GetCopyAndOptimizationScript() => @"
+    internal static string GetCopyAndOptimizationScript() => @"
             (() => {
                 if (window.__bcCopyScriptInitialized) return;
                 window.__bcCopyScriptInitialized = true;

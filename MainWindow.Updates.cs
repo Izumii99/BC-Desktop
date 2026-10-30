@@ -125,8 +125,9 @@ public partial class MainWindow
                 Directory.CreateDirectory(Path.GetDirectoryName(versionFile)!);
                 File.WriteAllText(versionFile, activeVersion.ToString());
             }
-            catch
+            catch (Exception)
             {
+                // Ignored intentionally: saving active version to local version.txt failed.
             }
         }
         catch
@@ -255,8 +256,9 @@ public partial class MainWindow
                 }
             }
         }
-        catch
+        catch (Exception)
         {
+            // Ignored intentionally: fetch release notes fallback to CurrentReleaseNotes.
         }
         return CurrentReleaseNotes;
     }
@@ -431,8 +433,9 @@ public partial class MainWindow
             }
             File.WriteAllText(versionFile, CurrentAppVersion);
         }
-        catch
+        catch (Exception)
         {
+            // Ignored intentionally: updating last run app version cache failed.
         }
     }
 
@@ -448,8 +451,9 @@ public partial class MainWindow
                     UseShellExecute = true
                 });
             }
-            catch
+            catch (Exception)
             {
+                // Ignored intentionally: opening release notes url in browser failed.
             }
         }
         else
@@ -690,8 +694,9 @@ public partial class MainWindow
                     File.Delete(tempExe);
                 }
             }
-            catch
+            catch (Exception)
             {
+                // Ignored intentionally: cleanup temporary downloaded executable file failed.
             }
 
             Action showError = () =>

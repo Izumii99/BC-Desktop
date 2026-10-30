@@ -38,15 +38,17 @@ public partial class MainWindow
             {
                 _lastThrottleState = 2;
                 core.MemoryUsageTargetLevel = CoreWebView2MemoryUsageTargetLevel.Low;
-                await core.ExecuteScriptAsync(CapUnfocusedFpsScript);
+                await core.ExecuteScriptAsync(ScriptHelpers.CapUnfocusedFpsScript);
                 TrimWorkingSet();
             }
         }
         catch (OperationCanceledException)
         {
+            // Ignored intentionally: deactivation delay canceled.
         }
-        catch
+        catch (Exception)
         {
+            // Ignored intentionally: deactivation background throttle failed.
         }
     }
 
@@ -72,7 +74,7 @@ public partial class MainWindow
             {
                 _lastThrottleState = 1;
                 core.MemoryUsageTargetLevel = CoreWebView2MemoryUsageTargetLevel.Normal;
-                _ = core.ExecuteScriptAsync(RestoreUnfocusedFpsScript);
+                _ = core.ExecuteScriptAsync(ScriptHelpers.RestoreUnfocusedFpsScript);
             }
 
             WebView.Focus();
@@ -101,9 +103,11 @@ public partial class MainWindow
         }
         catch (OperationCanceledException)
         {
+            // Ignored intentionally: deactivation delay canceled.
         }
-        catch
+        catch (Exception)
         {
+            // Ignored intentionally: deactivation background throttle failed.
         }
     }
 
@@ -178,7 +182,7 @@ public partial class MainWindow
                 _wantsResume = false;
                 core.MemoryUsageTargetLevel = CoreWebView2MemoryUsageTargetLevel.Low;
                 await core.ExecuteScriptAsync("(()=>{window._bcIsMinimized=true;})()");
-                await core.ExecuteScriptAsync(CapUnfocusedFpsScript);
+                await core.ExecuteScriptAsync(ScriptHelpers.CapUnfocusedFpsScript);
 
                 if (!_isSuspending)
                 {
@@ -197,7 +201,7 @@ public partial class MainWindow
                         _wasMinimized = false;
                         core.Resume();
                         core.MemoryUsageTargetLevel = CoreWebView2MemoryUsageTargetLevel.Normal;
-                        _ = core.ExecuteScriptAsync(RestoreUnfocusedFpsScript);
+                        _ = core.ExecuteScriptAsync(ScriptHelpers.RestoreUnfocusedFpsScript);
                         return;
                     }
                 }
@@ -209,11 +213,12 @@ public partial class MainWindow
                 _wantsResume = true;
                 core.Resume();
                 core.MemoryUsageTargetLevel = CoreWebView2MemoryUsageTargetLevel.Normal;
-                _ = core.ExecuteScriptAsync(RestoreUnfocusedFpsScript);
+                _ = core.ExecuteScriptAsync(ScriptHelpers.RestoreUnfocusedFpsScript);
             }
         }
-        catch
+        catch (Exception)
         {
+            // Ignored intentionally: window state change handling failed.
         }
     }
 
@@ -240,8 +245,9 @@ public partial class MainWindow
             {
                 DragMove();
             }
-            catch
+            catch (Exception)
             {
+                // Ignored intentionally: title bar drag move failed.
             }
         }
     }
@@ -285,8 +291,9 @@ public partial class MainWindow
         {
             DragMove();
         }
-        catch
+        catch (Exception)
         {
+            // Ignored intentionally: window state change handling failed.
         }
     }
 
@@ -331,7 +338,7 @@ public partial class MainWindow
         }
     }
 
-    private void Core_DocumentTitleChanged(object? sender, object e)
+    private void Core_DocumentTitleChanged(object? _, object __)
     {
         if (WebView.CoreWebView2 is not { } core)
         {
@@ -371,33 +378,30 @@ public partial class MainWindow
 
             if (!IsActive)
             {
-                var info = new FLASHWINFO
+                var info = new NativeMethods.FLASHWINFO
                 {
-                    cbSize = (uint)Marshal.SizeOf<FLASHWINFO>(),
+                    cbSize = (uint)Marshal.SizeOf<NativeMethods.FLASHWINFO>(),
                     hwnd = new WindowInteropHelper(this).Handle,
-                    dwFlags = FLASHW_TRAY | FLASHW_TIMERNOFG,
+                    dwFlags = NativeMethods.FLASHW_TRAY | NativeMethods.FLASHW_TIMERNOFG,
                     uCount = 3,
                     dwTimeout = 0
                 };
-                FlashWindowEx(ref info);
+                NativeMethods.FlashWindowEx(ref info);
             }
         }
         else
         {
-            if (TaskbarItemInfo.Overlay != null)
-            {
-                TaskbarItemInfo.Overlay = null;
-            }
+            TaskbarItemInfo.Overlay = null;
 
-            var info = new FLASHWINFO
+            var info = new NativeMethods.FLASHWINFO
             {
-                cbSize = (uint)Marshal.SizeOf<FLASHWINFO>(),
+                cbSize = (uint)Marshal.SizeOf<NativeMethods.FLASHWINFO>(),
                 hwnd = new WindowInteropHelper(this).Handle,
-                dwFlags = FLASHW_STOP,
+                dwFlags = NativeMethods.FLASHW_STOP,
                 uCount = 0,
                 dwTimeout = 0
             };
-            FlashWindowEx(ref info);
+            NativeMethods.FlashWindowEx(ref info);
         }
     }
 
@@ -440,5 +444,226 @@ public partial class MainWindow
         bitmap.Freeze();
         return bitmap;
     }
-}
 
+    private IntPtr WndProc(IntPtr hwnd, int msg, IntPtr wParam, IntPtr lParam, ref bool handled)
+    {
+        if (msg == NativeMethods.WM_GETMINMAXINFO)
+        {
+            HandleGetMinMaxInfo(hwnd, lParam, ref handled);
+            return IntPtr.Zero;
+        }
+
+        if (msg == 0x0214) // WM_SIZING
+        {
+            HandleSizing(wParam, lParam, ref handled);
+            return IntPtr.Zero;
+        }
+
+        if (msg == 0x0084) // WM_NCHITTEST
+        {
+            return HandleNcHitTest(lParam, ref handled);
+        }
+
+        return IntPtr.Zero;
+    }
+
+    private void HandleGetMinMaxInfo(IntPtr hwnd, IntPtr lParam, ref bool handled)
+    {
+        var monitor = NativeMethods.MonitorFromWindow(hwnd, NativeMethods.MONITOR_DEFAULTTONEAREST);
+        var mi = new NativeMethods.MONITORINFO { cbSize = Marshal.SizeOf<NativeMethods.MONITORINFO>() };
+        if (!NativeMethods.GetMonitorInfo(monitor, ref mi))
+        {
+            return;
+        }
+
+        var mmi = Marshal.PtrToStructure<NativeMethods.MINMAXINFO>(lParam);
+
+        mmi.ptMaxPosition.X = mi.rcWork.Left - mi.rcMonitor.Left;
+        mmi.ptMaxPosition.Y = mi.rcWork.Top - mi.rcMonitor.Top;
+        mmi.ptMaxSize.X = mi.rcWork.Right - mi.rcWork.Left;
+        mmi.ptMaxSize.Y = mi.rcWork.Bottom - mi.rcWork.Top;
+
+        double dpi = VisualTreeHelper.GetDpi(this).DpiScaleY;
+        mmi.ptMinTrackSize.X = (int)(MinWidth * dpi);
+        mmi.ptMinTrackSize.Y = (int)(MinHeight * dpi);
+
+        Marshal.StructureToPtr(mmi, lParam, true);
+        handled = true;
+    }
+
+    private void HandleSizing(IntPtr wParam, IntPtr lParam, ref bool handled)
+    {
+        var rect = Marshal.PtrToStructure<NativeMethods.RECT>(lParam);
+        double dpi = VisualTreeHelper.GetDpi(this).DpiScaleY;
+        int titleBarHeight = (int)(32 * dpi);
+        int minPhysicalWidth = (int)(MinWidth * dpi);
+        int minPhysicalHeight = (int)(MinHeight * dpi);
+
+        int width = rect.Right - rect.Left;
+        int height = rect.Bottom - rect.Top;
+        int edge = wParam.ToInt32();
+
+        // Enforce a strict 2:1 aspect ratio during manual resizing.
+        // WMSZ_TOP (3) or WMSZ_BOTTOM (6) -> Aspect ratio is driven by height
+        if (edge == 3 || edge == 6)
+        {
+            if (height < minPhysicalHeight)
+            {
+                height = minPhysicalHeight;
+            }
+
+            int expectedWidth = (height - titleBarHeight) * 2;
+            if (expectedWidth < minPhysicalWidth)
+            {
+                expectedWidth = minPhysicalWidth;
+            }
+
+            if (edge == 3)
+            {
+                rect.Top = rect.Bottom - height;
+            }
+            else
+            {
+                rect.Bottom = rect.Top + height;
+            }
+
+            rect.Right = rect.Left + expectedWidth;
+        }
+        // All other edges (Left, Right, Corners) -> Aspect ratio is driven by width
+        else
+        {
+            if (width < minPhysicalWidth)
+            {
+                width = minPhysicalWidth;
+            }
+
+            int expectedHeight = (width / 2) + titleBarHeight;
+            if (expectedHeight < minPhysicalHeight)
+            {
+                expectedHeight = minPhysicalHeight;
+            }
+
+            if (edge == 1 || edge == 4 || edge == 7) // WMSZ_LEFT, WMSZ_TOPLEFT, WMSZ_BOTTOMLEFT
+            {
+                rect.Left = rect.Right - width;
+            }
+            else
+            {
+                rect.Right = rect.Left + width;
+            }
+
+            if (edge == 4 || edge == 5) // WMSZ_TOPLEFT or WMSZ_TOPRIGHT
+            {
+                rect.Top = rect.Bottom - expectedHeight;
+            }
+            else
+            {
+                rect.Bottom = rect.Top + expectedHeight;
+            }
+        }
+
+        Marshal.StructureToPtr(rect, lParam, true);
+        handled = true;
+    }
+
+    private IntPtr HandleNcHitTest(IntPtr lParam, ref bool handled)
+    {
+        if (WindowState == WindowState.Maximized)
+        {
+            return IntPtr.Zero;
+        }
+
+        int x = (short)(lParam.ToInt64() & 0xFFFF);
+        int y = (short)((lParam.ToInt64() >> 16) & 0xFFFF);
+        var p = PointFromScreen(new Point(x, y));
+
+        const int border = 5;
+        const int corner = 16;
+
+        bool onLeft = p.X <= border;
+        bool onRight = p.X >= ActualWidth - border;
+        bool onTop = p.Y <= border;
+        bool onBottom = p.Y >= ActualHeight - border;
+
+        bool inLeftCorner = p.X <= corner;
+        bool inRightCorner = p.X >= ActualWidth - corner;
+        bool inTopCorner = p.Y <= corner;
+        bool inBottomCorner = p.Y >= ActualHeight - corner;
+
+        if ((onTop && inLeftCorner) || (onLeft && inTopCorner))
+        {
+            handled = true;
+            return (IntPtr)13; // HTTOPLEFT
+        }
+        if ((onTop && inRightCorner) || (onRight && inTopCorner))
+        {
+            handled = true;
+            return (IntPtr)14; // HTTOPRIGHT
+        }
+        if ((onBottom && inLeftCorner) || (onLeft && inBottomCorner))
+        {
+            handled = true;
+            return (IntPtr)16; // HTBOTTOMLEFT
+        }
+        if ((onBottom && inRightCorner) || (onRight && inBottomCorner))
+        {
+            handled = true;
+            return (IntPtr)17; // HTBOTTOMRIGHT
+        }
+        if (onTop)
+        {
+            handled = true;
+            return (IntPtr)12; // HTTOP
+        }
+        if (onBottom)
+        {
+            handled = true;
+            return (IntPtr)15; // HTBOTTOM
+        }
+        if (onLeft)
+        {
+            handled = true;
+            return (IntPtr)10; // HTLEFT
+        }
+        if (onRight)
+        {
+            handled = true;
+            return (IntPtr)11; // HTRIGHT
+        }
+
+        return IntPtr.Zero;
+    }
+
+    private bool IsWindowActiveAndVisibleOnCurrentDesktop()
+    {
+        if (!IsActive || WindowState == WindowState.Minimized)
+        {
+            return false;
+        }
+
+        var hwnd = new WindowInteropHelper(this).Handle;
+        if (hwnd == IntPtr.Zero)
+        {
+            return false;
+        }
+
+        if (NativeMethods.GetForegroundWindow() != hwnd)
+        {
+            return false;
+        }
+
+        try
+        {
+            if (NativeMethods.DwmGetWindowAttribute(hwnd, NativeMethods.DWMWA_CLOAKED, out int cloaked, sizeof(int)) == 0 && cloaked != 0)
+            {
+                return false;
+            }
+        }
+        catch (Exception)
+        {
+            // Ignored intentionally: DwmGetWindowAttribute query failed.
+        }
+
+        return true;
+    }
+}

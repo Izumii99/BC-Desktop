@@ -1,68 +1,65 @@
 using System.Runtime.InteropServices;
-using System.Windows;
-using System.Windows.Interop;
-using System.Windows.Media;
 
 namespace BCDesktop;
 
-public partial class MainWindow
+internal static class NativeMethods
 {
-    private const int WM_GETMINMAXINFO = 0x0024;
-    private const uint MONITOR_DEFAULTTONEAREST = 0x00000002;
-    private const int DWMWA_CLOAKED = 14;
+    internal const int WM_GETMINMAXINFO = 0x0024;
+    internal const uint MONITOR_DEFAULTTONEAREST = 0x00000002;
+    internal const int DWMWA_CLOAKED = 14;
 
-    private const uint FLASHW_STOP = 0;
-    private const uint FLASHW_TRAY = 2;
-    private const uint FLASHW_TIMERNOFG = 12;
-
-    [DllImport("user32.dll")]
-    private static extern IntPtr MonitorFromWindow(IntPtr hwnd, uint flags);
+    internal const uint FLASHW_STOP = 0;
+    internal const uint FLASHW_TRAY = 2;
+    internal const uint FLASHW_TIMERNOFG = 12;
 
     [DllImport("user32.dll")]
-    private static extern bool GetMonitorInfo(IntPtr hMon, ref MONITORINFO mi);
+    internal static extern IntPtr MonitorFromWindow(IntPtr hwnd, uint flags);
 
     [DllImport("user32.dll")]
-    private static extern IntPtr GetForegroundWindow();
+    internal static extern bool GetMonitorInfo(IntPtr hMon, ref MONITORINFO mi);
+
+    [DllImport("user32.dll")]
+    internal static extern IntPtr GetForegroundWindow();
 
     [DllImport("dwmapi.dll")]
-    private static extern int DwmGetWindowAttribute(IntPtr hwnd, int dwAttribute, out int pvAttribute, int cbAttribute);
+    internal static extern int DwmGetWindowAttribute(IntPtr hwnd, int dwAttribute, out int pvAttribute, int cbAttribute);
 
     [DllImport("user32.dll", SetLastError = true)]
-    private static extern bool OpenClipboard(IntPtr hWndNewOwner);
+    internal static extern bool OpenClipboard(IntPtr hWndNewOwner);
 
     [DllImport("user32.dll")]
-    private static extern bool EmptyClipboard();
+    internal static extern bool EmptyClipboard();
 
     [DllImport("user32.dll")]
-    private static extern IntPtr SetClipboardData(uint uFormat, IntPtr hMem);
+    internal static extern IntPtr SetClipboardData(uint uFormat, IntPtr hMem);
 
     [DllImport("user32.dll")]
-    private static extern bool CloseClipboard();
+    internal static extern bool CloseClipboard();
 
     [DllImport("kernel32.dll")]
-    private static extern IntPtr GlobalAlloc(uint uFlags, UIntPtr dwBytes);
+    internal static extern IntPtr GlobalAlloc(uint uFlags, UIntPtr dwBytes);
 
     [DllImport("kernel32.dll")]
-    private static extern IntPtr GlobalLock(IntPtr hMem);
+    internal static extern IntPtr GlobalLock(IntPtr hMem);
 
     [DllImport("kernel32.dll")]
-    private static extern bool GlobalUnlock(IntPtr hMem);
+    internal static extern bool GlobalUnlock(IntPtr hMem);
 
     [DllImport("kernel32.dll")]
-    private static extern IntPtr GlobalFree(IntPtr hMem);
+    internal static extern IntPtr GlobalFree(IntPtr hMem);
 
     [DllImport("kernel32.dll")]
-    private static extern IntPtr GetCurrentProcess();
+    internal static extern IntPtr GetCurrentProcess();
 
     [DllImport("kernel32.dll")]
-    private static extern bool SetProcessWorkingSetSize(IntPtr hProcess, IntPtr dwMinimumWorkingSetSize, IntPtr dwMaximumWorkingSetSize);
+    internal static extern bool SetProcessWorkingSetSize(IntPtr hProcess, IntPtr dwMinimumWorkingSetSize, IntPtr dwMaximumWorkingSetSize);
 
     [DllImport("user32.dll")]
     [return: MarshalAs(UnmanagedType.Bool)]
-    private static extern bool FlashWindowEx(ref FLASHWINFO pwfi);
+    internal static extern bool FlashWindowEx(ref FLASHWINFO pwfi);
 
     [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Auto)]
-    private struct MONITORINFO : IEquatable<MONITORINFO>
+    internal struct MONITORINFO : IEquatable<MONITORINFO>
     {
         public int cbSize;
         public RECT rcMonitor;
@@ -82,7 +79,7 @@ public partial class MainWindow
     }
 
     [StructLayout(LayoutKind.Sequential)]
-    private struct RECT : IEquatable<RECT>
+    internal struct RECT : IEquatable<RECT>
     {
         public int Left;
         public int Top;
@@ -102,7 +99,7 @@ public partial class MainWindow
     }
 
     [StructLayout(LayoutKind.Sequential)]
-    private struct MINMAXINFO : IEquatable<MINMAXINFO>
+    internal struct MINMAXINFO : IEquatable<MINMAXINFO>
     {
         public POINT ptReserved;
         public POINT ptMaxSize;
@@ -124,7 +121,7 @@ public partial class MainWindow
     }
 
     [StructLayout(LayoutKind.Sequential)]
-    private struct POINT : IEquatable<POINT>
+    internal struct POINT : IEquatable<POINT>
     {
         public int X;
         public int Y;
@@ -137,7 +134,7 @@ public partial class MainWindow
     }
 
     [StructLayout(LayoutKind.Sequential)]
-    private struct WINDOWPOS : IEquatable<WINDOWPOS>
+    internal struct WINDOWPOS : IEquatable<WINDOWPOS>
     {
         public IntPtr hwnd;
         public IntPtr hwndInsertAfter;
@@ -163,7 +160,7 @@ public partial class MainWindow
     }
 
     [StructLayout(LayoutKind.Sequential)]
-    private struct FLASHWINFO : IEquatable<FLASHWINFO>
+    internal struct FLASHWINFO : IEquatable<FLASHWINFO>
     {
         public uint cbSize;
         public IntPtr hwnd;
@@ -184,236 +181,15 @@ public partial class MainWindow
         public static bool operator !=(FLASHWINFO left, FLASHWINFO right) => !left.Equals(right);
     }
 
-    private IntPtr WndProc(IntPtr hwnd, int msg, IntPtr wParam, IntPtr lParam, ref bool handled)
-    {
-        if (msg == WM_GETMINMAXINFO)
-        {
-            HandleGetMinMaxInfo(hwnd, lParam, ref handled);
-            return IntPtr.Zero;
-        }
-
-        if (msg == 0x0214) // WM_SIZING
-        {
-            HandleSizing(wParam, lParam, ref handled);
-            return IntPtr.Zero;
-        }
-
-        if (msg == 0x0084) // WM_NCHITTEST
-        {
-            return HandleNcHitTest(lParam, ref handled);
-        }
-
-        return IntPtr.Zero;
-    }
-
-    private void HandleGetMinMaxInfo(IntPtr hwnd, IntPtr lParam, ref bool handled)
-    {
-        var monitor = MonitorFromWindow(hwnd, MONITOR_DEFAULTTONEAREST);
-        var mi = new MONITORINFO { cbSize = Marshal.SizeOf<MONITORINFO>() };
-        if (!GetMonitorInfo(monitor, ref mi))
-        {
-            return;
-        }
-
-        var mmi = Marshal.PtrToStructure<MINMAXINFO>(lParam);
-
-        mmi.ptMaxPosition.X = mi.rcWork.Left - mi.rcMonitor.Left;
-        mmi.ptMaxPosition.Y = mi.rcWork.Top - mi.rcMonitor.Top;
-        mmi.ptMaxSize.X = mi.rcWork.Right - mi.rcWork.Left;
-        mmi.ptMaxSize.Y = mi.rcWork.Bottom - mi.rcWork.Top;
-
-        double dpi = VisualTreeHelper.GetDpi(this).DpiScaleY;
-        mmi.ptMinTrackSize.X = (int)(MinWidth * dpi);
-        mmi.ptMinTrackSize.Y = (int)(MinHeight * dpi);
-
-        Marshal.StructureToPtr(mmi, lParam, true);
-        handled = true;
-    }
-
-    private void HandleSizing(IntPtr wParam, IntPtr lParam, ref bool handled)
-    {
-        var rect = Marshal.PtrToStructure<RECT>(lParam);
-        double dpi = VisualTreeHelper.GetDpi(this).DpiScaleY;
-        int titleBarHeight = (int)(32 * dpi);
-        int minPhysicalWidth = (int)(MinWidth * dpi);
-        int minPhysicalHeight = (int)(MinHeight * dpi);
-
-        int width = rect.Right - rect.Left;
-        int height = rect.Bottom - rect.Top;
-        int edge = wParam.ToInt32();
-
-        // Enforce a strict 2:1 aspect ratio during manual resizing.
-        // WMSZ_TOP (3) or WMSZ_BOTTOM (6) -> Aspect ratio is driven by height
-        if (edge == 3 || edge == 6)
-        {
-            if (height < minPhysicalHeight)
-            {
-                height = minPhysicalHeight;
-            }
-
-            int expectedWidth = (height - titleBarHeight) * 2;
-            if (expectedWidth < minPhysicalWidth)
-            {
-                expectedWidth = minPhysicalWidth;
-            }
-
-            if (edge == 3)
-            {
-                rect.Top = rect.Bottom - height;
-            }
-            else
-            {
-                rect.Bottom = rect.Top + height;
-            }
-
-            rect.Right = rect.Left + expectedWidth;
-        }
-        // All other edges (Left, Right, Corners) -> Aspect ratio is driven by width
-        else
-        {
-            if (width < minPhysicalWidth)
-            {
-                width = minPhysicalWidth;
-            }
-
-            int expectedHeight = (width / 2) + titleBarHeight;
-            if (expectedHeight < minPhysicalHeight)
-            {
-                expectedHeight = minPhysicalHeight;
-            }
-
-            if (edge == 1 || edge == 4 || edge == 7) // WMSZ_LEFT, WMSZ_TOPLEFT, WMSZ_BOTTOMLEFT
-            {
-                rect.Left = rect.Right - width;
-            }
-            else
-            {
-                rect.Right = rect.Left + width;
-            }
-
-            if (edge == 4 || edge == 5) // WMSZ_TOPLEFT or WMSZ_TOPRIGHT
-            {
-                rect.Top = rect.Bottom - expectedHeight;
-            }
-            else
-            {
-                rect.Bottom = rect.Top + expectedHeight;
-            }
-        }
-
-        Marshal.StructureToPtr(rect, lParam, true);
-        handled = true;
-    }
-
-    private IntPtr HandleNcHitTest(IntPtr lParam, ref bool handled)
-    {
-        if (WindowState == WindowState.Maximized)
-        {
-            return IntPtr.Zero;
-        }
-
-        int x = (short)(lParam.ToInt64() & 0xFFFF);
-        int y = (short)((lParam.ToInt64() >> 16) & 0xFFFF);
-        var p = PointFromScreen(new Point(x, y));
-
-        const int border = 5;
-        const int corner = 16;
-
-        bool onLeft = p.X <= border;
-        bool onRight = p.X >= ActualWidth - border;
-        bool onTop = p.Y <= border;
-        bool onBottom = p.Y >= ActualHeight - border;
-
-        bool inLeftCorner = p.X <= corner;
-        bool inRightCorner = p.X >= ActualWidth - corner;
-        bool inTopCorner = p.Y <= corner;
-        bool inBottomCorner = p.Y >= ActualHeight - corner;
-
-        if ((onTop && inLeftCorner) || (onLeft && inTopCorner))
-        {
-            handled = true;
-            return (IntPtr)13; // HTTOPLEFT
-        }
-        if ((onTop && inRightCorner) || (onRight && inTopCorner))
-        {
-            handled = true;
-            return (IntPtr)14; // HTTOPRIGHT
-        }
-        if ((onBottom && inLeftCorner) || (onLeft && inBottomCorner))
-        {
-            handled = true;
-            return (IntPtr)16; // HTBOTTOMLEFT
-        }
-        if ((onBottom && inRightCorner) || (onRight && inBottomCorner))
-        {
-            handled = true;
-            return (IntPtr)17; // HTBOTTOMRIGHT
-        }
-        if (onTop)
-        {
-            handled = true;
-            return (IntPtr)12; // HTTOP
-        }
-        if (onBottom)
-        {
-            handled = true;
-            return (IntPtr)15; // HTBOTTOM
-        }
-        if (onLeft)
-        {
-            handled = true;
-            return (IntPtr)10; // HTLEFT
-        }
-        if (onRight)
-        {
-            handled = true;
-            return (IntPtr)11; // HTRIGHT
-        }
-
-        return IntPtr.Zero;
-    }
-
-    private bool IsWindowActiveAndVisibleOnCurrentDesktop()
-    {
-        if (!IsActive || WindowState == WindowState.Minimized)
-        {
-            return false;
-        }
-
-        var hwnd = new WindowInteropHelper(this).Handle;
-        if (hwnd == IntPtr.Zero)
-        {
-            return false;
-        }
-
-        if (GetForegroundWindow() != hwnd)
-        {
-            return false;
-        }
-
-        try
-        {
-            if (DwmGetWindowAttribute(hwnd, DWMWA_CLOAKED, out int cloaked, sizeof(int)) == 0 && cloaked != 0)
-            {
-                return false;
-            }
-        }
-        catch
-        {
-        }
-
-        return true;
-    }
-
-    private static void TrimWorkingSet()
+    internal static void TrimWorkingSet()
     {
         try
         {
             SetProcessWorkingSetSize(GetCurrentProcess(), (IntPtr)(-1), (IntPtr)(-1));
         }
-        catch
+        catch (Exception)
         {
+            // Ignored intentionally: working set size trim failed.
         }
     }
 }
-
