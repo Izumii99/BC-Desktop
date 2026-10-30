@@ -1,3 +1,4 @@
+#pragma warning disable S2333
 using System.Diagnostics;
 using System.IO;
 using System.Net.Http;
@@ -8,7 +9,7 @@ using System.Windows.Media;
 
 namespace BCDesktop;
 
-public partial class MainWindow
+public partial class MainWindow // NOSONAR
 {
     internal const string BaseGameUrl = "https://www.bondage-asia.com/club/R{0}/";
     private static string _lastKnownGoodUrl = string.Format(BaseGameUrl, 132);

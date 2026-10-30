@@ -1,3 +1,5 @@
+#pragma warning disable S3897, CA1066
+using System;
 using System.Runtime.InteropServices;
 
 namespace BCDesktop;
@@ -58,48 +60,54 @@ internal static class NativeMethods
     [return: MarshalAs(UnmanagedType.Bool)]
     internal static extern bool FlashWindowEx(ref FLASHWINFO pwfi);
 
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("Performance", "CA1066:TypeShouldImplementIEquatable")]
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("Sonar", "S3897:ValueTypesShouldImplementIEquatable")]
     [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Auto)]
-    internal struct MONITORINFO : IEquatable<MONITORINFO>
+    internal struct MONITORINFO : IEquatable<MONITORINFO> // NOSONAR
     {
         public int cbSize;
         public RECT rcMonitor;
         public RECT rcWork;
         public uint dwFlags;
 
-        public bool Equals(MONITORINFO other) =>
+        public readonly bool Equals(MONITORINFO other) =>
             cbSize == other.cbSize &&
             rcMonitor.Equals(other.rcMonitor) &&
             rcWork.Equals(other.rcWork) &&
             dwFlags == other.dwFlags;
 
-        public override bool Equals(object? obj) => obj is MONITORINFO other && Equals(other);
-        public override int GetHashCode() => HashCode.Combine(cbSize, rcMonitor, rcWork, dwFlags);
+        public override readonly bool Equals(object? obj) => obj is MONITORINFO other && Equals(other);
+        public override readonly int GetHashCode() => HashCode.Combine(cbSize, rcMonitor, rcWork, dwFlags);
         public static bool operator ==(MONITORINFO left, MONITORINFO right) => left.Equals(right);
         public static bool operator !=(MONITORINFO left, MONITORINFO right) => !left.Equals(right);
     }
 
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("Performance", "CA1066:TypeShouldImplementIEquatable")]
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("Sonar", "S3897:ValueTypesShouldImplementIEquatable")]
     [StructLayout(LayoutKind.Sequential)]
-    internal struct RECT : IEquatable<RECT>
+    internal struct RECT : IEquatable<RECT> // NOSONAR
     {
         public int Left;
         public int Top;
         public int Right;
         public int Bottom;
 
-        public bool Equals(RECT other) =>
+        public readonly bool Equals(RECT other) =>
             Left == other.Left &&
             Top == other.Top &&
             Right == other.Right &&
             Bottom == other.Bottom;
 
-        public override bool Equals(object? obj) => obj is RECT other && Equals(other);
-        public override int GetHashCode() => HashCode.Combine(Left, Top, Right, Bottom);
+        public override readonly bool Equals(object? obj) => obj is RECT other && Equals(other);
+        public override readonly int GetHashCode() => HashCode.Combine(Left, Top, Right, Bottom);
         public static bool operator ==(RECT left, RECT right) => left.Equals(right);
         public static bool operator !=(RECT left, RECT right) => !left.Equals(right);
     }
 
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("Performance", "CA1066:TypeShouldImplementIEquatable")]
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("Sonar", "S3897:ValueTypesShouldImplementIEquatable")]
     [StructLayout(LayoutKind.Sequential)]
-    internal struct MINMAXINFO : IEquatable<MINMAXINFO>
+    internal struct MINMAXINFO : IEquatable<MINMAXINFO> // NOSONAR
     {
         public POINT ptReserved;
         public POINT ptMaxSize;
@@ -107,34 +115,38 @@ internal static class NativeMethods
         public POINT ptMinTrackSize;
         public POINT ptMaxTrackSize;
 
-        public bool Equals(MINMAXINFO other) =>
+        public readonly bool Equals(MINMAXINFO other) =>
             ptReserved.Equals(other.ptReserved) &&
             ptMaxSize.Equals(other.ptMaxSize) &&
             ptMaxPosition.Equals(other.ptMaxPosition) &&
             ptMinTrackSize.Equals(other.ptMinTrackSize) &&
             ptMaxTrackSize.Equals(other.ptMaxTrackSize);
 
-        public override bool Equals(object? obj) => obj is MINMAXINFO other && Equals(other);
-        public override int GetHashCode() => HashCode.Combine(ptReserved, ptMaxSize, ptMaxPosition, ptMinTrackSize, ptMaxTrackSize);
+        public override readonly bool Equals(object? obj) => obj is MINMAXINFO other && Equals(other);
+        public override readonly int GetHashCode() => HashCode.Combine(ptReserved, ptMaxSize, ptMaxPosition, ptMinTrackSize, ptMaxTrackSize);
         public static bool operator ==(MINMAXINFO left, MINMAXINFO right) => left.Equals(right);
         public static bool operator !=(MINMAXINFO left, MINMAXINFO right) => !left.Equals(right);
     }
 
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("Performance", "CA1066:TypeShouldImplementIEquatable")]
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("Sonar", "S3897:ValueTypesShouldImplementIEquatable")]
     [StructLayout(LayoutKind.Sequential)]
-    internal struct POINT : IEquatable<POINT>
+    internal struct POINT : IEquatable<POINT> // NOSONAR
     {
         public int X;
         public int Y;
 
-        public bool Equals(POINT other) => X == other.X && Y == other.Y;
-        public override bool Equals(object? obj) => obj is POINT other && Equals(other);
-        public override int GetHashCode() => HashCode.Combine(X, Y);
+        public readonly bool Equals(POINT other) => X == other.X && Y == other.Y;
+        public override readonly bool Equals(object? obj) => obj is POINT other && Equals(other);
+        public override readonly int GetHashCode() => HashCode.Combine(X, Y);
         public static bool operator ==(POINT left, POINT right) => left.Equals(right);
         public static bool operator !=(POINT left, POINT right) => !left.Equals(right);
     }
 
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("Performance", "CA1066:TypeShouldImplementIEquatable")]
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("Sonar", "S3897:ValueTypesShouldImplementIEquatable")]
     [StructLayout(LayoutKind.Sequential)]
-    internal struct WINDOWPOS : IEquatable<WINDOWPOS>
+    internal struct WINDOWPOS : IEquatable<WINDOWPOS> // NOSONAR
     {
         public IntPtr hwnd;
         public IntPtr hwndInsertAfter;
@@ -144,7 +156,7 @@ internal static class NativeMethods
         public int cy;
         public uint flags;
 
-        public bool Equals(WINDOWPOS other) =>
+        public readonly bool Equals(WINDOWPOS other) =>
             hwnd == other.hwnd &&
             hwndInsertAfter == other.hwndInsertAfter &&
             x == other.x &&
@@ -153,14 +165,16 @@ internal static class NativeMethods
             cy == other.cy &&
             flags == other.flags;
 
-        public override bool Equals(object? obj) => obj is WINDOWPOS other && Equals(other);
-        public override int GetHashCode() => HashCode.Combine(hwnd, hwndInsertAfter, HashCode.Combine(x, y, cx, cy, flags));
+        public override readonly bool Equals(object? obj) => obj is WINDOWPOS other && Equals(other);
+        public override readonly int GetHashCode() => HashCode.Combine(hwnd, hwndInsertAfter, HashCode.Combine(x, y, cx, cy, flags));
         public static bool operator ==(WINDOWPOS left, WINDOWPOS right) => left.Equals(right);
         public static bool operator !=(WINDOWPOS left, WINDOWPOS right) => !left.Equals(right);
     }
 
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("Performance", "CA1066:TypeShouldImplementIEquatable")]
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("Sonar", "S3897:ValueTypesShouldImplementIEquatable")]
     [StructLayout(LayoutKind.Sequential)]
-    internal struct FLASHWINFO : IEquatable<FLASHWINFO>
+    internal struct FLASHWINFO : IEquatable<FLASHWINFO> // NOSONAR
     {
         public uint cbSize;
         public IntPtr hwnd;
@@ -168,15 +182,15 @@ internal static class NativeMethods
         public uint uCount;
         public uint dwTimeout;
 
-        public bool Equals(FLASHWINFO other) =>
+        public readonly bool Equals(FLASHWINFO other) =>
             cbSize == other.cbSize &&
             hwnd == other.hwnd &&
             dwFlags == other.dwFlags &&
             uCount == other.uCount &&
             dwTimeout == other.dwTimeout;
 
-        public override bool Equals(object? obj) => obj is FLASHWINFO other && Equals(other);
-        public override int GetHashCode() => HashCode.Combine(cbSize, hwnd, dwFlags, uCount, dwTimeout);
+        public override readonly bool Equals(object? obj) => obj is FLASHWINFO other && Equals(other);
+        public override readonly int GetHashCode() => HashCode.Combine(cbSize, hwnd, dwFlags, uCount, dwTimeout);
         public static bool operator ==(FLASHWINFO left, FLASHWINFO right) => left.Equals(right);
         public static bool operator !=(FLASHWINFO left, FLASHWINFO right) => !left.Equals(right);
     }

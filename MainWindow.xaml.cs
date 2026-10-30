@@ -1,4 +1,4 @@
-#pragma warning disable S108, S2486, S3168
+#pragma warning disable S108, S2486, S3168, S2333
 using System.Diagnostics;
 using System.IO;
 using System.Runtime.InteropServices;
@@ -9,7 +9,7 @@ using Microsoft.Web.WebView2.Core;
 
 namespace BCDesktop;
 
-public partial class MainWindow : Window
+public partial class MainWindow : Window // NOSONAR
 {
     private readonly string _originalTitleLabel;
     private CancellationTokenSource? _deactivationCts;

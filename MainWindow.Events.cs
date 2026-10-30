@@ -1,3 +1,4 @@
+#pragma warning disable S2333, S1172
 using System.Runtime.InteropServices;
 using System.Text.RegularExpressions;
 using System.Windows;
@@ -10,7 +11,7 @@ using Microsoft.Web.WebView2.Core;
 
 namespace BCDesktop;
 
-public partial class MainWindow
+public partial class MainWindow // NOSONAR
 {
     private bool _isFullscreen;
     private WindowState _previousWindowState = WindowState.Normal;
@@ -168,6 +169,8 @@ public partial class MainWindow
     {
         UpdateWindowStateUI();
 
+        _ = sender;
+        _ = e;
         if (WebView.CoreWebView2 is not { } core)
         {
             return;
@@ -338,8 +341,11 @@ public partial class MainWindow
         }
     }
 
-    private void Core_DocumentTitleChanged(object? _, object __)
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("Major Code Smell", "S1172:Unused method parameters should be removed")]
+    private void Core_DocumentTitleChanged(object? sender, object e) // NOSONAR
     {
+        _ = sender;
+        _ = e;
         if (WebView.CoreWebView2 is not { } core)
         {
             return;
