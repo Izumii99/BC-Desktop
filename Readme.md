@@ -6,7 +6,6 @@
   <p>
     <a href="https://github.com/Izumii99/BC-Desktop/releases"><img src="https://img.shields.io/github/v/release/Izumii99/BC-Desktop?color=A855F7&style=for-the-badge&logo=github" alt="Latest Release" /></a>
     <a href="https://github.com/Izumii99/BC-Desktop/releases"><img src="https://img.shields.io/github/downloads/Izumii99/BC-Desktop/total?color=A855F7&style=for-the-badge&logo=github" alt="Total Downloads" /></a>
-    <a href="https://sociabuzz.com/izumi99/tribe" target="_blank"><img src="https://img.shields.io/badge/SociaBuzz-Support%20Me-48C02B?style=for-the-badge&logo=buymeacoffee&logoColor=white" alt="Support on SociaBuzz" /></a>
   </p>
   <p>
     <img src="https://img.shields.io/badge/.NET-8.0-blue?logo=dotnet" alt=".NET 8.0" />
@@ -65,7 +64,6 @@ Place the `Scripts` folder in the same root directory as the executable:
 └── BC.exe (or BC-Windows.exe / BC-Linux.AppImage)
 ```
 
-
 ## Included Scripts / Addons
 
 This repository also hosts standalone scripts in the `Scripts/` folder. You can use them directly via Tampermonkey or Bookmarklets even without the Desktop App:
@@ -84,7 +82,7 @@ A custom dark mode theme designed specifically for **Neko Chat Enhancer**.
 
 > [!TIP]
 > **Built-in Auto-Loader (No Manual Installation Required):**  
-> Powered by [QAQMOON/meow-](https://github.com/QAQMOON/meow-). **Sudah auto-include di aplikasi, tidak perlu install manual!** (*Auto-included out-of-the-box — no separate installation needed.*) When enabled via the Addon Manager, the theme automatically loads and applies the dark aesthetic without extra steps.
+> Powered by [QAQMOON/meow-](https://github.com/QAQMOON/meow-). **Sudah auto-include di aplikasi, tidak perlu install manual!** (_Auto-included out-of-the-box — no separate installation needed._) When enabled via the Addon Manager, the theme automatically loads and applies the dark aesthetic without extra steps.
 
 **How to Install:**
 
@@ -153,7 +151,7 @@ A massive quality-of-life upgrade for the chat system that seamlessly translates
 
 > [!NOTE]
 > **FEATURES MIGRATED TO BC-LCE!**
-> Some features originally developed as part of this script (such as the **Petsuit/Animal Animations** and Alternate Arm Swings) have now been officially merged into the **[BC-LCE (Liko's Chat Enhancer)](https://github.com/awdrrawd/BC-LCE)** repository for better integration! 
+> Some features originally developed as part of this script (such as the **Petsuit/Animal Animations** and Alternate Arm Swings) have now been officially merged into the **[BC-LCE (Liko's Chat Enhancer)](https://github.com/awdrrawd/BC-LCE)** repository for better integration!
 > If you are looking for those specific features, please install the latest version of BC-LCE.
 
 **Features:**
@@ -319,17 +317,17 @@ javascript: (function () {
 
 ## Performance & Resource Benchmarks
 
-| Metric | Standard Web Browser | BC Desktop Client |
-| -------------------------------- | ---------------------- | --------------------------------------- |
-| **Engine Architecture**          | General Web Browser    | Tuned Game Runtime (WebView2 / Electron) |
-| **CPU (Active Focus / On Tab)**  | ~15% – 30%+            | ~6% – 12% (Active 60 FPS Pacer)         |
-| **CPU (Background / Tab Out)**   | ~8% – 15%              | ~3% – 5% (15 FPS Background Throttle)   |
-| **GPU (Active Focus / On Tab)**  | ~12% – 25%             | ~6% – 12% (Hardware 2D Canvas)          |
-| **GPU (Background / Tab Out)**   | ~4% – 10%              | < 1% (Low-Power GPU Idle State)         |
-| **RAM (Active, 40+ Addons)**     | ~1,000 MB – 1,800 MB+  | ~600 MB – 1,000 MB                      |
-| **RAM (Background / Tab Out)**   | ~800 MB – 1,400 MB     | ~200 MB – 500 MB (Sleeping Tabs & Trim) |
+| Metric                          | Standard Web Browser  | BC Desktop Client                        |
+| ------------------------------- | --------------------- | ---------------------------------------- |
+| **Engine Architecture**         | General Web Browser   | Tuned Game Runtime (WebView2 / Electron) |
+| **CPU (Active Focus / On Tab)** | ~15% – 30%+           | ~6% – 12% (Active 60 FPS Pacer)          |
+| **CPU (Background / Tab Out)**  | ~8% – 15%             | ~3% – 5% (15 FPS Background Throttle)    |
+| **GPU (Active Focus / On Tab)** | ~12% – 25%            | ~6% – 12% (Hardware 2D Canvas)           |
+| **GPU (Background / Tab Out)**  | ~4% – 10%             | < 1% (Low-Power GPU Idle State)          |
+| **RAM (Active, 40+ Addons)**    | ~1,000 MB – 1,800 MB+ | ~600 MB – 1,000 MB                       |
+| **RAM (Background / Tab Out)**  | ~800 MB – 1,400 MB    | ~200 MB – 500 MB (Sleeping Tabs & Trim)  |
 
-*Note: The resource usage above was benchmarked under heavy load (running the game with a total of **40+ addons**, including more than 10 major/heavy addons like BCX, Liko, FUSAM, and Chat-QoL). Vanilla usage without addons will be significantly lower.*
+_Note: The resource usage above was benchmarked under heavy load (running the game with a total of **40+ addons**, including more than 10 major/heavy addons like BCX, Liko, FUSAM, and Chat-QoL). Vanilla usage without addons will be significantly lower._
 
 ## Requirements
 
@@ -358,16 +356,19 @@ dotnet test
 ## Packaging Standalone Binaries
 
 **Build Everything (Windows & Linux):**
+
 ```powershell
 .\tools\build_all.ps1
 ```
 
 **Build Windows Standalone Only:**
+
 ```powershell
 .\tools\local_window.ps1
 ```
 
 **Build Linux Packages Only (.AppImage & .tar.gz):**
+
 ```powershell
 .\tools\local_linux.ps1
 ```
