@@ -20,6 +20,24 @@
 
 A minimal native desktop wrapper for BC, built with **WPF** and **.NET 8**. Uses the OS native webview (Edge WebView2 no bundled Chromium) keeping the RAM footprint and CPU usage as small as possible.
 
+---
+
+<div align="center">
+  <h3>☕ Support the Project / Traktir Kopi</h3>
+  <p>A little coffee fuels late-night coding sessions and keeps updates rolling! ✨</p>
+  <p>
+    <a href="https://sociabuzz.com/izumi99/tribe" target="_blank">
+      <img src="https://img.shields.io/badge/SociaBuzz-Treat_Warm_Coffee_><-48C02B?style=for-the-badge&logo=buymeacoffee&logoColor=white" height="36" alt="Treat Warm Coffee on SociaBuzz" />
+    </a>
+    &nbsp;
+    <a href="https://sociabuzz.com/izumi99/support" target="_blank">
+      <img src="https://img.shields.io/badge/Give_a_Tip-Direct_Support-22c55e?style=for-the-badge&logo=heart&logoColor=white" height="36" alt="Direct Support on SociaBuzz" />
+    </a>
+  </p>
+</div>
+
+---
+
 ## Features
 
 - **Auto-detects the latest game version** on every launch
