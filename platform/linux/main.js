@@ -4,6 +4,13 @@ const fs = require('fs');
 const os = require('os');
 const child_process = require('child_process');
 
+// Guard against zombie processes or multiple instances competing for LevelDB LOCK
+const gotTheLock = app.requestSingleInstanceLock();
+if (!gotTheLock) {
+    app.quit();
+    process.exit(0);
+}
+
 // Hidden mode: --hidden flag, BC_DISCREET=1, or the Hangul Filler productName injected by build.js
 const isHidden = process.argv.includes('--hidden') ||
                  process.env.BC_DISCREET === '1' ||
@@ -17,6 +24,37 @@ if (!fs.existsSync(canonicalUserData)) {
     try { fs.mkdirSync(canonicalUserData, { recursive: true }); } catch (_) {}
 }
 app.setPath('userData', canonicalUserData);
+
+// Storage Mirror: File-backed mirror ensuring Addon Manager & PCM settings persist reliably across restarts
+const storageMirrorFile = path.join(canonicalUserData, 'storage-mirror.json');
+let storageMirrorData = null;
+
+function getStorageMirror() {
+    if (storageMirrorData === null) {
+        try {
+            if (fs.existsSync(storageMirrorFile)) {
+                storageMirrorData = JSON.parse(fs.readFileSync(storageMirrorFile, 'utf8'));
+            } else {
+                storageMirrorData = {};
+            }
+        } catch (_) {
+            storageMirrorData = {};
+        }
+    }
+    return storageMirrorData;
+}
+
+let saveMirrorTimer = null;
+function persistStorageMirror() {
+    if (saveMirrorTimer) clearTimeout(saveMirrorTimer);
+    saveMirrorTimer = setTimeout(() => {
+        try {
+            if (storageMirrorData) {
+                fs.writeFileSync(storageMirrorFile, JSON.stringify(storageMirrorData), 'utf8');
+            }
+        } catch (_) {}
+    }, 200);
+}
 
 const CURRENT_APP_VERSION = app.getVersion();
 const ENABLE_AUTO_UPDATES = !process.argv.includes('--no-update') && process.env.BC_NO_UPDATE !== '1';
@@ -366,6 +404,24 @@ function handleWebMessage(msg) {
                 session.defaultSession.flushStorageData();
             }
         } catch (_) {}
+    } else if (msg.startsWith('SYNC_STORAGE_KEY:')) {
+        try {
+            const payload = JSON.parse(msg.substring(17));
+            if (payload && payload.k) {
+                const mirror = getStorageMirror();
+                if (payload.del) {
+                    delete mirror[payload.k];
+                } else {
+                    mirror[payload.k] = payload.v;
+                }
+                persistStorageMirror();
+            }
+        } catch (_) {}
+    } else if (msg === 'CLEAR_STORAGE') {
+        try {
+            storageMirrorData = {};
+            persistStorageMirror();
+        } catch (_) {}
     }
 }
 
@@ -461,15 +517,36 @@ const CopyAndFocusScript = `
 
     try {
         const origSetItem = Storage.prototype.setItem;
+        const origRemoveItem = Storage.prototype.removeItem;
+        const origClear = Storage.prototype.clear;
         let flushTimer = null;
+
         Storage.prototype.setItem = function(key, val) {
             origSetItem.apply(this, arguments);
+            const strVal = String(val);
+            if (window.chrome && window.chrome.webview && typeof window.chrome.webview.postMessage === 'function') {
+                window.chrome.webview.postMessage('SYNC_STORAGE_KEY:' + JSON.stringify({ k: key, v: strVal }));
+            }
             if (flushTimer) clearTimeout(flushTimer);
             flushTimer = setTimeout(() => {
                 if (window.chrome && window.chrome.webview && typeof window.chrome.webview.postMessage === 'function') {
                     window.chrome.webview.postMessage('FLUSH_STORAGE');
                 }
-            }, 250);
+            }, 500);
+        };
+
+        Storage.prototype.removeItem = function(key) {
+            origRemoveItem.apply(this, arguments);
+            if (window.chrome && window.chrome.webview && typeof window.chrome.webview.postMessage === 'function') {
+                window.chrome.webview.postMessage('SYNC_STORAGE_KEY:' + JSON.stringify({ k: key, del: true }));
+            }
+        };
+
+        Storage.prototype.clear = function() {
+            origClear.apply(this, arguments);
+            if (window.chrome && window.chrome.webview && typeof window.chrome.webview.postMessage === 'function') {
+                window.chrome.webview.postMessage('CLEAR_STORAGE');
+            }
         };
     } catch (_) {}
 
@@ -1607,11 +1684,31 @@ function createWindow() {
         return { action: 'deny' };
     });
 
+    function restoreStorageMirror() {
+        if (!mainWindow || mainWindow.isDestroyed()) return;
+        const mirror = getStorageMirror();
+        if (!mirror || Object.keys(mirror).length === 0) return;
+        const jsonStr = JSON.stringify(mirror);
+        mainWindow.webContents.executeJavaScript(`
+            (() => {
+                try {
+                    const m = ${jsonStr};
+                    for (const k in m) {
+                        if (localStorage.getItem(k) !== m[k]) {
+                            localStorage.setItem(k, m[k]);
+                        }
+                    }
+                } catch (_) {}
+            })();
+        `).catch(() => {});
+    }
+
     // Lock zoom levels and inject scripts promptly on DOM ready and finish load
     const setupPage = () => {
         if (!mainWindow || mainWindow.isDestroyed()) return;
         mainWindow.webContents.setZoomFactor(1.0);
         mainWindow.webContents.setVisualZoomLevelLimits(1, 1);
+        restoreStorageMirror();
         injectScripts();
     };
     mainWindow.webContents.on('did-start-navigation', (event, url, isInPlace, isMainFrame) => {
@@ -1785,19 +1882,18 @@ function createWindow() {
         if (choice !== 0) {
             e.preventDefault();
         } else {
-            e.preventDefault();
             forceQuit = true;
             cancelDeactivation();
+            try {
+                if (storageMirrorData) {
+                    fs.writeFileSync(storageMirrorFile, JSON.stringify(storageMirrorData), 'utf8');
+                }
+            } catch (_) {}
             try {
                 if (session.defaultSession && typeof session.defaultSession.flushStorageData === 'function') {
                     session.defaultSession.flushStorageData();
                 }
             } catch (_) {}
-            setTimeout(() => {
-                if (mainWindow && !mainWindow.isDestroyed()) {
-                    mainWindow.destroy();
-                }
-            }, 120);
         }
     });
 
@@ -1816,7 +1912,19 @@ function createWindow() {
     });
 }
 
+app.on('second-instance', () => {
+    if (mainWindow && !mainWindow.isDestroyed()) {
+        if (mainWindow.isMinimized()) mainWindow.restore();
+        mainWindow.focus();
+    }
+});
+
 app.on('before-quit', () => {
+    try {
+        if (storageMirrorData) {
+            fs.writeFileSync(storageMirrorFile, JSON.stringify(storageMirrorData), 'utf8');
+        }
+    } catch (_) {}
     try {
         if (session.defaultSession && typeof session.defaultSession.flushStorageData === 'function') {
             session.defaultSession.flushStorageData();
