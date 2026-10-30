@@ -6,6 +6,7 @@
   <p>
     <a href="https://github.com/Izumii99/BC-Desktop/releases"><img src="https://img.shields.io/github/v/release/Izumii99/BC-Desktop?color=A855F7&style=for-the-badge&logo=github" alt="Latest Release" /></a>
     <a href="https://github.com/Izumii99/BC-Desktop/releases"><img src="https://img.shields.io/github/downloads/Izumii99/BC-Desktop/total?color=A855F7&style=for-the-badge&logo=github" alt="Total Downloads" /></a>
+    <a href="https://sociabuzz.com/izumi99/tribe" target="_blank"><img src="https://img.shields.io/badge/SociaBuzz-Support%20Me-48C02B?style=for-the-badge&logo=buymeacoffee&logoColor=white" alt="Support on SociaBuzz" /></a>
   </p>
   <p>
     <img src="https://img.shields.io/badge/.NET-8.0-blue?logo=dotnet" alt=".NET 8.0" />
