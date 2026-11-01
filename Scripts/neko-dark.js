@@ -776,7 +776,7 @@
         if (typeof origRegister !== "function") return;
 
         try {
-            // ponytail: wrap registerMod to return existing modApi on duplicate registration instead of unloading
+            // Wrap registerMod to return existing modApi on duplicate registration instead of unloading
             sdk.registerMod = function (info) {
                 if (info && (info.name === "Bondage Club Neko Chat Enhancer (BCNekoEnhancer)" || info.name?.includes("BCNekoEnhancer"))) {
                     try {

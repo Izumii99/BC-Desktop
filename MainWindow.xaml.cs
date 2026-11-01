@@ -373,7 +373,7 @@ public partial class MainWindow : Window // NOSONAR
             }
         };
 
-        // ponytail: Native WebView2 early guard against undefined pidx ReferenceError and background focus state.
+        // Native WebView2 early guard against undefined pidx ReferenceError and background focus state.
         // Do NOT define accessor properties on DrawProcess or CharacterAppearanceBuildCanvas here, because BC's
         // classic <script> function declarations overwrite configurable global accessors during page load.
         await core.AddScriptToExecuteOnDocumentCreatedAsync(@"

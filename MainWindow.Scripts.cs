@@ -729,7 +729,7 @@ internal static class ScriptHelpers
                 return originalExecCommand.apply(this, arguments);
             };
 
-            // ponytail: Safe VRAM, Active-Room Texture Protection & Chat Virtualization
+            // Safe VRAM, Active-Room Texture Protection & Chat Virtualization
             (function setupSafeVramOptimization() {
                 window.__bcLifecycleGuardActive = true;
                 const NORMAL_PURGE_DELAY = 6 * 60 * 1000;

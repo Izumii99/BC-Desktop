@@ -2160,7 +2160,7 @@
         } catch (e) {}
     }, 2000);
 
-    // ponytail: LCE keeps its petsuit toggle and position private, so the button is located
+    // LCE keeps its petsuit toggle and position private, so the button is located
     // by the 37x37 OverTheHead icon it draws each frame (button rect = icon - 4px).
     // Breaks if LCE changes that icon/size; upgrade path is an exposed LCE API.
     let lcePetBtn = { x: 0, y: 0, t: 0 };
@@ -2345,7 +2345,7 @@
                 typeof Player !== "undefined" && Player
                     ? Player.MemberNumber
                     : null;
-            // ponytail: prioritize drawlist (respects Echo reorder/current page), then append the rest of the room so blind players can still target everyone
+            // Prioritize drawlist (respects Echo reorder/current page), then append the rest of the room so blind players can still target everyone
             let drawlist = Array.isArray(window.ChatRoomCharacterDrawlist)
                 ? window.ChatRoomCharacterDrawlist
                 : [];
