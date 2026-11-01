@@ -2607,11 +2607,7 @@
         let delays = [20, 80, 180, 300];
         delays.forEach((delay) => {
             setTimeout(() => {
-                let input =
-                    document.getElementById("BCXSearch") ||
-                    document.querySelector(
-                        "input[id*='search' i], input.dialog-search-input",
-                    );
+                let input = document.getElementById("BCXSearch");
                 if (input) {
                     window.bcUserPrefersGameChat = false;
                     window.bcFocusMemory = input;
@@ -2636,43 +2632,35 @@
                 !e.shiftKey &&
                 (e.key === "f" || e.key === "F" || e.code === "KeyF")
             ) {
-                let existingInput =
-                    document.getElementById("BCXSearch") ||
-                    document.querySelector(
-                        "input[id*='search' i], input.dialog-search-input",
-                    );
-                if (
-                    !existingInput &&
-                    typeof CurrentScreen !== "undefined" &&
-                    CurrentScreen === "ChatSearch"
-                ) {
-                    existingInput = document.getElementById("InputSearch");
-                }
-
-                if (existingInput) {
+                // 1. If BCXSearch input is already open in DOM: focus & select all text
+                let bcxInput = document.getElementById("BCXSearch");
+                if (bcxInput) {
                     e.preventDefault();
                     e.stopPropagation();
                     window.bcUserPrefersGameChat = false;
-                    window.bcFocusMemory = existingInput;
-                    window.bcLastMousedown = existingInput;
+                    window.bcFocusMemory = bcxInput;
+                    window.bcLastMousedown = bcxInput;
                     window.bcLastMousedownTime = Date.now();
-                    existingInput.focus();
-                    if (typeof existingInput.select === "function") {
-                        existingInput.select();
+                    bcxInput.focus();
+                    if (typeof bcxInput.select === "function") {
+                        bcxInput.select();
                     }
                     return;
                 }
 
-                // Dialog item selection screen
+                // 2. Check if BCX Search button is currently on the Dialog canvas
                 if (
                     Array.isArray(window.DialogMenuButton) &&
                     window.DialogMenuButton.length > 0
                 ) {
-                    let searchIdx = window.DialogMenuButton.findIndex(
-                        (btn) =>
-                            typeof btn === "string" &&
-                            btn.toLowerCase().includes("search"),
-                    );
+                    let searchIdx = window.DialogMenuButton.indexOf("BCX_Search");
+                    if (searchIdx < 0) {
+                        searchIdx = window.DialogMenuButton.findIndex(
+                            (btn) =>
+                                typeof btn === "string" &&
+                                btn.toLowerCase().includes("search"),
+                        );
+                    }
                     if (searchIdx >= 0) {
                         e.preventDefault();
                         e.stopPropagation();
@@ -2696,16 +2684,19 @@
                     }
                 }
 
-                // Wardrobe / Appearance item selection screen
+                // 3. Check if BCX Search button is currently on the Appearance/Wardrobe canvas
                 if (
                     Array.isArray(window.AppearanceMenu) &&
                     window.AppearanceMenu.length > 0
                 ) {
-                    let searchIdx = window.AppearanceMenu.findIndex(
-                        (btn) =>
-                            typeof btn === "string" &&
-                            btn.toLowerCase().includes("search"),
-                    );
+                    let searchIdx = window.AppearanceMenu.indexOf("BCX_Search");
+                    if (searchIdx < 0) {
+                        searchIdx = window.AppearanceMenu.findIndex(
+                            (btn) =>
+                                typeof btn === "string" &&
+                                btn.toLowerCase().includes("search"),
+                        );
+                    }
                     if (searchIdx >= 0) {
                         e.preventDefault();
                         e.stopPropagation();
@@ -2741,6 +2732,8 @@
                         return;
                     }
                 }
+
+                // If no BCX search button or input is present, do nothing: let normal browser search execute
             }
         },
         true,
