@@ -2228,6 +2228,65 @@
         true,
     );
 
+    function getLianChatInput() {
+        let direct = document.querySelector(
+            "#LC-Message-Input, #LC-Chat-Input, .lc-message-input, .lc-chat-input, textarea.lc-input, input.lc-input, [id*='lc-message'] textarea, [id*='lc-chat'] textarea, [id*='lc-message'] input[type='text'], [id*='lc-chat'] input[type='text']",
+        );
+        if (
+            direct &&
+            direct.offsetWidth > 0 &&
+            direct.offsetHeight > 0 &&
+            !direct.disabled &&
+            !direct.readOnly
+        ) {
+            return direct;
+        }
+        let lianContainers = document.querySelectorAll(
+            "[id*='lc-'], [class*='lc-'], [id*='lian'], [class*='lian'], [id*='bcmod'], [class*='bcmod']",
+        );
+        for (let cont of lianContainers) {
+            let inputs = cont.querySelectorAll(
+                "textarea, input:not([type='button']):not([type='submit']):not([type='checkbox']):not([type='radio']):not([type='color'])",
+            );
+            for (let inp of inputs) {
+                if (inp.id === "InputChat" || inp.id === "TextAreaChatLog")
+                    continue;
+                if (
+                    inp.offsetWidth > 0 &&
+                    inp.offsetHeight > 0 &&
+                    !inp.disabled &&
+                    !inp.readOnly
+                ) {
+                    let style = window.getComputedStyle(inp);
+                    if (
+                        style.visibility !== "hidden" &&
+                        style.display !== "none" &&
+                        style.opacity !== "0"
+                    ) {
+                        return inp;
+                    }
+                }
+            }
+        }
+        return null;
+    }
+
+    function focusLianInputWithRetry() {
+        let attempts = [0, 50, 150, 300, 500];
+        attempts.forEach((delay) => {
+            setTimeout(() => {
+                let targetInput = getLianChatInput();
+                if (targetInput) {
+                    window.bcUserPrefersGameChat = false;
+                    window.bcFocusMemory = targetInput;
+                    window.bcLastMousedown = targetInput;
+                    window.bcLastMousedownTime = Date.now();
+                    targetInput.focus();
+                }
+            }, delay);
+        });
+    }
+
     document.addEventListener(
         "keydown",
         (e) => {
@@ -2237,6 +2296,26 @@
             if (e.key === "Tab") {
                 if (!qolConfig.enableLianChatShortcut) return;
                 e.preventDefault();
+
+                // If user is already focused in LianChat's chatbox, Shift+Tab toggles back to game chat
+                let currentLianInput = getLianChatInput();
+                if (
+                    currentLianInput &&
+                    document.activeElement === currentLianInput
+                ) {
+                    let ic = document.getElementById("InputChat");
+                    if (
+                        ic &&
+                        (ic.offsetParent !== null || ic.offsetWidth > 0)
+                    ) {
+                        window.bcUserPrefersGameChat = true;
+                        window.bcFocusMemory = ic;
+                        window.bcLastMousedown = ic;
+                        window.bcLastMousedownTime = Date.now();
+                        ic.focus();
+                        return;
+                    }
+                }
 
                 if (isLianChatOpen) {
                     let items = Array.from(
@@ -2285,6 +2364,9 @@
                             );
                         }
                     }
+
+                    // Focus LianChat chatbox
+                    focusLianInputWithRetry();
                 } else if (e.shiftKey) {
                     let lianFab = document.getElementById(
                         "floatingMessageButton",
@@ -2309,6 +2391,7 @@
                                 }),
                             );
                         });
+                        focusLianInputWithRetry();
                     }
                 }
             }

@@ -186,7 +186,9 @@ internal static class ScriptHelpers
                 if (!el) return false;
                 if (isTextInput(el)) return true;
                 let tag = el.tagName;
-                return tag === 'INPUT' || tag === 'SELECT' || tag === 'BUTTON' || tag === 'OPTION' || tag === 'BC-TINT-INPUT';
+                if (tag === 'INPUT' || tag === 'SELECT' || tag === 'BUTTON' || tag === 'OPTION' || tag === 'BC-TINT-INPUT') return true;
+                if (typeof getAddonContainer === 'function' && getAddonContainer(el)) return true;
+                return false;
             }
 
             document.addEventListener('keydown', (e) => {
