@@ -33,6 +33,7 @@
             emoAfk: true,
         },
         enableLianChatShortcut: true,
+        enableSearchShortcut: true,
         enableWhisperShortcut: true,
         enableBcarShortcut: true,
         enableScrollShortcut: true,
@@ -64,6 +65,9 @@
             );
             if (qolConfig.persistentWhisper === undefined) {
                 qolConfig.persistentWhisper = false;
+            }
+            if (qolConfig.enableSearchShortcut === undefined) {
+                qolConfig.enableSearchShortcut = true;
             }
         }
     } catch (e) {}
@@ -867,6 +871,13 @@
 
     // --- Category 2: Keyboard Shortcuts & Navigation - Sorted Alphabetically ---
     const cat2 = createCategory("Keyboard Shortcuts & Navigation", false);
+    cat2.body.appendChild(
+        createToggle(
+            "enableSearchShortcut",
+            "Enable Item Search (Ctrl+F)",
+            "Press Ctrl+F in dialog inventory to search items instantly.",
+        ),
+    );
     cat2.body.appendChild(
         createToggle(
             "enableLianChatShortcut",
@@ -2592,6 +2603,148 @@
     );
 
     // --- Screenshot Cleaner + Hide Addon Buttons at Icon State 2+ ---
+    function focusSearchInputWithRetry() {
+        let delays = [20, 80, 180, 300];
+        delays.forEach((delay) => {
+            setTimeout(() => {
+                let input =
+                    document.getElementById("BCXSearch") ||
+                    document.querySelector(
+                        "input[id*='search' i], input.dialog-search-input",
+                    );
+                if (input) {
+                    window.bcUserPrefersGameChat = false;
+                    window.bcFocusMemory = input;
+                    window.bcLastMousedown = input;
+                    window.bcLastMousedownTime = Date.now();
+                    input.focus();
+                    if (typeof input.select === "function") {
+                        input.select();
+                    }
+                }
+            }, delay);
+        });
+    }
+
+    document.addEventListener(
+        "keydown",
+        (e) => {
+            if (!qolConfig.enableSearchShortcut) return;
+            if (
+                (e.ctrlKey || e.metaKey) &&
+                !e.altKey &&
+                !e.shiftKey &&
+                (e.key === "f" || e.key === "F" || e.code === "KeyF")
+            ) {
+                let existingInput =
+                    document.getElementById("BCXSearch") ||
+                    document.querySelector(
+                        "input[id*='search' i], input.dialog-search-input",
+                    );
+                if (
+                    !existingInput &&
+                    typeof CurrentScreen !== "undefined" &&
+                    CurrentScreen === "ChatSearch"
+                ) {
+                    existingInput = document.getElementById("InputSearch");
+                }
+
+                if (existingInput) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    window.bcUserPrefersGameChat = false;
+                    window.bcFocusMemory = existingInput;
+                    window.bcLastMousedown = existingInput;
+                    window.bcLastMousedownTime = Date.now();
+                    existingInput.focus();
+                    if (typeof existingInput.select === "function") {
+                        existingInput.select();
+                    }
+                    return;
+                }
+
+                // Dialog item selection screen
+                if (
+                    Array.isArray(window.DialogMenuButton) &&
+                    window.DialogMenuButton.length > 0
+                ) {
+                    let searchIdx = window.DialogMenuButton.findIndex(
+                        (btn) =>
+                            typeof btn === "string" &&
+                            btn.toLowerCase().includes("search"),
+                    );
+                    if (searchIdx >= 0) {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        let oldMouseX = window.MouseX;
+                        let oldMouseY = window.MouseY;
+                        window.MouseX = 1885 - searchIdx * 110 + 45;
+                        window.MouseY = 60;
+                        try {
+                            if (
+                                typeof window.DialogMenuButtonClick ===
+                                "function"
+                            ) {
+                                window.DialogMenuButtonClick();
+                            }
+                        } finally {
+                            window.MouseX = oldMouseX;
+                            window.MouseY = oldMouseY;
+                        }
+                        focusSearchInputWithRetry();
+                        return;
+                    }
+                }
+
+                // Wardrobe / Appearance item selection screen
+                if (
+                    Array.isArray(window.AppearanceMenu) &&
+                    window.AppearanceMenu.length > 0
+                ) {
+                    let searchIdx = window.AppearanceMenu.findIndex(
+                        (btn) =>
+                            typeof btn === "string" &&
+                            btn.toLowerCase().includes("search"),
+                    );
+                    if (searchIdx >= 0) {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        let X = 2000 - window.AppearanceMenu.length * 117;
+                        let oldMouseX = window.MouseX;
+                        let oldMouseY = window.MouseY;
+                        window.MouseX = X + 117 * searchIdx + 45;
+                        window.MouseY = 60;
+                        try {
+                            let C =
+                                (typeof window.CharacterGetCurrent ===
+                                "function"
+                                    ? window.CharacterGetCurrent()
+                                    : null) ||
+                                window.CurrentCharacter ||
+                                window.Player;
+                            if (
+                                typeof window.AppearanceMenuClick ===
+                                "function"
+                            ) {
+                                window.AppearanceMenuClick(C);
+                            } else if (
+                                typeof window.CharacterAppearanceClick ===
+                                "function"
+                            ) {
+                                window.CharacterAppearanceClick();
+                            }
+                        } finally {
+                            window.MouseX = oldMouseX;
+                            window.MouseY = oldMouseY;
+                        }
+                        focusSearchInputWithRetry();
+                        return;
+                    }
+                }
+            }
+        },
+        true,
+    );
     // Ported from screenshot-cleaner.js; polls until game draw functions exist.
     (function () {
         if (window._bcdScreenCleanerLoaded) return;
