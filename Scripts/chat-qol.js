@@ -874,8 +874,8 @@
     cat2.body.appendChild(
         createToggle(
             "enableSearchShortcut",
-            "Enable Item Search (Ctrl+F)",
-            "Press Ctrl+F in dialog inventory to search items instantly.",
+            "Enable Quick Item Search (Type / Ctrl+F)",
+            "Type letters (A-Z) or press Ctrl+F in dialog inventory to search items instantly.",
         ),
     );
     cat2.body.appendChild(
@@ -2608,15 +2608,12 @@
         delays.forEach((delay) => {
             setTimeout(() => {
                 let input = document.getElementById("BCXSearch");
-                if (input) {
+                if (input && document.activeElement !== input) {
                     window.bcUserPrefersGameChat = false;
                     window.bcFocusMemory = input;
                     window.bcLastMousedown = input;
                     window.bcLastMousedownTime = Date.now();
                     input.focus();
-                    if (typeof input.select === "function") {
-                        input.select();
-                    }
                 }
             }, delay);
         });
@@ -2626,34 +2623,122 @@
         "keydown",
         (e) => {
             if (!qolConfig.enableSearchShortcut) return;
+
+            // If user is already focused in BCXSearch:
             if (
+                document.activeElement &&
+                document.activeElement.id === "BCXSearch"
+            ) {
+                // Pressing Escape exits search mode and restores game chat focus
+                if (e.key === "Escape") {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    let oldMouseX = window.MouseX;
+                    let oldMouseY = window.MouseY;
+                    window.MouseX = 1885 - 110 + 45; // Index 1 is BCX_SearchExit
+                    window.MouseY = 60;
+                    try {
+                        if (
+                            typeof window.DialogMenuButtonClick === "function"
+                        ) {
+                            window.DialogMenuButtonClick();
+                        }
+                    } finally {
+                        window.MouseX = oldMouseX;
+                        window.MouseY = oldMouseY;
+                    }
+                    let ic = document.getElementById("InputChat");
+                    if (ic) {
+                        window.bcUserPrefersGameChat = true;
+                        window.bcFocusMemory = ic;
+                        window.bcLastMousedown = ic;
+                        window.bcLastMousedownTime = Date.now();
+                        ic.focus();
+                    }
+                }
+                // All other keys (subsequent letters, backspace, arrows, enter) type natively into BCXSearch
+                return;
+            }
+
+            // Do not intercept if user is typing in a non-chat input (e.g. LianChat, prompt, expression modal)
+            if (
+                document.activeElement &&
+                document.activeElement.id !== "InputChat" &&
+                (document.activeElement.tagName === "INPUT" ||
+                    document.activeElement.tagName === "TEXTAREA" ||
+                    document.activeElement.isContentEditable)
+            ) {
+                return;
+            }
+
+            // Do not intercept if struggle minigame is actively running
+            if (
+                typeof window.StruggleMinigameIsRunning === "function" &&
+                window.StruggleMinigameIsRunning()
+            ) {
+                return;
+            }
+            if (
+                typeof window.DialogMenuMode !== "undefined" &&
+                window.DialogMenuMode === "struggle"
+            ) {
+                return;
+            }
+
+            // Check if the current canvas menu has a search button (Dialog items or Wardrobe)
+            let hasDialogSearch =
+                Array.isArray(window.DialogMenuButton) &&
+                window.DialogMenuButton.length > 0 &&
+                (window.DialogMenuButton.indexOf("BCX_Search") >= 0 ||
+                    window.DialogMenuButton.some(
+                        (btn) =>
+                            typeof btn === "string" &&
+                            btn.toLowerCase().includes("search"),
+                    ));
+
+            let hasWardrobeSearch =
+                !hasDialogSearch &&
+                Array.isArray(window.AppearanceMenu) &&
+                window.AppearanceMenu.length > 0 &&
+                (window.AppearanceMenu.indexOf("BCX_Search") >= 0 ||
+                    window.AppearanceMenu.some(
+                        (btn) =>
+                            typeof btn === "string" &&
+                            btn.toLowerCase().includes("search"),
+                    ));
+
+            if (!hasDialogSearch && !hasWardrobeSearch) {
+                return;
+            }
+
+            // Detect trigger: single printable character (letters/numbers/punctuation) OR Ctrl+F
+            let isPrintable =
+                e.key.length === 1 &&
+                !e.ctrlKey &&
+                !e.altKey &&
+                !e.metaKey &&
+                e.key !== " ";
+            let isCtrlF =
                 (e.ctrlKey || e.metaKey) &&
                 !e.altKey &&
                 !e.shiftKey &&
-                (e.key === "f" || e.key === "F" || e.code === "KeyF")
-            ) {
-                // 1. If BCXSearch input is already open in DOM: focus & select all text
-                let bcxInput = document.getElementById("BCXSearch");
-                if (bcxInput) {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    window.bcUserPrefersGameChat = false;
-                    window.bcFocusMemory = bcxInput;
-                    window.bcLastMousedown = bcxInput;
-                    window.bcLastMousedownTime = Date.now();
-                    bcxInput.focus();
-                    if (typeof bcxInput.select === "function") {
-                        bcxInput.select();
-                    }
-                    return;
-                }
+                (e.key === "f" || e.key === "F" || e.code === "KeyF");
 
-                // 2. Check if BCX Search button is currently on the Dialog canvas
-                if (
-                    Array.isArray(window.DialogMenuButton) &&
-                    window.DialogMenuButton.length > 0
-                ) {
-                    let searchIdx = window.DialogMenuButton.indexOf("BCX_Search");
+            if (!isPrintable && !isCtrlF) {
+                return;
+            }
+
+            // Prevent typed letter from landing in InputChat or triggering browser defaults
+            e.preventDefault();
+            e.stopPropagation();
+
+            let bcxInput = document.getElementById("BCXSearch");
+
+            // If search bar is not open yet, trigger the canvas search button
+            if (!bcxInput) {
+                if (hasDialogSearch) {
+                    let searchIdx =
+                        window.DialogMenuButton.indexOf("BCX_Search");
                     if (searchIdx < 0) {
                         searchIdx = window.DialogMenuButton.findIndex(
                             (btn) =>
@@ -2662,8 +2747,6 @@
                         );
                     }
                     if (searchIdx >= 0) {
-                        e.preventDefault();
-                        e.stopPropagation();
                         let oldMouseX = window.MouseX;
                         let oldMouseY = window.MouseY;
                         window.MouseX = 1885 - searchIdx * 110 + 45;
@@ -2679,17 +2762,10 @@
                             window.MouseX = oldMouseX;
                             window.MouseY = oldMouseY;
                         }
-                        focusSearchInputWithRetry();
-                        return;
                     }
-                }
-
-                // 3. Check if BCX Search button is currently on the Appearance/Wardrobe canvas
-                if (
-                    Array.isArray(window.AppearanceMenu) &&
-                    window.AppearanceMenu.length > 0
-                ) {
-                    let searchIdx = window.AppearanceMenu.indexOf("BCX_Search");
+                } else if (hasWardrobeSearch) {
+                    let searchIdx =
+                        window.AppearanceMenu.indexOf("BCX_Search");
                     if (searchIdx < 0) {
                         searchIdx = window.AppearanceMenu.findIndex(
                             (btn) =>
@@ -2698,8 +2774,6 @@
                         );
                     }
                     if (searchIdx >= 0) {
-                        e.preventDefault();
-                        e.stopPropagation();
                         let X = 2000 - window.AppearanceMenu.length * 117;
                         let oldMouseX = window.MouseX;
                         let oldMouseY = window.MouseY;
@@ -2728,16 +2802,38 @@
                             window.MouseX = oldMouseX;
                             window.MouseY = oldMouseY;
                         }
-                        focusSearchInputWithRetry();
-                        return;
                     }
                 }
 
-                // If no BCX search button or input is present, do nothing: let normal browser search execute
+                bcxInput = document.getElementById("BCXSearch");
+            }
+
+            if (bcxInput) {
+                if (isPrintable) {
+                    // Instantly input the first typed character so user never needs to double-type
+                    bcxInput.value = (bcxInput.value || "") + e.key;
+                    bcxInput.dispatchEvent(
+                        new Event("input", { bubbles: true }),
+                    );
+                    bcxInput.selectionStart = bcxInput.selectionEnd =
+                        bcxInput.value.length;
+                } else if (isCtrlF) {
+                    if (typeof bcxInput.select === "function") {
+                        bcxInput.select();
+                    }
+                }
+
+                window.bcUserPrefersGameChat = false;
+                window.bcFocusMemory = bcxInput;
+                window.bcLastMousedown = bcxInput;
+                window.bcLastMousedownTime = Date.now();
+                bcxInput.focus();
+                focusSearchInputWithRetry();
             }
         },
         true,
     );
+
     // Ported from screenshot-cleaner.js; polls until game draw functions exist.
     (function () {
         if (window._bcdScreenCleanerLoaded) return;
