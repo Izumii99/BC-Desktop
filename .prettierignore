@@ -1,0 +1,9 @@
+# Dependencies and build outputs
+node_modules/
+bin/
+obj/
+publish/
+dist/
+references/
+.git/
+.vscode/
