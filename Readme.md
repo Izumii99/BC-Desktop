@@ -17,13 +17,13 @@
 
 ---
 
-A minimal native desktop wrapper for BC, built with **WPF** and **.NET 8**. Uses the OS native webview (Edge WebView2 no bundled Chromium) keeping the RAM footprint and CPU usage as small as possible.
+A native desktop client for BC built with **WPF** and **.NET 8**. It uses the system webview (Edge WebView2 without bundled Chromium) to keep CPU and memory usage low.
 
 ---
 
 <div align="center">
   <h3>☕ Support the Project / Traktir Kopi</h3>
-  <p>A little coffee fuels late-night coding sessions and keeps updates rolling! ✨</p>
+  <p>Optional support for hosting and ongoing maintenance.</p>
   <p>
     <a href="https://sociabuzz.com/izumi99/tribe" target="_blank">
       <img src="https://img.shields.io/badge/SociaBuzz-Treat_Warm_Coffee_><-48C02B?style=for-the-badge&logo=buymeacoffee&logoColor=white" height="36" alt="Treat Warm Coffee on SociaBuzz" />
@@ -40,13 +40,13 @@ A minimal native desktop wrapper for BC, built with **WPF** and **.NET 8**. Uses
 ## Features
 
 - **Auto-detects the latest game version** on every launch
-- **OTA (Over-the-Air) Built-in Remote Loader**: Addon manager and remote scripts are seamlessly embedded into the executable and fetched automatically on startup
-- **Silent Release Checker**: Background check for newer desktop releases with unobtrusive title bar notifications
-- **Borderless custom title bar** with seamless drag, minimize, maximize, and close
+- **OTA remote loader**: Fetches the addon manager and remote scripts directly on startup without manual downloads
+- **Silent release checker**: Background check for newer desktop releases with title bar notifications
+- **Borderless custom title bar** with window drag, minimize, maximize, and close
 - **Immersive Fullscreen (F11)** and **Chromium DevTools (F12)** keyboard shortcuts
-- **Sleeping Tabs (Suspend on minimize)** to drastically reduce RAM while in background
+- **Sleeping tabs (suspend on minimize)** to reduce RAM while in the background
 - **Multi-monitor support** with proper DPI scaling bounds
-- **Discreet / Stealth** design for Task Manager and Taskbar
+- **Discreet / stealth mode** support for Task Manager and Taskbar
 
 ## Adding Custom / Local Scripts Manually
 
@@ -76,13 +76,13 @@ A custom dark mode theme designed specifically for **Neko Chat Enhancer**.
 
 **Design Highlights:**
 
-- **Deep Purple Aesthetic:** Replaces the default harsh black/white with a sleek, unified dark purple palette that feels premium and is much easier on the eyes.
-- **Refined Background Overlay:** The floating heart (love) particles in the background are tweaked with custom opacity and blend modes, giving a subtle and beautiful half-screen ambiance without distracting from the chat.
-- **Improved Readability:** Action texts, whispers, and chat borders have been re-colored to stand out elegantly against the dark background.
+- **Dark purple palette:** Replaces default high-contrast elements with dark purple surfaces.
+- **Dimmed background overlay:** Lowers background particle opacity to keep chat text readable.
+- **High-contrast chat text:** Adjusts whisper, action, and border colors for readability on dark backgrounds.
 
 > [!TIP]
-> **Built-in Auto-Loader (No Manual Installation Required):**  
-> Powered by [QAQMOON/meow-](https://github.com/QAQMOON/meow-). **Sudah auto-include di aplikasi, tidak perlu install manual!** (_Auto-included out-of-the-box — no separate installation needed._) When enabled via the Addon Manager, the theme automatically loads and applies the dark aesthetic without extra steps.
+> **Built-in Loader:**  
+> Powered by [QAQMOON/meow-](https://github.com/QAQMOON/meow-). Included with the desktop client and toggled through the Addon Manager without separate userscript installation.
 
 **How to Install:**
 
@@ -129,10 +129,8 @@ javascript: (function () {
 ### 2. Wardrobe & Appearance Pagination (`wardrobe-pagination.js`)
 
 > [!NOTE]
-> **OFFICIALLY MERGED INTO BCX!**
-> This script was originally created as a standalone mod to fix the wardrobe overflow issue. We are incredibly proud to announce that the underlying logic has now been **natively integrated into the official [Bondage Club Extended (BCX)](https://github.com/Jomshir98/bondage-club-extended) repository!**
->
-> You no longer need to install this script if you are using the latest version of BCX. The pagination is now a core feature! 🎉
+> **Merged Upstream into BCX:**  
+> Wardrobe pagination is now natively included in [Bondage Club Extended (BCX)](https://github.com/Jomshir98/bondage-club-extended). Standalone installation is no longer required when running current BCX versions.
 
 Fixes the issue where having too many clothing items (e.g. from using multiple mods) causes the item list to overflow beyond the right side of the screen, making them impossible to click.
 
@@ -145,14 +143,13 @@ _The standalone script has been officially retired as the pagination feature is 
 
 ### 3. Chat QoL & Emoticons (`chat-qol.js`)
 
-A massive quality-of-life upgrade for the chat system that seamlessly translates text emoticons into actual 3D character facial expressions, and more.
+Maps text emoticons to character facial expressions and adds chat navigation shortcuts.
 
 <img src="Assets/chat_qol_ui.png" width="350" alt="Chat QoL Settings" />
 
 > [!NOTE]
-> **FEATURES MIGRATED TO BC-LCE!**
-> Some features originally developed as part of this script (such as the **Petsuit/Animal Animations** and Alternate Arm Swings) have now been officially merged into the **[BC-LCE (Liko's Chat Enhancer)](https://github.com/awdrrawd/BC-LCE)** repository for better integration!
-> If you are looking for those specific features, please install the latest version of BC-LCE.
+> **Animation Modules Migrated:**  
+> Petsuit and animal animations have been moved to [BC-LCE](https://github.com/awdrrawd/BC-LCE). Install BC-LCE to use those specific animation sets.
 
 **Features:**
 
@@ -209,7 +206,7 @@ javascript: (function () {
 
 ### 4. Addon Manager UI (`addon-manager.js`)
 
-A built-in GUI to manage all your installed BC Desktop addons and compatible community scripts in one place.
+In-game interface to toggle client addons and supported community scripts.
 
 <img src="Assets/addon_manager.png" width="400" alt="Addon Manager" />
 
@@ -263,7 +260,7 @@ javascript: (function () {
 
 ### 5. Cheat Menu (`cheat-menu.js`)
 
-A lightweight floating cheat menu that provides various shortcuts and utilities for testing and fun. _(Please give me more cheat so I can add that doesn't exist at ULTRABC or even mine work)_
+Floating overlay providing testing shortcuts and convenience toggles.
 
 <img src="Assets/Cheat_menu.png" width="400" alt="Cheat Menu Preview" />
 
@@ -271,7 +268,7 @@ A lightweight floating cheat menu that provides various shortcuts and utilities 
 
 - Quick-access floating draggable menu.
 - Easily toggle invulnerability, instant escape, add money, and more.
-- Perfect for debugging, modding, or just playing around without grinding.
+- Quick access to toggles for local testing, animation debugging, and progression testing.
 
 **How to Install:**
 
@@ -379,34 +376,34 @@ dotnet test
 BC-Desktop/
 ├── .github/
 │   └── workflows/
-│       ├── checks.yml                — Automated unit test & CI verification
-│       └── release.yml               — Multi-platform binary compile & release
+│       ├── checks.yml                : Automated unit test & CI verification
+│       └── release.yml               : Multi-platform binary compile & release
 ├── Assets/
-│   ├── app.ico / app_logo.png        — Official client branding & icons
-│   └── transparent.ico / .png        — Discreet stealth mode assets
-├── Scripts/                          — Central upstream addon repository
-│   ├── addon-manager.js              — In-game mod manager interface
-│   ├── chat-qol.js                   — Emoticons, auto-expand, & chat enhancements
-│   ├── cheat-menu.js                 — Testing shortcuts & debug utility
-│   ├── neko-dark.js                  — Sleek dark theme stylesheet & assets
-│   └── translate.js                  — Real-time language translation widget
-├── platform/linux/                   — Linux portable wrapper (Electron)
-│   ├── main.js                       — Window lifecycle & auto-recovery engine
-│   ├── build.js                      — AppImage & tarball builder
-│   └── package.json                  — Linux dependencies & metadata
+│   ├── app.ico / app_logo.png        : Official client branding & icons
+│   └── transparent.ico / .png        : Discreet stealth mode assets
+├── Scripts/                          : Central upstream addon repository
+│   ├── addon-manager.js              : In-game mod manager interface
+│   ├── chat-qol.js                   : Emoticons, auto-expand, & chat enhancements
+│   ├── cheat-menu.js                 : Testing shortcuts & debug utility
+│   ├── neko-dark.js                  : Sleek dark theme stylesheet & assets
+│   └── translate.js                  : Real-time language translation widget
+├── platform/linux/                   : Linux portable wrapper (Electron)
+│   ├── main.js                       : Window lifecycle & auto-recovery engine
+│   ├── build.js                      : AppImage & tarball builder
+│   └── package.json                  : Linux dependencies & metadata
 ├── tests/
-│   └── BCDesktop.Tests/              — Automated MSTest suite (29+ unit tests)
-│       └── MainWindowTests.cs        — Aspect ratio, SemVer & memory tests
-├── tools/                            — PowerShell build toolchain
-│   ├── build_all.ps1                 — Unified multi-platform release builder
-│   ├── local_window.ps1              — Local Windows compilation
-│   ├── local_linux.ps1               — Local Linux compilation
-│   └── local_tester.ps1              — Rapid internal dev testing runner
-├── App.xaml / App.xaml.cs            — Application entry point
-├── BC-Desktop.csproj                 — .NET 8 WPF project configuration & metadata
-├── BC-Desktop.sln                    — Visual Studio solution file
-├── MainWindow.xaml                   — Borderless custom window & title bar UI
-├── MainWindow.xaml.cs                — Core WebView2 runtime, updater & memory manager
-├── loader.user.js                    — Standalone userscript & embedded offline loader
-└── RELEASE_NOTES.md                  — User-facing changelog & release details
+│   └── BCDesktop.Tests/              : Automated MSTest suite (29+ unit tests)
+│       └── MainWindowTests.cs        : Aspect ratio, SemVer & memory tests
+├── tools/                            : PowerShell build toolchain
+│   ├── build_all.ps1                 : Unified multi-platform release builder
+│   ├── local_window.ps1              : Local Windows compilation
+│   ├── local_linux.ps1               : Local Linux compilation
+│   └── local_tester.ps1              : Rapid internal dev testing runner
+├── App.xaml / App.xaml.cs            : Application entry point
+├── BC-Desktop.csproj                 : .NET 8 WPF project configuration & metadata
+├── BC-Desktop.sln                    : Visual Studio solution file
+├── MainWindow.xaml                   : Borderless custom window & title bar UI
+├── MainWindow.xaml.cs                : Core WebView2 runtime, updater & memory manager
+├── loader.user.js                    : Standalone userscript & embedded offline loader
+└── RELEASE_NOTES.md                  : User-facing changelog & release details
 ```
