@@ -71,7 +71,7 @@
             }
         }
     } catch (e) {}
-    
+
     if (qolConfig.enableLceModLoader) {
         const s = document.createElement("script");
         s.src = "https://likosoftware.github.io/BC-LCE/app.js";
@@ -88,8 +88,8 @@
             );
         } catch (e) {}
     }
-    
-    // 
+
+    //
 
     const qolBtn = document.createElement("div");
     qolBtn.innerHTML = `<img src="https://raw.githubusercontent.com/Izumii99/BC-Desktop/main/Assets/gear_small.png" style="width: 100%; height: 100%; object-fit: contain;">`;
@@ -981,7 +981,7 @@
     const animBtn = document.createElement("div");
     animBtn.id = "bcd-qol-anim-btn";
     animBtn.title = "Fast Pose Animation";
-    
+
     Object.assign(animBtn.style, {
         position: "fixed",
         bottom: "60px",
@@ -1013,87 +1013,118 @@
             AppearanceLayers: character.AppearanceLayers,
             AppearanceMasks: character.AppearanceMasks,
             Pose: character.Pose,
-            ActivePose: character.ActivePose
+            ActivePose: character.ActivePose,
         };
         const copies = [];
         try {
-            for (const pose of ['OverTheHead', 'BackElbowTouch']) {
+            for (const pose of ["OverTheHead", "BackElbowTouch"]) {
                 character.Pose = [pose];
                 character.ActivePose = [pose];
-                character.DrawPoseMapping = { ...original.DrawPoseMapping, BodyUpper: pose };
-                
+                character.DrawPoseMapping = {
+                    ...original.DrawPoseMapping,
+                    BodyUpper: pose,
+                };
+
                 const origOverrides = window.CharacterAppearanceUpdateOverrides;
-                if (typeof origOverrides === 'function') {
-                    window.CharacterAppearanceUpdateOverrides = function(C) {
+                if (typeof origOverrides === "function") {
+                    window.CharacterAppearanceUpdateOverrides = function (C) {
                         origOverrides(C);
                         C.Pose = [pose];
                         C.ActivePose = [pose];
-                        if (C.DrawPoseMapping) C.DrawPoseMapping.BodyUpper = pose;
+                        if (C.DrawPoseMapping)
+                            C.DrawPoseMapping.BodyUpper = pose;
                     };
                 }
-                
+
                 const backups = [];
                 for (let i = 0; i < character.Appearance.length; i++) {
                     const a = character.Appearance[i];
                     if (!a.Asset) continue;
-                    const bp = { a, assetSetPose: a.Asset.SetPose, propSetPose: a.Property?.SetPose };
+                    const bp = {
+                        a,
+                        assetSetPose: a.Asset.SetPose,
+                        propSetPose: a.Property?.SetPose,
+                    };
                     if (a.Asset.SetPose) a.Asset.SetPose = null;
-                    if (a.Property && a.Property.SetPose) a.Property.SetPose = null;
+                    if (a.Property && a.Property.SetPose)
+                        a.Property.SetPose = null;
                     backups.push(bp);
                 }
-                
+
                 const origDrawGetImage = window.DrawGetImage;
-                if (typeof origDrawGetImage === 'function') {
-                    window.DrawGetImage = function(src) {
+                if (typeof origDrawGetImage === "function") {
+                    window.DrawGetImage = function (src) {
                         const img = origDrawGetImage(src);
                         if (!img) {
                             if (!window._chatQol_DummyImg) {
                                 window._chatQol_DummyImg = new Image();
-                                window._chatQol_DummyImg.src = "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7";
+                                window._chatQol_DummyImg.src =
+                                    "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7";
                             }
                             return window._chatQol_DummyImg;
                         }
                         return img;
                     };
                 }
-                
+
                 try {
                     draw();
                 } finally {
-                    if (typeof origDrawGetImage === 'function') window.DrawGetImage = origDrawGetImage;
+                    if (typeof origDrawGetImage === "function")
+                        window.DrawGetImage = origDrawGetImage;
                     window.CharacterAppearanceUpdateOverrides = origOverrides;
                     for (const bp of backups) {
-                        if (bp.assetSetPose !== undefined) bp.a.Asset.SetPose = bp.assetSetPose;
-                        if (bp.propSetPose !== undefined && bp.a.Property) bp.a.Property.SetPose = bp.propSetPose;
+                        if (bp.assetSetPose !== undefined)
+                            bp.a.Asset.SetPose = bp.assetSetPose;
+                        if (bp.propSetPose !== undefined && bp.a.Property)
+                            bp.a.Property.SetPose = bp.propSetPose;
                     }
                 }
-                copies.push(['Canvas', 'CanvasBlink'].map(key => {
-                    const source = character[key];
-                    if (!source) return null;
-                    const copy = document.createElement('canvas');
-                    copy.width = source.width;
-                    copy.height = source.height;
-                    copy.getContext('2d').drawImage(source, 0, 0);
-                    return copy;
-                }));
+                copies.push(
+                    ["Canvas", "CanvasBlink"].map((key) => {
+                        const source = character[key];
+                        if (!source) return null;
+                        const copy = document.createElement("canvas");
+                        copy.width = source.width;
+                        copy.height = source.height;
+                        copy.getContext("2d").drawImage(source, 0, 0);
+                        return copy;
+                    }),
+                );
             }
-            for (const [index, key] of ['Canvas', 'CanvasBlink'].entries()) {
+            for (const [index, key] of ["Canvas", "CanvasBlink"].entries()) {
                 const canvas = character[key];
                 if (!canvas) continue;
-                const ctx = canvas.getContext('2d');
-                const width = canvas.width, height = canvas.height, half = width / 2;
+                const ctx = canvas.getContext("2d");
+                const width = canvas.width,
+                    height = canvas.height,
+                    half = width / 2;
                 ctx.clearRect(0, 0, width, height);
                 for (const side of [0, 1]) {
                     const srcArr = copies[(side === 0) === raisedLeft ? 0 : 1];
                     const source = srcArr ? srcArr[index] : null;
-                    if (source) ctx.drawImage(source, side * half, 0, half, height, side * half, 0, half, height);
+                    if (source)
+                        ctx.drawImage(
+                            source,
+                            side * half,
+                            0,
+                            half,
+                            height,
+                            side * half,
+                            0,
+                            half,
+                            height,
+                        );
                 }
             }
         } finally {
             for (const pair of copies) {
                 if (Array.isArray(pair)) {
                     for (const c of pair) {
-                        if (c) { c.width = 0; c.height = 0; }
+                        if (c) {
+                            c.width = 0;
+                            c.height = 0;
+                        }
                     }
                 }
             }
@@ -1184,14 +1215,21 @@
             ServerSend("ChatRoomChat", {
                 Type: "Hidden",
                 Content: "ChatQol_PetsuitAnim",
-                Dictionary: [{ delay: speed, cycles: maxCycles }]
+                Dictionary: [{ delay: speed, cycles: maxCycles }],
             });
         }
 
         animInterval = setInterval(() => {
             try {
                 // Purely local rendering, bypass CharacterSetActivePose
-                if (!window._bcIsMinimized && typeof CharacterRefresh === "function") { if (window._bcIsBackground && window._bcRequestBgBurst) window._bcRequestBgBurst(2500); CharacterRefresh(Player, false); }
+                if (
+                    !window._bcIsMinimized &&
+                    typeof CharacterRefresh === "function"
+                ) {
+                    if (window._bcIsBackground && window._bcRequestBgBurst)
+                        window._bcRequestBgBurst(2500);
+                    CharacterRefresh(Player, false);
+                }
                 setEyeExpr("Daydream", eyeRefreshSec); // Refresh eye timer each tick
             } catch (e) {
                 console.error("Anim error", e);
@@ -1199,14 +1237,16 @@
 
             animFrame++;
             count++;
-            let petsuitRaisedLeft = (animFrame % 2 === 0);
-            
+            let petsuitRaisedLeft = animFrame % 2 === 0;
+
             if (count >= maxCycles) {
                 clearInterval(animInterval);
                 animInterval = null;
                 animBtn.style.backgroundColor = "#ffffff";
                 try {
-                    if (typeof CharacterRefresh === "function") { CharacterRefresh(Player, false); }
+                    if (typeof CharacterRefresh === "function") {
+                        CharacterRefresh(Player, false);
+                    }
                     // Only restore if there was a prior expression; null = let timer expire naturally
                     if (savedEyeExpr) setEyeExpr(savedEyeExpr, null);
                 } catch (e) {}
@@ -1268,102 +1308,219 @@
                     window.ChatRoomLoad.hasQolHook = true;
                 }
 
-                if (!window._chatQol_AnimalReceiverHooked && typeof window.ChatRoomMessage === "function") {
+                if (
+                    !window._chatQol_AnimalReceiverHooked &&
+                    typeof window.ChatRoomMessage === "function"
+                ) {
                     window._chatQol_AnimalReceiverHooked = true;
-                    
-                    const HIDDEN_MSG_PREFIX = 'LCEAnimalAnim_';
-                    const SLOTS = { Ears: 'HairAccessory2', Tails: 'TailStraps', Wings: 'Wings' };
+
+                    const HIDDEN_MSG_PREFIX = "LCEAnimalAnim_";
+                    const SLOTS = {
+                        Ears: "HairAccessory2",
+                        Tails: "TailStraps",
+                        Wings: "Wings",
+                    };
                     const renderers = new Map();
-                    
+
                     const origChatRoomMessage = window.ChatRoomMessage;
                     window.ChatRoomMessage = function (data) {
                         origChatRoomMessage(data);
-                        
-                        if (data && data.Type === 'Hidden' && data.Content === 'ChatQol_PetsuitAnim') {
-                    const id = data.Sender;
-                    if (typeof id !== 'number' || id === window.Player?.MemberNumber || window._bcIsMinimized) return;
-                    
-                    const dict = Array.isArray(data.Dictionary) ? data.Dictionary[0] : data.Dictionary;
-                    if (!dict || typeof dict.delay !== 'number' || typeof dict.cycles !== 'number') return;
-                    
-                    const char = (window.ChatRoomCharacter || []).find(c => c.MemberNumber === id);
-                    if (!char) return;
-                    
-                    const delay = Math.max(20, Math.min(2000, dict.delay));
-                    const cycles = Math.max(1, Math.min(100, dict.cycles));
-                    
-                    if (!window._chatQol_PetsuitRemoteAnims) window._chatQol_PetsuitRemoteAnims = new Map();
-                    const remoteAnims = window._chatQol_PetsuitRemoteAnims;
-                    
-                    if (remoteAnims.has(id)) clearTimeout(remoteAnims.get(id).timer);
-                    
-                    let frame = 0;
-                    function step() {
-                        if (window.CurrentScreen !== 'ChatRoom' || window._bcIsMinimized || frame >= cycles * 2) {
-                            remoteAnims.delete(id);
-                            if (typeof window.CharacterRefresh === 'function') window.CharacterRefresh(char, false);
-                            return;
-                        }
-                        
-                        frame++;
-                        remoteAnims.set(id, { frame, timer: setTimeout(step, delay) });
-                        if (typeof window.CharacterRefresh === 'function') window.CharacterRefresh(char, false);
-                    }
-                    step();
-                }
 
-                if (data && data.Type === 'Hidden' && data.Content && data.Content.startsWith(HIDDEN_MSG_PREFIX)) {
+                        if (
+                            data &&
+                            data.Type === "Hidden" &&
+                            data.Content === "ChatQol_PetsuitAnim"
+                        ) {
                             const id = data.Sender;
-                            if (typeof id !== 'number' || id === window.Player?.MemberNumber || window._bcIsMinimized) return;
-                            
-                            const dict = Array.isArray(data.Dictionary) ? data.Dictionary[0] : data.Dictionary;
-                            if (!dict || !dict.type || !dict.state1 || !dict.state2) return;
-                            if (!SLOTS[dict.type]) return;
-                            
-                            const char = (window.ChatRoomCharacter || []).find(c => c.MemberNumber === id);
+                            if (
+                                typeof id !== "number" ||
+                                id === window.Player?.MemberNumber ||
+                                window._bcIsMinimized
+                            )
+                                return;
+
+                            const dict = Array.isArray(data.Dictionary)
+                                ? data.Dictionary[0]
+                                : data.Dictionary;
+                            if (
+                                !dict ||
+                                typeof dict.delay !== "number" ||
+                                typeof dict.cycles !== "number"
+                            )
+                                return;
+
+                            const char = (window.ChatRoomCharacter || []).find(
+                                (c) => c.MemberNumber === id,
+                            );
                             if (!char) return;
-                            
-                            const delay = typeof dict.delay === 'number' ? Math.max(10, Math.min(2000, dict.delay)) : 250;
-                            const cycles = typeof dict.cycles === 'number' ? Math.max(1, Math.min(40, dict.cycles)) : 2;
-                            
-                            const buildState = s => {
-                                if (!s || typeof s !== 'object' || typeof s.Name !== 'string') return null;
+
+                            const delay = Math.max(
+                                20,
+                                Math.min(2000, dict.delay),
+                            );
+                            const cycles = Math.max(
+                                1,
+                                Math.min(100, dict.cycles),
+                            );
+
+                            if (!window._chatQol_PetsuitRemoteAnims)
+                                window._chatQol_PetsuitRemoteAnims = new Map();
+                            const remoteAnims =
+                                window._chatQol_PetsuitRemoteAnims;
+
+                            if (remoteAnims.has(id))
+                                clearTimeout(remoteAnims.get(id).timer);
+
+                            let frame = 0;
+                            function step() {
+                                if (
+                                    window.CurrentScreen !== "ChatRoom" ||
+                                    window._bcIsMinimized ||
+                                    frame >= cycles * 2
+                                ) {
+                                    remoteAnims.delete(id);
+                                    if (
+                                        typeof window.CharacterRefresh ===
+                                        "function"
+                                    )
+                                        window.CharacterRefresh(char, false);
+                                    return;
+                                }
+
+                                frame++;
+                                remoteAnims.set(id, {
+                                    frame,
+                                    timer: setTimeout(step, delay),
+                                });
+                                if (
+                                    typeof window.CharacterRefresh ===
+                                    "function"
+                                )
+                                    window.CharacterRefresh(char, false);
+                            }
+                            step();
+                        }
+
+                        if (
+                            data &&
+                            data.Type === "Hidden" &&
+                            data.Content &&
+                            data.Content.startsWith(HIDDEN_MSG_PREFIX)
+                        ) {
+                            const id = data.Sender;
+                            if (
+                                typeof id !== "number" ||
+                                id === window.Player?.MemberNumber ||
+                                window._bcIsMinimized
+                            )
+                                return;
+
+                            const dict = Array.isArray(data.Dictionary)
+                                ? data.Dictionary[0]
+                                : data.Dictionary;
+                            if (
+                                !dict ||
+                                !dict.type ||
+                                !dict.state1 ||
+                                !dict.state2
+                            )
+                                return;
+                            if (!SLOTS[dict.type]) return;
+
+                            const char = (window.ChatRoomCharacter || []).find(
+                                (c) => c.MemberNumber === id,
+                            );
+                            if (!char) return;
+
+                            const delay =
+                                typeof dict.delay === "number"
+                                    ? Math.max(10, Math.min(2000, dict.delay))
+                                    : 250;
+                            const cycles =
+                                typeof dict.cycles === "number"
+                                    ? Math.max(1, Math.min(40, dict.cycles))
+                                    : 2;
+
+                            const buildState = (s) => {
+                                if (
+                                    !s ||
+                                    typeof s !== "object" ||
+                                    typeof s.Name !== "string"
+                                )
+                                    return null;
                                 let color = s.Color;
-                                if (typeof color !== 'string' && typeof color !== 'undefined' && !Array.isArray(color)) color = 'Default';
-                                if (Array.isArray(color)) color = color.filter(c => typeof c === 'string');
+                                if (
+                                    typeof color !== "string" &&
+                                    typeof color !== "undefined" &&
+                                    !Array.isArray(color)
+                                )
+                                    color = "Default";
+                                if (Array.isArray(color))
+                                    color = color.filter(
+                                        (c) => typeof c === "string",
+                                    );
                                 const state = {
                                     Name: s.Name,
-                                    Color: color
+                                    Color: color,
                                 };
                                 for (const key of Object.keys(s)) {
-                                    if (['Name', 'Color', 'Asset', 'Model', 'ModelLoad'].includes(key) || typeof s[key] === 'function') continue;
+                                    if (
+                                        [
+                                            "Name",
+                                            "Color",
+                                            "Asset",
+                                            "Model",
+                                            "ModelLoad",
+                                        ].includes(key) ||
+                                        typeof s[key] === "function"
+                                    )
+                                        continue;
                                     state[key] = structuredClone(s[key]);
                                 }
                                 return state;
                             };
-                            
+
                             const applyState = (char, slot, state) => {
-                                let item = char.Appearance.find(i => i.Asset && i.Asset.Group.Name === slot);
+                                let item = char.Appearance.find(
+                                    (i) =>
+                                        i.Asset && i.Asset.Group.Name === slot,
+                                );
                                 if (!item || item.Asset.Name !== state.Name) {
-                                    item = window.InventoryWear(char, state.Name, slot, state.Color, undefined, undefined, undefined, false);
+                                    item = window.InventoryWear(
+                                        char,
+                                        state.Name,
+                                        slot,
+                                        state.Color,
+                                        undefined,
+                                        undefined,
+                                        undefined,
+                                        false,
+                                    );
                                     if (!item) return;
                                 } else {
-                                    item.Color = Array.isArray(state.Color) ? structuredClone(state.Color) : state.Color;
+                                    item.Color = Array.isArray(state.Color)
+                                        ? structuredClone(state.Color)
+                                        : state.Color;
                                 }
                                 for (const key of Object.keys(state)) {
-                                    if (['Name', 'Color'].includes(key)) continue;
-                                    if (key === 'Property' && item.Property) {
-                                        item.Property = Object.assign({}, item.Property, structuredClone(state[key]));
+                                    if (["Name", "Color"].includes(key))
+                                        continue;
+                                    if (key === "Property" && item.Property) {
+                                        item.Property = Object.assign(
+                                            {},
+                                            item.Property,
+                                            structuredClone(state[key]),
+                                        );
                                     } else {
                                         item[key] = structuredClone(state[key]);
                                     }
                                 }
                             };
-                            
+
                             const state1 = buildState(dict.state1);
                             const state2 = buildState(dict.state2);
                             if (!state1 || !state2) return;
-                            
+
                             const slot = SLOTS[dict.type];
                             let originalState;
                             if (renderers.has(id + dict.type)) {
@@ -1371,44 +1528,92 @@
                                 clearTimeout(r.timer);
                                 originalState = r.originalState;
                             } else {
-                                const currentItem = char.Appearance.find(item => item.Asset && item.Asset.Group.Name === slot);
+                                const currentItem = char.Appearance.find(
+                                    (item) =>
+                                        item.Asset &&
+                                        item.Asset.Group.Name === slot,
+                                );
                                 if (!currentItem) return;
-                                originalState = { Name: currentItem.Asset.Name, Color: Array.isArray(currentItem.Color) ? structuredClone(currentItem.Color) : currentItem.Color };
+                                originalState = {
+                                    Name: currentItem.Asset.Name,
+                                    Color: Array.isArray(currentItem.Color)
+                                        ? structuredClone(currentItem.Color)
+                                        : currentItem.Color,
+                                };
                                 for (const key of Object.keys(currentItem)) {
-                                    if (['Asset', 'Model', 'ModelLoad', 'Name', 'Color'].includes(key) || typeof currentItem[key] === 'function') continue;
-                                    originalState[key] = structuredClone(currentItem[key]);
+                                    if (
+                                        [
+                                            "Asset",
+                                            "Model",
+                                            "ModelLoad",
+                                            "Name",
+                                            "Color",
+                                        ].includes(key) ||
+                                        typeof currentItem[key] === "function"
+                                    )
+                                        continue;
+                                    originalState[key] = structuredClone(
+                                        currentItem[key],
+                                    );
                                 }
                             }
-                            
+
                             const states = [state2, state1];
                             let i = 0;
-                            
+
                             function step() {
-                                if (window.CurrentScreen !== 'ChatRoom') {
+                                if (window.CurrentScreen !== "ChatRoom") {
                                     renderers.delete(id + dict.type);
                                     return;
                                 }
-                                const currentItemNow = char.Appearance.find(item => item.Asset && item.Asset.Group.Name === slot);
-                                if (!currentItemNow || (currentItemNow.Asset.Name !== state1.Name && currentItemNow.Asset.Name !== state2.Name && currentItemNow.Asset.Name !== originalState.Name)) {
+                                const currentItemNow = char.Appearance.find(
+                                    (item) =>
+                                        item.Asset &&
+                                        item.Asset.Group.Name === slot,
+                                );
+                                if (
+                                    !currentItemNow ||
+                                    (currentItemNow.Asset.Name !==
+                                        state1.Name &&
+                                        currentItemNow.Asset.Name !==
+                                            state2.Name &&
+                                        currentItemNow.Asset.Name !==
+                                            originalState.Name)
+                                ) {
                                     renderers.delete(id + dict.type);
                                     return;
                                 }
-                                
+
                                 if (i >= cycles * 2 || window._bcIsMinimized) {
                                     applyState(char, slot, originalState);
-                                    if (typeof window.CharacterRefresh === 'function') window.CharacterRefresh(char, false, false);
+                                    if (
+                                        typeof window.CharacterRefresh ===
+                                        "function"
+                                    )
+                                        window.CharacterRefresh(
+                                            char,
+                                            false,
+                                            false,
+                                        );
                                     renderers.delete(id + dict.type);
                                     return;
                                 }
-                                
+
                                 const state = states[i % 2];
                                 applyState(char, slot, state);
-                                if (typeof window.CharacterRefresh === 'function') window.CharacterRefresh(char, false, false);
-                                
+                                if (
+                                    typeof window.CharacterRefresh ===
+                                    "function"
+                                )
+                                    window.CharacterRefresh(char, false, false);
+
                                 i++;
-                                renderers.set(id + dict.type, { timer: setTimeout(step, delay), originalState });
+                                renderers.set(id + dict.type, {
+                                    timer: setTimeout(step, delay),
+                                    originalState,
+                                });
                             }
-                            
+
                             step();
                         }
                     };
@@ -1419,78 +1624,130 @@
                     typeof window.CharacterAppearanceBuildCanvas === "function"
                 ) {
                     window._chatQol_BuildCanvasHooked = true;
-                    const origBuildCanvas = window.CharacterAppearanceBuildCanvas;
+                    const origBuildCanvas =
+                        window.CharacterAppearanceBuildCanvas;
                     window.CharacterAppearanceBuildCanvas = function (C) {
-                        if (window._bcIsMinimized) { if (C) C._bcPendingCanvasBuild = true; return; }
-                        if (window._bcIsBackground && window._bcRequestBgBurst) window._bcRequestBgBurst(2500);
-                        const isLocal = (C === Player && animInterval);
-                        const remoteAnim = window._chatQol_PetsuitRemoteAnims ? window._chatQol_PetsuitRemoteAnims.get(C.MemberNumber) : null;
-                        
+                        if (window._bcIsMinimized) {
+                            if (C) C._bcPendingCanvasBuild = true;
+                            return;
+                        }
+                        if (window._bcIsBackground && window._bcRequestBgBurst)
+                            window._bcRequestBgBurst(2500);
+                        const isLocal = C === Player && animInterval;
+                        const remoteAnim = window._chatQol_PetsuitRemoteAnims
+                            ? window._chatQol_PetsuitRemoteAnims.get(
+                                  C.MemberNumber,
+                              )
+                            : null;
+
                         if (isLocal || remoteAnim) {
-                            const frameToUse = isLocal ? animFrame : remoteAnim.frame;
-                            const isAlternate = isLocal ? qolConfig.petsuitAlternate : true; // remote anim is always alternate
-                            const raisedLeft = (frameToUse % 2 === 0);
-                            
+                            const frameToUse = isLocal
+                                ? animFrame
+                                : remoteAnim.frame;
+                            const isAlternate = isLocal
+                                ? qolConfig.petsuitAlternate
+                                : true; // remote anim is always alternate
+                            const raisedLeft = frameToUse % 2 === 0;
+
                             if (isAlternate) {
                                 drawAlternatingPetsuit(C, raisedLeft, () => {
                                     origBuildCanvas(C);
                                 });
                             } else {
-                                const pose = animPoses[frameToUse % animPoses.length].split("-").pop();
+                                const pose = animPoses[
+                                    frameToUse % animPoses.length
+                                ]
+                                    .split("-")
+                                    .pop();
                                 const original = {
                                     DrawPoseMapping: C.DrawPoseMapping,
                                     AppearanceLayers: C.AppearanceLayers,
                                     AppearanceMasks: C.AppearanceMasks,
                                     Pose: C.Pose,
-                                    ActivePose: C.ActivePose
+                                    ActivePose: C.ActivePose,
                                 };
                                 try {
                                     C.Pose = [pose];
                                     if (C.ActivePose) C.ActivePose = [pose];
-                                    C.DrawPoseMapping = { ...original.DrawPoseMapping, BodyUpper: pose };
-                                    const origOverrides = window.CharacterAppearanceUpdateOverrides;
-                                    if (typeof origOverrides === 'function') {
-                                        window.CharacterAppearanceUpdateOverrides = function(char) {
-                                            origOverrides(char);
-                                            char.Pose = [pose];
-                                            char.ActivePose = [pose];
-                                            if (char.DrawPoseMapping) char.DrawPoseMapping.BodyUpper = pose;
-                                        };
+                                    C.DrawPoseMapping = {
+                                        ...original.DrawPoseMapping,
+                                        BodyUpper: pose,
+                                    };
+                                    const origOverrides =
+                                        window.CharacterAppearanceUpdateOverrides;
+                                    if (typeof origOverrides === "function") {
+                                        window.CharacterAppearanceUpdateOverrides =
+                                            function (char) {
+                                                origOverrides(char);
+                                                char.Pose = [pose];
+                                                char.ActivePose = [pose];
+                                                if (char.DrawPoseMapping)
+                                                    char.DrawPoseMapping.BodyUpper =
+                                                        pose;
+                                            };
                                     }
-                                    
+
                                     const backups = [];
-                                    for (let i = 0; i < C.Appearance.length; i++) {
+                                    for (
+                                        let i = 0;
+                                        i < C.Appearance.length;
+                                        i++
+                                    ) {
                                         const a = C.Appearance[i];
                                         if (!a.Asset) continue;
-                                        const bp = { a, assetSetPose: a.Asset.SetPose, propSetPose: a.Property?.SetPose };
-                                        if (a.Asset.SetPose) a.Asset.SetPose = null;
-                                        if (a.Property && a.Property.SetPose) a.Property.SetPose = null;
+                                        const bp = {
+                                            a,
+                                            assetSetPose: a.Asset.SetPose,
+                                            propSetPose: a.Property?.SetPose,
+                                        };
+                                        if (a.Asset.SetPose)
+                                            a.Asset.SetPose = null;
+                                        if (a.Property && a.Property.SetPose)
+                                            a.Property.SetPose = null;
                                         backups.push(bp);
                                     }
-                                    
-                                    const origDrawGetImage = window.DrawGetImage;
-                                    if (typeof origDrawGetImage === 'function') {
-                                        window.DrawGetImage = function(src) {
+
+                                    const origDrawGetImage =
+                                        window.DrawGetImage;
+                                    if (
+                                        typeof origDrawGetImage === "function"
+                                    ) {
+                                        window.DrawGetImage = function (src) {
                                             const img = origDrawGetImage(src);
                                             if (!img) {
                                                 if (!window._chatQol_DummyImg) {
-                                                    window._chatQol_DummyImg = new Image();
-                                                    window._chatQol_DummyImg.src = "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7";
+                                                    window._chatQol_DummyImg =
+                                                        new Image();
+                                                    window._chatQol_DummyImg.src =
+                                                        "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7";
                                                 }
                                                 return window._chatQol_DummyImg;
                                             }
                                             return img;
                                         };
                                     }
-                                    
+
                                     try {
                                         origBuildCanvas(C);
                                     } finally {
-                                        if (typeof origDrawGetImage === 'function') window.DrawGetImage = origDrawGetImage;
-                                        window.CharacterAppearanceUpdateOverrides = origOverrides;
+                                        if (
+                                            typeof origDrawGetImage ===
+                                            "function"
+                                        )
+                                            window.DrawGetImage =
+                                                origDrawGetImage;
+                                        window.CharacterAppearanceUpdateOverrides =
+                                            origOverrides;
                                         for (const bp of backups) {
-                                            if (bp.assetSetPose !== undefined) bp.a.Asset.SetPose = bp.assetSetPose;
-                                            if (bp.propSetPose !== undefined && bp.a.Property) bp.a.Property.SetPose = bp.propSetPose;
+                                            if (bp.assetSetPose !== undefined)
+                                                bp.a.Asset.SetPose =
+                                                    bp.assetSetPose;
+                                            if (
+                                                bp.propSetPose !== undefined &&
+                                                bp.a.Property
+                                            )
+                                                bp.a.Property.SetPose =
+                                                    bp.propSetPose;
                                         }
                                     }
                                 } finally {
@@ -1514,65 +1771,266 @@
                     const doQolLogic = function () {
                         if (!qolConfig.enableEmoticons) return;
                         try {
-                            let chatInput = document.getElementById("InputChat");
+                            let chatInput =
+                                document.getElementById("InputChat");
                             let msg = chatInput ? chatInput.value : "";
-                            
+
                             // Disable textmojis for Whisper messages
-                            if (msg.startsWith("/w ") || msg.startsWith("/whisper ")) return;
-                            
-                            if (msg && typeof CharacterSetFacialExpression === "function" && typeof Player !== "undefined" && Player) {
-                                
+                            if (
+                                msg.startsWith("/w ") ||
+                                msg.startsWith("/whisper ")
+                            )
+                                return;
+
+                            if (
+                                msg &&
+                                typeof CharacterSetFacialExpression ===
+                                    "function" &&
+                                typeof Player !== "undefined" &&
+                                Player
+                            ) {
                                 const QOL_FACES = [
-                                    [/^>[\\/]{2,}<$/, { Eyes: 'Daydream', Mouth: 'Pout', Eyebrows: 'Lowered' }, 'emoBlush'],
-                                    [/^(?:>\/{2,5}>|<\/{2,5}<)$/i, { Eyes: 'Shy', Mouth: null, Eyebrows: 'Lowered' }, 'emoBlush'],
-                                    [/^=[\\/]{2,}=$/, { Eyes: 'Horny', Mouth: 'Pout' }, 'emoBlush'],
-                                    [/^(?:o|0)[\\/]{2,}(?:o|0)$/i, { Eyes: 'Surprised', Mouth: 'HalfOpen', Eyebrows: 'Raised' }, 'emoBlush'],
+                                    [
+                                        /^>[\\/]{2,}<$/,
+                                        {
+                                            Eyes: "Daydream",
+                                            Mouth: "Pout",
+                                            Eyebrows: "Lowered",
+                                        },
+                                        "emoBlush",
+                                    ],
+                                    [
+                                        /^(?:>\/{2,5}>|<\/{2,5}<)$/i,
+                                        {
+                                            Eyes: "Shy",
+                                            Mouth: null,
+                                            Eyebrows: "Lowered",
+                                        },
+                                        "emoBlush",
+                                    ],
+                                    [
+                                        /^=[\\/]{2,}=$/,
+                                        { Eyes: "Horny", Mouth: "Pout" },
+                                        "emoBlush",
+                                    ],
+                                    [
+                                        /^(?:o|0)[\\/]{2,}(?:o|0)$/i,
+                                        {
+                                            Eyes: "Surprised",
+                                            Mouth: "HalfOpen",
+                                            Eyebrows: "Raised",
+                                        },
+                                        "emoBlush",
+                                    ],
                                     // Floating faces
-                                    [/^<3+$/i, { Emoticon: 'Hearts' }, 'emoFloating'],
+                                    [
+                                        /^<3+$/i,
+                                        { Emoticon: "Hearts" },
+                                        "emoFloating",
+                                    ],
                                     // Classic faces
-                                    [/^(?:0[uuv]0|o[uuv]o)$/i, { Eyes: 'Happy', Mouth: 'Open' }, 'emoSmile'],
-                                    [/^(?:[x:=]3|[x:=]>)$/i, { Mouth: 'Happy' }, 'emoCat'],
-                                    [/^(?:;3|;>)$/i, { Eyes: null, Eyes1: 'Closed', Mouth: 'Happy' }, 'emoCat'],
-                                    [/^(?:=w=|>w>|<w<|=\/{2,5}=)$/i, { Eyes: 'Horny', Mouth: 'Happy' }, 'emoCatW'],
-                                    [/^>w<$/i, { Eyes: 'ShylyHappy', Mouth: 'Happy' }, 'emoCatWClosed'],
-                                    [/^(?:=v=|>v>|<v<)$/i, { Eyes: 'Horny', Mouth: 'Smirk' }, 'emoVSmile'],
-                                    [/^>v<$/i, { Eyes: 'ShylyHappy', Mouth: 'Smile' }, 'emoVSmileClosed'],
-                                    [/^(?:\^~?\^)$/i, { Eyes: 'ShylyHappy', Mouth: 'Smile' }, 'emoHappy'],
-                                    [/^(?:[x:;=]\))$/i, { Mouth: 'Smile' }, 'emoSmile'],
-                                    [/^(?:[x:;]d)$/i, { Mouth: 'Laughing' }, 'emoLaugh'],
-                                    [/^(?:0[._x]0)$/i, { Eyes: 'Surprised', Mouth: 'HalfOpen', Eyebrows: 'Raised' }, 'emoSurprisedZero'],
-                                    [/^(?:o[._x]o)$/i, { Eyes: 'Surprised', Mouth: 'HalfOpen', Eyebrows: 'Raised' }, 'emoSurprisedO'],
-                                    [/^x[_.]?x$/i, { Eyes: 'Dazed', Mouth: 'Sad' }, 'emoDazed'],
-                                    [/^@[_.,~-]*@$/, { Eyes: 'Crazy', Mouth: 'Sad' }, 'emoCrazy'],
-                                    [/^(?:>[.,~_]{1,2}>|<[.,~_]{1,2}<|>{2,3}|<{2,3})$/, { Eyes: 'Dazed', Eyebrows: 'Harsh', Mouth: 'Sad' }, 'emoDazed'],
-                                    [/^(?:==|=[_]=|[xq]_[xq]|o_o)$/i, { Eyes: 'Horny' }, 'emoHorny'],
-                                    [/^;[pd3>\]]$/i, { Eyes: null, Eyes1: 'Closed', Mouth: 'Ahegao' }, 'emoWink'],
-                                    [/^:[pd3>\]]$/i, { Eyes: null, Mouth: 'Ahegao' }, 'emoWink'],
-                                    [/^(?:t[_wv.-]?t|tt)$/i, { Eyes: 'Shy', Mouth: 'Sad', Fluids: 'TearsHigh', Eyebrows: 'Sad' }, 'emoSad'],
-                                    [/^qwq$/i, { Eyes: 'Shy', Mouth: 'Happy', Fluids: 'TearsHigh' }, 'emoQwq'],
-                                    [/^(?:=~=|=.=|=,=)$/i, { Eyes: 'Horny', Mouth: 'Frown', Blush: null }, 'emoFrown'],
-                                    [/^d:$/i, { Eyes: 'Dazed', Mouth: 'Sad' }, 'emoFrown'],
-                                    [/^=[_~^-]=$/i, { Eyes: 'Closed', Mouth: 'Frown' }, 'emoFrown'],
-                                    [/^-_-$/i, { Eyes: 'Dazed', Eyebrows: 'Harsh', Mouth: 'Frown' }, 'emoFrown'],
-                                    [/^(?:[x:;=]\()$/i, { Mouth: 'Frown' }, 'emoFrown'],
-                                    [/^(?:=\/{2,5}=|>\/{2,5}<|=3=|>3<|>3>|<3<)$/i, { Mouth: 'Pout' }, 'emoPout'],
-                                    [/^(?:>[:;x=]|[:;x=]<)$/i, { Eyebrows: 'Angry' }, 'emoAngry'],
-                                    [/^>~<$/i, { Eyes: 'Daydream', Mouth: 'Smirk' }, 'emoDaydream'],
-                                    [/^(?:>[wv._x3]?<|><)$/i, { Eyes: 'Daydream' }, 'emoDaydream']
+                                    [
+                                        /^(?:0[uuv]0|o[uuv]o)$/i,
+                                        { Eyes: "Happy", Mouth: "Open" },
+                                        "emoSmile",
+                                    ],
+                                    [
+                                        /^(?:[x:=]3|[x:=]>)$/i,
+                                        { Mouth: "Happy" },
+                                        "emoCat",
+                                    ],
+                                    [
+                                        /^(?:;3|;>)$/i,
+                                        {
+                                            Eyes: null,
+                                            Eyes1: "Closed",
+                                            Mouth: "Happy",
+                                        },
+                                        "emoCat",
+                                    ],
+                                    [
+                                        /^(?:=w=|>w>|<w<|=\/{2,5}=)$/i,
+                                        { Eyes: "Horny", Mouth: "Happy" },
+                                        "emoCatW",
+                                    ],
+                                    [
+                                        /^>w<$/i,
+                                        { Eyes: "ShylyHappy", Mouth: "Happy" },
+                                        "emoCatWClosed",
+                                    ],
+                                    [
+                                        /^(?:=v=|>v>|<v<)$/i,
+                                        { Eyes: "Horny", Mouth: "Smirk" },
+                                        "emoVSmile",
+                                    ],
+                                    [
+                                        /^>v<$/i,
+                                        { Eyes: "ShylyHappy", Mouth: "Smile" },
+                                        "emoVSmileClosed",
+                                    ],
+                                    [
+                                        /^(?:\^~?\^)$/i,
+                                        { Eyes: "ShylyHappy", Mouth: "Smile" },
+                                        "emoHappy",
+                                    ],
+                                    [
+                                        /^(?:[x:;=]\))$/i,
+                                        { Mouth: "Smile" },
+                                        "emoSmile",
+                                    ],
+                                    [
+                                        /^(?:[x:;]d)$/i,
+                                        { Mouth: "Laughing" },
+                                        "emoLaugh",
+                                    ],
+                                    [
+                                        /^(?:0[._x]0)$/i,
+                                        {
+                                            Eyes: "Surprised",
+                                            Mouth: "HalfOpen",
+                                            Eyebrows: "Raised",
+                                        },
+                                        "emoSurprisedZero",
+                                    ],
+                                    [
+                                        /^(?:o[._x]o)$/i,
+                                        {
+                                            Eyes: "Surprised",
+                                            Mouth: "HalfOpen",
+                                            Eyebrows: "Raised",
+                                        },
+                                        "emoSurprisedO",
+                                    ],
+                                    [
+                                        /^x[_.]?x$/i,
+                                        { Eyes: "Dazed", Mouth: "Sad" },
+                                        "emoDazed",
+                                    ],
+                                    [
+                                        /^@[_.,~-]*@$/,
+                                        { Eyes: "Crazy", Mouth: "Sad" },
+                                        "emoCrazy",
+                                    ],
+                                    [
+                                        /^(?:>[.,~_]{1,2}>|<[.,~_]{1,2}<|>{2,3}|<{2,3})$/,
+                                        {
+                                            Eyes: "Dazed",
+                                            Eyebrows: "Harsh",
+                                            Mouth: "Sad",
+                                        },
+                                        "emoDazed",
+                                    ],
+                                    [
+                                        /^(?:==|=[_]=|[xq]_[xq]|o_o)$/i,
+                                        { Eyes: "Horny" },
+                                        "emoHorny",
+                                    ],
+                                    [
+                                        /^;[pd3>\]]$/i,
+                                        {
+                                            Eyes: null,
+                                            Eyes1: "Closed",
+                                            Mouth: "Ahegao",
+                                        },
+                                        "emoWink",
+                                    ],
+                                    [
+                                        /^:[pd3>\]]$/i,
+                                        { Eyes: null, Mouth: "Ahegao" },
+                                        "emoWink",
+                                    ],
+                                    [
+                                        /^(?:t[_wv.-]?t|tt)$/i,
+                                        {
+                                            Eyes: "Shy",
+                                            Mouth: "Sad",
+                                            Fluids: "TearsHigh",
+                                            Eyebrows: "Sad",
+                                        },
+                                        "emoSad",
+                                    ],
+                                    [
+                                        /^qwq$/i,
+                                        {
+                                            Eyes: "Shy",
+                                            Mouth: "Happy",
+                                            Fluids: "TearsHigh",
+                                        },
+                                        "emoQwq",
+                                    ],
+                                    [
+                                        /^(?:=~=|=.=|=,=)$/i,
+                                        {
+                                            Eyes: "Horny",
+                                            Mouth: "Frown",
+                                            Blush: null,
+                                        },
+                                        "emoFrown",
+                                    ],
+                                    [
+                                        /^d:$/i,
+                                        { Eyes: "Dazed", Mouth: "Sad" },
+                                        "emoFrown",
+                                    ],
+                                    [
+                                        /^=[_~^-]=$/i,
+                                        { Eyes: "Closed", Mouth: "Frown" },
+                                        "emoFrown",
+                                    ],
+                                    [
+                                        /^-_-$/i,
+                                        {
+                                            Eyes: "Dazed",
+                                            Eyebrows: "Harsh",
+                                            Mouth: "Frown",
+                                        },
+                                        "emoFrown",
+                                    ],
+                                    [
+                                        /^(?:[x:;=]\()$/i,
+                                        { Mouth: "Frown" },
+                                        "emoFrown",
+                                    ],
+                                    [
+                                        /^(?:=\/{2,5}=|>\/{2,5}<|=3=|>3<|>3>|<3<)$/i,
+                                        { Mouth: "Pout" },
+                                        "emoPout",
+                                    ],
+                                    [
+                                        /^(?:>[:;x=]|[:;x=]<)$/i,
+                                        { Eyebrows: "Angry" },
+                                        "emoAngry",
+                                    ],
+                                    [
+                                        /^>~<$/i,
+                                        { Eyes: "Daydream", Mouth: "Smirk" },
+                                        "emoDaydream",
+                                    ],
+                                    [
+                                        /^(?:>[wv._x3]?<|><)$/i,
+                                        { Eyes: "Daydream" },
+                                        "emoDaydream",
+                                    ],
                                 ];
                                 const getPunctuationEffect = (str) => {
-                                    if (str.includes('?')) {
+                                    if (str.includes("?")) {
                                         return {
-                                            Emoticon: 'Confusion',
-                                            Eyebrows: str.match(/(?:\?!|!\?)/) ? 'Angry' : 'OneRaised'
+                                            Emoticon: "Confusion",
+                                            Eyebrows: str.match(/(?:\?!|!\?)/)
+                                                ? "Angry"
+                                                : "OneRaised",
                                         };
-                                    } else if (str.includes('!')) {
+                                    } else if (str.includes("!")) {
                                         let brows = null;
-                                        if (str.match(/!{3,}/)) brows = 'Angry';
-                                        else if (str.match(/!{2}/)) brows = 'Harsh';
-                                        return { Emoticon: 'Exclamation', Eyebrows: brows };
-                                    } else if (str.includes('#')) {
-                                        return { Emoticon: 'Annoyed' };
+                                        if (str.match(/!{3,}/)) brows = "Angry";
+                                        else if (str.match(/!{2}/))
+                                            brows = "Harsh";
+                                        return {
+                                            Emoticon: "Exclamation",
+                                            Eyebrows: brows,
+                                        };
+                                    } else if (str.includes("#")) {
+                                        return { Emoticon: "Annoyed" };
                                     }
                                     return null;
                                 };
@@ -1583,146 +2041,280 @@
 
                                 for (const token of String(msg).split(/\s+/)) {
                                     if (/https?:\/\//i.test(token)) continue;
-                                    
+
                                     let match = null;
                                     let baseToken = token;
-                                    let strippedMarks = '';
-                                    
+                                    let strippedMarks = "";
+
                                     const evaluate = (t) => {
-                                        for (const [pattern, face, configKey] of QOL_FACES) {
-                                            if (qolConfig.emoticons[configKey] && pattern.test(t)) return face;
+                                        for (const [
+                                            pattern,
+                                            face,
+                                            configKey,
+                                        ] of QOL_FACES) {
+                                            if (
+                                                qolConfig.emoticons[
+                                                    configKey
+                                                ] &&
+                                                pattern.test(t)
+                                            )
+                                                return face;
                                         }
                                         return null;
                                     };
-                                    
+
                                     match = evaluate(baseToken);
                                     if (!match) {
-                                        const markMatch = baseToken.match(/([?!#~;'",.]+)$/);
+                                        const markMatch =
+                                            baseToken.match(/([?!#~;'",.]+)$/);
                                         if (markMatch) {
                                             strippedMarks = markMatch[1];
-                                            baseToken = baseToken.slice(0, -strippedMarks.length);
+                                            baseToken = baseToken.slice(
+                                                0,
+                                                -strippedMarks.length,
+                                            );
                                             match = evaluate(baseToken);
                                         }
                                     }
                                     if (!match) {
-                                        const slashMatch = baseToken.match(/([/\\]{2,})$/);
+                                        const slashMatch =
+                                            baseToken.match(/([/\\]{2,})$/);
                                         if (slashMatch) {
-                                            baseToken = baseToken.slice(0, -slashMatch[1].length);
+                                            baseToken = baseToken.slice(
+                                                0,
+                                                -slashMatch[1].length,
+                                            );
                                             match = evaluate(baseToken);
                                         }
                                     }
                                     if (!match) {
-                                        const preMatch = baseToken.match(/^([?!#]+)/);
+                                        const preMatch =
+                                            baseToken.match(/^([?!#]+)/);
                                         if (preMatch) {
-                                            baseToken = baseToken.slice(preMatch[1].length);
+                                            baseToken = baseToken.slice(
+                                                preMatch[1].length,
+                                            );
                                             match = evaluate(baseToken);
                                         }
                                     }
 
                                     if (match) {
                                         Object.assign(finalFace, match);
-                                        if (match.Eyebrows !== undefined) hasTextmojiEyebrows = true;
+                                        if (match.Eyebrows !== undefined)
+                                            hasTextmojiEyebrows = true;
 
-                                        const slashMatch = token.match(/[/\\]{2,}/);
+                                        const slashMatch =
+                                            token.match(/[/\\]{2,}/);
                                         if (slashMatch) {
                                             const count = slashMatch[0].length;
                                             if (qolConfig.emoticons.emoBlush) {
-                                                const levels = { 2: 'Low', 3: 'Medium', 4: 'High', 5: 'VeryHigh', 6: 'Extreme' };
-                                                finalFace.Blush = levels[count] || 'Extreme';
+                                                const levels = {
+                                                    2: "Low",
+                                                    3: "Medium",
+                                                    4: "High",
+                                                    5: "VeryHigh",
+                                                    6: "Extreme",
+                                                };
+                                                finalFace.Blush =
+                                                    levels[count] || "Extreme";
                                                 if (count >= 5) {
-                                                    finalFace.Emoticon = 'Hearts';
+                                                    finalFace.Emoticon =
+                                                        "Hearts";
                                                 }
                                             }
                                         }
-                                        if (qolConfig.emoticons.emoSweat && /['";]/.test(strippedMarks)) {
-                                            finalFace.Fluids = finalFace.Fluids || 'TearsLow';
-                                            finalFace.Emoticon = 'Tear';
+                                        if (
+                                            qolConfig.emoticons.emoSweat &&
+                                            /['";]/.test(strippedMarks)
+                                        ) {
+                                            finalFace.Fluids =
+                                                finalFace.Fluids || "TearsLow";
+                                            finalFace.Emoticon = "Tear";
                                         }
                                         if (qolConfig.emoticons.emoFloating) {
-                                            const allMarks = token.replace(baseToken, '');
-                                            const effect = getPunctuationEffect(allMarks);
-                                            if (effect) lastPunctuation = effect;
+                                            const allMarks = token.replace(
+                                                baseToken,
+                                                "",
+                                            );
+                                            const effect =
+                                                getPunctuationEffect(allMarks);
+                                            if (effect)
+                                                lastPunctuation = effect;
                                         }
-                                    } else if (qolConfig.emoticons.emoFloating) {
-                                        const marksOnly = token.replace(/[^?!#]/g, '');
-                                        if (marksOnly === token && marksOnly.length > 0) {
-                                            const effect = getPunctuationEffect(token);
-                                            if (effect) lastPunctuation = effect;
+                                    } else if (
+                                        qolConfig.emoticons.emoFloating
+                                    ) {
+                                        const marksOnly = token.replace(
+                                            /[^?!#]/g,
+                                            "",
+                                        );
+                                        if (
+                                            marksOnly === token &&
+                                            marksOnly.length > 0
+                                        ) {
+                                            const effect =
+                                                getPunctuationEffect(token);
+                                            if (effect)
+                                                lastPunctuation = effect;
                                         }
                                     }
                                 }
 
                                 if (lastPunctuation) {
-                                    finalFace.Emoticon = lastPunctuation.Emoticon;
-                                    if (lastPunctuation.Eyebrows && !hasTextmojiEyebrows) {
-                                        finalFace.Eyebrows = lastPunctuation.Eyebrows;
+                                    finalFace.Emoticon =
+                                        lastPunctuation.Emoticon;
+                                    if (
+                                        lastPunctuation.Eyebrows &&
+                                        !hasTextmojiEyebrows
+                                    ) {
+                                        finalFace.Eyebrows =
+                                            lastPunctuation.Eyebrows;
                                     }
                                 }
 
                                 // AFK / BRB / Back / Zzz logic
                                 let isOOC = msg.trim().startsWith("(");
                                 if (qolConfig.emoticons.emoAfk && isOOC) {
-                                    let afkMatch = msg.match(/\b(afk|brb|back)\b/i);
+                                    let afkMatch =
+                                        msg.match(/\b(afk|brb|back)\b/i);
                                     if (afkMatch) {
                                         let type = afkMatch[1].toLowerCase();
                                         if (type === "back") {
                                             finalFace._afkType = null;
-                                            if (typeof CharacterSetFacialExpression === 'function') CharacterSetFacialExpression(Player, 'Eyes', null, null);
+                                            if (
+                                                typeof CharacterSetFacialExpression ===
+                                                "function"
+                                            )
+                                                CharacterSetFacialExpression(
+                                                    Player,
+                                                    "Eyes",
+                                                    null,
+                                                    null,
+                                                );
                                         } else {
-                                            finalFace._afkType = type.charAt(0).toUpperCase() + type.slice(1);
+                                            finalFace._afkType =
+                                                type.charAt(0).toUpperCase() +
+                                                type.slice(1);
                                         }
                                         delete finalFace.Emoticon;
                                     }
                                 }
 
-
-
                                 // Sleep (zzz) logic (permanent)
-                                if (qolConfig.emoticons.emoFloating && /\bzzz+\b/i.test(msg)) {
+                                if (
+                                    qolConfig.emoticons.emoFloating &&
+                                    /\bzzz+\b/i.test(msg)
+                                ) {
                                     finalFace._afkType = "Sleep";
-                                    if (typeof CharacterSetFacialExpression === 'function') CharacterSetFacialExpression(Player, 'Eyes', 'Closed', null);
+                                    if (
+                                        typeof CharacterSetFacialExpression ===
+                                        "function"
+                                    )
+                                        CharacterSetFacialExpression(
+                                            Player,
+                                            "Eyes",
+                                            "Closed",
+                                            null,
+                                        );
                                     delete finalFace.Emoticon;
                                 }
 
                                 if (Object.keys(finalFace).length > 0) {
-                                    let isChat = !msg.startsWith("/") && !msg.startsWith("*");
-                                    let isWCEAnim = typeof window.bceAnimationEngineEnabled === "function" && window.bceAnimationEngineEnabled();
-                                    
+                                    let isChat =
+                                        !msg.startsWith("/") &&
+                                        !msg.startsWith("*");
+                                    let isWCEAnim =
+                                        typeof window.bceAnimationEngineEnabled ===
+                                            "function" &&
+                                        window.bceAnimationEngineEnabled();
+
                                     let delay = 0;
                                     if (isChat) {
                                         // Calculate slash duration
                                         let slashDuration = 0;
-                                        for (const token of String(msg).split(/\s+/)) {
-                                            if (/https?:\/\//i.test(token)) continue;
-                                            const count = token.match(/[/\\]{2,}/)?.[0].length ?? 0;
-                                            if (count) slashDuration = Math.max(slashDuration, count * 1000);
+                                        for (const token of String(msg).split(
+                                            /\s+/,
+                                        )) {
+                                            if (/https?:\/\//i.test(token))
+                                                continue;
+                                            const count =
+                                                token.match(/[/\\]{2,}/)?.[0]
+                                                    .length ?? 0;
+                                            if (count)
+                                                slashDuration = Math.max(
+                                                    slashDuration,
+                                                    count * 1000,
+                                                );
                                         }
-                                        
+
                                         if (slashDuration > 0) {
-                                            delay = Math.min(Math.max(slashDuration, 5000), 30000);
+                                            delay = Math.min(
+                                                Math.max(slashDuration, 5000),
+                                                30000,
+                                            );
                                         } else if (isWCEAnim) {
-                                            delay = Math.min(msg.length * 65, 5000);
+                                            delay = Math.min(
+                                                msg.length * 65,
+                                                5000,
+                                            );
                                         } else {
                                             let time = 0;
                                             for (const char of msg) {
-                                                if (/[\u4e00-\u9fa5]/.test(char)) time += 300;
-                                                else if (/\w/i.test(char)) time += 150;
+                                                if (
+                                                    /[\u4e00-\u9fa5]/.test(char)
+                                                )
+                                                    time += 300;
+                                                else if (/\w/i.test(char))
+                                                    time += 150;
                                             }
                                             delay = Math.min(time, 30000);
                                         }
                                     }
 
                                     setTimeout(() => {
-                                        for (const [group, expr] of Object.entries(finalFace)) {
-                                            if (group === '_afkType') {
-                                                CharacterSetFacialExpression(Player, "Emoticon", expr, null);
+                                        for (const [
+                                            group,
+                                            expr,
+                                        ] of Object.entries(finalFace)) {
+                                            if (group === "_afkType") {
+                                                CharacterSetFacialExpression(
+                                                    Player,
+                                                    "Emoticon",
+                                                    expr,
+                                                    null,
+                                                );
                                                 continue;
                                             }
-                                            CharacterSetFacialExpression(Player, group, expr, 5);
+                                            CharacterSetFacialExpression(
+                                                Player,
+                                                group,
+                                                expr,
+                                                5,
+                                            );
                                         }
-                                        if (Object.keys(finalFace).some(g => g.startsWith("Eyes") || g === "Mouth")) {
-                                            setTimeout(() => { if (Player && typeof CharacterRefresh === "function") CharacterRefresh(Player); }, 150);
-                                            setTimeout(() => { if (Player && typeof CharacterRefresh === "function") CharacterRefresh(Player); }, 500);
+                                        if (
+                                            Object.keys(finalFace).some(
+                                                (g) =>
+                                                    g.startsWith("Eyes") ||
+                                                    g === "Mouth",
+                                            )
+                                        ) {
+                                            setTimeout(() => {
+                                                if (
+                                                    Player &&
+                                                    typeof CharacterRefresh ===
+                                                        "function"
+                                                )
+                                                    CharacterRefresh(Player);
+                                            }, 150);
+                                            setTimeout(() => {
+                                                if (
+                                                    Player &&
+                                                    typeof CharacterRefresh ===
+                                                        "function"
+                                                )
+                                                    CharacterRefresh(Player);
+                                            }, 500);
                                         }
                                     }, delay);
                                 }
@@ -2176,10 +2768,15 @@
     // Breaks if LCE changes that icon/size; upgrade path is an exposed LCE API.
     let lcePetBtn = { x: 0, y: 0, t: 0 };
     function hookLcePetIcon() {
-        if (hookLcePetIcon.done || typeof window.DrawImageResize !== "function") return;
+        if (hookLcePetIcon.done || typeof window.DrawImageResize !== "function")
+            return;
         hookLcePetIcon.done = true;
         const spy = (a) => {
-            if (a[0] === "Icons/Poses/OverTheHead.png" && a[3] === 37 && a[4] === 37) {
+            if (
+                a[0] === "Icons/Poses/OverTheHead.png" &&
+                a[3] === 37 &&
+                a[4] === 37
+            ) {
                 lcePetBtn.x = a[1] - 4;
                 lcePetBtn.y = a[2] - 4;
                 lcePetBtn.t = Date.now();
@@ -2210,7 +2807,8 @@
         "keydown",
         (e) => {
             if (!qolConfig.enableBcarShortcut) return;
-            if (!e.altKey || e.ctrlKey || e.shiftKey || e.code !== "KeyD") return;
+            if (!e.altKey || e.ctrlKey || e.shiftKey || e.code !== "KeyD")
+                return;
             if (qolConfig.enablePetsuitAnim) {
                 if (animBtn && animBtn.style.display === "flex") {
                     e.preventDefault();
@@ -2226,7 +2824,8 @@
             )
                 return;
             e.preventDefault();
-            const ox = MouseX, oy = MouseY;
+            const ox = MouseX,
+                oy = MouseY;
             MouseX = lcePetBtn.x + 22;
             MouseY = lcePetBtn.y + 22;
             try {
@@ -2764,8 +3363,7 @@
                         }
                     }
                 } else if (hasWardrobeSearch) {
-                    let searchIdx =
-                        window.AppearanceMenu.indexOf("BCX_Search");
+                    let searchIdx = window.AppearanceMenu.indexOf("BCX_Search");
                     if (searchIdx < 0) {
                         searchIdx = window.AppearanceMenu.findIndex(
                             (btn) =>
@@ -2788,8 +3386,7 @@
                                 window.CurrentCharacter ||
                                 window.Player;
                             if (
-                                typeof window.AppearanceMenuClick ===
-                                "function"
+                                typeof window.AppearanceMenuClick === "function"
                             ) {
                                 window.AppearanceMenuClick(C);
                             } else if (
@@ -2987,7 +3584,11 @@
                     Event: "CloseMouth",
                     Keywords: "闭上嘴|Close Mouth|CloseMouth|吞咽口水|Swallow",
                 },
-                { Event: "Spank", Keywords: "拍打|打屁股|轻拍|轻弹|扇耳光|Spank|Slap|Flick|Bap" },
+                {
+                    Event: "Spank",
+                    Keywords:
+                        "拍打|打屁股|轻拍|轻弹|扇耳光|Spank|Slap|Flick|Bap",
+                },
                 { Event: "Cuddle", Keywords: "拥抱|贴贴|抱|Cuddle|Hug" },
                 { Event: "Pinch", Keywords: "掐|拧|掐住|拧住|Pinch" },
                 { Event: "Hit", Keywords: "Hit" },
@@ -3000,24 +3601,33 @@
                 { Event: "Angry", Keywords: "生气|愤怒|Angry|Mad" },
             ];
 
-            const aggressiveEvents = ["Spank", "Hit", "Pinch", "ShockLight", "DroolSides", "LipBite"];
+            const aggressiveEvents = [
+                "Spank",
+                "Hit",
+                "Pinch",
+                "ShockLight",
+                "DroolSides",
+                "LipBite",
+            ];
             const mutualEvents = ["LongKiss", "KissOnLips", "Cuddle"];
 
             for (const m of mappings) {
-                const processedKeywords = m.Keywords.split('|').map(k => {
-                    if (/^[a-z\s]+$/i.test(k)) {
-                        const trimmed = k.trim();
-                        if (/^bite$/i.test(trimmed)) {
-                            return `(?<=^|[^a-z0-9])(?:Bit(?:e|es|ing|ten)?)(?=$|[^a-z0-9])`;
+                const processedKeywords = m.Keywords.split("|")
+                    .map((k) => {
+                        if (/^[a-z\s]+$/i.test(k)) {
+                            const trimmed = k.trim();
+                            if (/^bite$/i.test(trimmed)) {
+                                return `(?<=^|[^a-z0-9])(?:Bit(?:e|es|ing|ten)?)(?=$|[^a-z0-9])`;
+                            }
+                            if (/e$/i.test(trimmed)) {
+                                const stem = trimmed.slice(0, -1);
+                                return `(?<=^|[^a-z0-9])(?:${stem}(?:e|es|ed|ing)|${trimmed})(?=$|[^a-z0-9])`;
+                            }
+                            return `(?<=^|[^a-z0-9])(?:${trimmed})(?:s|es|ed|ing)?(?=$|[^a-z0-9])`;
                         }
-                        if (/e$/i.test(trimmed)) {
-                            const stem = trimmed.slice(0, -1);
-                            return `(?<=^|[^a-z0-9])(?:${stem}(?:e|es|ed|ing)|${trimmed})(?=$|[^a-z0-9])`;
-                        }
-                        return `(?<=^|[^a-z0-9])(?:${trimmed})(?:s|es|ed|ing)?(?=$|[^a-z0-9])`;
-                    }
-                    return k;
-                }).join('|');
+                        return k;
+                    })
+                    .join("|");
 
                 const tagRegex = new RegExp(
                     `^Chat(Other|Self)-.*-.*(${processedKeywords}).*$`,
@@ -3030,7 +3640,11 @@
                     let t = "";
                     if (tagRegex.test(c)) {
                         matched = true;
-                    } else if (c && c.includes("Luzi_") && typeof ActivityDictionaryText === "function") {
+                    } else if (
+                        c &&
+                        c.includes("Luzi_") &&
+                        typeof ActivityDictionaryText === "function"
+                    ) {
                         t = ActivityDictionaryText(c);
                         if (t && textRegex.test(t)) matched = true;
                     }
@@ -3041,12 +3655,19 @@
                         if (c && /^Chat(Other|Self)-Item[A-Za-z]+-/i.test(c)) {
                             if (!c.includes("ItemMouth")) return false;
                         }
-                        if (!t && typeof ActivityDictionaryText === "function") {
+                        if (
+                            !t &&
+                            typeof ActivityDictionaryText === "function"
+                        ) {
                             t = ActivityDictionaryText(c) || "";
                         }
                         if (t) {
-                            const nonMouthParts = /(nose|cheek|forehead|neck|ear|hand|foot|arm|leg|chest|breast|belly|stomach|toe|finger|shoulder|back|butt|ass|pussy|dick|cock|vulva|boob|nipple|鼻子|脸颊|脸|额头|脖子|耳朵|手|脚|胳膊|腿|胸|肚子|脚趾|手指|肩膀|背|屁股|阴部|肉棒|阴茎|乳房|乳头)/i;
-                            if (nonMouthParts.test(t) && !/(lip|mouth|嘴|唇)/i.test(t)) {
+                            const nonMouthParts =
+                                /(nose|cheek|forehead|neck|ear|hand|foot|arm|leg|chest|breast|belly|stomach|toe|finger|shoulder|back|butt|ass|pussy|dick|cock|vulva|boob|nipple|鼻子|脸颊|脸|额头|脖子|耳朵|手|脚|胳膊|腿|胸|肚子|脚趾|手指|肩膀|背|屁股|阴部|肉棒|阴茎|乳房|乳头)/i;
+                            if (
+                                nonMouthParts.test(t) &&
+                                !/(lip|mouth|嘴|唇)/i.test(t)
+                            ) {
                                 return false;
                             }
                         }
@@ -3056,7 +3677,10 @@
                 };
 
                 const matchers = [];
-                if (aggressiveEvents.includes(m.Event) || mutualEvents.includes(m.Event)) {
+                if (
+                    aggressiveEvents.includes(m.Event) ||
+                    mutualEvents.includes(m.Event)
+                ) {
                     matchers.push({
                         Tester: { test: testActivity },
                         Criteria: { TargetIsPlayer: true },
@@ -3084,7 +3708,10 @@
     (function () {
         const initSoundBridge = () => {
             if (!qolConfig.enableEchoSoundBridge) return;
-            if (typeof AudioActions === "undefined" || !Array.isArray(AudioActions)) {
+            if (
+                typeof AudioActions === "undefined" ||
+                !Array.isArray(AudioActions)
+            ) {
                 setTimeout(initSoundBridge, 1500);
                 return;
             }
@@ -3094,65 +3721,85 @@
 
             const soundMappings = [
                 {
-                    Keywords: "拍打|打屁股|轻拍|轻弹|扇耳光|Spank|Flick|Bap|Slap",
-                    Sound: "SpankSkin"
+                    Keywords:
+                        "拍打|打屁股|轻拍|轻弹|扇耳光|Spank|Flick|Bap|Slap",
+                    Sound: "SpankSkin",
                 },
                 {
                     Keywords: "Whip|鞭打",
-                    Sound: "WhipCrack"
+                    Sound: "WhipCrack",
                 },
                 {
                     Keywords: "Pinch|掐|拧",
-                    Sound: "LeatherStretchingShort"
+                    Sound: "LeatherStretchingShort",
                 },
                 {
                     Keywords: "Hit|打",
-                    Sound: "SmackCrop"
-                }
+                    Sound: "SmackCrop",
+                },
             ];
 
             for (const m of soundMappings) {
-                const processedKeywords = m.Keywords.split('|').map(k => {
-                    if (/^[a-z\s]+$/i.test(k)) {
-                        const trimmed = k.trim();
-                        if (/e$/i.test(trimmed)) {
-                            const stem = trimmed.slice(0, -1);
-                            return `(?<=^|[^a-z0-9])(?:${stem}(?:e|es|ed|ing)|${trimmed})(?=$|[^a-z0-9])`;
+                const processedKeywords = m.Keywords.split("|")
+                    .map((k) => {
+                        if (/^[a-z\s]+$/i.test(k)) {
+                            const trimmed = k.trim();
+                            if (/e$/i.test(trimmed)) {
+                                const stem = trimmed.slice(0, -1);
+                                return `(?<=^|[^a-z0-9])(?:${stem}(?:e|es|ed|ing)|${trimmed})(?=$|[^a-z0-9])`;
+                            }
+                            return `(?<=^|[^a-z0-9])(?:${trimmed})(?:s|es|ed|ing)?(?=$|[^a-z0-9])`;
                         }
-                        return `(?<=^|[^a-z0-9])(?:${trimmed})(?:s|es|ed|ing)?(?=$|[^a-z0-9])`;
-                    }
-                    return k;
-                }).join('|');
+                        return k;
+                    })
+                    .join("|");
 
-                const tagRegex = new RegExp(`^Chat(Other|Self)-.*-.*(${processedKeywords}).*$`, "i");
+                const tagRegex = new RegExp(
+                    `^Chat(Other|Self)-.*-.*(${processedKeywords}).*$`,
+                    "i",
+                );
                 const textRegex = new RegExp(`(${processedKeywords})`, "i");
 
                 AudioActions.unshift({
                     IsAction: (data) => {
                         if (data.Type !== "Activity") return false;
-                        
+
                         // Safety Check: Only intercept if it's an Echo Activity or LSCG action.
                         // This ensures we NEVER override native item sounds (like crops, floggers, etc).
                         let isEcho = false;
                         if (Array.isArray(data.Dictionary)) {
-                            isEcho = data.Dictionary.some(d => typeof d.Tag === "string" && d.Tag.includes("Luzi_"));
+                            isEcho = data.Dictionary.some(
+                                (d) =>
+                                    typeof d.Tag === "string" &&
+                                    d.Tag.includes("Luzi_"),
+                            );
                         }
-                        let isLSCG = typeof data.Content === "string" && data.Content.includes("Luzi");
-                        
+                        let isLSCG =
+                            typeof data.Content === "string" &&
+                            data.Content.includes("Luzi");
+
                         if (!isEcho && !isLSCG) return false;
 
                         let c = data.Content;
                         if (tagRegex.test(c)) return true;
-                        if (c && c.includes("Luzi_") && typeof ActivityDictionaryText === "function") {
+                        if (
+                            c &&
+                            c.includes("Luzi_") &&
+                            typeof ActivityDictionaryText === "function"
+                        ) {
                             const t = ActivityDictionaryText(c);
                             return t && textRegex.test(t);
                         }
                         return false;
                     },
-                    GetSoundEffect: () => m.Sound
+                    GetSoundEffect: () => m.Sound,
                 });
             }
-            console.log("BC Desktop: Echo Sound Bridge Loaded (Added " + soundMappings.length + " sound triggers)");
+            console.log(
+                "BC Desktop: Echo Sound Bridge Loaded (Added " +
+                    soundMappings.length +
+                    " sound triggers)",
+            );
         };
         setTimeout(initSoundBridge, 1000);
     })();
@@ -3161,15 +3808,32 @@
     (function () {
         function applyFluidsColor() {
             if (!qolConfig.enableFluidColor) return;
-            if (typeof Player !== 'undefined' && Player && Player.Appearance && Player.MemberNumber) {
+            if (
+                typeof Player !== "undefined" &&
+                Player &&
+                Player.Appearance &&
+                Player.MemberNumber
+            ) {
                 let target = qolConfig.fluidColor || "#547A82";
-                let fluidsItem = Player.Appearance.find(a => a.Asset && a.Asset.Group && a.Asset.Group.Name === "Fluids");
+                let fluidsItem = Player.Appearance.find(
+                    (a) =>
+                        a.Asset &&
+                        a.Asset.Group &&
+                        a.Asset.Group.Name === "Fluids",
+                );
                 if (fluidsItem) {
-                    if (fluidsItem.Color !== target && fluidsItem.Color !== target.toLowerCase()) {
+                    if (
+                        fluidsItem.Color !== target &&
+                        fluidsItem.Color !== target.toLowerCase()
+                    ) {
                         fluidsItem.Color = target;
-                        if (typeof CharacterRefresh === "function") CharacterRefresh(Player);
-                        if (typeof ServerPlayerAppearanceSync === "function") ServerPlayerAppearanceSync();
-                        console.log(`[ChatQoL] Fluids color enforced to ${target}`);
+                        if (typeof CharacterRefresh === "function")
+                            CharacterRefresh(Player);
+                        if (typeof ServerPlayerAppearanceSync === "function")
+                            ServerPlayerAppearanceSync();
+                        console.log(
+                            `[ChatQoL] Fluids color enforced to ${target}`,
+                        );
                     }
                 }
             }
@@ -3183,7 +3847,11 @@
             };
         } else {
             let fluidInitInterval = setInterval(() => {
-                if (typeof Player !== 'undefined' && Player && Player.MemberNumber) {
+                if (
+                    typeof Player !== "undefined" &&
+                    Player &&
+                    Player.MemberNumber
+                ) {
                     applyFluidsColor();
                     clearInterval(fluidInitInterval);
                 }
@@ -3192,7 +3860,9 @@
 
         let origReturnScreen = window.CharacterAppearanceReturnToPreviousScreen;
         if (typeof origReturnScreen === "function") {
-            window.CharacterAppearanceReturnToPreviousScreen = function (...args) {
+            window.CharacterAppearanceReturnToPreviousScreen = function (
+                ...args
+            ) {
                 applyFluidsColor();
                 origReturnScreen(...args);
             };
@@ -3206,15 +3876,28 @@
 
         function lockWhisperTarget(memberNumber) {
             if (qolConfig.persistentWhisper === false) return;
-            if (typeof memberNumber !== "number" || isNaN(memberNumber) || memberNumber < 0) return;
+            if (
+                typeof memberNumber !== "number" ||
+                isNaN(memberNumber) ||
+                memberNumber < 0
+            )
+                return;
 
             // Do not lock onto self
-            const myNumber = typeof window.Player !== "undefined" && window.Player ? window.Player.MemberNumber : -1;
+            const myNumber =
+                typeof window.Player !== "undefined" && window.Player
+                    ? window.Player.MemberNumber
+                    : -1;
             if (memberNumber === myNumber) return;
 
             // Validate that target is still present in the room
-            if (typeof window.ChatRoomCharacter !== "undefined" && Array.isArray(window.ChatRoomCharacter)) {
-                const inRoom = window.ChatRoomCharacter.some(c => c && c.MemberNumber === memberNumber);
+            if (
+                typeof window.ChatRoomCharacter !== "undefined" &&
+                Array.isArray(window.ChatRoomCharacter)
+            ) {
+                const inRoom = window.ChatRoomCharacter.some(
+                    (c) => c && c.MemberNumber === memberNumber,
+                );
                 if (!inRoom) return;
             }
 
@@ -3239,7 +3922,10 @@
             // Strip prefilled /whisper or /w command while preserving the message body typed by user
             const input = document.getElementById("InputChat");
             if (input && typeof input.value === "string") {
-                const stripped = input.value.replace(/^\/(?:whisper|w)\s+\d+\s*/i, "");
+                const stripped = input.value.replace(
+                    /^\/(?:whisper|w)\s+\d+\s*/i,
+                    "",
+                );
                 if (stripped !== input.value) {
                     input.value = stripped;
                 }
@@ -3247,27 +3933,47 @@
         }
 
         function initHooks() {
-            if (typeof window.ChatRoomMessageSetReply === "function" && !window.ChatRoomMessageSetReply._pwHooked) {
+            if (
+                typeof window.ChatRoomMessageSetReply === "function" &&
+                !window.ChatRoomMessageSetReply._pwHooked
+            ) {
                 const origSetReply = window.ChatRoomMessageSetReply;
                 window.ChatRoomMessageSetReply = function (msgId) {
                     origSetReply.apply(this, arguments);
 
                     if (qolConfig.persistentWhisper === false) return;
                     try {
-                        const isWhisper = typeof window.ChatRoomMessageGetType === "function"
-                            ? window.ChatRoomMessageGetType(msgId) === "Whisper"
-                            : false;
+                        const isWhisper =
+                            typeof window.ChatRoomMessageGetType === "function"
+                                ? window.ChatRoomMessageGetType(msgId) ===
+                                  "Whisper"
+                                : false;
 
                         if (isWhisper) {
-                            const replyMsg = typeof window.ChatRoomMessageGetById === "function"
-                                ? window.ChatRoomMessageGetById(msgId)
-                                : null;
+                            const replyMsg =
+                                typeof window.ChatRoomMessageGetById ===
+                                "function"
+                                    ? window.ChatRoomMessageGetById(msgId)
+                                    : null;
 
                             if (replyMsg) {
-                                const sender = Number(replyMsg.getAttribute("data-sender"));
-                                const target = Number(replyMsg.getAttribute("data-target"));
-                                const myNumber = typeof window.Player !== "undefined" && window.Player ? window.Player.MemberNumber : -1;
-                                const receiver = (sender === myNumber && !isNaN(target) && target >= 0) ? target : sender;
+                                const sender = Number(
+                                    replyMsg.getAttribute("data-sender"),
+                                );
+                                const target = Number(
+                                    replyMsg.getAttribute("data-target"),
+                                );
+                                const myNumber =
+                                    typeof window.Player !== "undefined" &&
+                                    window.Player
+                                        ? window.Player.MemberNumber
+                                        : -1;
+                                const receiver =
+                                    sender === myNumber &&
+                                    !isNaN(target) &&
+                                    target >= 0
+                                        ? target
+                                        : sender;
 
                                 if (!isNaN(receiver) && receiver >= 0) {
                                     lockWhisperTarget(receiver);
@@ -3275,46 +3981,81 @@
                             }
                         }
                     } catch (e) {
-                        console.error("[ChatQoL] Error in Persistent Whisper Reply hook", e);
+                        console.error(
+                            "[ChatQoL] Error in Persistent Whisper Reply hook",
+                            e,
+                        );
                     }
                 };
                 window.ChatRoomMessageSetReply._pwHooked = true;
             }
 
-            if (typeof window.ChatRoomMessageNameClick === "function" && !window.ChatRoomMessageNameClick._pwHooked) {
+            if (
+                typeof window.ChatRoomMessageNameClick === "function" &&
+                !window.ChatRoomMessageNameClick._pwHooked
+            ) {
                 const origNameClick = window.ChatRoomMessageNameClick;
                 window.ChatRoomMessageNameClick = function () {
                     origNameClick.apply(this, arguments);
 
                     if (qolConfig.persistentWhisper === false) return;
                     try {
-                        const el = this?.parentElement ? this : window.event?.currentTarget;
-                        const sender = Number.parseInt(el?.parentElement?.dataset.sender, 10);
-                        const target = Number.parseInt(el?.parentElement?.dataset.target, 10);
-                        const myNumber = typeof window.Player !== "undefined" && window.Player ? window.Player.MemberNumber : -1;
-                        const receiver = (sender === myNumber && !isNaN(target) && target >= 0) ? target : sender;
+                        const el = this?.parentElement
+                            ? this
+                            : window.event?.currentTarget;
+                        const sender = Number.parseInt(
+                            el?.parentElement?.dataset.sender,
+                            10,
+                        );
+                        const target = Number.parseInt(
+                            el?.parentElement?.dataset.target,
+                            10,
+                        );
+                        const myNumber =
+                            typeof window.Player !== "undefined" &&
+                            window.Player
+                                ? window.Player.MemberNumber
+                                : -1;
+                        const receiver =
+                            sender === myNumber && !isNaN(target) && target >= 0
+                                ? target
+                                : sender;
 
                         if (!isNaN(receiver) && receiver >= 0) {
                             lockWhisperTarget(receiver);
                         }
                     } catch (e) {
-                        console.error("[ChatQoL] Error in Persistent Whisper NameClick hook", e);
+                        console.error(
+                            "[ChatQoL] Error in Persistent Whisper NameClick hook",
+                            e,
+                        );
                     }
                 };
                 window.ChatRoomMessageNameClick._pwHooked = true;
             }
 
-            if (typeof window.ChatRoomSendWhisper === "function" && !window.ChatRoomSendWhisper._pwHooked) {
+            if (
+                typeof window.ChatRoomSendWhisper === "function" &&
+                !window.ChatRoomSendWhisper._pwHooked
+            ) {
                 const origSendWhisper = window.ChatRoomSendWhisper;
                 window.ChatRoomSendWhisper = function (targetNumber, msg) {
                     const res = origSendWhisper.apply(this, arguments);
 
                     if (qolConfig.persistentWhisper !== false) {
-                        if (res === true && typeof targetNumber === "number" && targetNumber >= 0) {
+                        if (
+                            res === true &&
+                            typeof targetNumber === "number" &&
+                            targetNumber >= 0
+                        ) {
                             lockWhisperTarget(targetNumber);
                         } else if (res === "target-gone") {
-                            if (typeof window.ChatRoomSendLocal === "function") {
-                                window.ChatRoomSendLocal(`<div style="color: #ff6b81; font-style: italic;">Target is no longer in the room. Press Esc or type /p to return to public chat.</div>`);
+                            if (
+                                typeof window.ChatRoomSendLocal === "function"
+                            ) {
+                                window.ChatRoomSendLocal(
+                                    `<div style="color: #ff6b81; font-style: italic;">Target is no longer in the room. Press Esc or type /p to return to public chat.</div>`,
+                                );
                             }
                         }
                     }
@@ -3324,18 +4065,32 @@
                 window.ChatRoomSendWhisper._pwHooked = true;
             }
 
-            if (typeof window.CommandParse === "function" && !window.CommandParse._pwHooked) {
+            if (
+                typeof window.CommandParse === "function" &&
+                !window.CommandParse._pwHooked
+            ) {
                 const origCommandParse = window.CommandParse;
                 window.CommandParse = function (msg) {
-                    if (qolConfig.persistentWhisper !== false && typeof msg === "string") {
+                    if (
+                        qolConfig.persistentWhisper !== false &&
+                        typeof msg === "string"
+                    ) {
                         const raw = msg.trim();
                         const lower = raw.toLowerCase();
-                        if (lower === "/p" || lower === "/public" || lower === "/all") {
+                        if (
+                            lower === "/p" ||
+                            lower === "/public" ||
+                            lower === "/all"
+                        ) {
                             unlockWhisperTarget();
-                            if (typeof window.CommandChangeChatInputContent === "function") {
+                            if (
+                                typeof window.CommandChangeChatInputContent ===
+                                "function"
+                            ) {
                                 window.CommandChangeChatInputContent("");
                             } else {
-                                const input = document.getElementById("InputChat");
+                                const input =
+                                    document.getElementById("InputChat");
                                 if (input) input.value = "";
                             }
                             return true;
@@ -3351,17 +4106,31 @@
                 window.CommandParse._pwHooked = true;
             }
 
-            document.addEventListener("keydown", function (e) {
-                if (qolConfig.persistentWhisper === false) return;
-                if (e.key === "Escape") {
-                    if (typeof window.CurrentScreen !== "undefined" && window.CurrentScreen === "ChatRoom") {
-                        const hasWhisperPrefix = typeof e.target?.value === "string" && /^\/(?:whisper|w)\s+\d+/i.test(e.target.value);
-                        if (e.target?.id === "InputChat" && ((window.ChatRoomTargetMemberNumber != null && window.ChatRoomTargetMemberNumber >= 0) || hasWhisperPrefix)) {
-                            unlockWhisperTarget();
+            document.addEventListener(
+                "keydown",
+                function (e) {
+                    if (qolConfig.persistentWhisper === false) return;
+                    if (e.key === "Escape") {
+                        if (
+                            typeof window.CurrentScreen !== "undefined" &&
+                            window.CurrentScreen === "ChatRoom"
+                        ) {
+                            const hasWhisperPrefix =
+                                typeof e.target?.value === "string" &&
+                                /^\/(?:whisper|w)\s+\d+/i.test(e.target.value);
+                            if (
+                                e.target?.id === "InputChat" &&
+                                ((window.ChatRoomTargetMemberNumber != null &&
+                                    window.ChatRoomTargetMemberNumber >= 0) ||
+                                    hasWhisperPrefix)
+                            ) {
+                                unlockWhisperTarget();
+                            }
                         }
                     }
-                }
-            }, true);
+                },
+                true,
+            );
         }
 
         const interval = setInterval(() => {
@@ -3378,4 +4147,3 @@
         setTimeout(() => clearInterval(interval), 30000);
     })();
 })();
-
