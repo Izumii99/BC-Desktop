@@ -34,7 +34,7 @@ public partial class MainWindow // NOSONAR
 
         try
         {
-            await Task.Delay(3000, token);
+            await Task.Delay(800, token);
             if (!token.IsCancellationRequested && WindowState != WindowState.Minimized && WebView.CoreWebView2 is { } core)
             {
                 _lastThrottleState = 2;

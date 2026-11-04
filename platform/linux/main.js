@@ -448,8 +448,8 @@ const CapUnfocusedFpsScript =
     "if(window._bcIsMinimized)return;" +
     "if(window._bcIsBackground){" +
     "const now=typeof ts==='number'?ts:performance.now();" +
-    "const isBurst=now<(window._bcBgBurstUntil||0)||window.CurrentScreen==='Relog'||window.CurrentScreen==='ChatSearch'||window.CurrentScreen==='Login';" +
-    "if(isBurst?(now-_lastBgDrawTime<66):(now-_lastBgDrawTime<1000))return;" +
+    "const isBurst=now<(window._bcBgBurstUntil||0);" +
+    "if(isBurst?(now-_lastBgDrawTime<200):(now-_lastBgDrawTime<1000))return;" +
     "_lastBgDrawTime=now;" +
     "}" +
     "return _origDraw.apply(this,arguments);" +
@@ -477,7 +477,7 @@ const CapUnfocusedFpsScript =
     "if(window.bcLastMousedown&&!window.bcLastMousedown.isConnected)window.bcLastMousedown=null;" +
     "if(window.bcLastFocusedLayer&&!window.bcLastFocusedLayer.isConnected)window.bcLastFocusedLayer=null;" +
     "const now=Date.now();" +
-    "if(typeof window.gc==='function'&&(!window._bcLastGc||now-window._bcLastGc>60000)){window._bcLastGc=now;try{window.gc();}catch(e){}}" +
+    "if(typeof window._bcPruneGpuNow==='function'){try{window._bcPruneGpuNow();}catch(e){}}const _paws=document.getElementById('bcn-soft-paws');if(_paws)_paws.style.setProperty('display','none','important');if(typeof window.gc==='function'&&(!window._bcLastGc||now-window._bcLastGc>60000)){window._bcLastGc=now;try{window.gc();}catch(e){}}" +
     "})()";
 
 const RestoreUnfocusedFpsScript =
@@ -558,6 +558,59 @@ const CopyAndFocusScript = `
                 return document.__bcOrigHasFocus.apply(this, arguments);
             };
         }
+        if (!window.__bcInputActivityBound) {
+            window.__bcInputActivityBound = true;
+            window._bcLastCanvasInputTime = performance.now();
+            let _lastMoveTrack = 0;
+            const _markActive = () => { window._bcLastCanvasInputTime = performance.now(); };
+            window.addEventListener('pointerdown', _markActive, { passive: true, capture: true });
+            window.addEventListener('wheel', _markActive, { passive: true, capture: true });
+            window.addEventListener('pointermove', () => {
+                const n = performance.now();
+                if (n - _lastMoveTrack > 100) { _lastMoveTrack = n; window._bcLastCanvasInputTime = n; }
+            }, { passive: true, capture: true });
+            window.addEventListener('keydown', (ev) => {
+                const t = ev && ev.target;
+                if (t && (t.tagName === 'TEXTAREA' || t.tagName === 'INPUT')) return;
+                window._bcLastCanvasInputTime = performance.now();
+            }, { passive: true, capture: true });
+        }
+        if (!window._bcGetTargetFrameDelta) {
+            window._bcGetTargetFrameDelta = function(now) {
+                if (window._bcIsBackground) {
+                    return now < (window._bcBgBurstUntil || 0) ? 200 : 500;
+                }
+                if (window.CurrentModule === 'MiniGame' || window.CurrentScreen === 'KinkyDungeon' || (typeof window.StruggleProgress === 'number' && window.StruggleProgress >= 0)) {
+                    return 25;
+                }
+                const idleMs = now - (window._bcLastCanvasInputTime || 0);
+                const inRoomOrDialog = window.CurrentScreen === 'ChatRoom' || window.CurrentScreen === 'Appearance' || window.CurrentCharacter != null;
+                if (!inRoomOrDialog) {
+                    return idleMs < 1200 ? 42 : 125;
+                }
+                if (idleMs < 1500) return 32;
+                if (idleMs < 5000 || window.CurrentCharacter != null) return 66;
+                return 100;
+            };
+        }
+        if (!window.__bcGameRunHooked && typeof window.GameRun === 'function') {
+            window.__bcGameRunHooked = true;
+            const _origGameRun = window.GameRun;
+            let _lastGameRunTime = 0;
+            window.GameRun = function(ts) {
+                if (window._bcIsMinimized) return;
+                const now = typeof ts === 'number' ? ts : performance.now();
+                const minDelta = window._bcGetTargetFrameDelta ? window._bcGetTargetFrameDelta(now) : 32;
+                if (now - _lastGameRunTime < minDelta) {
+                    if (!window.GameIsCrashed) {
+                        window.GameAnimationFrameId = requestAnimationFrame(window.GameRun);
+                    }
+                    return;
+                }
+                _lastGameRunTime = now;
+                return _origGameRun.apply(this, arguments);
+            };
+        }
         if (!window._bcRequestBgBurst) {
             window._bcRequestBgBurst = function(ms) {
                 const t = performance.now() + (ms || 2500);
@@ -572,8 +625,16 @@ const CopyAndFocusScript = `
                 if (window._bcIsMinimized) return;
                 if (window._bcIsBackground) {
                     const now = typeof ts === 'number' ? ts : performance.now();
-                    const isBurst = now < (window._bcBgBurstUntil || 0) || window.CurrentScreen === 'Relog' || window.CurrentScreen === 'ChatSearch' || window.CurrentScreen === 'Login';
-                    if (isBurst ? (now - _lastBgDrawTime < 66) : (now - _lastBgDrawTime < 1000)) return;
+                    const isBurst = now < (window._bcBgBurstUntil || 0);
+                    if (isBurst ? (now - _lastBgDrawTime < 200) : (now - _lastBgDrawTime < 1000)) return;
+                    _lastBgDrawTime = now;
+                } else {
+                    const now = typeof ts === 'number' ? ts : performance.now();
+                    const minDelta = window._bcGetTargetFrameDelta ? window._bcGetTargetFrameDelta(now) : 32;
+                    if (now - (_lastBgDrawTime || 0) < minDelta) return;
+                    _lastBgDrawTime = now;
+                }
+                if (false) {
                     _lastBgDrawTime = now;
                 }
                 if (typeof _origDrawLinux === 'function') return _origDrawLinux.apply(this, arguments);
@@ -595,6 +656,10 @@ const CopyAndFocusScript = `
                     window._bcLastGlobalCanvasBuild = now;
                     nextChar._bcLastCanvasBuild = now;
                     try { _origLoad.call(window, nextChar); } catch (e) {}
+                    if (window.GLDrawImageCache && window.GLDrawImageCache.cache && window.GLDrawImageCache.cache.size > 50 && typeof window._bcPruneGpuNow === 'function') {
+                        try { window._bcPruneGpuNow(); } catch (e) {}
+                    }
+                    if (typeof window._bcSchedulePostBuildPrune === 'function') window._bcSchedulePostBuildPrune();
                 }
                 if (q.length > 0) {
                     window._bcCanvasQueueTimer = setTimeout(_drainCanvasQueue, 24);
@@ -1242,7 +1307,7 @@ const CopyAndFocusScript = `
     // Safe VRAM, Active-Room Texture Protection & Chat Virtualization
     (function setupSafeVramOptimization() {
         window.__bcLifecycleGuardActive = true;
-        const NORMAL_PURGE_DELAY = 6 * 60 * 1000;
+        const NORMAL_PURGE_DELAY = 45 * 1000;
         const WARDROBE_PURGE_DELAY = 90 * 1000;
         const trackedRoomCanvases = new Map();
         let lastActiveAssetUrls = new Set();
@@ -1306,6 +1371,44 @@ const CopyAndFocusScript = `
                 if (gl) {
                     hookGlCacheDelete(gl);
                     const glImgMap = window.GLDrawImageCache && window.GLDrawImageCache.cache;
+                    if (glImgMap && typeof glImgMap.forEach === 'function' && typeof window.GLDrawImageCache.delete === 'function') {
+                        const isBg = Boolean(window._bcIsBackground);
+                        const isWardrobe = window.CurrentScreen === 'Appearance';
+                        const maxGlSize = isBg ? 0 : (isWardrobe ? 90 : 25);
+                        const maxGlAge = isBg ? 0 : (isWardrobe ? 45000 : 8000);
+                        const nowTime = typeof window.CommonTime === 'function' ? window.CommonTime() : Date.now();
+                        const glToDelete = [];
+                        glImgMap.forEach((img, key) => {
+                            if (!img || (typeof img.isLoading === 'function' && img.isLoading())) return;
+                            if (!isBg && activeAssetUrls && activeAssetUrls.has(key)) return;
+                            const age = nowTime - (img.lastUsed || 0);
+                            if (isBg || age > maxGlAge || (glImgMap.size - glToDelete.length > maxGlSize)) {
+                                glToDelete.push(key);
+                            }
+                        });
+                        for (let i = 0; i < glToDelete.length; i++) {
+                            window.GLDrawImageCache.delete(glToDelete[i]);
+                        }
+                    }
+                    if (window.DrawImageCache && window.DrawImageCache.cache && typeof window.DrawImageCache.delete === 'function') {
+                        const dMap = window.DrawImageCache.cache;
+                        const isBg = Boolean(window._bcIsBackground);
+                        const maxDrawSize = isBg ? 30 : 75;
+                        const nowTime = typeof window.CommonTime === 'function' ? window.CommonTime() : Date.now();
+                        const dToDelete = [];
+                        dMap.forEach((img, key) => {
+                            if (!img || (typeof img.isLoading === 'function' && img.isLoading())) return;
+                            if (!isBg && activeAssetUrls && activeAssetUrls.has(key)) return;
+                            const isCharLayer = typeof key === 'string' && key.indexOf('Assets/') >= 0 && key.indexOf('/Preview/') < 0;
+                            const age = nowTime - (img.lastUsed || 0);
+                            if ((isCharLayer && (isBg || age > 8000)) || (dMap.size - dToDelete.length > maxDrawSize)) {
+                                dToDelete.push(key);
+                            }
+                        });
+                        for (let i = 0; i < dToDelete.length; i++) {
+                            window.DrawImageCache.delete(dToDelete[i]);
+                        }
+                    }
                     const texCache = gl.textureCache;
                     if (texCache && typeof texCache.forEach === 'function') {
                         const toDelete = [];
@@ -1333,6 +1436,20 @@ const CopyAndFocusScript = `
                         }
                     }
                     const maskCache = gl.maskCache;
+                    if (maskCache) {
+                        if (window._bcIsBackground && typeof maskCache.clear === 'function') {
+                            maskCache.clear();
+                        } else if (maskCache.size > 10 && typeof maskCache.keys === 'function') {
+                            const mKeys = Array.from(maskCache.keys());
+                            const removeCount = maskCache.size - 6;
+                            for (let i = 0; i < removeCount && i < mKeys.length; i++) {
+                                maskCache.delete(mKeys[i]);
+                            }
+                        }
+                    }
+                    if (typeof gl.flush === 'function') {
+                        try { gl.flush(); } catch (e) {}
+                    }
                     if (maskCache && maskCache.size > 40 && typeof maskCache.keys === 'function') {
                         const mKeys = Array.from(maskCache.keys());
                         const removeCount = maskCache.size - 25;
@@ -1354,6 +1471,17 @@ const CopyAndFocusScript = `
         }
 
         // Ensure all users (including those without neko-dark.js) receive chat virtualization without losing chat history
+        window._bcPruneGpuNow = function() {
+            protectActiveRoomTextures();
+            pruneWebGlGpuTextures(lastActiveAssetUrls);
+        };
+        window._bcSchedulePostBuildPrune = function() {
+            if (window._bcPostBuildPruneTimer) clearTimeout(window._bcPostBuildPruneTimer);
+            window._bcPostBuildPruneTimer = setTimeout(() => {
+                window._bcPostBuildPruneTimer = null;
+                if (window._bcPruneGpuNow) window._bcPruneGpuNow();
+            }, 2500);
+        };
         function ensureChatVirtualizationCss() {
             if (!document.head || document.getElementById('bc-desktop-chat-virt')) return;
             const st = document.createElement('style');
@@ -1428,6 +1556,83 @@ const CopyAndFocusScript = `
                 }
 
                 function attachRoomHooks() {
+                    if (typeof window.CommonDrawWarmDrawnAssets === 'function' && !window.__bcWarmAssetsHooked) {
+                        window.__bcWarmAssetsHooked = true;
+                        window.CommonDrawWarmDrawnAssets = function() {
+                            if (window._bcIsBackground || window._bcIsMinimized) return;
+                            const now = typeof window.CommonTime === 'function' ? window.CommonTime() : Date.now();
+                            if (now - (window._bcLastWarmAssets || 0) < 10000) return;
+                            window._bcLastWarmAssets = now;
+                            const list = Array.isArray(window.DrawLastCharacters) ? window.DrawLastCharacters : [];
+                            for (let i = 0; i < list.length; i++) {
+                                const c = list[i];
+                                if (!c || (!c.MustDraw && !c._bcBuildingLayers && window.CurrentScreen !== 'Appearance')) continue;
+                                if (c.DrawnAssets && typeof c.DrawnAssets.forEach === 'function') {
+                                    c.DrawnAssets.forEach(item => {
+                                        if (window.DrawImageCache && window.DrawImageCache.has(item)) window.DrawImageCache.get(item);
+                                        if (window.GLDrawImageCache && window.GLDrawImageCache.has(item)) window.GLDrawImageCache.get(item);
+                                    });
+                                }
+                            }
+                        };
+                    }
+                    if (typeof window.GLDrawAppearanceBuild === 'function' && !window.__bcGLBuildHooked) {
+                        window.__bcGLBuildHooked = true;
+                        const _origGLBuild = window.GLDrawAppearanceBuild;
+                        let _backupCanvas = null;
+                        let _backupCtx = null;
+                        window.GLDrawAppearanceBuild = function(C) {
+                            const hadReady = Boolean(C && C._bcCanvasReady && C.Canvas && C.Canvas.width > 0 && C.CanvasBlink && C.CanvasBlink.width > 0);
+                            if (hadReady) {
+                                try {
+                                    if (!_backupCanvas) {
+                                        _backupCanvas = document.createElement('canvas');
+                                        _backupCanvas.width = 1000;
+                                        _backupCanvas.height = C.Canvas.height || 1000;
+                                        _backupCtx = _backupCanvas.getContext('2d');
+                                    }
+                                    if (_backupCtx) {
+                                        if (_backupCanvas.height !== C.Canvas.height) _backupCanvas.height = C.Canvas.height;
+                                        _backupCtx.clearRect(0, 0, 1000, _backupCanvas.height);
+                                        _backupCtx.drawImage(C.Canvas, 0, 0);
+                                        _backupCtx.drawImage(C.CanvasBlink, 500, 0);
+                                    }
+                                } catch (e) {}
+                            }
+                            const res = _origGLBuild.apply(this, arguments);
+                            if (C && C.DrawnAssets && window.GLDrawImageCache && window.GLDrawImageCache.cache) {
+                                let anyLoading = false;
+                                const glMap = window.GLDrawImageCache.cache;
+                                C.DrawnAssets.forEach(url => {
+                                    const entry = glMap.get(url);
+                                    if (entry && typeof entry.isLoading === 'function' && entry.isLoading()) {
+                                        anyLoading = true;
+                                    }
+                                });
+                                C._bcBuildingLayers = anyLoading;
+                                const now = performance.now();
+                                if (anyLoading && hadReady && _backupCtx && (now - (C._bcDeferStart || now) < 600)) {
+                                    if (!C._bcDeferStart) C._bcDeferStart = now;
+                                    try {
+                                        const h = C.Canvas.height;
+                                        const ctx1 = C.Canvas.getContext('2d');
+                                        const ctx2 = C.CanvasBlink.getContext('2d');
+                                        if (ctx1 && ctx2) {
+                                            ctx1.clearRect(0, 0, 500, h);
+                                            ctx1.drawImage(_backupCanvas, 0, 0, 500, h, 0, 0, 500, h);
+                                            ctx2.clearRect(0, 0, 500, h);
+                                            ctx2.drawImage(_backupCanvas, 500, 0, 500, h, 0, 0, 500, h);
+                                        }
+                                    } catch (e) {}
+                                } else if (!anyLoading) {
+                                    C._bcCanvasReady = true;
+                                    C._bcDeferStart = 0;
+                                    if (window._bcSchedulePostBuildPrune) window._bcSchedulePostBuildPrune();
+                                }
+                            }
+                            return res;
+                        };
+                    }
                     if (typeof window.ChatRoomSyncMemberLeave === 'function' && !window.__bcMemberLeaveHooked) {
                         window.__bcMemberLeaveHooked = true;
                         const _origLeave = window.ChatRoomSyncMemberLeave;
@@ -1485,7 +1690,7 @@ const CopyAndFocusScript = `
                         window.__bcMsgBurstHooked = true;
                         const _origMsg = window.ChatRoomMessage;
                         window.ChatRoomMessage = function(data) {
-                            if (window._bcIsBackground && !window._bcIsMinimized && window._bcRequestBgBurst) {
+                            if (false && window._bcIsBackground && !window._bcIsMinimized && window._bcRequestBgBurst) {
                                 window._bcRequestBgBurst(2500);
                             }
                             return _origMsg.apply(this, arguments);
@@ -1495,7 +1700,7 @@ const CopyAndFocusScript = `
                         window.__bcSendBurstHooked = true;
                         const _origSend = window.ServerSend;
                         window.ServerSend = function(msg, data) {
-                            if (window._bcIsBackground && !window._bcIsMinimized && window._bcRequestBgBurst) {
+                            if (false && window._bcIsBackground && !window._bcIsMinimized && window._bcRequestBgBurst) {
                                 window._bcRequestBgBurst(2500);
                             }
                             return _origSend.apply(this, arguments);
@@ -1524,7 +1729,9 @@ const CopyAndFocusScript = `
                 const glMap = window.GLDrawImageCache && window.GLDrawImageCache.cache;
                 const activeUrls = new Set();
                 for (let i = 0; i < chars.length; i++) {
-                    const drawn = chars[i] && chars[i].DrawnAssets;
+                    const cObj = chars[i];
+                    const keepWarm = cObj && (cObj.MustDraw || cObj._bcBuildingLayers || (window.CurrentScreen === 'Appearance' && (cObj === window.CurrentCharacter || cObj === window.Player)));
+                    const drawn = keepWarm ? cObj.DrawnAssets : null;
                     if (drawn && typeof drawn.forEach === 'function') {
                         drawn.forEach(url => {
                             activeUrls.add(url);
@@ -1533,7 +1740,9 @@ const CopyAndFocusScript = `
                 }
                 lastActiveAssetUrls = activeUrls;
                 for (let i = 0; i < chars.length; i++) {
-                    const drawn = chars[i] && chars[i].DrawnAssets;
+                    const cObj = chars[i];
+                    const keepWarm = cObj && (cObj.MustDraw || cObj._bcBuildingLayers || (window.CurrentScreen === 'Appearance' && (cObj === window.CurrentCharacter || cObj === window.Player)));
+                    const drawn = keepWarm ? cObj.DrawnAssets : null;
                     if (drawn && typeof drawn.forEach === 'function') {
                         drawn.forEach(url => {
                             const dImg = drawMap && typeof drawMap.get === 'function' ? drawMap.get(url) : null;
@@ -1620,7 +1829,7 @@ const CopyAndFocusScript = `
                     try { window.gc(); } catch (e) {}
                 }
             } catch (e) {}
-        }, 45 * 1000);
+        }, 15 * 1000);
 
         // 2. Safe gentle prune 12s after leaving Wardrobe (Appearance)
         let lastScreen = null;

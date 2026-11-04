@@ -388,7 +388,7 @@
             html body #bcn-soft-paws span {
                 color: ${P.icon} !important;
                 text-shadow: none !important;
-                opacity: 0.12 !important;
+                opacity: 0.12 !important; animation: none !important; transition: none !important; will-change: auto !important;
             }
 
             /* Portrait Mode (Mobile / Narrow View) - move 50% to bottom & shift new-message/toast to right (left: 70%) to avoid blocking input */
@@ -737,10 +737,10 @@
 
     let lastPawsRect = { left: -1, top: -1, width: -1, height: -1 };
     function syncPawsPosition() {
-        if (window._bcIsBackground) return;
+        if (window._bcIsBackground || window._bcIsMinimized || (typeof window.CurrentScreen === "string" && window.CurrentScreen !== "ChatRoom")) { const p = document.getElementById("bcn-soft-paws"); if (p) p.style.setProperty("display", "none", "important"); return; }
         const paws = document.getElementById("bcn-soft-paws");
         const log = document.getElementById("TextAreaChatLog");
-        if (!paws || !log) return;
+        if (!paws) return; if (!log || log.offsetParent === null) { paws.style.setProperty("display", "none", "important"); return; } paws.style.setProperty("display", "block", "important");
         const rect = log.getBoundingClientRect();
         if (rect.width > 0 && rect.height > 0) {
             const l = Math.round(rect.left);

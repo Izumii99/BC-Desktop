@@ -98,7 +98,8 @@
         "chat-qol.js": { title: "Chat QoL", desc: "Quality of Life features for chat window, textmojis & fluid color enforcer.", icon: "https://cdn.jsdelivr.net/gh/Izumii99/BC-Desktop@main/Assets/gear_small.png", url: "https://github.com/Izumii99/BC-Desktop/blob/main/Scripts/chat-qol.js" },
         "translate.js": { title: "In-Game Translator", desc: "In-game translation tool for chat messages.", icon: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="48" height="48" style="width: 100%; height: 100%; display: block;"><defs><linearGradient id="g" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#4f46e5"/><stop offset="50%" stop-color="#7c3aed"/><stop offset="100%" stop-color="#9333ea"/></linearGradient></defs><rect width="48" height="48" rx="11" fill="url(#g)"/><g fill="none" stroke="#ffffff" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round" transform="translate(10, 10) scale(1.16)"><path d="M3 5h12M9 3v2m1.048 9.5A18.022 18.022 0 016.412 9m6.088 9h7M11 21l5-10 5 10M12.751 5C11.783 10.77 8.07 15.61 3 18.129"/></g></svg>`, url: "https://github.com/Izumii99/BC-Desktop/blob/main/Scripts/translate.js" },
         "cheat-menu.js": { title: "Cheat Menu", desc: "Quick access cheats for restraints, wardrobe, and NPCs.", icon: "https://cdn.jsdelivr.net/gh/Izumii99/BC-Desktop@main/Assets/cheat_ui.png", url: "https://github.com/Izumii99/BC-Desktop/blob/main/Scripts/cheat-menu.js" },
-        "neko-dark.js": { title: "Neko Dark Theme", desc: "A sleek dark theme for Bondage Club by Neko.", url: "https://github.com/Izumii99/BC-Desktop/blob/main/Scripts/neko-dark.js" }
+        "neko-dark.js": { title: "Neko Dark Theme", desc: "A sleek dark theme for Bondage Club by Neko.", url: "https://github.com/Izumii99/BC-Desktop/blob/main/Scripts/neko-dark.js" },
+        "FreyasSeidr": { title: "Freya's Seidr", desc: "Holds, undress, custom activities, animations, slash commands & room manager.", icon: "https://freya-bc.github.io/Freyas-Seidr/assets/freyas-seidr-logo.png", url: "https://freya-bc.github.io/Freyas-Seidr/docs/view.html#README", externalUrl: "https://freya-bc.github.io/Freyas-Seidr/loader.js" }
     };
 
     const SCRIPT_ORDER = [
@@ -107,7 +108,8 @@
         "chat-qol.js",
         "translate.js",
         "cheat-menu.js",
-        "neko-dark.js"
+        "neko-dark.js",
+        "FreyasSeidr"
     ];
 
     function sortScripts(list) {

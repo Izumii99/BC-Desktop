@@ -121,7 +121,7 @@ public partial class MainWindow : Window // NOSONAR
         }
         else
         {
-            if (isCloaked || (_unfocusedStartTime != DateTime.MinValue && (DateTime.UtcNow - _unfocusedStartTime).TotalSeconds >= 3))
+            if (isCloaked || (_unfocusedStartTime != DateTime.MinValue && (DateTime.UtcNow - _unfocusedStartTime).TotalSeconds >= 1))
             {
                 if (_lastThrottleState != 2)
                 {
