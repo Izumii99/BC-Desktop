@@ -237,7 +237,7 @@ public partial class MainWindow : Window // NOSONAR
                     "--no-pings " +
                     "--disable-background-timer-throttling " +
                     "--disable-backgrounding-occluded-windows " +
-                    "--force-gpu-mem-available-mb=512 " +
+                    "--force-gpu-mem-available-mb=384 " +
                     "--force-gpu-mem-discardable-limit-mb=128 " +
                     "--gpu-rasterization-msaa-sample-count=0 " +
                     "--max-gum-fps=60 " +
@@ -378,6 +378,7 @@ public partial class MainWindow : Window // NOSONAR
         // classic <script> function declarations overwrite configurable global accessors during page load.
         await core.AddScriptToExecuteOnDocumentCreatedAsync(@"
             if(typeof window.pidx==='undefined'){try{Object.defineProperty(window,'pidx',{get:()=>0,set:()=>{},configurable:true});}catch(e){}}
+            try{if(localStorage.getItem('GLDraw-antialiasOff')===null)localStorage.setItem('GLDraw-antialiasOff','true');}catch(e){}
             if(!document.__bcOrigHasFocus&&typeof document.hasFocus==='function'){
                 document.__bcOrigHasFocus=document.hasFocus;
                 document.hasFocus=function(){if(window._bcIsBackground)return false;return document.__bcOrigHasFocus.apply(this,arguments);};

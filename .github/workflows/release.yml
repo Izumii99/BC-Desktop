@@ -8,14 +8,14 @@ name: 'Build and Release'
   workflow_dispatch:
     inputs:
       version:
-        description: 'Release version / tag (e.g., 7.5.4)'
+        description: 'Release version / tag (e.g., 7.5.5)'
         required: false
-        default: '7.5.4'
+        default: '7.5.5'
         type: string
       title:
         description: 'Release Title Highlight (Title Case)'
         required: false
-        default: 'Smart Background Render Burst, Character Pre-Loading & Animation Fluidity'
+        default: 'Crowded Room Stutter Fix, GPU Process Memory Reduction & Dialog Responsiveness'
         type: string
       notes:
         description: 'Custom Release Notes (leave empty to use standard template)'

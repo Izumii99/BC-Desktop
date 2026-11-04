@@ -1,10 +1,9 @@
 ### Fixes & Improvements:
 
-- **Fix (Virtual Desktop Background Reconnect):** Fixed an issue where running dummy accounts on another Virtual Desktop would freeze background auto-reconnection timers, allowing automatic reconnection to work seamlessly in the background.
-- **Fix (Linux Standalone F5 Reload & Addon Settings Memory):** Fixed an issue on Linux where pressing F5 failed to refresh the game, and resolved an issue where turning on addon mod loaders (such as Liko Plugin or FUSAM) would reset back to disabled after closing the app.
-- **Feature (Smart Background Character Pre-Loading):** Players joining or changing outfits in a room now load and build their character appearance in the background while you are Alt-Tabbed, ensuring characters are already visible without pop-in delays when you look at or return to the window.
-- **Improvement (Activity-Aware Background Animation Burst):** Automatic and manual JSON-driven animations from `BCAR`, `BC-LCE`, and `BC-HSC` now wake the background renderer into a temporary ~15 FPS burst only while active and automatically return to 1 FPS deep-idle mode afterward, preserving low RAM, CPU, and GPU usage with full anti-leak protection.
-- **Improvement (Smoother Foreground Animations & Overlay Responsiveness):** Raised foreground character canvas animation responsiveness to 30+ FPS and eliminated layout stutters when hypnosis or visual overlay effects (`BC-HSC`, `BC-LCE`) add or remove screen elements.
+- **Fix (GPU Process Memory Usage):** Fixed an issue where graphics memory in the background GPU process could climb to 800MB-1GB+ during long sessions or while running other games, by automatically cleaning up unused character layer textures and temporary render buffers as soon as they are no longer needed.
+- **Fix (Crowded Room & Startup Frame Drops):** Eliminated heavy stutters and frame drops when opening the game or entering crowded rooms with up to 10 characters by loading background character outfits smoothly one by one while keeping your own character and the character you are interacting with instant.
+- **Improvement (Instant Character Click & Dialog Menu Response):** Clicking on characters in a busy room and navigating through item and restraint menus now responds immediately without UI freezes or layout delays.
+- **Feature (Configurable Auto-Focus in Chat QoL):** Added a new "Auto-Focus Text Input" setting under Keyboard Shortcuts & Navigation in Chat QoL Settings so players can choose whether chat and search boxes are focused automatically.
 
 ### Downloads:
 

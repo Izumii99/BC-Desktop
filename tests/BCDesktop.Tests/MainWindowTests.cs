@@ -102,7 +102,7 @@ public class MainWindowTests
         StringAssert.Contains(code, "--expose-gc");
 
         // VRAM capping and memory budget flags (sized for multi-instance shared GPU process)
-        StringAssert.Contains(code, "--force-gpu-mem-available-mb=512");
+        StringAssert.Contains(code, "--force-gpu-mem-available-mb=384");
         StringAssert.Contains(code, "--force-gpu-mem-discardable-limit-mb=128");
         StringAssert.Contains(code, "--gpu-rasterization-msaa-sample-count=0");
         StringAssert.Contains(code, "--disable-site-isolation-trials");
@@ -489,7 +489,7 @@ public class MainWindowTests
     [TestMethod]
     public void AppVersionComparison_AccuratelyEvaluatesSemanticVersions()
     {
-        Assert.AreEqual("7.5.4", MainWindow.CurrentAppVersion, "CurrentAppVersion must be 7.5.4.");
+        Assert.AreEqual("7.5.5", MainWindow.CurrentAppVersion, "CurrentAppVersion must be 7.5.5.");
 
         Assert.IsTrue(MainWindow.IsNewerVersion("v7.5", "7.4"), "v7.5 must be newer than 7.4.");
         Assert.IsTrue(MainWindow.IsNewerVersion("7.5", "7.4"), "7.5 must be newer than 7.4.");
@@ -906,6 +906,12 @@ public class MainWindowTests
         StringAssert.Contains(mainJs, "__bcFastSetImageHooked", "Linux main.js must guard ElementButton.SetImage against redundant per-frame img.src assignments.");
         Assert.IsFalse(mainJs.Contains("WEBGL_lose_context"), "Linux main.js must never call WEBGL_lose_context.");
         Assert.IsFalse(mainJs.Contains("GLDrawImageCache.clear()"), "Linux main.js must never forcefully wipe GLDrawImageCache.");
+        StringAssert.Contains(csContent, "hookGlCacheDelete", "MainWindow must hook WebGL textureCache.delete to call gl.deleteTexture.");
+        StringAssert.Contains(csContent, "pruneWebGlGpuTextures", "MainWindow must prune orphaned WebGL textures from GPU process.");
+        StringAssert.Contains(csContent, "_bcCanvasQueue", "MainWindow must stagger non-priority character canvas builds via _bcCanvasQueue.");
+        StringAssert.Contains(mainJs, "hookGlCacheDelete", "Linux main.js must hook WebGL textureCache.delete to call gl.deleteTexture.");
+        StringAssert.Contains(mainJs, "pruneWebGlGpuTextures", "Linux main.js must prune orphaned WebGL textures from GPU process.");
+        StringAssert.Contains(mainJs, "_bcCanvasQueue", "Linux main.js must stagger non-priority character canvas builds via _bcCanvasQueue.");
     }
 
     [TestMethod]

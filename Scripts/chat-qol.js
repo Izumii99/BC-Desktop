@@ -52,6 +52,7 @@
         enableFluidColor: false,
         fluidColor: "#547A82",
         persistentWhisper: false,
+        enableAutoFocus: typeof window.AndroidBridge === "undefined",
     };
     try {
         const saved = localStorage.getItem("BCDesktop_ChatQoL_Config");
@@ -65,6 +66,16 @@
             );
             if (qolConfig.persistentWhisper === undefined) {
                 qolConfig.persistentWhisper = false;
+            }
+            if (typeof window.AndroidBridge !== "undefined") {
+                const androidAf = localStorage.getItem("BC_Android_AutoFocus");
+                if (androidAf === "true" || androidAf === "false") {
+                    qolConfig.enableAutoFocus = androidAf === "true";
+                } else if (parsed.enableAutoFocus === undefined) {
+                    qolConfig.enableAutoFocus = false;
+                }
+            } else if (qolConfig.enableAutoFocus === undefined) {
+                qolConfig.enableAutoFocus = true;
             }
             if (qolConfig.enableSearchShortcut === undefined) {
                 qolConfig.enableSearchShortcut = true;
@@ -80,7 +91,23 @@
         console.log("BC Desktop: Injected official BC-LCE mod loader.");
     }
 
+    function syncAutoFocusRuntime() {
+        const enabled = Boolean(qolConfig.enableAutoFocus);
+        window._bcAutoFocusEnabled = enabled;
+        window._bcAndroidAutoFocusEnabled = enabled;
+        try {
+            if (typeof window.AndroidBridge !== "undefined") {
+                localStorage.setItem("BC_Android_AutoFocus", enabled ? "true" : "false");
+            }
+            if (typeof window._bcSetAutoFocusEnabled === "function") {
+                window._bcSetAutoFocusEnabled(enabled, true);
+            }
+        } catch (e) {}
+    }
+    syncAutoFocusRuntime();
+
     function saveQolConfig() {
+        syncAutoFocusRuntime();
         try {
             localStorage.setItem(
                 "BCDesktop_ChatQoL_Config",
@@ -871,6 +898,34 @@
 
     // --- Category 2: Keyboard Shortcuts & Navigation - Sorted Alphabetically ---
     const cat2 = createCategory("Keyboard Shortcuts & Navigation", false);
+    const autoFocusToggleRow = createToggle(
+        "enableAutoFocus",
+        "Auto-Focus Text Input",
+        "Automatically focuses chat and search boxes. Disabled by default on Android to prevent the keyboard from shifting the screen.",
+    );
+    window._bcSyncQolAutoFocusToggle = function (enabled) {
+        qolConfig.enableAutoFocus = Boolean(enabled);
+        window._bcAutoFocusEnabled = qolConfig.enableAutoFocus;
+        window._bcAndroidAutoFocusEnabled = qolConfig.enableAutoFocus;
+        try {
+            localStorage.setItem("BCDesktop_ChatQoL_Config", JSON.stringify(qolConfig));
+            const chk = autoFocusToggleRow.querySelector("input[type='checkbox']");
+            if (chk && chk.checked !== qolConfig.enableAutoFocus) {
+                chk.checked = qolConfig.enableAutoFocus;
+                const spans = autoFocusToggleRow.querySelectorAll("span");
+                if (spans[0]) {
+                    spans[0].style.backgroundColor = chk.checked ? "#a29bfe" : "#3d3554";
+                    spans[0].style.boxShadow = chk.checked
+                        ? "0 0 8px rgba(162, 155, 254, 0.5)"
+                        : "inset 0 2px 4px rgba(0,0,0,0.3)";
+                }
+                if (spans[1]) {
+                    spans[1].style.left = chk.checked ? "19px" : "3px";
+                }
+            }
+        } catch (e) {}
+    };
+    cat2.body.appendChild(autoFocusToggleRow);
     cat2.body.appendChild(
         createToggle(
             "enableSearchShortcut",
