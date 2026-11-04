@@ -25,7 +25,7 @@ internal static class ScriptHelpers
         "if(window._bcIsMinimized)return;" +
         "if(window._bcIsBackground){" +
         "const now=typeof ts==='number'?ts:performance.now();" +
-        "const isBurst=now<(window._bcBgBurstUntil||0);" +
+        "const isBurst=now<(window._bcBgBurstUntil||0)||window.CurrentScreen==='Relog'||window.CurrentScreen==='ChatSearch'||window.CurrentScreen==='Login';" +
         "if(isBurst?(now-_lastBgDrawTime<200):(now-_lastBgDrawTime<1000))return;" +
         "_lastBgDrawTime=now;" +
         "}" +
@@ -36,7 +36,7 @@ internal static class ScriptHelpers
         "window.__bcBgLoadCanvasHooked=true;" +
         "const _origLoad=window.CharacterLoadCanvas;" +
         "window.CharacterLoadCanvas=function(C){" +
-        "if(window._bcIsMinimized||window._bcIsBackground){if(C)C._bcPendingCanvasBuild=true;return;}" +
+        "if(window._bcIsMinimized){if(C)C._bcPendingCanvasBuild=true;return;}" +
         "if(window._bcIsBackground&&window._bcRequestBgBurst)window._bcRequestBgBurst(2500);" +
         "return _origLoad.apply(this,arguments);" +
         "};" +
@@ -45,7 +45,7 @@ internal static class ScriptHelpers
         "window.__bcBuildCanvasHooked=true;" +
         "const _origBuild=window.CharacterAppearanceBuildCanvas;" +
         "window.CharacterAppearanceBuildCanvas=function(C){" +
-        "if(window._bcIsMinimized||window._bcIsBackground){if(C)C._bcPendingCanvasBuild=true;return;}" +
+        "if(window._bcIsMinimized){if(C)C._bcPendingCanvasBuild=true;return;}" +
         "if(window._bcIsBackground&&window._bcRequestBgBurst)window._bcRequestBgBurst(2500);" +
         "return _origBuild.apply(this,arguments);" +
         "};" +
@@ -54,13 +54,13 @@ internal static class ScriptHelpers
         "if(window.bcLastMousedown&&!window.bcLastMousedown.isConnected)window.bcLastMousedown=null;" +
         "if(window.bcLastFocusedLayer&&!window.bcLastFocusedLayer.isConnected)window.bcLastFocusedLayer=null;" +
         "const now=Date.now();" +
-        "if(typeof window._bcPruneGpuNow==='function'){try{window._bcPruneGpuNow();}catch(e){}}const _paws=document.getElementById('bcn-soft-paws');if(_paws)_paws.style.setProperty('display','none','important');if(typeof window.gc==='function'&&(!window._bcLastGc||now-window._bcLastGc>60000)){window._bcLastGc=now;try{window.gc();}catch(e){}}" +
+        "const _paws=document.getElementById('bcn-soft-paws');if(_paws)_paws.style.setProperty('display','none','important');if(typeof window.gc==='function'&&(!window._bcLastGc||now-window._bcLastGc>60000)){window._bcLastGc=now;try{window.gc();}catch(e){}}" +
         "})()";
 
     internal const string RestoreUnfocusedFpsScript =
         "(()=>{" +
         "window._bcIsBackground=false;window._bcIsMinimized=false;window._bcLastCanvasInputTime=performance.now();const g=window.bcFpsCap;if(g){if(g.MaxUnfocusedFPS===15)g.MaxUnfocusedFPS=0;window.bcFpsCap=null;}" +
-        "const now=typeof window.CommonTime==='function'?window.CommonTime():Date.now();if(window.DrawImageCache)window.DrawImageCache.lastPurge=now;if(window.GLDrawImageCache)window.GLDrawImageCache.lastPurge=now;" +
+        "const now=typeof window.CurrentTime==='number'?window.CurrentTime:0;if(window.DrawImageCache)window.DrawImageCache.lastPurge=now;if(window.GLDrawImageCache)window.GLDrawImageCache.lastPurge=now;" +
         "const chars=(Array.isArray(window.ChatRoomCharacter)?window.ChatRoomCharacter.slice():[]);" +
         "if(window.Player&&!chars.includes(window.Player))chars.push(window.Player);if(window.CurrentCharacter&&!chars.includes(window.CurrentCharacter))chars.push(window.CurrentCharacter);if(Array.isArray(window.DrawLastCharacters)){for(let j=0;j<window.DrawLastCharacters.length;j++){if(window.DrawLastCharacters[j]&&!chars.includes(window.DrawLastCharacters[j]))chars.push(window.DrawLastCharacters[j]);}}" +
         "for(let i=0;i<chars.length;i++){" +
@@ -160,7 +160,7 @@ internal static class ScriptHelpers
                             if (window._bcIsMinimized) return;
                             if (window._bcIsBackground) {
                                 const now = typeof ts === 'number' ? ts : performance.now();
-                                const isBurst = now < (window._bcBgBurstUntil || 0);
+                                const isBurst = now < (window._bcBgBurstUntil || 0) || window.CurrentScreen === 'Relog' || window.CurrentScreen === 'ChatSearch' || window.CurrentScreen === 'Login';
                                 if (isBurst ? (now - _lastBgDrawTime < 200) : (now - _lastBgDrawTime < 1000)) return;
                                 _lastBgDrawTime = now;
                             } else {
@@ -181,7 +181,7 @@ internal static class ScriptHelpers
                         if (!Array.isArray(window._bcCanvasQueue)) window._bcCanvasQueue = [];
                         const _drainCanvasQueue = function() {
                             window._bcCanvasQueueTimer = null;
-                            if (window._bcIsMinimized || window._bcIsBackground) return;
+                            if (window._bcIsMinimized) return;
                             const q = window._bcCanvasQueue;
                             if (!Array.isArray(q) || q.length === 0) return;
                             const nextChar = q.shift();
@@ -212,7 +212,7 @@ internal static class ScriptHelpers
                             };
                         }
                         window.CharacterLoadCanvas = function(C) {
-                            if (window._bcIsMinimized || window._bcIsBackground) {
+                            if (window._bcIsMinimized) {
                                 if (C) C._bcPendingCanvasBuild = true;
                                 return;
                             }
@@ -258,7 +258,7 @@ internal static class ScriptHelpers
                         window.__bcBuildCanvasHooked = true;
                         const _origBuild = window.CharacterAppearanceBuildCanvas;
                         window.CharacterAppearanceBuildCanvas = function(C) {
-                            if (window._bcIsMinimized || window._bcIsBackground) {
+                            if (window._bcIsMinimized) {
                                 if (C) C._bcPendingCanvasBuild = true;
                                 return;
                             }
@@ -846,7 +846,7 @@ internal static class ScriptHelpers
             // Safe VRAM, Active-Room Texture Protection & Chat Virtualization
             (function setupSafeVramOptimization() {
                 window.__bcLifecycleGuardActive = true;
-                const NORMAL_PURGE_DELAY = 90 * 1000;
+                const NORMAL_PURGE_DELAY = 180 * 1000;
                 const WARDROBE_PURGE_DELAY = 90 * 1000;
                 const trackedRoomCanvases = new Map();
                 let lastActiveAssetUrls = new Set();
@@ -917,11 +917,12 @@ internal static class ScriptHelpers
                                 const nowTime = typeof window.CommonTime === 'function' ? window.CommonTime() : Date.now();
                                 const glToDelete = [];
                                 glImgMap.forEach((img, key) => {
+                                    if (typeof key !== 'string' || !key.startsWith('Assets/') || key.indexOf('/Preview/') >= 0) return;
                                     if (!img || (typeof img.isLoading === 'function' && img.isLoading())) return;
                                     if (typeof img.isDoneLoading === 'function' && !img.isDoneLoading()) return;
                                     if (activeAssetUrls && activeAssetUrls.has(key)) return;
                                     const age = nowTime - (img.lastUsed || 0);
-                                    if (isBg || (age > maxGlAge && (glImgMap.size - glToDelete.length > maxGlSize))) {
+                                    if (age > (isBg ? 15000 : 45000)) {
                                         glToDelete.push(key);
                                     }
                                 });
@@ -936,11 +937,12 @@ internal static class ScriptHelpers
                                 const nowTime = typeof window.CommonTime === 'function' ? window.CommonTime() : Date.now();
                                 const dToDelete = [];
                                 dMap.forEach((img, key) => {
+                                    if (typeof key !== 'string' || !key.startsWith('Assets/') || key.indexOf('/Preview/') >= 0) return;
                                     if (!img || (typeof img.isLoading === 'function' && img.isLoading())) return;
                                     if (typeof img.isDoneLoading === 'function' && !img.isDoneLoading()) return;
                                     if (activeAssetUrls && activeAssetUrls.has(key)) return;
                                     const age = nowTime - (img.lastUsed || 0);
-                                    if (isBg || (age > 30000 && (dMap.size - dToDelete.length > maxDrawSize))) {
+                                    if (age > (isBg ? 15000 : 45000)) {
                                         dToDelete.push(key);
                                     }
                                 });
@@ -1080,7 +1082,7 @@ internal static class ScriptHelpers
                 }
 
                 function attachRoomHooks() {
-                    if (typeof window.CommonDrawWarmDrawnAssets === 'function' && !window.__bcWarmAssetsHooked) {
+                    if (false && typeof window.CommonDrawWarmDrawnAssets === 'function' && !window.__bcWarmAssetsHooked) {
                         window.__bcWarmAssetsHooked = true;
                         const _origWarm = window.CommonDrawWarmDrawnAssets;
                         window.CommonDrawWarmDrawnAssets = function() {
@@ -1185,11 +1187,12 @@ internal static class ScriptHelpers
                         const now = typeof window.CommonTime === 'function' ? window.CommonTime() : Date.now();
                         const drawMap = window.DrawImageCache && window.DrawImageCache.cache;
                         const glMap = window.GLDrawImageCache && window.GLDrawImageCache.cache;
+                        if (drawMap && typeof drawMap.forEach === 'function') { drawMap.forEach((dImg, url) => { if (dImg && typeof url === 'string' && !url.startsWith('Assets/')) dImg.lastUsed = now; }); }
                         if (Array.isArray(window.DrawLastCharacters)) { for (let i = 0; i < window.DrawLastCharacters.length; i++) { const dc = window.DrawLastCharacters[i]; if (dc && !chars.includes(dc)) chars.push(dc); } }
                         const activeUrls = new Set();
                         for (let i = 0; i < chars.length; i++) {
                             const cObj = chars[i];
-                            const keepWarm = Boolean(cObj && (!window._bcIsBackground || cObj === window.Player));
+                            const keepWarm = Boolean(cObj);
                             const drawn = keepWarm ? cObj.DrawnAssets : null;
                             if (drawn && typeof drawn.forEach === 'function') {
                                 drawn.forEach(url => {
@@ -1200,7 +1203,7 @@ internal static class ScriptHelpers
                         lastActiveAssetUrls = activeUrls;
                         for (let i = 0; i < chars.length; i++) {
                             const cObj = chars[i];
-                            const keepWarm = Boolean(cObj && (!window._bcIsBackground || cObj === window.Player));
+                            const keepWarm = Boolean(cObj);
                             const drawn = keepWarm ? cObj.DrawnAssets : null;
                             if (drawn && typeof drawn.forEach === 'function') {
                                 drawn.forEach(url => {
