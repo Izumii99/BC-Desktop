@@ -5,7 +5,6 @@
 - **Improvement (Instant Character Click & Dialog Menu Response):** Clicking on characters in a busy room and navigating through item and restraint menus now responds immediately without UI freezes or layout delays.
 - **Feature (Configurable Auto-Focus in Chat QoL):** Added a new "Auto-Focus Text Input" setting under Keyboard Shortcuts & Navigation in Chat QoL Settings so players can choose whether chat and search boxes are focused automatically.
 - **Improvement (Universal Idle GPU Usage Reduction):** Significantly lowered graphics card usage when standing still in rooms, browsing menus, or switching to other games, while keeping active animations, minigames, and interactions completely smooth.
-- **Feature (Freya's Seidr Addon Support):** Added Freya's Seidr to the Addons Manager list (disabled by default) for optional access to holds, undress activities, custom animations, slash commands, and room management.
 
 ### Downloads:
 
