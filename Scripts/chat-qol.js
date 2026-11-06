@@ -39,6 +39,7 @@
         enableScrollShortcut: true,
         forceUngarbled: true,
         persistIconState: true,
+        persistRoomCustomization: true,
         smartClosedEyes: true,
         enablePetsuitAnim: false,
         enableEchoMouthPull: false,
@@ -79,6 +80,9 @@
             }
             if (qolConfig.enableSearchShortcut === undefined) {
                 qolConfig.enableSearchShortcut = true;
+            }
+            if (qolConfig.persistRoomCustomization === undefined) {
+                qolConfig.persistRoomCustomization = true;
             }
         }
     } catch (e) {}
@@ -300,8 +304,14 @@
         });
 
         chk.onchange = (e) => {
-            if (isSub) qolConfig.emoticons[subKey] = e.target.checked;
-            else qolConfig[key] = e.target.checked;
+            if (isSub) {
+                qolConfig.emoticons[subKey] = e.target.checked;
+            } else {
+                qolConfig[key] = e.target.checked;
+                if (key === "forceUngarbled" && typeof setUngarbledActive === "function") {
+                    setUngarbledActive(e.target.checked);
+                }
+            }
 
             slider.style.backgroundColor = e.target.checked
                 ? "#a29bfe"
@@ -994,6 +1004,13 @@
     );
     cat3.body.appendChild(
         createToggle(
+            "persistRoomCustomization",
+            "Persist Room Customization",
+            "Restores room customization (gear icon) on join for rooms where it was previously enabled.",
+        ),
+    );
+    cat3.body.appendChild(
+        createToggle(
             "enableScreenshotCleaner",
             "Screenshot Cleaner",
             "Hides UI elements when taking a screenshot (Photo Mode).",
@@ -1309,6 +1326,199 @@
         }, speed);
     };
 
+    // --- Unified Persistence Logic (Ungarbled, Room Customization, Icon State) ---
+    function getSavedUngarbledState() {
+        try {
+            const val = localStorage.getItem("BCDesktop_ChatQoL_LastUngarbled");
+            if (val === "true") return true;
+            if (val === "false") return false;
+        } catch (e) {}
+        return null;
+    }
+
+    function setUngarbledActive(enabled) {
+        try {
+            localStorage.setItem(
+                "BCDesktop_ChatQoL_LastUngarbled",
+                enabled ? "true" : "false",
+            );
+        } catch (e) {}
+        if (
+            typeof Player !== "undefined" &&
+            Player &&
+            Player.ImmersionSettings
+        ) {
+            Player.ImmersionSettings.ShowUngarbledMessages = Boolean(enabled);
+        }
+        const cb = document.getElementById(
+            "preference-immersion-ShowUngarbledMessages",
+        );
+        if (cb && cb.checked !== Boolean(enabled)) {
+            cb.checked = Boolean(enabled);
+        }
+    }
+
+    function applyUngarbledState() {
+        if (!qolConfig.forceUngarbled) return;
+        if (
+            typeof Player === "undefined" ||
+            !Player ||
+            !Player.ImmersionSettings
+        ) {
+            return;
+        }
+
+        const saved = getSavedUngarbledState();
+        if (saved === true) {
+            Player.ImmersionSettings.ShowUngarbledMessages = true;
+            const cb = document.getElementById(
+                "preference-immersion-ShowUngarbledMessages",
+            );
+            if (cb && !cb.checked) {
+                cb.checked = true;
+            }
+        } else if (saved === false) {
+            Player.ImmersionSettings.ShowUngarbledMessages = false;
+            const cb = document.getElementById(
+                "preference-immersion-ShowUngarbledMessages",
+            );
+            if (cb && cb.checked) {
+                cb.checked = false;
+            }
+        } else {
+            // First time initialization: retain player's current setting and store it
+            const current = Boolean(Player.ImmersionSettings.ShowUngarbledMessages);
+            try {
+                localStorage.setItem(
+                    "BCDesktop_ChatQoL_LastUngarbled",
+                    current ? "true" : "false",
+                );
+            } catch (e) {}
+        }
+    }
+
+    // Room Customization (Gear Button) Persistence by Room Name
+    function getSavedCustomizedRooms() {
+        try {
+            const raw = localStorage.getItem(
+                "BCDesktop_ChatQoL_RoomCustomization",
+            );
+            return raw ? JSON.parse(raw) : {};
+        } catch (e) {
+            return {};
+        }
+    }
+
+    function isRoomCustomizationSaved(roomName) {
+        if (!roomName) return false;
+        const rooms = getSavedCustomizedRooms();
+        return Boolean(rooms[roomName]);
+    }
+
+    function setRoomCustomizationSaved(roomName, enabled) {
+        if (!roomName) return;
+        try {
+            const rooms = getSavedCustomizedRooms();
+            if (enabled) {
+                rooms[roomName] = true;
+            } else {
+                delete rooms[roomName];
+            }
+            localStorage.setItem(
+                "BCDesktop_ChatQoL_RoomCustomization",
+                JSON.stringify(rooms),
+            );
+        } catch (e) {}
+    }
+
+    let roomCustomizationTimer = null;
+    let lastCustomizationHandledRoom = "";
+
+    function applyRoomCustomizationOnJoin() {
+        if (roomCustomizationTimer) {
+            clearInterval(roomCustomizationTimer);
+            roomCustomizationTimer = null;
+        }
+        if (!qolConfig.persistRoomCustomization) return;
+        const roomName = window.ChatRoomData?.Name;
+        if (!roomName || !isRoomCustomizationSaved(roomName)) {
+            // Cutoff immediately if room customization is not enabled for this room
+            return;
+        }
+
+        let attempts = 0;
+        roomCustomizationTimer = setInterval(() => {
+            attempts++;
+            if (
+                window.CurrentScreen !== "ChatRoom" ||
+                window.ChatRoomData?.Name !== roomName
+            ) {
+                clearInterval(roomCustomizationTimer);
+                roomCustomizationTimer = null;
+                return;
+            }
+            if (document.getElementById("chat-room-menu-CustomizationOff")) {
+                clearInterval(roomCustomizationTimer);
+                roomCustomizationTimer = null;
+                return;
+            }
+            const onBtn = document.getElementById(
+                "chat-room-menu-CustomizationOn",
+            );
+            if (onBtn) {
+                onBtn.click();
+                clearInterval(roomCustomizationTimer);
+                roomCustomizationTimer = null;
+                return;
+            }
+            if (attempts >= 10) {
+                clearInterval(roomCustomizationTimer);
+                roomCustomizationTimer = null;
+            }
+        }, 150);
+    }
+
+    function checkAndApplyRoomCustomization() {
+        const roomName = window.ChatRoomData?.Name;
+        if (!roomName || lastCustomizationHandledRoom === roomName) return;
+        lastCustomizationHandledRoom = roomName;
+        applyRoomCustomizationOnJoin();
+    }
+
+    // Delegated DOM Event Listeners for Persistence
+    document.addEventListener(
+        "change",
+        function (e) {
+            if (
+                e.target &&
+                e.target.id === "preference-immersion-ShowUngarbledMessages"
+            ) {
+                setUngarbledActive(Boolean(e.target.checked));
+            }
+        },
+        true,
+    );
+
+    document.addEventListener(
+        "click",
+        function (e) {
+            const btn =
+                e.target && e.target.closest
+                    ? e.target.closest("button")
+                    : null;
+            if (!btn) return;
+            const roomName = window.ChatRoomData?.Name;
+            if (!roomName) return;
+
+            if (btn.id === "chat-room-menu-CustomizationOn") {
+                setRoomCustomizationSaved(roomName, true);
+            } else if (btn.id === "chat-room-menu-CustomizationOff") {
+                setRoomCustomizationSaved(roomName, false);
+            }
+        },
+        true,
+    );
+
     setInterval(() => {
         try {
             if (window._bcIsMinimized) return;
@@ -1319,84 +1529,14 @@
             ) {
                 if (
                     typeof CurrentScreen !== "undefined" &&
-                    CurrentScreen === "Login"
+                    (CurrentScreen === "Login" || CurrentScreen === "Relog")
                 ) {
                     window._chatQol_IconStateAppliedThisLogin = false;
                     window._chatQol_UngarbledAppliedThisLogin = false;
+                    lastCustomizationHandledRoom = "";
                 } else if (!window._chatQol_UngarbledAppliedThisLogin) {
                     window._chatQol_UngarbledAppliedThisLogin = true;
-                    if (qolConfig.forceUngarbled) {
-                        let savedUngarbled = null;
-                        try {
-                            savedUngarbled = localStorage.getItem(
-                                "BCDesktop_ChatQoL_LastUngarbled",
-                            );
-                        } catch (e) {}
-
-                        if (savedUngarbled === "true") {
-                            Player.ImmersionSettings.ShowUngarbledMessages = true;
-                            let cb = document.getElementById(
-                                "preference-immersion-ShowUngarbledMessages",
-                            );
-                            if (cb && !cb.checked) {
-                                cb.checked = true;
-                            }
-                        } else if (savedUngarbled === "false") {
-                            Player.ImmersionSettings.ShowUngarbledMessages = false;
-                            let cb = document.getElementById(
-                                "preference-immersion-ShowUngarbledMessages",
-                            );
-                            if (cb && cb.checked) {
-                                cb.checked = false;
-                            }
-                        } else {
-                            try {
-                                localStorage.setItem(
-                                    "BCDesktop_ChatQoL_LastUngarbled",
-                                    Player.ImmersionSettings.ShowUngarbledMessages
-                                        ? "true"
-                                        : "false",
-                                );
-                            } catch (e) {}
-                        }
-                    }
-                } else {
-                    try {
-                        const currentUngarbled = Boolean(
-                            Player.ImmersionSettings.ShowUngarbledMessages,
-                        );
-                        const storedUngarbled = localStorage.getItem(
-                            "BCDesktop_ChatQoL_LastUngarbled",
-                        );
-                        if (
-                            storedUngarbled !==
-                            (currentUngarbled ? "true" : "false")
-                        ) {
-                            localStorage.setItem(
-                                "BCDesktop_ChatQoL_LastUngarbled",
-                                currentUngarbled ? "true" : "false",
-                            );
-                        }
-                    } catch (e) {}
-
-                    let cb = document.getElementById(
-                        "preference-immersion-ShowUngarbledMessages",
-                    );
-                    if (cb && !cb._chatQolWatched) {
-                        cb._chatQolWatched = true;
-                        cb.addEventListener("change", function () {
-                            try {
-                                localStorage.setItem(
-                                    "BCDesktop_ChatQoL_LastUngarbled",
-                                    cb.checked ? "true" : "false",
-                                );
-                                if (Player && Player.ImmersionSettings) {
-                                    Player.ImmersionSettings.ShowUngarbledMessages =
-                                        cb.checked;
-                                }
-                            } catch (e) {}
-                        });
-                    }
+                    applyUngarbledState();
                 }
 
                 if (
@@ -1419,6 +1559,8 @@
                     const origChatRoomLoad = window.ChatRoomLoad;
                     window.ChatRoomLoad = function () {
                         origChatRoomLoad.apply(this, arguments);
+                        lastCustomizationHandledRoom = "";
+                        checkAndApplyRoomCustomization();
                         if (
                             qolConfig.persistIconState &&
                             !window._chatQol_IconStateAppliedThisLogin &&
@@ -1429,6 +1571,34 @@
                         }
                     };
                     window.ChatRoomLoad.hasQolHook = true;
+                }
+
+                if (
+                    typeof window.ChatRoomSync === "function" &&
+                    !window.ChatRoomSync.hasQolHook
+                ) {
+                    const origChatRoomSync = window.ChatRoomSync;
+                    window.ChatRoomSync = function () {
+                        origChatRoomSync.apply(this, arguments);
+                        checkAndApplyRoomCustomization();
+                    };
+                    window.ChatRoomSync.hasQolHook = true;
+                }
+
+                if (
+                    typeof window.ChatRoomLeave === "function" &&
+                    !window.ChatRoomLeave.hasQolHook
+                ) {
+                    const origChatRoomLeave = window.ChatRoomLeave;
+                    window.ChatRoomLeave = function () {
+                        lastCustomizationHandledRoom = "";
+                        if (roomCustomizationTimer) {
+                            clearInterval(roomCustomizationTimer);
+                            roomCustomizationTimer = null;
+                        }
+                        origChatRoomLeave.apply(this, arguments);
+                    };
+                    window.ChatRoomLeave.hasQolHook = true;
                 }
 
                 if (
@@ -4000,6 +4170,10 @@
                 origLoginResponse(...args);
                 window._chatQol_IconStateAppliedThisLogin = false;
                 window._chatQol_UngarbledAppliedThisLogin = false;
+                lastCustomizationHandledRoom = "";
+                if (typeof applyUngarbledState === "function") {
+                    applyUngarbledState();
+                }
                 setTimeout(applyFluidsColor, 2000);
             };
         } else {
