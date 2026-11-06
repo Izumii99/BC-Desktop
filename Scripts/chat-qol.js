@@ -989,7 +989,7 @@
         createToggle(
             "persistIconState",
             "Persist Chat Icon State",
-            "Remembers your hidden/squint icon preference.",
+            "Defaults to squinted icons (1x) once on each login without repeating.",
         ),
     );
     cat3.body.appendChild(
@@ -1331,16 +1331,21 @@
                 }
 
                 if (
-                    qolConfig.persistIconState &&
-                    typeof window.qolSavedIconState === "undefined"
+                    typeof CurrentScreen !== "undefined" &&
+                    CurrentScreen === "Login"
                 ) {
-                    window.qolSavedIconState = 1; // Default to squinted 1x
-                    if (
-                        typeof window.ChatRoomHideIconState !== "undefined" &&
-                        window.ChatRoomHideIconState === 0
-                    ) {
+                    window._chatQol_IconStateAppliedThisLogin = false;
+                } else if (
+                    qolConfig.persistIconState &&
+                    !window._chatQol_IconStateAppliedThisLogin &&
+                    typeof CurrentScreen !== "undefined" &&
+                    CurrentScreen === "ChatRoom" &&
+                    typeof window.ChatRoomHideIconState !== "undefined"
+                ) {
+                    if (window.ChatRoomHideIconState === 0) {
                         window.ChatRoomHideIconState = 1;
                     }
+                    window._chatQol_IconStateAppliedThisLogin = true;
                 }
 
                 if (
@@ -1352,12 +1357,11 @@
                         origChatRoomLoad.apply(this, arguments);
                         if (
                             qolConfig.persistIconState &&
+                            !window._chatQol_IconStateAppliedThisLogin &&
                             typeof window.ChatRoomHideIconState !== "undefined"
                         ) {
-                            window.ChatRoomHideIconState =
-                                typeof window.qolSavedIconState !== "undefined"
-                                    ? window.qolSavedIconState
-                                    : 1;
+                            window.ChatRoomHideIconState = 1;
+                            window._chatQol_IconStateAppliedThisLogin = true;
                         }
                     };
                     window.ChatRoomLoad.hasQolHook = true;
@@ -2408,16 +2412,6 @@
                         };
                     }
 
-                    if (
-                        typeof CurrentScreen !== "undefined" &&
-                        CurrentScreen === "ChatRoom" &&
-                        typeof window.ChatRoomHideIconState !== "undefined"
-                    ) {
-                        if (qolConfig.persistIconState) {
-                            window.qolSavedIconState =
-                                window.ChatRoomHideIconState;
-                        }
-                    }
 
                     if (!window.smartClosedEyesHooked) {
                         window.smartClosedEyesHooked = true;
@@ -3940,6 +3934,7 @@
         if (typeof origLoginResponse === "function") {
             window.LoginResponse = function (...args) {
                 origLoginResponse(...args);
+                window._chatQol_IconStateAppliedThisLogin = false;
                 setTimeout(applyFluidsColor, 2000);
             };
         } else {
