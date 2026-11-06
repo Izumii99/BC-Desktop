@@ -3280,48 +3280,6 @@
         window._bcLastDirectInputTapTime = Date.now();
     }
 
-    function armSearchFocusCheck() {
-        let count = 0;
-        const checkTimer = setInterval(() => {
-            count++;
-            const input =
-                document.getElementById("BCXSearch") ||
-                document.querySelector(
-                    "input[type='search'], input[id*='Search'], input[id*='search']",
-                );
-            if (input) {
-                markSearchInputActive(input);
-                if (document.activeElement !== input) {
-                    try {
-                        input.focus();
-                    } catch (_) {}
-                }
-            }
-            if (count > 12) clearInterval(checkTimer);
-        }, 25);
-    }
-
-    // Allow touch / click on BCX Search button in canvas header to trigger focus on mobile
-    window.addEventListener(
-        "pointerdown",
-        (e) => {
-            if (e && e.clientY < 160) {
-                armSearchFocusCheck();
-            }
-        },
-        { capture: true, passive: true },
-    );
-    window.addEventListener(
-        "touchstart",
-        (e) => {
-            const touch = e && e.touches && e.touches[0];
-            if (touch && touch.clientY < 160) {
-                armSearchFocusCheck();
-            }
-        },
-        { capture: true, passive: true },
-    );
-
     const _origFocusForSearch = HTMLElement.prototype.focus;
     HTMLElement.prototype.focus = function () {
         if (isSearchInputElement(this)) {
