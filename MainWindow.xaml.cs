@@ -330,6 +330,11 @@ public partial class MainWindow : Window // NOSONAR
         core.NewWindowRequested += (_, args) =>
         {
             args.Handled = true;
+            if (args.IsUserInitiated && IsLocalPopupUri(args.Uri))
+            {
+                OpenLocalPopup(core, args);
+                return;
+            }
             if (!string.IsNullOrEmpty(args.Uri) && (args.Uri.StartsWith("http://", StringComparison.OrdinalIgnoreCase) || args.Uri.StartsWith("https://", StringComparison.OrdinalIgnoreCase)))
             {
                 try
@@ -484,6 +489,36 @@ public partial class MainWindow : Window // NOSONAR
             }
 
             await Task.Delay(50);
+        }
+    }
+
+    internal static bool IsLocalPopupUri(string? uri) =>
+        string.IsNullOrEmpty(uri) ||
+        uri.Equals("about:blank", StringComparison.OrdinalIgnoreCase) ||
+        uri.StartsWith("data:image/", StringComparison.OrdinalIgnoreCase) ||
+        uri.StartsWith("blob:", StringComparison.OrdinalIgnoreCase);
+
+    // Game photo mode (CommonTakePhoto) writes the image into a window.open() popup; host it on demand.
+    private async void OpenLocalPopup(CoreWebView2 core, CoreWebView2NewWindowRequestedEventArgs args)
+    {
+        var deferral = args.GetDeferral();
+        var view = new Microsoft.Web.WebView2.Wpf.WebView2();
+        var popup = new Window { Title = "Bondage Club - Photo", Width = 1000, Height = 640, Owner = this, Content = view, WindowStartupLocation = WindowStartupLocation.CenterOwner };
+        popup.Closed += (_, _) => view.Dispose();
+        try
+        {
+            popup.Show();
+            await view.EnsureCoreWebView2Async(core.Environment);
+            args.NewWindow = view.CoreWebView2;
+        }
+        catch (Exception)
+        {
+            // Ignored intentionally: popup host failed to initialize; close the empty window.
+            popup.Close();
+        }
+        finally
+        {
+            deferral.Complete();
         }
     }
 

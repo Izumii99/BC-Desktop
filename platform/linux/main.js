@@ -1,8 +1,17 @@
-const { app, BrowserWindow, Menu, session, dialog, clipboard, shell, Notification } = require('electron');
-const path = require('path');
-const fs = require('fs');
-const os = require('os');
-const child_process = require('child_process');
+const {
+    app,
+    BrowserWindow,
+    Menu,
+    session,
+    dialog,
+    clipboard,
+    shell,
+    Notification,
+} = require("electron");
+const path = require("path");
+const fs = require("fs");
+const os = require("os");
+const child_process = require("child_process");
 
 // Guard against zombie processes or multiple instances competing for LevelDB LOCK
 const gotTheLock = app.requestSingleInstanceLock();
@@ -12,28 +21,37 @@ if (!gotTheLock) {
 }
 
 // Hidden mode: --hidden flag, BC_DISCREET=1, or the Hangul Filler productName injected by build.js
-const isHidden = process.argv.includes('--hidden') ||
-                 process.env.BC_DISCREET === '1' ||
-                 app.getName() === '\u3164';
+const isHidden =
+    process.argv.includes("--hidden") ||
+    process.env.BC_DISCREET === "1" ||
+    app.getName() === "\u3164";
 
 // Set application name and lock canonical userData path at top-level before app.whenReady()
 app.setName(isHidden ? "\u3164" : "Bondage Club");
 
-const canonicalUserData = path.join(os.homedir(), '.config', 'bondage-club-desktop');
+const canonicalUserData = path.join(
+    os.homedir(),
+    ".config",
+    "bondage-club-desktop",
+);
 if (!fs.existsSync(canonicalUserData)) {
-    try { fs.mkdirSync(canonicalUserData, { recursive: true }); } catch (_) {}
+    try {
+        fs.mkdirSync(canonicalUserData, { recursive: true });
+    } catch (_) {}
 }
-app.setPath('userData', canonicalUserData);
+app.setPath("userData", canonicalUserData);
 
 // Storage Mirror: File-backed mirror ensuring Addon Manager & PCM settings persist reliably across restarts
-const storageMirrorFile = path.join(canonicalUserData, 'storage-mirror.json');
+const storageMirrorFile = path.join(canonicalUserData, "storage-mirror.json");
 let storageMirrorData = null;
 
 function getStorageMirror() {
     if (storageMirrorData === null) {
         try {
             if (fs.existsSync(storageMirrorFile)) {
-                storageMirrorData = JSON.parse(fs.readFileSync(storageMirrorFile, 'utf8'));
+                storageMirrorData = JSON.parse(
+                    fs.readFileSync(storageMirrorFile, "utf8"),
+                );
             } else {
                 storageMirrorData = {};
             }
@@ -50,25 +68,32 @@ function persistStorageMirror() {
     saveMirrorTimer = setTimeout(() => {
         try {
             if (storageMirrorData) {
-                fs.writeFileSync(storageMirrorFile, JSON.stringify(storageMirrorData), 'utf8');
+                fs.writeFileSync(
+                    storageMirrorFile,
+                    JSON.stringify(storageMirrorData),
+                    "utf8",
+                );
             }
         } catch (_) {}
     }, 200);
 }
 
 const CURRENT_APP_VERSION = app.getVersion();
-const ENABLE_AUTO_UPDATES = !process.argv.includes('--no-update') && process.env.BC_NO_UPDATE !== '1';
+const ENABLE_AUTO_UPDATES =
+    !process.argv.includes("--no-update") && process.env.BC_NO_UPDATE !== "1";
 
 function isAutoUpdateEnabled() {
     if (!ENABLE_AUTO_UPDATES) return false;
     const localScriptsDirs = [
         path.join(path.dirname(process.execPath), "Scripts"),
         path.join(__dirname, "Scripts"),
-        path.resolve(__dirname, "../../Scripts")
+        path.resolve(__dirname, "../../Scripts"),
     ];
     for (const dir of localScriptsDirs) {
         if (fs.existsSync(dir)) {
-            const jsFiles = fs.readdirSync(dir).filter(f => f.endsWith('.js') && f !== 'addon-manager.js');
+            const jsFiles = fs
+                .readdirSync(dir)
+                .filter((f) => f.endsWith(".js") && f !== "addon-manager.js");
             if (jsFiles.length > 0) return false;
         }
     }
@@ -77,10 +102,10 @@ function isAutoUpdateEnabled() {
 
 function isNewerVersion(latestTag, currentVersion) {
     if (!latestTag || !currentVersion) return false;
-    const cleanLatest = latestTag.trim().replace(/^v/i, '');
-    const cleanCurrent = currentVersion.trim().replace(/^v/i, '');
-    const lParts = cleanLatest.split('.').map(p => parseInt(p, 10) || 0);
-    const cParts = cleanCurrent.split('.').map(p => parseInt(p, 10) || 0);
+    const cleanLatest = latestTag.trim().replace(/^v/i, "");
+    const cleanCurrent = currentVersion.trim().replace(/^v/i, "");
+    const lParts = cleanLatest.split(".").map((p) => parseInt(p, 10) || 0);
+    const cParts = cleanCurrent.split(".").map((p) => parseInt(p, 10) || 0);
     const maxLen = Math.max(lParts.length, cParts.length);
     for (let i = 0; i < maxLen; i++) {
         const l = lParts[i] || 0;
@@ -98,20 +123,30 @@ let isUpdating = false;
 async function checkForAppUpdates() {
     if (!isAutoUpdateEnabled() || isHidden) return;
     try {
-        const res = await fetch("https://api.github.com/repos/Izumii99/BC-Desktop/releases/latest", {
-            headers: { "User-Agent": "BC-Desktop-Linux" }
-        });
+        const res = await fetch(
+            "https://api.github.com/repos/Izumii99/BC-Desktop/releases/latest",
+            {
+                headers: { "User-Agent": "BC-Desktop-Linux" },
+            },
+        );
         if (!res.ok) return;
         const data = await res.json();
         const latestTag = (data.tag_name || "").trim();
         if (isNewerVersion(latestTag, CURRENT_APP_VERSION)) {
-            updateAvailableTag = latestTag.replace(/^v/i, '');
+            updateAvailableTag = latestTag.replace(/^v/i, "");
 
             const isAppImage = Boolean(process.env.APPIMAGE);
-            const targetAssetName = isAppImage ? "BC-Linux.AppImage" : "BC-Linux.tar.gz";
+            const targetAssetName = isAppImage
+                ? "BC-Linux.AppImage"
+                : "BC-Linux.tar.gz";
 
             if (Array.isArray(data.assets)) {
-                const asset = data.assets.find(a => a && a.name && a.name.toLowerCase() === targetAssetName.toLowerCase());
+                const asset = data.assets.find(
+                    (a) =>
+                        a &&
+                        a.name &&
+                        a.name.toLowerCase() === targetAssetName.toLowerCase(),
+                );
                 if (asset && asset.browser_download_url) {
                     updateDownloadUrl = asset.browser_download_url;
                 }
@@ -121,10 +156,16 @@ async function checkForAppUpdates() {
             }
 
             if (mainWindow && !mainWindow.isDestroyed()) {
-                mainWindow.setTitle(`Bondage Club — Update Available (v${updateAvailableTag})`);
+                mainWindow.setTitle(
+                    `Bondage Club — Update Available (v${updateAvailableTag})`,
+                );
             }
 
-            promptUpdateDialog(updateAvailableTag, updateDownloadUrl, isAppImage);
+            promptUpdateDialog(
+                updateAvailableTag,
+                updateDownloadUrl,
+                isAppImage,
+            );
         }
     } catch (_) {}
 }
@@ -141,21 +182,31 @@ async function fetchLatestReleaseNotesLinux() {
     try {
         const controller = new AbortController();
         const timeout = setTimeout(() => controller.abort(), 3000);
-        const res = await fetch("https://cdn.jsdelivr.net/gh/Izumii99/BC-Desktop@main/RELEASE_NOTES.md", {
-            signal: controller.signal,
-            headers: { "User-Agent": "BC-Desktop-Linux" }
-        });
+        const res = await fetch(
+            "https://cdn.jsdelivr.net/gh/Izumii99/BC-Desktop@main/RELEASE_NOTES.md",
+            {
+                signal: controller.signal,
+                headers: { "User-Agent": "BC-Desktop-Linux" },
+            },
+        );
         clearTimeout(timeout);
         if (res.ok) {
             let text = await res.text();
             if (text && text.trim()) {
                 let fixesIdx = text.indexOf("### Fixes & Improvements:");
-                if (fixesIdx >= 0) text = text.substring(fixesIdx + "### Fixes & Improvements:".length);
+                if (fixesIdx >= 0)
+                    text = text.substring(
+                        fixesIdx + "### Fixes & Improvements:".length,
+                    );
                 let dlIdx = text.indexOf("### Downloads:");
                 if (dlIdx >= 0) text = text.substring(0, dlIdx);
-                text = text.replace(/^\s*-\s*\*\*([^*:]+?)(?:\*\*:|:\*\*|\*?:)\s*/gm, "• $1: ")
-                           .replace(/^\s*-\s*/gm, "• ")
-                           .replace(/`/g, "");
+                text = text
+                    .replace(
+                        /^\s*-\s*\*\*([^*:]+?)(?:\*\*:|:\*\*|\*?:)\s*/gm,
+                        "• $1: ",
+                    )
+                    .replace(/^\s*-\s*/gm, "• ")
+                    .replace(/`/g, "");
                 return text.trim();
             }
         }
@@ -166,24 +217,27 @@ async function fetchLatestReleaseNotesLinux() {
 function checkPostUpdateChangelog() {
     if (isHidden) return;
     try {
-        const versionFile = path.join(app.getPath('userData'), 'last_seen_version.txt');
+        const versionFile = path.join(
+            app.getPath("userData"),
+            "last_seen_version.txt",
+        );
         let lastSeen = null;
         if (fs.existsSync(versionFile)) {
-            lastSeen = fs.readFileSync(versionFile, 'utf8').trim();
+            lastSeen = fs.readFileSync(versionFile, "utf8").trim();
         }
-        fs.writeFileSync(versionFile, CURRENT_APP_VERSION, 'utf8');
+        fs.writeFileSync(versionFile, CURRENT_APP_VERSION, "utf8");
 
         if (lastSeen && isNewerVersion(CURRENT_APP_VERSION, lastSeen)) {
             setTimeout(async () => {
                 if (!mainWindow || mainWindow.isDestroyed()) return;
                 const notes = await fetchLatestReleaseNotesLinux();
                 dialog.showMessageBox(mainWindow, {
-                    type: 'info',
+                    type: "info",
                     title: `What's New in v${CURRENT_APP_VERSION}`,
                     message: `Bondage Club updated to v${CURRENT_APP_VERSION}!`,
                     detail: notes,
-                    buttons: ['Got It!'],
-                    defaultId: 0
+                    buttons: ["Got It!"],
+                    defaultId: 0,
                 });
             }, 1200);
         }
@@ -197,39 +251,47 @@ function promptUpdateDialog(tag, downloadUrl, isAppImage) {
     const iconCandidates = [
         path.resolve(__dirname, "../../Assets", iconName),
         path.join(__dirname, "assets", iconName),
-        path.join(process.resourcesPath || "", "assets", iconName)
+        path.join(process.resourcesPath || "", "assets", iconName),
     ];
-    const iconPath = iconCandidates.find(p => fs.existsSync(p));
+    const iconPath = iconCandidates.find((p) => fs.existsSync(p));
 
     if (Notification && Notification.isSupported()) {
         const notif = new Notification({
             title: `Bondage Club Update Available (v${tag})`,
-            body: 'Click here to automatically update and restart the application.',
-            icon: iconPath
+            body: "Click here to automatically update and restart the application.",
+            icon: iconPath,
         });
-        notif.on('click', () => {
+        notif.on("click", () => {
             performInstantUpdateLinux(tag, downloadUrl, isAppImage);
         });
         notif.show();
     }
 
     setTimeout(async () => {
-        if (!mainWindow || mainWindow.isDestroyed() || !isAutoUpdateEnabled() || isUpdating) return;
+        if (
+            !mainWindow ||
+            mainWindow.isDestroyed() ||
+            !isAutoUpdateEnabled() ||
+            isUpdating
+        )
+            return;
         const result = await dialog.showMessageBox(mainWindow, {
-            type: 'info',
-            title: 'Update Available',
+            type: "info",
+            title: "Update Available",
             message: `A new version of Bondage Club (v${tag}) is available.`,
-            detail: `Would you like to instantly download and install the update now? (${isAppImage ? 'AppImage' : 'tar.gz'})`,
-            buttons: ['Update Now', 'View Release Notes', 'Later'],
+            detail: `Would you like to instantly download and install the update now? (${isAppImage ? "AppImage" : "tar.gz"})`,
+            buttons: ["Update Now", "View Release Notes", "Later"],
             defaultId: 0,
             cancelId: 2,
-            noLink: true
+            noLink: true,
         });
 
         if (result.response === 0) {
             await performInstantUpdateLinux(tag, downloadUrl, isAppImage);
         } else if (result.response === 1) {
-            shell.openExternal(`https://github.com/Izumii99/BC-Desktop/releases/latest`);
+            shell.openExternal(
+                `https://github.com/Izumii99/BC-Desktop/releases/latest`,
+            );
         }
     }, 2500);
 }
@@ -238,7 +300,7 @@ async function performInstantUpdateLinux(tag, downloadUrl, isAppImage) {
     if (!isAutoUpdateEnabled() || isUpdating) return;
     isUpdating = true;
 
-    const tempFileName = `bc-update-${Date.now()}-${isAppImage ? 'appimage' : 'tar.gz'}`;
+    const tempFileName = `bc-update-${Date.now()}-${isAppImage ? "appimage" : "tar.gz"}`;
     const tempFilePath = path.join(os.tmpdir(), tempFileName);
 
     try {
@@ -252,7 +314,8 @@ async function performInstantUpdateLinux(tag, downloadUrl, isAppImage) {
             throw new Error(`HTTP ${response.status} ${response.statusText}`);
         }
 
-        const contentLength = Number(response.headers.get('content-length')) || 0;
+        const contentLength =
+            Number(response.headers.get("content-length")) || 0;
         const fileStream = fs.createWriteStream(tempFilePath);
 
         let receivedBytes = 0;
@@ -266,11 +329,15 @@ async function performInstantUpdateLinux(tag, downloadUrl, isAppImage) {
             receivedBytes += value.length;
 
             if (contentLength > 0) {
-                const percent = Math.floor((receivedBytes / contentLength) * 100);
+                const percent = Math.floor(
+                    (receivedBytes / contentLength) * 100,
+                );
                 if (percent !== lastReportedPercent) {
                     lastReportedPercent = percent;
                     if (mainWindow && !mainWindow.isDestroyed()) {
-                        mainWindow.setTitle(`Bondage Club — Downloading update (${percent}%)...`);
+                        mainWindow.setTitle(
+                            `Bondage Club — Downloading update (${percent}%)...`,
+                        );
                         mainWindow.setProgressBar(percent / 100);
                     }
                 }
@@ -279,7 +346,7 @@ async function performInstantUpdateLinux(tag, downloadUrl, isAppImage) {
 
         await new Promise((resolve, reject) => {
             fileStream.end(resolve);
-            fileStream.on('error', reject);
+            fileStream.on("error", reject);
         });
 
         const stats = fs.statSync(tempFilePath);
@@ -288,14 +355,18 @@ async function performInstantUpdateLinux(tag, downloadUrl, isAppImage) {
         }
 
         if (mainWindow && !mainWindow.isDestroyed()) {
-            mainWindow.setTitle("Bondage Club — Installing update and restarting...");
+            mainWindow.setTitle(
+                "Bondage Club — Installing update and restarting...",
+            );
             mainWindow.setProgressBar(1.0);
         }
 
         if (isAppImage) {
             const targetAppImage = process.env.APPIMAGE;
             if (!targetAppImage || !fs.existsSync(targetAppImage)) {
-                throw new Error("Cannot locate running AppImage path (process.env.APPIMAGE is not set).");
+                throw new Error(
+                    "Cannot locate running AppImage path (process.env.APPIMAGE is not set).",
+                );
             }
 
             fs.chmodSync(tempFilePath, 0o755);
@@ -303,7 +374,7 @@ async function performInstantUpdateLinux(tag, downloadUrl, isAppImage) {
             try {
                 fs.renameSync(tempFilePath, targetAppImage);
             } catch (err) {
-                if (err.code === 'EXDEV') {
+                if (err.code === "EXDEV") {
                     fs.copyFileSync(tempFilePath, targetAppImage);
                     fs.unlinkSync(tempFilePath);
                 } else {
@@ -311,63 +382,98 @@ async function performInstantUpdateLinux(tag, downloadUrl, isAppImage) {
                 }
             }
 
-            const child = child_process.spawn(targetAppImage, process.argv.slice(1), {
-                detached: true,
-                stdio: 'ignore'
-            });
+            const child = child_process.spawn(
+                targetAppImage,
+                process.argv.slice(1),
+                {
+                    detached: true,
+                    stdio: "ignore",
+                },
+            );
             child.unref();
             app.quit();
         } else {
             const appDir = path.dirname(process.execPath);
-            const tempExtractDir = path.join(os.tmpdir(), `bc-extract-${Date.now()}`);
+            const tempExtractDir = path.join(
+                os.tmpdir(),
+                `bc-extract-${Date.now()}`,
+            );
             fs.mkdirSync(tempExtractDir, { recursive: true });
 
-            const extractRes = child_process.spawnSync('tar', ['-xzf', tempFilePath, '-C', tempExtractDir]);
+            const extractRes = child_process.spawnSync("tar", [
+                "-xzf",
+                tempFilePath,
+                "-C",
+                tempExtractDir,
+            ]);
             if (extractRes.error) {
                 throw extractRes.error;
             }
 
             let sourceDir = tempExtractDir;
-            if (!fs.existsSync(path.join(tempExtractDir, 'resources'))) {
-                const subdirs = fs.readdirSync(tempExtractDir).map(n => path.join(tempExtractDir, n)).filter(p => fs.statSync(p).isDirectory());
-                const matching = subdirs.find(p => fs.existsSync(path.join(p, 'resources')));
+            if (!fs.existsSync(path.join(tempExtractDir, "resources"))) {
+                const subdirs = fs
+                    .readdirSync(tempExtractDir)
+                    .map((n) => path.join(tempExtractDir, n))
+                    .filter((p) => fs.statSync(p).isDirectory());
+                const matching = subdirs.find((p) =>
+                    fs.existsSync(path.join(p, "resources")),
+                );
                 if (matching) sourceDir = matching;
             }
 
-            if (typeof fs.cpSync === 'function') {
+            if (typeof fs.cpSync === "function") {
                 fs.cpSync(sourceDir, appDir, { recursive: true, force: true });
             } else {
-                child_process.spawnSync('cp', ['-rf', path.join(sourceDir, '.'), appDir]);
+                child_process.spawnSync("cp", [
+                    "-rf",
+                    path.join(sourceDir, "."),
+                    appDir,
+                ]);
             }
 
-            try { fs.rmSync(tempExtractDir, { recursive: true, force: true }); } catch (_) {}
-            try { fs.unlinkSync(tempFilePath); } catch (_) {}
+            try {
+                fs.rmSync(tempExtractDir, { recursive: true, force: true });
+            } catch (_) {}
+            try {
+                fs.unlinkSync(tempFilePath);
+            } catch (_) {}
 
-            const child = child_process.spawn(process.execPath, process.argv.slice(1), {
-                detached: true,
-                stdio: 'ignore'
-            });
+            const child = child_process.spawn(
+                process.execPath,
+                process.argv.slice(1),
+                {
+                    detached: true,
+                    stdio: "ignore",
+                },
+            );
             child.unref();
             app.quit();
         }
     } catch (err) {
         isUpdating = false;
-        try { if (fs.existsSync(tempFilePath)) fs.unlinkSync(tempFilePath); } catch (_) {}
+        try {
+            if (fs.existsSync(tempFilePath)) fs.unlinkSync(tempFilePath);
+        } catch (_) {}
         if (mainWindow && !mainWindow.isDestroyed()) {
             mainWindow.setProgressBar(-1);
             mainWindow.setTitle(`Bondage Club — Update Available (v${tag})`);
-            dialog.showMessageBox(mainWindow, {
-                type: 'error',
-                title: 'Update Failed',
-                message: 'Failed to automatically install the update.',
-                detail: `${err.message}\n\nYou can manually download the update from GitHub Releases.`,
-                buttons: ['Open GitHub Releases', 'Dismiss'],
-                defaultId: 0
-            }).then(r => {
-                if (r.response === 0) {
-                    shell.openExternal(`https://github.com/Izumii99/BC-Desktop/releases/latest`);
-                }
-            });
+            dialog
+                .showMessageBox(mainWindow, {
+                    type: "error",
+                    title: "Update Failed",
+                    message: "Failed to automatically install the update.",
+                    detail: `${err.message}\n\nYou can manually download the update from GitHub Releases.`,
+                    buttons: ["Open GitHub Releases", "Dismiss"],
+                    defaultId: 0,
+                })
+                .then((r) => {
+                    if (r.response === 0) {
+                        shell.openExternal(
+                            `https://github.com/Izumii99/BC-Desktop/releases/latest`,
+                        );
+                    }
+                });
         }
     }
 }
@@ -375,38 +481,47 @@ async function performInstantUpdateLinux(tag, downloadUrl, isAppImage) {
 let lastKnownGoodUrl = "https://www.bondage-asia.com/club/R132/";
 
 // 1. Match Chromium & Memory Optimization Flags with WebView2 on Windows
-app.commandLine.appendSwitch('disable-features', 'Translate,OptimizationHints,MediaRouter,DialMediaRouteProvider,SpareRendererForSitePerProcess,AudioServiceOutOfProcess,AutofillServerCommunication');
-app.commandLine.appendSwitch('disable-background-networking');
-app.commandLine.appendSwitch('disable-component-update');
-app.commandLine.appendSwitch('disable-domain-reliability');
-app.commandLine.appendSwitch('disable-sync');
-app.commandLine.appendSwitch('disable-notifications');
-app.commandLine.appendSwitch('disable-site-isolation-trials');
-app.commandLine.appendSwitch('no-pings');
-app.commandLine.appendSwitch('disable-background-timer-throttling');
-app.commandLine.appendSwitch('disable-backgrounding-occluded-windows');
-app.commandLine.appendSwitch('max-gum-fps', '60');
-app.commandLine.appendSwitch('gpu-rasterization-msaa-sample-count', '0');
-app.commandLine.appendSwitch('force-gpu-mem-available-mb', '384');
-app.commandLine.appendSwitch('force-gpu-mem-discardable-limit-mb', '128');
-app.commandLine.appendSwitch('js-flags', '--max-old-space-size=1536 --expose-gc');
+app.commandLine.appendSwitch(
+    "disable-features",
+    "Translate,OptimizationHints,MediaRouter,DialMediaRouteProvider,SpareRendererForSitePerProcess,AudioServiceOutOfProcess,AutofillServerCommunication",
+);
+app.commandLine.appendSwitch("disable-background-networking");
+app.commandLine.appendSwitch("disable-component-update");
+app.commandLine.appendSwitch("disable-domain-reliability");
+app.commandLine.appendSwitch("disable-sync");
+app.commandLine.appendSwitch("disable-notifications");
+app.commandLine.appendSwitch("disable-site-isolation-trials");
+app.commandLine.appendSwitch("no-pings");
+app.commandLine.appendSwitch("disable-background-timer-throttling");
+app.commandLine.appendSwitch("disable-backgrounding-occluded-windows");
+app.commandLine.appendSwitch("max-gum-fps", "60");
+app.commandLine.appendSwitch("gpu-rasterization-msaa-sample-count", "0");
+app.commandLine.appendSwitch("force-gpu-mem-available-mb", "384");
+app.commandLine.appendSwitch("force-gpu-mem-discardable-limit-mb", "128");
+app.commandLine.appendSwitch(
+    "js-flags",
+    "--max-old-space-size=1536 --expose-gc",
+);
 
 function handleWebMessage(msg) {
-    if (typeof msg !== 'string') return;
-    if (msg.startsWith('COPY_TEXT:')) {
+    if (typeof msg !== "string") return;
+    if (msg.startsWith("COPY_TEXT:")) {
         const textToCopy = msg.substring(10);
         clipboard.writeText(textToCopy);
-    } else if (msg === 'TOGGLE_FULLSCREEN') {
+    } else if (msg === "TOGGLE_FULLSCREEN") {
         if (mainWindow && !mainWindow.isDestroyed()) {
             mainWindow.setFullScreen(!mainWindow.isFullScreen());
         }
-    } else if (msg === 'FLUSH_STORAGE') {
+    } else if (msg === "FLUSH_STORAGE") {
         try {
-            if (session.defaultSession && typeof session.defaultSession.flushStorageData === 'function') {
+            if (
+                session.defaultSession &&
+                typeof session.defaultSession.flushStorageData === "function"
+            ) {
                 session.defaultSession.flushStorageData();
             }
         } catch (_) {}
-    } else if (msg.startsWith('SYNC_STORAGE_KEY:')) {
+    } else if (msg.startsWith("SYNC_STORAGE_KEY:")) {
         try {
             const payload = JSON.parse(msg.substring(17));
             if (payload && payload.k) {
@@ -419,7 +534,7 @@ function handleWebMessage(msg) {
                 persistStorageMirror();
             }
         } catch (_) {}
-    } else if (msg === 'CLEAR_STORAGE') {
+    } else if (msg === "CLEAR_STORAGE") {
         try {
             storageMirrorData = {};
             persistStorageMirror();
@@ -1766,7 +1881,11 @@ const CopyAndFocusScript = `
 
 function getCalendarVersionNumber() {
     const now = new Date();
-    return Math.floor((now.getUTCFullYear() - 2025) * 12 + now.getUTCMonth()) + 111 + (now.getUTCDate() >= 16 ? 1 : 0);
+    return (
+        Math.floor((now.getUTCFullYear() - 2025) * 12 + now.getUTCMonth()) +
+        111 +
+        (now.getUTCDate() >= 16 ? 1 : 0)
+    );
 }
 
 async function getLatestAsiaUrl() {
@@ -1778,13 +1897,15 @@ async function getLatestAsiaUrl() {
 
         const res = await fetch("https://bondageprojects.com/club_game/", {
             cache: "no-store",
-            signal: controller.signal
+            signal: controller.signal,
         });
         clearTimeout(timeout);
 
         if (res.ok) {
             const html = await res.text();
-            const match = html.match(/onclick="window\.location='https:\/\/www\.bondage[^']+\/R(\d+)\/[^']*'"/i);
+            const match = html.match(
+                /onclick="window\.location='https:\/\/www\.bondage[^']+\/R(\d+)\/[^']*'"/i,
+            );
             if (match && match[1]) {
                 versionNum = parseInt(match[1], 10);
             }
@@ -1809,7 +1930,12 @@ async function resolveGameUrl() {
 
     let activeVersion = 132;
     const homeDir = process.env.HOME || process.env.USERPROFILE || "";
-    const versionFile = path.join(homeDir, ".config", "BCClient", "version.txt");
+    const versionFile = path.join(
+        homeDir,
+        ".config",
+        "BCClient",
+        "version.txt",
+    );
 
     let isLocked = false;
     try {
@@ -1879,18 +2005,22 @@ function injectScripts() {
     scriptsInjectedForCurrentPage = true;
 
     // 1. Guard against undefined pidx ReferenceError
-    mainWindow.webContents.executeJavaScript(
-        "if(typeof window.pidx==='undefined'){try{Object.defineProperty(window,'pidx',{get:()=>0,set:()=>{},configurable:true});}catch(e){}}"
-    ).catch(() => {});
+    mainWindow.webContents
+        .executeJavaScript(
+            "if(typeof window.pidx==='undefined'){try{Object.defineProperty(window,'pidx',{get:()=>0,set:()=>{},configurable:true});}catch(e){}}",
+        )
+        .catch(() => {});
 
     // 2. Inject Smart Focus & Keyboard/Copy Handler
-    mainWindow.webContents.executeJavaScript(CopyAndFocusScript).catch(() => {});
+    mainWindow.webContents
+        .executeJavaScript(CopyAndFocusScript)
+        .catch(() => {});
 
     // 3. Check local Scripts/ directory (Dev/Tester mode) matching Windows behavior
     const localScriptsDirs = [
         path.join(path.dirname(process.execPath), "Scripts"),
         path.join(__dirname, "Scripts"),
-        path.resolve(__dirname, "../../Scripts")
+        path.resolve(__dirname, "../../Scripts"),
     ];
 
     // Same as Windows hasLocalScripts — inject every local script directly, no per-addon toggles.
@@ -1898,10 +2028,12 @@ function injectScripts() {
     let injectedLocal = false;
     for (const dir of localScriptsDirs) {
         if (!fs.existsSync(dir)) continue;
-        const jsFiles = fs.readdirSync(dir).filter(f => f.endsWith('.js') && f !== 'addon-manager.js');
+        const jsFiles = fs
+            .readdirSync(dir)
+            .filter((f) => f.endsWith(".js") && f !== "addon-manager.js");
         if (jsFiles.length === 0) continue;
         for (const file of jsFiles) {
-            const content = fs.readFileSync(path.join(dir, file), 'utf8');
+            const content = fs.readFileSync(path.join(dir, file), "utf8");
             mainWindow.webContents.executeJavaScript(content).catch(() => {});
         }
         injectedLocal = true;
@@ -1913,12 +2045,12 @@ function injectScripts() {
         const loaderCandidates = [
             path.resolve(__dirname, "../../loader.user.js"),
             path.join(__dirname, "loader.user.js"),
-            path.join(process.resourcesPath || "", "loader.user.js")
+            path.join(process.resourcesPath || "", "loader.user.js"),
         ];
         let scriptContent = "";
         for (const cand of loaderCandidates) {
             if (fs.existsSync(cand)) {
-                scriptContent = fs.readFileSync(cand, 'utf8');
+                scriptContent = fs.readFileSync(cand, "utf8");
                 break;
             }
         }
@@ -1932,7 +2064,7 @@ function injectScripts() {
                 (document.head || document.documentElement).appendChild(script);
             })();`;
         }
-        mainWindow.webContents.executeJavaScript(scriptContent).catch(err => {
+        mainWindow.webContents.executeJavaScript(scriptContent).catch((err) => {
             console.warn("Failed to inject remote loader:", err.message);
         });
     }
@@ -1944,9 +2076,9 @@ function createWindow() {
     const iconCandidates = [
         path.resolve(__dirname, "../../Assets", iconName),
         path.join(__dirname, "assets", iconName),
-        path.join(process.resourcesPath || "", "assets", iconName)
+        path.join(process.resourcesPath || "", "assets", iconName),
     ];
-    const iconPath = iconCandidates.find(p => fs.existsSync(p));
+    const iconPath = iconCandidates.find((p) => fs.existsSync(p));
 
     mainWindow = new BrowserWindow({
         width: 1152,
@@ -1956,7 +2088,7 @@ function createWindow() {
         useContentSize: true,
         title: appTitle,
         icon: iconPath,
-        backgroundColor: '#0d0d0d', // Matches RGB(13, 13, 13) on Windows
+        backgroundColor: "#0d0d0d", // Matches RGB(13, 13, 13) on Windows
         autoHideMenuBar: true,
         show: false,
         webPreferences: {
@@ -1964,17 +2096,22 @@ function createWindow() {
             contextIsolation: true,
             sandbox: true,
             backgroundThrottling: false,
-            spellcheck: false
-        }
+            spellcheck: false,
+        },
     });
 
     checkForAppUpdates();
 
-    mainWindow.webContents.on('console-message', (event, level, message) => {
-        const raw = (typeof message === 'string') 
-            ? message 
-            : (event && typeof event.message === 'string' ? event.message : (typeof level === 'string' ? level : ''));
-        if (raw && raw.startsWith('__BC_BRIDGE__:')) {
+    mainWindow.webContents.on("console-message", (event, level, message) => {
+        const raw =
+            typeof message === "string"
+                ? message
+                : event && typeof event.message === "string"
+                  ? event.message
+                  : typeof level === "string"
+                    ? level
+                    : "";
+        if (raw && raw.startsWith("__BC_BRIDGE__:")) {
             handleWebMessage(raw.slice(14));
         }
     });
@@ -1984,23 +2121,41 @@ function createWindow() {
 
     // Disable default menu bar & context menu
     Menu.setApplicationMenu(null);
-    mainWindow.webContents.on('context-menu', (e) => e.preventDefault());
+    mainWindow.webContents.on("context-menu", (e) => e.preventDefault());
 
-    // Delegate external links to the default web browser instead of opening blank child windows
+    // Delegate external links to the default web browser; allow local popups (e.g. Photo mode)
     mainWindow.webContents.setWindowOpenHandler(({ url }) => {
-        if (url.startsWith('http:') || url.startsWith('https:')) {
+        if (url.startsWith("http:") || url.startsWith("https:")) {
             shell.openExternal(url);
+            return { action: "deny" };
         }
-        return { action: 'deny' };
+        return {
+            action: "allow",
+            overrideBrowserWindowOptions: {
+                title: "Bondage Club - Photo",
+                width: 1000,
+                height: 640,
+                autoHideMenuBar: true,
+                parent: mainWindow,
+                modal: false,
+            },
+        };
     });
 
     function restoreStorageMirror() {
-        if (!mainWindow || mainWindow.isDestroyed() || mirrorRestoredForCurrentPage) return;
+        if (
+            !mainWindow ||
+            mainWindow.isDestroyed() ||
+            mirrorRestoredForCurrentPage
+        )
+            return;
         mirrorRestoredForCurrentPage = true;
         const mirror = getStorageMirror();
         if (!mirror || Object.keys(mirror).length === 0) return;
         const jsonStr = JSON.stringify(mirror);
-        mainWindow.webContents.executeJavaScript(`
+        mainWindow.webContents
+            .executeJavaScript(
+                `
             (() => {
                 try {
                     window.__bcRestoringMirror = true;
@@ -2014,7 +2169,9 @@ function createWindow() {
                     window.__bcRestoringMirror = false;
                 }
             })();
-        `).catch(() => {});
+        `,
+            )
+            .catch(() => {});
     }
 
     // Lock zoom levels and inject scripts promptly on DOM ready and finish load
@@ -2025,26 +2182,34 @@ function createWindow() {
         restoreStorageMirror();
         injectScripts();
     };
-    mainWindow.webContents.on('did-start-navigation', (event, url, isInPlace, isMainFrame) => {
-        if (isMainFrame && !isInPlace) {
-            scriptsInjectedForCurrentPage = false;
-            mirrorRestoredForCurrentPage = false;
-        }
-    });
-    mainWindow.webContents.on('dom-ready', setupPage);
-    mainWindow.webContents.on('did-finish-load', setupPage);
+    mainWindow.webContents.on(
+        "did-start-navigation",
+        (event, url, isInPlace, isMainFrame) => {
+            if (isMainFrame && !isInPlace) {
+                scriptsInjectedForCurrentPage = false;
+                mirrorRestoredForCurrentPage = false;
+            }
+        },
+    );
+    mainWindow.webContents.on("dom-ready", setupPage);
+    mainWindow.webContents.on("did-finish-load", setupPage);
 
     // Automatically grant clipboard permissions matching WebView2
-    session.defaultSession.setPermissionRequestHandler((webContents, permission, callback) => {
-        if (permission === 'clipboard-sanitized-write' || permission === 'clipboard-read') {
-            callback(true);
-        } else {
-            callback(false);
-        }
-    });
+    session.defaultSession.setPermissionRequestHandler(
+        (webContents, permission, callback) => {
+            if (
+                permission === "clipboard-sanitized-write" ||
+                permission === "clipboard-read"
+            ) {
+                callback(true);
+            } else {
+                callback(false);
+            }
+        },
+    );
 
     // Start maximized matching Windows OnSourceInitialized
-    mainWindow.once('ready-to-show', () => {
+    mainWindow.once("ready-to-show", () => {
         mainWindow.maximize();
         mainWindow.show();
         checkForAppUpdates();
@@ -2052,7 +2217,7 @@ function createWindow() {
     });
 
     // Update title, notification badge "(1)", and flash taskbar frame
-    mainWindow.on('page-title-updated', (event, title) => {
+    mainWindow.on("page-title-updated", (event, title) => {
         if (isUpdating) {
             event.preventDefault();
             return;
@@ -2066,20 +2231,22 @@ function createWindow() {
 
         if (updateAvailableTag) {
             event.preventDefault();
-            mainWindow.setTitle(`Bondage Club — Update Available (v${updateAvailableTag})`);
+            mainWindow.setTitle(
+                `Bondage Club — Update Available (v${updateAvailableTag})`,
+            );
         }
 
         const match = title.match(/^\((\d+)\)/);
         if (match && match[1]) {
             const count = parseInt(match[1], 10);
-            if (typeof app.setBadgeCount === 'function') {
+            if (typeof app.setBadgeCount === "function") {
                 app.setBadgeCount(count);
             }
             if (!mainWindow.isFocused()) {
                 mainWindow.flashFrame(true);
             }
         } else {
-            if (typeof app.setBadgeCount === 'function') {
+            if (typeof app.setBadgeCount === "function") {
                 app.setBadgeCount(0);
             }
             mainWindow.flashFrame(false);
@@ -2087,65 +2254,91 @@ function createWindow() {
     });
 
     // Smart focus and unfocused FPS throttling (Blur / Focus / Minimize / Restore)
-    mainWindow.on('blur', () => {
+    mainWindow.on("blur", () => {
         cancelActivation();
         cancelDeactivation();
         deactivationTimeout = setTimeout(() => {
-            if (mainWindow && !mainWindow.isDestroyed() && !mainWindow.isMinimized()) {
-                mainWindow.webContents.executeJavaScript(CapUnfocusedFpsScript).catch(() => {});
+            if (
+                mainWindow &&
+                !mainWindow.isDestroyed() &&
+                !mainWindow.isMinimized()
+            ) {
+                mainWindow.webContents
+                    .executeJavaScript(CapUnfocusedFpsScript)
+                    .catch(() => {});
             }
         }, 3000);
     });
 
-    mainWindow.on('focus', () => {
+    mainWindow.on("focus", () => {
         cancelActivation();
         cancelDeactivation();
         mainWindow.flashFrame(false);
         if (mainWindow && !mainWindow.isDestroyed()) {
-            mainWindow.webContents.executeJavaScript(RestoreUnfocusedFpsScript).catch(() => {});
+            mainWindow.webContents
+                .executeJavaScript(RestoreUnfocusedFpsScript)
+                .catch(() => {});
             activationTimeout = setTimeout(() => {
-                if (mainWindow && !mainWindow.isDestroyed() && mainWindow.isFocused() && !mainWindow.isMinimized()) {
+                if (
+                    mainWindow &&
+                    !mainWindow.isDestroyed() &&
+                    mainWindow.isFocused() &&
+                    !mainWindow.isMinimized()
+                ) {
                     mainWindow.webContents.focus();
-                    mainWindow.webContents.executeJavaScript(SmartFocusRestoreScript).catch(() => {});
+                    mainWindow.webContents
+                        .executeJavaScript(SmartFocusRestoreScript)
+                        .catch(() => {});
                 }
             }, 100);
         }
     });
 
-    mainWindow.on('minimize', () => {
+    mainWindow.on("minimize", () => {
         cancelDeactivation();
         if (mainWindow && !mainWindow.isDestroyed()) {
             mainWindow.webContents.setBackgroundThrottling(true);
-            mainWindow.webContents.executeJavaScript("(() => { window._bcIsMinimized = true; })()").catch(() => {});
-            mainWindow.webContents.executeJavaScript(CapUnfocusedFpsScript).catch(() => {});
+            mainWindow.webContents
+                .executeJavaScript(
+                    "(() => { window._bcIsMinimized = true; })()",
+                )
+                .catch(() => {});
+            mainWindow.webContents
+                .executeJavaScript(CapUnfocusedFpsScript)
+                .catch(() => {});
         }
     });
 
-    mainWindow.on('restore', () => {
+    mainWindow.on("restore", () => {
         cancelDeactivation();
         if (mainWindow && !mainWindow.isDestroyed()) {
             mainWindow.webContents.setBackgroundThrottling(false);
-            mainWindow.webContents.executeJavaScript(RestoreUnfocusedFpsScript).catch(() => {});
+            mainWindow.webContents
+                .executeJavaScript(RestoreUnfocusedFpsScript)
+                .catch(() => {});
         }
     });
 
     // Allow F5 and Ctrl+R reloads to bypass page beforeunload blocks in chatrooms
-    mainWindow.webContents.on('will-prevent-unload', (event) => {
+    mainWindow.webContents.on("will-prevent-unload", (event) => {
         event.preventDefault();
     });
 
     // Keyboard Shortcuts (F11 Fullscreen, F12 DevTools, F5 / Ctrl+R Reload). Physical Ctrl+KeyC is handled in CopyAndFocusScript, same as Windows.
-    mainWindow.webContents.on('before-input-event', (event, input) => {
-        if (input.type === 'keyDown') {
-            if (input.key === 'F11') {
+    mainWindow.webContents.on("before-input-event", (event, input) => {
+        if (input.type === "keyDown") {
+            if (input.key === "F11") {
                 mainWindow.setFullScreen(!mainWindow.isFullScreen());
                 event.preventDefault();
-            } else if (input.key === 'F12') {
+            } else if (input.key === "F12") {
                 mainWindow.webContents.toggleDevTools();
                 event.preventDefault();
             } else {
                 const isF5 = input.key === 'F5' && !input.control && !input.alt;
-                const isCtrlR = (input.control || input.meta) && !input.alt && input.key.toLowerCase() === 'r';
+                const isCtrlR =
+                    (input.control || input.meta) &&
+                    !input.alt &&
+                    input.key.toLowerCase() === "r";
                 if (isF5 || isCtrlR) {
                     if (input.shift) {
                         mainWindow.webContents.reloadIgnoringCache();
@@ -2159,8 +2352,8 @@ function createWindow() {
     });
 
     // Auto-recovery on render process crash (max 3 times within 30 seconds)
-    mainWindow.webContents.on('render-process-gone', (event, details) => {
-        if (details.reason === 'clean-exit') return;
+    mainWindow.webContents.on("render-process-gone", (event, details) => {
+        if (details.reason === "clean-exit") return;
         const now = Date.now();
         if (now - lastCrashTime < 30000) {
             recentCrashCount++;
@@ -2175,23 +2368,26 @@ function createWindow() {
     });
 
     // Auto-recovery if navigating into a 404 dead page
-    mainWindow.webContents.on('did-navigate', (event, url, httpResponseCode) => {
-        if (httpResponseCode === 404 && url !== lastKnownGoodUrl) {
-            mainWindow.loadURL(lastKnownGoodUrl).catch(() => {});
-        }
-    });
+    mainWindow.webContents.on(
+        "did-navigate",
+        (event, url, httpResponseCode) => {
+            if (httpResponseCode === 404 && url !== lastKnownGoodUrl) {
+                mainWindow.loadURL(lastKnownGoodUrl).catch(() => {});
+            }
+        },
+    );
 
     // Exit confirmation dialog matching Windows OnClosing
-    mainWindow.on('close', (e) => {
+    mainWindow.on("close", (e) => {
         if (forceQuit) return;
 
         const choice = dialog.showMessageBoxSync(mainWindow, {
-            type: 'question',
-            buttons: ['OK', 'Cancel'],
+            type: "question",
+            buttons: ["OK", "Cancel"],
             defaultId: 1,
             cancelId: 1,
-            title: 'Leave site?',
-            message: 'Leave Bondage Club?\nChanges you made may not be saved.'
+            title: "Leave site?",
+            message: "Leave Bondage Club?\nChanges you made may not be saved.",
         });
 
         if (choice !== 0) {
@@ -2201,47 +2397,64 @@ function createWindow() {
             cancelDeactivation();
             try {
                 if (storageMirrorData) {
-                    fs.writeFileSync(storageMirrorFile, JSON.stringify(storageMirrorData), 'utf8');
+                    fs.writeFileSync(
+                        storageMirrorFile,
+                        JSON.stringify(storageMirrorData),
+                        "utf8",
+                    );
                 }
             } catch (_) {}
             try {
-                if (session.defaultSession && typeof session.defaultSession.flushStorageData === 'function') {
+                if (
+                    session.defaultSession &&
+                    typeof session.defaultSession.flushStorageData ===
+                        "function"
+                ) {
                     session.defaultSession.flushStorageData();
                 }
             } catch (_) {}
         }
     });
 
-    mainWindow.on('closed', () => {
+    mainWindow.on("closed", () => {
         mainWindow = null;
     });
 
-    resolveGameUrl().then(url => {
-        if (mainWindow && !mainWindow.isDestroyed()) {
-            mainWindow.loadURL(url).catch(() => {});
-        }
-    }).catch(() => {
-        if (mainWindow && !mainWindow.isDestroyed()) {
-            mainWindow.loadURL(lastKnownGoodUrl).catch(() => {});
-        }
-    });
+    resolveGameUrl()
+        .then((url) => {
+            if (mainWindow && !mainWindow.isDestroyed()) {
+                mainWindow.loadURL(url).catch(() => {});
+            }
+        })
+        .catch(() => {
+            if (mainWindow && !mainWindow.isDestroyed()) {
+                mainWindow.loadURL(lastKnownGoodUrl).catch(() => {});
+            }
+        });
 }
 
-app.on('second-instance', () => {
+app.on("second-instance", () => {
     if (mainWindow && !mainWindow.isDestroyed()) {
         if (mainWindow.isMinimized()) mainWindow.restore();
         mainWindow.focus();
     }
 });
 
-app.on('before-quit', () => {
+app.on("before-quit", () => {
     try {
         if (storageMirrorData) {
-            fs.writeFileSync(storageMirrorFile, JSON.stringify(storageMirrorData), 'utf8');
+            fs.writeFileSync(
+                storageMirrorFile,
+                JSON.stringify(storageMirrorData),
+                "utf8",
+            );
         }
     } catch (_) {}
     try {
-        if (session.defaultSession && typeof session.defaultSession.flushStorageData === 'function') {
+        if (
+            session.defaultSession &&
+            typeof session.defaultSession.flushStorageData === "function"
+        ) {
             session.defaultSession.flushStorageData();
         }
     } catch (_) {}
@@ -2251,13 +2464,13 @@ app.whenReady().then(() => {
     createWindow();
 });
 
-app.on('window-all-closed', () => {
-    if (process.platform !== 'darwin') {
+app.on("window-all-closed", () => {
+    if (process.platform !== "darwin") {
         app.quit();
     }
 });
 
-app.on('activate', () => {
+app.on("activate", () => {
     if (BrowserWindow.getAllWindows().length === 0) {
         createWindow();
     }

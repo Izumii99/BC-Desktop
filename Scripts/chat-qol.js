@@ -3257,16 +3257,98 @@
     );
 
     // --- Screenshot Cleaner + Hide Addon Buttons at Icon State 2+ ---
+    function isSearchInputElement(el) {
+        if (!el) return false;
+        const id = (el.id || "").toLowerCase();
+        const type = (el.type || "").toLowerCase();
+        const name = (el.name || "").toLowerCase();
+        return (
+            id === "bcxsearch" ||
+            id.includes("search") ||
+            type === "search" ||
+            name.includes("search")
+        );
+    }
+
+    function markSearchInputActive(input) {
+        if (!input) return;
+        window.bcUserPrefersGameChat = false;
+        window.bcFocusMemory = input;
+        window.bcLastMousedown = input;
+        window.bcLastMousedownTime = Date.now();
+        window._bcLastDirectInputTapEl = input;
+        window._bcLastDirectInputTapTime = Date.now();
+    }
+
+    function armSearchFocusCheck() {
+        let count = 0;
+        const checkTimer = setInterval(() => {
+            count++;
+            const input =
+                document.getElementById("BCXSearch") ||
+                document.querySelector(
+                    "input[type='search'], input[id*='Search'], input[id*='search']",
+                );
+            if (input) {
+                markSearchInputActive(input);
+                if (document.activeElement !== input) {
+                    try {
+                        input.focus();
+                    } catch (_) {}
+                }
+            }
+            if (count > 12) clearInterval(checkTimer);
+        }, 25);
+    }
+
+    // Allow touch / click on BCX Search button in canvas header to trigger focus on mobile
+    window.addEventListener(
+        "pointerdown",
+        (e) => {
+            if (e && e.clientY < 160) {
+                armSearchFocusCheck();
+            }
+        },
+        { capture: true, passive: true },
+    );
+    window.addEventListener(
+        "touchstart",
+        (e) => {
+            const touch = e && e.touches && e.touches[0];
+            if (touch && touch.clientY < 160) {
+                armSearchFocusCheck();
+            }
+        },
+        { capture: true, passive: true },
+    );
+
+    const _origFocusForSearch = HTMLElement.prototype.focus;
+    HTMLElement.prototype.focus = function () {
+        if (isSearchInputElement(this)) {
+            markSearchInputActive(this);
+        }
+        return _origFocusForSearch.apply(this, arguments);
+    };
+
+    if (typeof window.ElementFocus === "function") {
+        const _origElemFocusForSearch = window.ElementFocus;
+        window.ElementFocus = function (ID) {
+            const target =
+                typeof ID === "string" ? document.getElementById(ID) : ID;
+            if (isSearchInputElement(target)) {
+                markSearchInputActive(target);
+            }
+            return _origElemFocusForSearch.apply(this, arguments);
+        };
+    }
+
     function focusSearchInputWithRetry() {
         let delays = [20, 80, 180, 300];
         delays.forEach((delay) => {
             setTimeout(() => {
                 let input = document.getElementById("BCXSearch");
                 if (input && document.activeElement !== input) {
-                    window.bcUserPrefersGameChat = false;
-                    window.bcFocusMemory = input;
-                    window.bcLastMousedown = input;
-                    window.bcLastMousedownTime = Date.now();
+                    markSearchInputActive(input);
                     input.focus();
                 }
             }, delay);
@@ -3491,7 +3573,7 @@
         if (window._bcdScreenCleanerLoaded) return;
         window._bcdScreenCleanerLoaded = true;
 
-        const SC_PASSTHROUGH = ["DrawCharacter", "ChatRoomDrawBackground"];
+        const SC_PASSTHROUGH = ["DrawCharacter", "ChatRoomDrawBackground", "DrawRoomBackground"];
         const SC_UI = [
             "DrawButton",
             "DrawButtonHover",
@@ -3513,7 +3595,8 @@
         let ptDepth = 0;
 
         function scSuppressed() {
-            if (ptDepth > 0) return false;
+            // Respect the toggle; icon-hide mode never strips dialog/item menus while a character is open
+            if (ptDepth > 0 || !qolConfig.enableScreenshotCleaner) return false;
             if (
                 qolConfig.enableScreenshotCleaner &&
                 window.CommonPhotoMode === true
@@ -3522,6 +3605,7 @@
             if (
                 typeof CurrentScreen !== "undefined" &&
                 CurrentScreen === "ChatRoom" &&
+                !window.CurrentCharacter &&
                 typeof window.ChatRoomHideIconState !== "undefined" &&
                 window.ChatRoomHideIconState >= 2
             )

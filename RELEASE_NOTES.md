@@ -1,10 +1,8 @@
 ### Fixes & Improvements:
 
-- **Fix (GPU Process Memory Usage):** Fixed an issue where graphics memory in the background GPU process could climb to 800MB-1GB+ during long sessions or while running other games, by automatically cleaning up unused character layer textures and temporary render buffers as soon as they are no longer needed.
-- **Fix (Crowded Room & Startup Frame Drops):** Eliminated heavy stutters and frame drops when opening the game or entering crowded rooms with up to 10 characters by loading background character outfits smoothly one by one while keeping your own character and the character you are interacting with instant.
-- **Improvement (Instant Character Click & Dialog Menu Response):** Clicking on characters in a busy room and navigating through item and restraint menus now responds immediately without UI freezes or layout delays.
-- **Feature (Configurable Auto-Focus in Chat QoL):** Added a new "Auto-Focus Text Input" setting under Keyboard Shortcuts & Navigation in Chat QoL Settings so players can choose whether chat and search boxes are focused automatically.
-- **Improvement (Universal Idle GPU Usage Reduction):** Significantly lowered graphics card usage when standing still in rooms, browsing menus, or switching to other games, while keeping active animations, minigames, and interactions completely smooth.
+- **Fix (Photo Mode & "Take a Picture" Window):** Taking photos in-game now opens a dedicated photo preview window instead of silently failing to appear on both Windows and Linux.
+- **Fix (Screenshot Cleaner & Custom Backgrounds):** Custom room backgrounds and interaction menus no longer disappear when character dialogs or item menus are open while Screenshot Cleaner is active.
+- **Improvement (Smart Search Focus on Touch):** Tapping the search icon in item and wardrobe menus now automatically opens the keyboard so you can search immediately, while general menu navigation and applying restraints keep the keyboard closed.
 
 ### Downloads:
 
