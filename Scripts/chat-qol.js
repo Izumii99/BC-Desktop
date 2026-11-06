@@ -41,7 +41,7 @@
         persistIconState: true,
         smartClosedEyes: true,
         enablePetsuitAnim: false,
-        enableEchoMouthPull: true,
+        enableEchoMouthPull: false,
         animCount: 4,
         animDelay: 350,
         petsuitAlternate: false,
@@ -882,6 +882,13 @@
     );
     cat1.body.appendChild(
         createToggle(
+            "enableEchoMouthPull",
+            "Enable Pull to Side (Mouth)",
+            "Allows pulling to side with mouth if hands are tied (Echo Addon). Merged into BC-LCE.",
+        ),
+    );
+    cat1.body.appendChild(
+        createToggle(
             "persistentWhisper",
             "Persistent Whisper Focus",
             "Keeps whisper focus locked after replying so conversations don't leak to public chat. Press Esc or /p to exit.",
@@ -966,13 +973,6 @@
     const cat3 = createCategory("Utilities & Animations", false);
     cat3.body.appendChild(
         createToggle(
-            "enableEchoMouthPull",
-            "Enable Pull to Side (Mouth)",
-            "Allows pulling to side with mouth if hands are tied (Echo Addon).",
-        ),
-    );
-    cat3.body.appendChild(
-        createToggle(
             "enableFluidColor",
             "Fluid Color Enforcer",
             "Forces fluids & tears to stay colored (#547A82). Turned off by default.",
@@ -982,7 +982,7 @@
         createToggle(
             "forceUngarbled",
             "Force Ungarbled Messages",
-            "Forces the game to always show ungarbled text.",
+            "Restores ungarbled text on login if it was enabled on last logoff, or keeps it disabled.",
         ),
     );
     cat3.body.appendChild(
@@ -1318,24 +1318,88 @@
                 Player.ImmersionSettings
             ) {
                 if (
-                    qolConfig.forceUngarbled &&
-                    !Player.ImmersionSettings.ShowUngarbledMessages
-                ) {
-                    Player.ImmersionSettings.ShowUngarbledMessages = true;
-                    let cb = document.getElementById(
-                        "preference-immersion-ShowUngarbledMessages",
-                    );
-                    if (cb && !cb.checked) {
-                        cb.checked = true;
-                    }
-                }
-
-                if (
                     typeof CurrentScreen !== "undefined" &&
                     CurrentScreen === "Login"
                 ) {
                     window._chatQol_IconStateAppliedThisLogin = false;
-                } else if (
+                    window._chatQol_UngarbledAppliedThisLogin = false;
+                } else if (!window._chatQol_UngarbledAppliedThisLogin) {
+                    window._chatQol_UngarbledAppliedThisLogin = true;
+                    if (qolConfig.forceUngarbled) {
+                        let savedUngarbled = null;
+                        try {
+                            savedUngarbled = localStorage.getItem(
+                                "BCDesktop_ChatQoL_LastUngarbled",
+                            );
+                        } catch (e) {}
+
+                        if (savedUngarbled === "true") {
+                            Player.ImmersionSettings.ShowUngarbledMessages = true;
+                            let cb = document.getElementById(
+                                "preference-immersion-ShowUngarbledMessages",
+                            );
+                            if (cb && !cb.checked) {
+                                cb.checked = true;
+                            }
+                        } else if (savedUngarbled === "false") {
+                            Player.ImmersionSettings.ShowUngarbledMessages = false;
+                            let cb = document.getElementById(
+                                "preference-immersion-ShowUngarbledMessages",
+                            );
+                            if (cb && cb.checked) {
+                                cb.checked = false;
+                            }
+                        } else {
+                            try {
+                                localStorage.setItem(
+                                    "BCDesktop_ChatQoL_LastUngarbled",
+                                    Player.ImmersionSettings.ShowUngarbledMessages
+                                        ? "true"
+                                        : "false",
+                                );
+                            } catch (e) {}
+                        }
+                    }
+                } else {
+                    try {
+                        const currentUngarbled = Boolean(
+                            Player.ImmersionSettings.ShowUngarbledMessages,
+                        );
+                        const storedUngarbled = localStorage.getItem(
+                            "BCDesktop_ChatQoL_LastUngarbled",
+                        );
+                        if (
+                            storedUngarbled !==
+                            (currentUngarbled ? "true" : "false")
+                        ) {
+                            localStorage.setItem(
+                                "BCDesktop_ChatQoL_LastUngarbled",
+                                currentUngarbled ? "true" : "false",
+                            );
+                        }
+                    } catch (e) {}
+
+                    let cb = document.getElementById(
+                        "preference-immersion-ShowUngarbledMessages",
+                    );
+                    if (cb && !cb._chatQolWatched) {
+                        cb._chatQolWatched = true;
+                        cb.addEventListener("change", function () {
+                            try {
+                                localStorage.setItem(
+                                    "BCDesktop_ChatQoL_LastUngarbled",
+                                    cb.checked ? "true" : "false",
+                                );
+                                if (Player && Player.ImmersionSettings) {
+                                    Player.ImmersionSettings.ShowUngarbledMessages =
+                                        cb.checked;
+                                }
+                            } catch (e) {}
+                        });
+                    }
+                }
+
+                if (
                     qolConfig.persistIconState &&
                     !window._chatQol_IconStateAppliedThisLogin &&
                     typeof CurrentScreen !== "undefined" &&
@@ -3935,6 +3999,7 @@
             window.LoginResponse = function (...args) {
                 origLoginResponse(...args);
                 window._chatQol_IconStateAppliedThisLogin = false;
+                window._chatQol_UngarbledAppliedThisLogin = false;
                 setTimeout(applyFluidsColor, 2000);
             };
         } else {
