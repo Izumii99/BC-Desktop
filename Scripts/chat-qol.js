@@ -1397,58 +1397,26 @@
         } catch (e) {}
     }
 
-    let roomCustomizationTimer = null;
-    let lastCustomizationHandledRoom = "";
+    let lastRoomCustomizationClickTime = 0;
 
-    function applyRoomCustomizationOnJoin() {
-        if (roomCustomizationTimer) {
-            clearInterval(roomCustomizationTimer);
-            roomCustomizationTimer = null;
-        }
+    function restoreRoomCustomizationIfSaved() {
         if (!qolConfig.persistRoomCustomization) return;
-        const roomName = window.ChatRoomData?.Name;
-        if (!roomName || !isRoomCustomizationSaved(roomName)) {
-            // Cutoff immediately if room customization is not enabled for this room
+        if (
+            typeof CurrentScreen !== "undefined" &&
+            CurrentScreen !== "ChatRoom"
+        )
             return;
-        }
-
-        let attempts = 0;
-        roomCustomizationTimer = setInterval(() => {
-            attempts++;
-            if (
-                window.CurrentScreen !== "ChatRoom" ||
-                window.ChatRoomData?.Name !== roomName
-            ) {
-                clearInterval(roomCustomizationTimer);
-                roomCustomizationTimer = null;
-                return;
-            }
-            if (document.getElementById("chat-room-menu-CustomizationOff")) {
-                clearInterval(roomCustomizationTimer);
-                roomCustomizationTimer = null;
-                return;
-            }
-            const onBtn = document.getElementById(
-                "chat-room-menu-CustomizationOn",
-            );
-            if (onBtn) {
-                onBtn.click();
-                clearInterval(roomCustomizationTimer);
-                roomCustomizationTimer = null;
-                return;
-            }
-            if (attempts >= 10) {
-                clearInterval(roomCustomizationTimer);
-                roomCustomizationTimer = null;
-            }
-        }, 150);
-    }
-
-    function checkAndApplyRoomCustomization() {
         const roomName = window.ChatRoomData?.Name;
-        if (!roomName || lastCustomizationHandledRoom === roomName) return;
-        lastCustomizationHandledRoom = roomName;
-        applyRoomCustomizationOnJoin();
+        if (!roomName || !isRoomCustomizationSaved(roomName)) return;
+
+        const now = Date.now();
+        if (now - lastRoomCustomizationClickTime < 1000) return;
+
+        const onBtn = document.getElementById("chat-room-menu-CustomizationOn");
+        if (onBtn) {
+            lastRoomCustomizationClickTime = now;
+            onBtn.click();
+        }
     }
 
     // Delegated DOM Event Listeners for Persistence
@@ -1500,7 +1468,6 @@
                     (CurrentScreen === "Login" || CurrentScreen === "Relog")
                 ) {
                     window._chatQol_IconStateAppliedThisLogin = false;
-                    lastCustomizationHandledRoom = "";
                 }
 
                 if (
@@ -1515,6 +1482,8 @@
                         cb.checked = true;
                     }
                 }
+
+                restoreRoomCustomizationIfSaved();
 
                 if (
                     qolConfig.persistIconState &&
@@ -1536,8 +1505,7 @@
                     const origChatRoomLoad = window.ChatRoomLoad;
                     window.ChatRoomLoad = function () {
                         origChatRoomLoad.apply(this, arguments);
-                        lastCustomizationHandledRoom = "";
-                        checkAndApplyRoomCustomization();
+                        restoreRoomCustomizationIfSaved();
                         if (
                             qolConfig.persistIconState &&
                             !window._chatQol_IconStateAppliedThisLogin &&
@@ -1557,7 +1525,7 @@
                     const origChatRoomSync = window.ChatRoomSync;
                     window.ChatRoomSync = function () {
                         origChatRoomSync.apply(this, arguments);
-                        checkAndApplyRoomCustomization();
+                        restoreRoomCustomizationIfSaved();
                     };
                     window.ChatRoomSync.hasQolHook = true;
                 }
@@ -1568,11 +1536,6 @@
                 ) {
                     const origChatRoomLeave = window.ChatRoomLeave;
                     window.ChatRoomLeave = function () {
-                        lastCustomizationHandledRoom = "";
-                        if (roomCustomizationTimer) {
-                            clearInterval(roomCustomizationTimer);
-                            roomCustomizationTimer = null;
-                        }
                         origChatRoomLeave.apply(this, arguments);
                     };
                     window.ChatRoomLeave.hasQolHook = true;
