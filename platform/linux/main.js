@@ -580,7 +580,6 @@ const CapUnfocusedFpsScript =
     "window.CharacterLoadCanvas=function(C){" +
     "if(window._bcIsMinimized){if(C)C._bcPendingCanvasBuild=true;return;}" +
     "if(window._bcIsBackground&&window._bcRequestBgBurst)window._bcRequestBgBurst(2500);" +
-    "if(window._bcSchedulePostBuildPrune)window._bcSchedulePostBuildPrune();" +
     "return _origLoad.apply(this,arguments);" +
     "};" +
     "}" +
@@ -590,7 +589,6 @@ const CapUnfocusedFpsScript =
     "window.CharacterAppearanceBuildCanvas=function(C){" +
     "if(window._bcIsMinimized){if(C)C._bcPendingCanvasBuild=true;return;}" +
     "if(window._bcIsBackground&&window._bcRequestBgBurst)window._bcRequestBgBurst(2500);" +
-    "if(window._bcSchedulePostBuildPrune)window._bcSchedulePostBuildPrune();" +
     "return _origBuild.apply(this,arguments);" +
     "};" +
     "}" +
@@ -598,7 +596,6 @@ const CapUnfocusedFpsScript =
     "if(window.bcLastMousedown&&!window.bcLastMousedown.isConnected)window.bcLastMousedown=null;" +
     "if(window.bcLastFocusedLayer&&!window.bcLastFocusedLayer.isConnected)window.bcLastFocusedLayer=null;" +
     "const now=Date.now();" +
-    "if(typeof window._bcPruneGpuNow==='function'){try{window._bcPruneGpuNow();}catch(e){}}" +
     "const _paws=document.getElementById('bcn-soft-paws');if(_paws)_paws.style.setProperty('display','none','important');if(typeof window.gc==='function'&&(!window._bcLastGc||now-window._bcLastGc>60000)){window._bcLastGc=now;try{window.gc();}catch(e){}}" +
     "})()";
 
@@ -702,8 +699,7 @@ const CopyAndFocusScript = `
                     }
                     return now < (window._bcBgBurstUntil || 0) ? 40 : 66;
                 }
-                if (window.CurrentScreen === 'Login' || window.CurrentScreen === 'Relog' || window.ScreenIsLoading) return 40;
-                if (window.CurrentModule === 'MiniGame' || window.CurrentScreen === 'KinkyDungeon' || (typeof window.StruggleProgress === 'number' && window.StruggleProgress >= 0)) return 25;
+                if (window.CurrentScreen === 'Login' || window.CurrentScreen === 'Relog' || window.ScreenIsLoading || window.CurrentModule === 'MiniGame' || window.CurrentScreen === 'KinkyDungeon' || (typeof window.StruggleProgress === 'number' && window.StruggleProgress >= 0)) return 25;
                 const idleMs = now - (window._bcLastCanvasInputTime || 0);
                 if (idleMs < 4000) return 33;
                 if (idleMs < 10000 || window.CurrentCharacter != null) return 48;
@@ -756,7 +752,6 @@ const CopyAndFocusScript = `
                     window._bcLastGlobalCanvasBuild = now;
                     nextChar._bcLastCanvasBuild = now;
                     try { _origLoad.call(window, nextChar); } catch (e) {}
-                    if (window._bcSchedulePostBuildPrune) window._bcSchedulePostBuildPrune();
                 }
                 if (q.length > 0) {
                     const drainDelay = window._bcIsBackground ? 140 : 28;
@@ -796,7 +791,6 @@ const CopyAndFocusScript = `
                         const now = performance.now();
                         window._bcLastGlobalCanvasBuild = now;
                         C._bcLastCanvasBuild = now;
-                        if (window._bcSchedulePostBuildPrune) window._bcSchedulePostBuildPrune();
                         return _origLoad.apply(this, arguments);
                     }
                     if ((!C.Canvas || !C.CanvasBlink) && typeof window.CommonDrawCanvasPrepare === 'function') {
@@ -810,7 +804,6 @@ const CopyAndFocusScript = `
                     if (sinceGlobal >= minGlobalGap && sinceChar >= minCharGap && (!Array.isArray(window._bcCanvasQueue) || window._bcCanvasQueue.length === 0)) {
                         window._bcLastGlobalCanvasBuild = now;
                         C._bcLastCanvasBuild = now;
-                        if (window._bcSchedulePostBuildPrune) window._bcSchedulePostBuildPrune();
                         return _origLoad.apply(this, arguments);
                     }
                     if (!C._bcQueuedForBuild) {
@@ -823,7 +816,6 @@ const CopyAndFocusScript = `
                     }
                     return;
                 }
-                if (window._bcSchedulePostBuildPrune) window._bcSchedulePostBuildPrune();
                 return _origLoad.apply(this, arguments);
             };
         }
@@ -836,7 +828,6 @@ const CopyAndFocusScript = `
                     return;
                 }
                 if (window._bcIsBackground && window._bcRequestBgBurst) window._bcRequestBgBurst(2500);
-                if (window._bcSchedulePostBuildPrune) window._bcSchedulePostBuildPrune();
                 return _origBuild.apply(this, arguments);
             };
         }
@@ -1472,6 +1463,7 @@ const CopyAndFocusScript = `
 
         function pruneWebGlGpuTextures(activeAssetUrls) {
             try {
+                if (window.CurrentScreen === 'Login' || window.CurrentScreen === 'Relog' || window.ScreenIsLoading) return;
                 const isBg = Boolean(window._bcIsBackground);
                 const gl = window.GLDrawCanvas && window.GLDrawCanvas.GL;
                 if (gl) {
@@ -1486,7 +1478,7 @@ const CopyAndFocusScript = `
                             if (typeof img.isDoneLoading === 'function' && !img.isDoneLoading()) return;
                             if (activeAssetUrls && activeAssetUrls.has(key)) return;
                             const age = nowTime - (img.lastUsed || 0);
-                            if (age > (isBg ? 20000 : 45000)) {
+                            if (age > (isBg ? 15000 : 45000)) {
                                 glToDelete.push(key);
                             }
                         });
@@ -1504,7 +1496,7 @@ const CopyAndFocusScript = `
                             if (typeof img.isDoneLoading === 'function' && !img.isDoneLoading()) return;
                             if (activeAssetUrls && activeAssetUrls.has(key)) return;
                             const age = nowTime - (img.lastUsed || 0);
-                            if (age > (isBg ? 20000 : 45000)) {
+                            if (age > (isBg ? 15000 : 45000)) {
                                 dToDelete.push(key);
                             }
                         });
@@ -1525,21 +1517,32 @@ const CopyAndFocusScript = `
                         for (let i = 0; i < toDelete.length; i++) {
                             texCache.delete(toDelete[i]);
                         }
-                    }
-                    const maskCache = gl.maskCache;
-                    if (maskCache && typeof maskCache.clear === 'function') {
-                        if (window._bcIsMinimized) {
-                            maskCache.clear();
-                        } else if (maskCache.size > 60 && typeof maskCache.keys === 'function') {
-                            const mKeys = Array.from(maskCache.keys());
-                            const removeCount = maskCache.size - 40;
-                            for (let i = 0; i < removeCount && i < mKeys.length; i++) {
-                                maskCache.delete(mKeys[i]);
+                        if (texCache.size > 140) {
+                            const excessKeys = [];
+                            texCache.forEach((entry, key) => {
+                                if (texCache.size - excessKeys.length <= 120) return;
+                                if (!activeAssetUrls || !activeAssetUrls.has(key)) {
+                                    excessKeys.push(key);
+                                }
+                            });
+                            for (let i = 0; i < excessKeys.length; i++) {
+                                texCache.delete(excessKeys[i]);
                             }
                         }
                     }
+                    const maskCache = gl.maskCache;
+                    if (maskCache && window._bcIsBackground && typeof maskCache.clear === 'function') {
+                        maskCache.clear();
+                    }
                     if (typeof gl.flush === 'function') {
                         try { gl.flush(); } catch (e) {}
+                    }
+                    if (maskCache && maskCache.size > 40 && typeof maskCache.keys === 'function') {
+                        const mKeys = Array.from(maskCache.keys());
+                        const removeCount = maskCache.size - 25;
+                        for (let i = 0; i < removeCount && i < mKeys.length; i++) {
+                            maskCache.delete(mKeys[i]);
+                        }
                     }
                 }
                 if (window.DrawCacheTextureAlphaMasks && typeof window.DrawCacheTextureAlphaMasks.size === 'number' && window.DrawCacheTextureAlphaMasks.size > 30) {
@@ -1559,28 +1562,6 @@ const CopyAndFocusScript = `
             protectActiveRoomTextures();
             pruneWebGlGpuTextures(lastActiveAssetUrls);
         };
-        let _postBuildPruneTimer = null;
-        window._bcSchedulePostBuildPrune = function() {
-            if (_postBuildPruneTimer) clearTimeout(_postBuildPruneTimer);
-            _postBuildPruneTimer = setTimeout(() => {
-                _postBuildPruneTimer = null;
-                if (Array.isArray(window._bcCanvasQueue) && window._bcCanvasQueue.length > 0) {
-                    window._bcSchedulePostBuildPrune();
-                    return;
-                }
-                try {
-                    protectActiveRoomTextures();
-                    pruneWebGlGpuTextures(lastActiveAssetUrls);
-                    if (typeof window.gc === 'function') {
-                        const now = Date.now();
-                        if (!window._bcLastGc || now - window._bcLastGc > 30000) {
-                            window._bcLastGc = now;
-                            try { window.gc(); } catch (e) {}
-                        }
-                    }
-                } catch (e) {}
-            }, 3500);
-        };
         function ensureChatVirtualizationCss() {
             if (!document.head || document.getElementById('bc-desktop-chat-virt')) return;
             const st = document.createElement('style');
@@ -1598,241 +1579,149 @@ const CopyAndFocusScript = `
             }
         }
 
-                function cleanUpDepartedCharacter(targetChar) {
-                    if (!targetChar || targetChar === window.Player || (targetChar.IsPlayer && targetChar.IsPlayer())) return;
-                    try {
-                        if (targetChar._bcBuildTimer) {
-                            clearTimeout(targetChar._bcBuildTimer);
-                            targetChar._bcBuildTimer = null;
-                        }
-                        const memberNum = targetChar.MemberNumber;
-                        if (window.CurrentCharacter === targetChar) {
-                            if (typeof window.DialogLeave === 'function') {
-                                try { window.DialogLeave(); } catch (e) {}
-                            }
-                            window.CurrentCharacter = null;
-                        }
-                        if (memberNum && window._chatQol_PetsuitRemoteAnims) {
-                            if (typeof window._chatQol_PetsuitRemoteAnims.delete === 'function' && window._chatQol_PetsuitRemoteAnims.has(memberNum)) {
-                                const entry = window._chatQol_PetsuitRemoteAnims.get(memberNum);
-                                if (entry && entry.timer) clearTimeout(entry.timer);
-                                window._chatQol_PetsuitRemoteAnims.delete(memberNum);
-                            } else if (window._chatQol_PetsuitRemoteAnims[memberNum]) {
-                                clearInterval(window._chatQol_PetsuitRemoteAnims[memberNum]);
-                                delete window._chatQol_PetsuitRemoteAnims[memberNum];
-                            }
-                        }
-                        if (targetChar._bcQueuedForBuild && Array.isArray(window._bcCanvasQueue)) {
-                            const qIdx = window._bcCanvasQueue.indexOf(targetChar);
-                            if (qIdx >= 0) window._bcCanvasQueue.splice(qIdx, 1);
-                            targetChar._bcQueuedForBuild = false;
-                        }
-                        const gl = window.GLDrawCanvas && window.GLDrawCanvas.GL;
-                        if (gl && gl.textureCache) {
-                            hookGlCacheDelete(gl);
-                            if (targetChar.AccountName) gl.textureCache.delete(targetChar.AccountName);
-                            if (targetChar.MemberNumber) gl.textureCache.delete('Online-' + targetChar.MemberNumber);
-                        }
-                        if (targetChar.DrawnAssets && typeof targetChar.DrawnAssets.forEach === 'function') {
-                            targetChar.DrawnAssets.forEach(url => {
-                                if (!lastActiveAssetUrls.has(url)) {
-                                    if (gl && gl.textureCache) gl.textureCache.delete(url);
-                                    if (window.GLDrawImageCache && typeof window.GLDrawImageCache.delete === 'function') window.GLDrawImageCache.delete(url);
-                                    if (window.DrawImageCache && typeof window.DrawImageCache.delete === 'function') window.DrawImageCache.delete(url);
-                                }
-                            });
-                            targetChar.DrawnAssets.clear();
-                        }
-                        targetChar.MustDraw = false;
-                        if (targetChar.Canvas) {
-                            targetChar.Canvas.width = 0;
-                            targetChar.Canvas.height = 0;
-                        }
-                        if (targetChar.CanvasBlink) {
-                            targetChar.CanvasBlink.width = 0;
-                            targetChar.CanvasBlink.height = 0;
-                        }
-                        if (typeof window.AnimationPurge === 'function') {
-                            try { window.AnimationPurge(targetChar, true); } catch (e) {}
-                        }
-                        if (typeof window.CharacterDelete === 'function') {
-                            try { window.CharacterDelete(targetChar); } catch (e) {}
-                        } else if (Array.isArray(window.Character)) {
-                            const idx = window.Character.indexOf(targetChar);
-                            if (idx >= 0) window.Character.splice(idx, 1);
-                        }
-                    } catch (e) {}
+        function cleanUpDepartedCharacter(targetChar) {
+            if (!targetChar || targetChar === window.Player || (targetChar.IsPlayer && targetChar.IsPlayer())) return;
+            try {
+                if (targetChar._bcBuildTimer) {
+                    clearTimeout(targetChar._bcBuildTimer);
+                    targetChar._bcBuildTimer = null;
                 }
+                const memberNum = targetChar.MemberNumber;
+                if (window.CurrentCharacter === targetChar) {
+                    if (typeof window.DialogLeave === 'function') {
+                        try { window.DialogLeave(); } catch (e) {}
+                    }
+                    window.CurrentCharacter = null;
+                }
+                if (memberNum && window._chatQol_PetsuitRemoteAnims) {
+                    if (typeof window._chatQol_PetsuitRemoteAnims.delete === 'function' && window._chatQol_PetsuitRemoteAnims.has(memberNum)) {
+                        const entry = window._chatQol_PetsuitRemoteAnims.get(memberNum);
+                        if (entry && entry.timer) clearTimeout(entry.timer);
+                        window._chatQol_PetsuitRemoteAnims.delete(memberNum);
+                    } else if (window._chatQol_PetsuitRemoteAnims[memberNum]) {
+                        clearInterval(window._chatQol_PetsuitRemoteAnims[memberNum]);
+                        delete window._chatQol_PetsuitRemoteAnims[memberNum];
+                    }
+                }
+                if (targetChar._bcQueuedForBuild && Array.isArray(window._bcCanvasQueue)) {
+                    const qIdx = window._bcCanvasQueue.indexOf(targetChar);
+                    if (qIdx >= 0) window._bcCanvasQueue.splice(qIdx, 1);
+                    targetChar._bcQueuedForBuild = false;
+                }
+                const gl = window.GLDrawCanvas && window.GLDrawCanvas.GL;
+                if (gl && gl.textureCache) {
+                    hookGlCacheDelete(gl);
+                    if (targetChar.AccountName) gl.textureCache.delete(targetChar.AccountName);
+                    if (targetChar.MemberNumber) gl.textureCache.delete('Online-' + targetChar.MemberNumber);
+                }
+                targetChar.MustDraw = false;
+                if (targetChar.Canvas) {
+                    targetChar.Canvas.width = 0;
+                    targetChar.Canvas.height = 0;
+                }
+                if (targetChar.CanvasBlink) {
+                    targetChar.CanvasBlink.width = 0;
+                    targetChar.CanvasBlink.height = 0;
+                }
+                if (typeof window.AnimationPurge === 'function') {
+                    try { window.AnimationPurge(targetChar, true); } catch (e) {}
+                }
+                if (typeof window.CharacterDelete === 'function') {
+                    try { window.CharacterDelete(targetChar); } catch (e) {}
+                } else if (Array.isArray(window.Character)) {
+                    const idx = window.Character.indexOf(targetChar);
+                    if (idx >= 0) window.Character.splice(idx, 1);
+                }
+            } catch (e) {}
+        }
 
-                function attachRoomHooks() {
-                    if (typeof window.CommonDrawWarmDrawnAssets === 'function' && !window.__bcWarmAssetsHooked) {
-                        window.__bcWarmAssetsHooked = true;
-                        window.CommonDrawWarmDrawnAssets = function() {
-                            if (window._bcIsBackground || window._bcIsMinimized) return;
-                            const now = Date.now();
-                            if (now - (window._bcLastWarmAssets || 0) < 5000) return;
-                            window._bcLastWarmAssets = now;
-                            const glMap = window.GLDrawImageCache && window.GLDrawImageCache.cache;
-                            const drawMap = window.DrawImageCache && window.DrawImageCache.cache;
-                            const tNow = typeof window.CommonTime === 'function' ? window.CommonTime() : now;
-                            const list = Array.isArray(window.DrawLastCharacters) ? window.DrawLastCharacters : [];
-                            for (let i = 0; i < list.length; i++) {
-                                const c = list[i];
-                                const drawn = c && c.DrawnAssets;
-                                if (drawn && typeof drawn.forEach === 'function') {
-                                    drawn.forEach(url => {
-                                        const gEntry = glMap && typeof glMap.get === 'function' ? glMap.get(url) : null;
-                                        if (gEntry) gEntry.lastUsed = tNow;
-                                        const dEntry = drawMap && typeof drawMap.get === 'function' ? drawMap.get(url) : null;
-                                        if (dEntry) dEntry.lastUsed = tNow;
-                                    });
-                                }
-                            }
-                        };
+        function attachRoomHooks() {
+            if (false && typeof window.CommonDrawWarmDrawnAssets === 'function' && !window.__bcWarmAssetsHooked) {
+                window.__bcWarmAssetsHooked = true;
+                const _origWarm = window.CommonDrawWarmDrawnAssets;
+                window.CommonDrawWarmDrawnAssets = function() {
+                    if (window._bcIsBackground || window._bcIsMinimized) return;
+                    const now = Date.now();
+                    if (now - (window._bcLastWarmAssets || 0) < 3000) return;
+                    window._bcLastWarmAssets = now;
+                    return _origWarm.apply(this, arguments);
+                };
+            }
+            if (typeof window.ChatRoomSyncMemberLeave === 'function' && !window.__bcMemberLeaveHooked) {
+                window.__bcMemberLeaveHooked = true;
+                const _origLeave = window.ChatRoomSyncMemberLeave;
+                window.ChatRoomSyncMemberLeave = function(data) {
+                    const targetId = data && typeof data.SourceMemberNumber === 'number' ? data.SourceMemberNumber : null;
+                    const char = targetId != null
+                        ? ((window.ChatRoomCharacter || []).find(c => c && c.MemberNumber === targetId) ||
+                           (window.Character || []).find(c => c && c.MemberNumber === targetId))
+                        : null;
+                    try {
+                        return _origLeave.apply(this, arguments);
+                    } finally {
+                        if (char) cleanUpDepartedCharacter(char);
                     }
-                    if (typeof window.GLDrawAppearanceBuild === 'function' && !window.__bcGLBuildHooked) {
-                        window.__bcGLBuildHooked = true;
-                        const _origGLBuild = window.GLDrawAppearanceBuild;
-                        let _backupCanvas = null;
-                        let _backupCtx = null;
-                        window.GLDrawAppearanceBuild = function(C) {
-                            const hadReady = Boolean(C && C._bcCanvasReady && C.Canvas && C.Canvas.width > 0 && C.CanvasBlink && C.CanvasBlink.width > 0);
-                            if (hadReady) {
-                                try {
-                                    if (!_backupCanvas) {
-                                        _backupCanvas = document.createElement('canvas');
-                                        _backupCanvas.width = 1000;
-                                        _backupCanvas.height = C.Canvas.height || 1000;
-                                        _backupCtx = _backupCanvas.getContext('2d');
-                                    }
-                                    if (_backupCtx) {
-                                        if (_backupCanvas.height !== C.Canvas.height) _backupCanvas.height = C.Canvas.height;
-                                        _backupCtx.clearRect(0, 0, 1000, _backupCanvas.height);
-                                        _backupCtx.drawImage(C.Canvas, 0, 0);
-                                        _backupCtx.drawImage(C.CanvasBlink, 500, 0);
-                                    }
-                                } catch (e) {}
-                            }
-                            const prevBuildChar = window._bcActiveBuildChar;
-                            window._bcActiveBuildChar = C;
-                            let res;
-                            try {
-                                res = _origGLBuild.apply(this, arguments);
-                            } finally {
-                                window._bcActiveBuildChar = prevBuildChar;
-                            }
-                            if (C && C.DrawnAssets) {
-                                let anyLoading = false;
-                                const glMap = window.GLDrawImageCache && window.GLDrawImageCache.cache;
-                                const dMap = window.DrawImageCache && window.DrawImageCache.cache;
-                                C.DrawnAssets.forEach(url => {
-                                    const gEntry = glMap && typeof glMap.get === 'function' ? glMap.get(url) : null;
-                                    if (gEntry && typeof gEntry.isLoading === 'function' && gEntry.isLoading()) anyLoading = true;
-                                    const dEntry = dMap && typeof dMap.get === 'function' ? dMap.get(url) : null;
-                                    if (dEntry && typeof dEntry.isLoading === 'function' && dEntry.isLoading()) anyLoading = true;
-                                });
-                                const now = performance.now();
-                                if (anyLoading && hadReady && _backupCtx && (now - (C._bcDeferStart || now) < 800)) {
-                                    if (!C._bcDeferStart) C._bcDeferStart = now;
-                                    try {
-                                        const h = C.Canvas.height;
-                                        const ctx1 = C.Canvas.getContext('2d');
-                                        const ctx2 = C.CanvasBlink.getContext('2d');
-                                        if (ctx1 && ctx2) {
-                                            ctx1.clearRect(0, 0, 500, h);
-                                            ctx1.drawImage(_backupCanvas, 0, 0, 500, h, 0, 0, 500, h);
-                                            ctx2.clearRect(0, 0, 500, h);
-                                            ctx2.drawImage(_backupCanvas, 500, 0, 500, h, 0, 0, 500, h);
-                                        }
-                                    } catch (e) {}
-                                } else if (!anyLoading) {
-                                    C._bcCanvasReady = true;
-                                    C._bcDeferStart = 0;
-                                }
-                            }
-                            return res;
-                        };
+                };
+            }
+            if (typeof window.ChatRoomLeave === 'function' && !window.__bcRoomLeaveHooked) {
+                window.__bcRoomLeaveHooked = true;
+                const _origRoomLeave = window.ChatRoomLeave;
+                window.ChatRoomLeave = function(clearCharacters) {
+                    try {
+                        return _origRoomLeave.apply(this, arguments);
+                    } finally {
+                        trackedRoomCanvases.clear();
                     }
-                    if (typeof window.ChatRoomSyncMemberLeave === 'function' && !window.__bcMemberLeaveHooked) {
-                        window.__bcMemberLeaveHooked = true;
-                        const _origLeave = window.ChatRoomSyncMemberLeave;
-                        window.ChatRoomSyncMemberLeave = function(data) {
-                            const targetId = data && typeof data.SourceMemberNumber === 'number' ? data.SourceMemberNumber : null;
-                            const char = targetId != null
-                                ? ((window.ChatRoomCharacter || []).find(c => c && c.MemberNumber === targetId) ||
-                                   (window.Character || []).find(c => c && c.MemberNumber === targetId))
-                                : null;
-                            try {
-                                return _origLeave.apply(this, arguments);
-                            } finally {
-                                if (char) cleanUpDepartedCharacter(char);
-                            }
-                        };
+                };
+            }
+            if (typeof window.ImageCache === 'function' && window.ImageCache.prototype && !window.ImageCache.prototype.__bcFastGetHooked) {
+                window.ImageCache.prototype.__bcFastGetHooked = true;
+                const _origGet = window.ImageCache.prototype.get;
+                window.ImageCache.prototype.get = function(url) {
+                    const image = this.cache && typeof this.cache.get === 'function' ? this.cache.get(url) : null;
+                    if (image && ((typeof image.isDoneLoading === 'function' && image.isDoneLoading()) || (typeof image.isLoading === 'function' && image.isLoading()))) {
+                        if (typeof window.CommonTime === 'function') image.lastUsed = window.CommonTime();
+                        return image;
                     }
-                    if (typeof window.ChatRoomLeave === 'function' && !window.__bcRoomLeaveHooked) {
-                        window.__bcRoomLeaveHooked = true;
-                        const _origRoomLeave = window.ChatRoomLeave;
-                        window.ChatRoomLeave = function(clearCharacters) {
-                            try {
-                                return _origRoomLeave.apply(this, arguments);
-                            } finally {
-                                trackedRoomCanvases.clear();
-                                if (typeof window._bcSchedulePostBuildPrune === 'function') window._bcSchedulePostBuildPrune();
-                            }
-                        };
+                    return _origGet.apply(this, arguments);
+                };
+            }
+            if (typeof window.ElementButton === 'object' && window.ElementButton && typeof window.ElementButton.SetImage === 'function' && !window.ElementButton.__bcFastSetImageHooked) {
+                window.ElementButton.__bcFastSetImageHooked = true;
+                const _origSetImage = window.ElementButton.SetImage;
+                window.ElementButton.SetImage = function(button, src) {
+                    if (typeof src === 'string' && typeof window.ElementWrap === 'function') {
+                        const el = window.ElementWrap(button);
+                        const img = el && (el.matches && el.matches('.button-image') ? el : (el.querySelector ? el.querySelector('.button-image') : null));
+                        if (img && img.tagName === 'IMG' && img.getAttribute('src') === src) {
+                            return img;
+                        }
                     }
-                    if (typeof window.ImageCache === 'function' && window.ImageCache.prototype && !window.ImageCache.prototype.__bcFastGetHooked) {
-                        window.ImageCache.prototype.__bcFastGetHooked = true;
-                        const _origGet = window.ImageCache.prototype.get;
-                        window.ImageCache.prototype.get = function(url) {
-                            const buildChar = window._bcActiveBuildChar;
-                            if (buildChar && typeof url === 'string' && url.indexOf('/Preview/') < 0 && buildChar.DrawnAssets && typeof buildChar.DrawnAssets.add === 'function') {
-                                buildChar.DrawnAssets.add(url);
-                            }
-                            const image = this.cache && typeof this.cache.get === 'function' ? this.cache.get(url) : null;
-                            if (image && ((typeof image.isDoneLoading === 'function' && image.isDoneLoading()) || (typeof image.isLoading === 'function' && image.isLoading()))) {
-                                if (typeof window.CommonTime === 'function') image.lastUsed = window.CommonTime();
-                                return image;
-                            }
-                            return _origGet.apply(this, arguments);
-                        };
+                    return _origSetImage.apply(this, arguments);
+                };
+            }
+            if (typeof window.ChatRoomMessage === 'function' && !window.__bcMsgBurstHooked) {
+                window.__bcMsgBurstHooked = true;
+                const _origMsg = window.ChatRoomMessage;
+                window.ChatRoomMessage = function(data) {
+                    if (false && window._bcIsBackground && !window._bcIsMinimized && window._bcRequestBgBurst) {
+                        window._bcRequestBgBurst(2500);
                     }
-                    if (typeof window.ElementButton === 'object' && window.ElementButton && typeof window.ElementButton.SetImage === 'function' && !window.ElementButton.__bcFastSetImageHooked) {
-                        window.ElementButton.__bcFastSetImageHooked = true;
-                        const _origSetImage = window.ElementButton.SetImage;
-                        window.ElementButton.SetImage = function(button, src) {
-                            if (typeof src === 'string' && typeof window.ElementWrap === 'function') {
-                                const el = window.ElementWrap(button);
-                                const img = el && (el.matches && el.matches('.button-image') ? el : (el.querySelector ? el.querySelector('.button-image') : null));
-                                if (img && img.tagName === 'IMG' && img.getAttribute('src') === src) {
-                                    return img;
-                                }
-                            }
-                            return _origSetImage.apply(this, arguments);
-                        };
+                    return _origMsg.apply(this, arguments);
+                };
+            }
+            if (typeof window.ServerSend === 'function' && !window.__bcSendBurstHooked) {
+                window.__bcSendBurstHooked = true;
+                const _origSend = window.ServerSend;
+                window.ServerSend = function(msg, data) {
+                    if (false && window._bcIsBackground && !window._bcIsMinimized && window._bcRequestBgBurst) {
+                        window._bcRequestBgBurst(2500);
                     }
-                    if (typeof window.ChatRoomMessage === 'function' && !window.__bcMsgBurstHooked) {
-                        window.__bcMsgBurstHooked = true;
-                        const _origMsg = window.ChatRoomMessage;
-                        window.ChatRoomMessage = function(data) {
-                            if (window._bcIsBackground && !window._bcIsMinimized && window._bcRequestBgBurst) {
-                                window._bcRequestBgBurst(2500);
-                            }
-                            return _origMsg.apply(this, arguments);
-                        };
-                    }
-                    if (typeof window.ServerSend === 'function' && !window.__bcSendBurstHooked) {
-                        window.__bcSendBurstHooked = true;
-                        const _origSend = window.ServerSend;
-                        window.ServerSend = function(msg, data) {
-                            if (window._bcIsBackground && !window._bcIsMinimized && window._bcRequestBgBurst) {
-                                window._bcRequestBgBurst(2500);
-                            }
-                            return _origSend.apply(this, arguments);
-                        };
-                    }
-                }
-                attachRoomHooks();
+                    return _origSend.apply(this, arguments);
+                };
+            }
+        }
+        attachRoomHooks();
 
         // Safely free VRAM of departed characters (BC's CommonDrawWarmDrawnAssets handles active texture warming natively)
         function protectActiveRoomTextures() {
@@ -1857,10 +1746,7 @@ const CopyAndFocusScript = `
                 const activeUrls = new Set();
                 for (let i = 0; i < chars.length; i++) {
                     const cObj = chars[i];
-                    if (!cObj) continue;
-                    if (cObj.AccountName) activeUrls.add(cObj.AccountName);
-                    if (cObj.MemberNumber) activeUrls.add('Online-' + cObj.MemberNumber);
-                    const keepWarm = Boolean(cObj && (!window._bcIsMinimized || cObj === window.Player));
+                    const keepWarm = Boolean(cObj);
                     const drawn = keepWarm ? cObj.DrawnAssets : null;
                     if (drawn && typeof drawn.forEach === 'function') {
                         drawn.forEach(url => {
@@ -1871,14 +1757,14 @@ const CopyAndFocusScript = `
                 lastActiveAssetUrls = activeUrls;
                 for (let i = 0; i < chars.length; i++) {
                     const cObj = chars[i];
-                    const keepWarm = Boolean(cObj && (!window._bcIsMinimized || cObj === window.Player));
+                    const keepWarm = Boolean(cObj);
                     const drawn = keepWarm ? cObj.DrawnAssets : null;
                     if (drawn && typeof drawn.forEach === 'function') {
                         drawn.forEach(url => {
-                            const gImg = glMap && typeof glMap.get === 'function' ? glMap.get(url) : null;
-                            if (gImg) gImg.lastUsed = now;
                             const dImg = drawMap && typeof drawMap.get === 'function' ? drawMap.get(url) : null;
                             if (dImg) dImg.lastUsed = now;
+                            const gImg = glMap && typeof glMap.get === 'function' ? glMap.get(url) : null;
+                            if (gImg) gImg.lastUsed = now;
                         });
                     }
                 }
@@ -1944,7 +1830,7 @@ const CopyAndFocusScript = `
         // 1. Periodically prune expired textures & clean up departed character VRAM
         setInterval(() => {
             try {
-                if (window._bcIsMinimized) return;
+                if (window._bcIsMinimized || window.CurrentScreen === 'Login' || window.CurrentScreen === 'Relog' || window.ScreenIsLoading) return;
                 applyPurgeDelay();
                 protectActiveRoomTextures();
 
@@ -1953,8 +1839,8 @@ const CopyAndFocusScript = `
                 }
                 if (typeof window.DrawImageCache !== 'undefined' && window.DrawImageCache && typeof window.DrawImageCache.purge === 'function') {
                     window.DrawImageCache.purge(false);
+                    pruneWebGlGpuTextures(lastActiveAssetUrls);
                 }
-                pruneWebGlGpuTextures(lastActiveAssetUrls);
             } catch (e) {}
         }, 15 * 1000);
 
@@ -1963,7 +1849,6 @@ const CopyAndFocusScript = `
         let screenTimer = null;
         setInterval(() => {
             try {
-                attachRoomHooks();
                 if (window._bcIsBackground) return;
                 applyPurgeDelay();
                 if (typeof window.CurrentScreen !== 'undefined') {

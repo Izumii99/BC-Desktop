@@ -374,13 +374,6 @@ public partial class MainWindow : Window // NOSONAR
                 Task.Run(async () =>
                 {
                     await Task.Delay(5000);
-                    await Dispatcher.InvokeAsync(async () =>
-                    {
-                        if (WebView.CoreWebView2 is { } c)
-                        {
-                            await c.ExecuteScriptAsync("(()=>{if(typeof window._bcPruneGpuNow==='function'){try{window._bcPruneGpuNow();}catch(e){}}if(typeof window.gc==='function'){try{window.gc();}catch(e){}}})()");
-                        }
-                    });
                     NativeMethods.TrimWorkingSet();
                 });
 #pragma warning restore CS4014

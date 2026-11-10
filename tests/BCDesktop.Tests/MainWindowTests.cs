@@ -185,9 +185,9 @@ public class MainWindowTests
             StringAssert.Contains(code, "__bcBuildCanvasHooked", $"{name} must intercept CharacterAppearanceBuildCanvas.");
             StringAssert.Contains(code, "_bcRequestBgBurst", $"{name} must include smart background burst scheduling.");
             StringAssert.Contains(code, "now-window._bcLastGc>60000", $"{name} must enforce 60s cooldown on window.gc().");
-            StringAssert.Contains(code, "_bcSchedulePostBuildPrune", $"{name} must prune intermediate WebGL textures after character builds.");
-            StringAssert.Contains(code, "__bcWarmAssetsHooked", $"{name} must intercept CommonDrawWarmDrawnAssets to prevent refocus rebuild spikes.");
+            StringAssert.Contains(code, "window.CurrentScreen === 'Login' || window.CurrentScreen === 'Relog' || window.ScreenIsLoading", $"{name} must skip texture pruning during login/relog/loading.");
             StringAssert.Contains(code, "window.addEventListener('input', _markActive", $"{name} must treat chat typing as active user input.");
+            Assert.IsFalse(code.Contains("__bcGLBuildHooked"), $"{name} must not hook GLDrawAppearanceBuild or mutate DrawnAssets during login.");
         }
         Assert.IsFalse(csCode.Contains("Object.defineProperty(window,'DrawProcess'"), "Must not define configurable accessor on DrawProcess in document-created script (overwritten by BC function declaration).");
         Assert.IsFalse(csCode.Contains("Object.defineProperty(window,'CharacterAppearanceBuildCanvas'"), "Must not define configurable accessor on CharacterAppearanceBuildCanvas in document-created script.");
