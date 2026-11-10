@@ -1500,8 +1500,10 @@
 
                 if (
                     typeof window.ChatRoomLoad === "function" &&
+                    !window._chatQol_ChatRoomLoadHooked &&
                     !window.ChatRoomLoad.hasQolHook
                 ) {
+                    window._chatQol_ChatRoomLoadHooked = true;
                     const origChatRoomLoad = window.ChatRoomLoad;
                     window.ChatRoomLoad = function () {
                         origChatRoomLoad.apply(this, arguments);
@@ -1520,8 +1522,10 @@
 
                 if (
                     typeof window.ChatRoomSync === "function" &&
+                    !window._chatQol_ChatRoomSyncHooked &&
                     !window.ChatRoomSync.hasQolHook
                 ) {
+                    window._chatQol_ChatRoomSyncHooked = true;
                     const origChatRoomSync = window.ChatRoomSync;
                     window.ChatRoomSync = function () {
                         origChatRoomSync.apply(this, arguments);
@@ -1532,8 +1536,10 @@
 
                 if (
                     typeof window.ChatRoomLeave === "function" &&
+                    !window._chatQol_ChatRoomLeaveHooked &&
                     !window.ChatRoomLeave.hasQolHook
                 ) {
+                    window._chatQol_ChatRoomLeaveHooked = true;
                     const origChatRoomLeave = window.ChatRoomLeave;
                     window.ChatRoomLeave = function () {
                         origChatRoomLeave.apply(this, arguments);
@@ -2560,13 +2566,16 @@
                     let modApi = null;
                     if (typeof window.bcModSdk !== "undefined") {
                         try {
-                            modApi = window.bcModSdk.registerMod({
-                                name: "BCDesktop_ChatQoL",
-                                fullName: "Chat QoL & Emoticons",
-                                version: "1.0.0",
-                                repository:
-                                    "https://github.com/Izumii99/BC-Desktop",
-                            });
+                            modApi = window.bcModSdk.registerMod(
+                                {
+                                    name: "BCDesktop_ChatQoL",
+                                    fullName: "Chat QoL & Emoticons",
+                                    version: "1.0.0",
+                                    repository:
+                                        "https://github.com/Izumii99/BC-Desktop",
+                                },
+                                { allowReplace: true },
+                            );
                             modApi.hookFunction(
                                 "ChatRoomSendChat",
                                 0,
@@ -3007,12 +3016,15 @@
         };
         try {
             window.bcModSdk
-                .registerMod({
-                    name: "BCDesktop_ShortcutImmersion",
-                    fullName: "Shortcut Immersion",
-                    version: "1.0.0",
-                    repository: "https://github.com/Izumii99/BC-Desktop",
-                })
+                .registerMod(
+                    {
+                        name: "BCDesktop_ShortcutImmersion",
+                        fullName: "Shortcut Immersion",
+                        version: "1.0.0",
+                        repository: "https://github.com/Izumii99/BC-Desktop",
+                    },
+                    { allowReplace: true },
+                )
                 .hookFunction("DrawImageResize", 0, (args, next) => {
                     spy(args);
                     return next(args);
@@ -3754,7 +3766,7 @@
                               repository:
                                   "https://github.com/Izumii99/BC-Desktop",
                           },
-                          { allowReplace: false },
+                          { allowReplace: true },
                       )
                     : null;
 
@@ -3809,12 +3821,16 @@
             );
         }
 
+        let waitCount = 0;
         const waitForGame = setInterval(() => {
-            if (
+            waitCount++;
+            const gameReady =
                 typeof window.DrawButton === "function" &&
                 typeof window.DrawCharacter === "function" &&
-                typeof window.CommonTakePhoto === "function"
-            ) {
+                typeof window.CommonTakePhoto === "function";
+            if (!gameReady) return;
+
+            if (typeof window.bcModSdk !== "undefined" || waitCount >= 5) {
                 clearInterval(waitForGame);
                 scInstall();
             }
@@ -4109,7 +4125,6 @@
             window.LoginResponse = function (...args) {
                 origLoginResponse(...args);
                 window._chatQol_IconStateAppliedThisLogin = false;
-                lastCustomizationHandledRoom = "";
                 if (typeof applyUngarbledState === "function") {
                     applyUngarbledState();
                 }
