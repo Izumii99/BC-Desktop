@@ -542,12 +542,12 @@ function handleWebMessage(msg) {
     }
 }
 
-// Throttling script: paces unfocused FPS smoothly and defers GC to minimize (matches Windows behavior)
+// Throttling script: paces unfocused FPS smoothly and prunes intermediate WebGL textures (matches Windows behavior)
 const CapUnfocusedFpsScript =
     "(()=>{" +
     "window._bcIsBackground=true;" +
     "const g=window.Player&&Player.GraphicsSettings;" +
-    "if(g&&!g.MaxUnfocusedFPS&&window.CurrentScreen!=='Preference'){if(window._bcIsCloaked||window._bcIsMinimized){g.MaxUnfocusedFPS=15;}else{g.MaxUnfocusedFPS=30;}window.bcFpsCap=g;}" +
+    "if(g&&!g.MaxUnfocusedFPS&&window.CurrentScreen!=='Preference'){g.MaxUnfocusedFPS=15;window.bcFpsCap=g;}" +
     "if(!document.__bcOrigHasFocus&&typeof document.hasFocus==='function'){" +
     "document.__bcOrigHasFocus=document.hasFocus;" +
     "document.hasFocus=function(){if(window._bcIsBackground)return false;return document.__bcOrigHasFocus.apply(this,arguments);};" +
@@ -563,11 +563,11 @@ const CapUnfocusedFpsScript =
     "if(window._bcIsMinimized)return;" +
     "if(window._bcIsBackground){" +
     "const now=typeof ts==='number'?ts:performance.now();" +
-    "if(window._bcIsCloaked){" +
     "const isBurst=now<(window._bcBgBurstUntil||0)||window.CurrentScreen==='Relog'||window.CurrentScreen==='ChatSearch'||window.CurrentScreen==='Login';" +
+    "if(window._bcIsCloaked){" +
     "if(isBurst?(now-_lastBgDrawTime<200):(now-_lastBgDrawTime<1000))return;" +
     "}else{" +
-    "if(now-_lastBgDrawTime<31.5)return;" +
+    "if(isBurst?(now-_lastBgDrawTime<40):(now-_lastBgDrawTime<64))return;" +
     "}" +
     "_lastBgDrawTime=now;" +
     "}" +
@@ -580,6 +580,7 @@ const CapUnfocusedFpsScript =
     "window.CharacterLoadCanvas=function(C){" +
     "if(window._bcIsMinimized){if(C)C._bcPendingCanvasBuild=true;return;}" +
     "if(window._bcIsBackground&&window._bcRequestBgBurst)window._bcRequestBgBurst(2500);" +
+    "if(window._bcSchedulePostBuildPrune)window._bcSchedulePostBuildPrune();" +
     "return _origLoad.apply(this,arguments);" +
     "};" +
     "}" +
@@ -589,6 +590,7 @@ const CapUnfocusedFpsScript =
     "window.CharacterAppearanceBuildCanvas=function(C){" +
     "if(window._bcIsMinimized){if(C)C._bcPendingCanvasBuild=true;return;}" +
     "if(window._bcIsBackground&&window._bcRequestBgBurst)window._bcRequestBgBurst(2500);" +
+    "if(window._bcSchedulePostBuildPrune)window._bcSchedulePostBuildPrune();" +
     "return _origBuild.apply(this,arguments);" +
     "};" +
     "}" +
@@ -596,7 +598,8 @@ const CapUnfocusedFpsScript =
     "if(window.bcLastMousedown&&!window.bcLastMousedown.isConnected)window.bcLastMousedown=null;" +
     "if(window.bcLastFocusedLayer&&!window.bcLastFocusedLayer.isConnected)window.bcLastFocusedLayer=null;" +
     "const now=Date.now();" +
-    "const _paws=document.getElementById('bcn-soft-paws');if(_paws)_paws.style.setProperty('display','none','important');if(window._bcIsMinimized&&typeof window.gc==='function'&&(!window._bcLastGc||now-window._bcLastGc>60000)){window._bcLastGc=now;try{window.gc();}catch(e){}}" +
+    "if(typeof window._bcPruneGpuNow==='function'){try{window._bcPruneGpuNow();}catch(e){}}" +
+    "const _paws=document.getElementById('bcn-soft-paws');if(_paws)_paws.style.setProperty('display','none','important');if(typeof window.gc==='function'&&(!window._bcLastGc||now-window._bcLastGc>60000)){window._bcLastGc=now;try{window.gc();}catch(e){}}" +
     "})()";
 
 const RestoreUnfocusedFpsScript =
@@ -697,14 +700,14 @@ const CopyAndFocusScript = `
                     if (window._bcIsCloaked) {
                         return now < (window._bcBgBurstUntil || 0) ? 200 : 1000;
                     }
-                    return 33;
+                    return now < (window._bcBgBurstUntil || 0) ? 40 : 66;
                 }
-                if (window.CurrentScreen === 'Login' || window.CurrentScreen === 'Relog' || window.ScreenIsLoading || window.CurrentModule === 'MiniGame' || window.CurrentScreen === 'KinkyDungeon' || (typeof window.StruggleProgress === 'number' && window.StruggleProgress >= 0)) {
-                    return 16;
-                }
+                if (window.CurrentScreen === 'Login' || window.CurrentScreen === 'Relog' || window.ScreenIsLoading) return 40;
+                if (window.CurrentModule === 'MiniGame' || window.CurrentScreen === 'KinkyDungeon' || (typeof window.StruggleProgress === 'number' && window.StruggleProgress >= 0)) return 25;
                 const idleMs = now - (window._bcLastCanvasInputTime || 0);
-                if (idleMs < 15000 || window.CurrentCharacter != null) return 16;
-                return 33;
+                if (idleMs < 4000) return 33;
+                if (idleMs < 10000 || window.CurrentCharacter != null) return 48;
+                return 66;
             };
         }
         if (!window._bcRequestBgBurst) {
@@ -722,61 +725,24 @@ const CopyAndFocusScript = `
                 if (window._bcIsMinimized) return;
                 const now = typeof ts === 'number' ? ts : performance.now();
                 if (window._bcIsBackground) {
+                    const isBurst = now < (window._bcBgBurstUntil || 0) || window.CurrentScreen === 'Relog' || window.CurrentScreen === 'ChatSearch' || window.CurrentScreen === 'Login';
                     if (window._bcIsCloaked) {
-                        const isBurst = now < (window._bcBgBurstUntil || 0) || window.CurrentScreen === 'Relog' || window.CurrentScreen === 'ChatSearch' || window.CurrentScreen === 'Login';
                         if (isBurst ? (now - _lastBgDrawTime < 200) : (now - _lastBgDrawTime < 1000)) return;
                     } else {
-                        if (now - _lastBgDrawTime < 31.5) return;
+                        if (isBurst ? (now - _lastBgDrawTime < 40) : (now - _lastBgDrawTime < 64)) return;
                     }
                     _lastBgDrawTime = now;
                 } else {
-                    const minDelta = window._bcGetTargetFrameDelta ? window._bcGetTargetFrameDelta(now) : 16;
+                    const minDelta = window._bcGetTargetFrameDelta ? window._bcGetTargetFrameDelta(now) : 33;
                     if (now - (_lastFgDrawTime || 0) < minDelta - 1.5) return;
                     _lastFgDrawTime = now;
                 }
                 if (typeof _origDrawLinux === 'function') return _origDrawLinux.apply(this, arguments);
             };
         }
-        if (typeof window.GLDrawLoadImage === 'function' && !window.__bcGlLoadImgHooked) {
-            window.__bcGlLoadImgHooked = true;
-            const _origGlLoad = window.GLDrawLoadImage;
-            window.GLDrawLoadImage = function(gl, url) {
-                const c = window._bcActiveBuildChar;
-                if (c && typeof url === 'string') {
-                    if (!c.DrawnAssets || typeof c.DrawnAssets.add !== 'function') c.DrawnAssets = new Set();
-                    c.DrawnAssets.add(url);
-                }
-                return _origGlLoad.apply(this, arguments);
-            };
-        }
-        if (typeof window.DrawGetImage === 'function' && !window.__bcDrawGetImgHooked) {
-            window.__bcDrawGetImgHooked = true;
-            const _origDrawGet = window.DrawGetImage;
-            window.DrawGetImage = function(url) {
-                const c = window._bcActiveBuildChar;
-                if (c && typeof url === 'string') {
-                    if (!c.DrawnAssets || typeof c.DrawnAssets.add !== 'function') c.DrawnAssets = new Set();
-                    c.DrawnAssets.add(url);
-                }
-                return _origDrawGet.apply(this, arguments);
-            };
-        }
         if (!window.__bcLoadCanvasHooked && typeof window.CharacterLoadCanvas === 'function') {
             window.__bcLoadCanvasHooked = true;
             const _origLoad = window.CharacterLoadCanvas;
-            const _runOrigLoadTracked = function(targetChar, args) {
-                const prevChar = window._bcActiveBuildChar;
-                window._bcActiveBuildChar = targetChar;
-                if (targetChar) {
-                    if (!targetChar.DrawnAssets || typeof targetChar.DrawnAssets.add !== 'function') targetChar.DrawnAssets = new Set();
-                    else targetChar.DrawnAssets.clear();
-                }
-                try {
-                    return args ? _origLoad.apply(window, args) : _origLoad.call(window, targetChar);
-                } finally {
-                    window._bcActiveBuildChar = prevChar;
-                }
-            };
             if (!Array.isArray(window._bcCanvasQueue)) window._bcCanvasQueue = [];
             const _drainCanvasQueue = function() {
                 window._bcCanvasQueueTimer = null;
@@ -789,10 +755,11 @@ const CopyAndFocusScript = `
                     const now = performance.now();
                     window._bcLastGlobalCanvasBuild = now;
                     nextChar._bcLastCanvasBuild = now;
-                    try { _runOrigLoadTracked(nextChar, null); } catch (e) {}
+                    try { _origLoad.call(window, nextChar); } catch (e) {}
+                    if (window._bcSchedulePostBuildPrune) window._bcSchedulePostBuildPrune();
                 }
                 if (q.length > 0) {
-                    const drainDelay = window._bcIsBackground ? 90 : 24;
+                    const drainDelay = window._bcIsBackground ? 140 : 28;
                     window._bcCanvasQueueTimer = setTimeout(_drainCanvasQueue, drainDelay);
                 }
             };
@@ -829,20 +796,22 @@ const CopyAndFocusScript = `
                         const now = performance.now();
                         window._bcLastGlobalCanvasBuild = now;
                         C._bcLastCanvasBuild = now;
-                        return _runOrigLoadTracked(C, arguments);
+                        if (window._bcSchedulePostBuildPrune) window._bcSchedulePostBuildPrune();
+                        return _origLoad.apply(this, arguments);
                     }
                     if ((!C.Canvas || !C.CanvasBlink) && typeof window.CommonDrawCanvasPrepare === 'function') {
                         try { window.CommonDrawCanvasPrepare(C); } catch (e) {}
                     }
                     const now = performance.now();
-                    const minGlobalGap = isBg ? 90 : 24;
-                    const minCharGap = isBg ? 250 : 120;
+                    const minGlobalGap = isBg ? 140 : 28;
+                    const minCharGap = isBg ? 350 : 120;
                     const sinceGlobal = now - (window._bcLastGlobalCanvasBuild || 0);
                     const sinceChar = now - (C._bcLastCanvasBuild || 0);
                     if (sinceGlobal >= minGlobalGap && sinceChar >= minCharGap && (!Array.isArray(window._bcCanvasQueue) || window._bcCanvasQueue.length === 0)) {
                         window._bcLastGlobalCanvasBuild = now;
                         C._bcLastCanvasBuild = now;
-                        return _runOrigLoadTracked(C, arguments);
+                        if (window._bcSchedulePostBuildPrune) window._bcSchedulePostBuildPrune();
+                        return _origLoad.apply(this, arguments);
                     }
                     if (!C._bcQueuedForBuild) {
                         C._bcQueuedForBuild = true;
@@ -854,7 +823,8 @@ const CopyAndFocusScript = `
                     }
                     return;
                 }
-                return _runOrigLoadTracked(C, arguments);
+                if (window._bcSchedulePostBuildPrune) window._bcSchedulePostBuildPrune();
+                return _origLoad.apply(this, arguments);
             };
         }
         if (!window.__bcBuildCanvasHooked && typeof window.CharacterAppearanceBuildCanvas === 'function') {
@@ -866,17 +836,8 @@ const CopyAndFocusScript = `
                     return;
                 }
                 if (window._bcIsBackground && window._bcRequestBgBurst) window._bcRequestBgBurst(2500);
-                const prevChar = window._bcActiveBuildChar;
-                window._bcActiveBuildChar = C;
-                if (C) {
-                    if (!C.DrawnAssets || typeof C.DrawnAssets.add !== 'function') C.DrawnAssets = new Set();
-                    else C.DrawnAssets.clear();
-                }
-                try {
-                    return _origBuild.apply(this, arguments);
-                } finally {
-                    window._bcActiveBuildChar = prevChar;
-                }
+                if (window._bcSchedulePostBuildPrune) window._bcSchedulePostBuildPrune();
+                return _origBuild.apply(this, arguments);
             };
         }
         return Boolean(window.__bcDrawHooked && window.__bcLoadCanvasHooked && window.__bcBuildCanvasHooked);
@@ -1451,8 +1412,8 @@ const CopyAndFocusScript = `
     // Safe VRAM, Active-Room Texture Protection & Chat Virtualization
     (function setupSafeVramOptimization() {
         window.__bcLifecycleGuardActive = true;
-        const NORMAL_PURGE_DELAY = 180 * 1000;
-        const WARDROBE_PURGE_DELAY = 90 * 1000;
+        const NORMAL_PURGE_DELAY = 60 * 1000;
+        const WARDROBE_PURGE_DELAY = 45 * 1000;
         const trackedRoomCanvases = new Map();
         let lastActiveAssetUrls = new Set();
 
@@ -1511,13 +1472,12 @@ const CopyAndFocusScript = `
 
         function pruneWebGlGpuTextures(activeAssetUrls) {
             try {
-                const inChatRoom = window.CurrentScreen === 'ChatRoom';
+                const isBg = Boolean(window._bcIsBackground);
                 const gl = window.GLDrawCanvas && window.GLDrawCanvas.GL;
                 if (gl) {
                     hookGlCacheDelete(gl);
                     const glImgMap = window.GLDrawImageCache && window.GLDrawImageCache.cache;
-                    if (!inChatRoom && glImgMap && typeof glImgMap.forEach === 'function' && typeof window.GLDrawImageCache.delete === 'function') {
-                        const isBg = Boolean(window._bcIsBackground);
+                    if (glImgMap && typeof glImgMap.forEach === 'function' && typeof window.GLDrawImageCache.delete === 'function') {
                         const nowTime = typeof window.CommonTime === 'function' ? window.CommonTime() : Date.now();
                         const glToDelete = [];
                         glImgMap.forEach((img, key) => {
@@ -1526,7 +1486,7 @@ const CopyAndFocusScript = `
                             if (typeof img.isDoneLoading === 'function' && !img.isDoneLoading()) return;
                             if (activeAssetUrls && activeAssetUrls.has(key)) return;
                             const age = nowTime - (img.lastUsed || 0);
-                            if (age > (isBg ? 45000 : 90000)) {
+                            if (age > (isBg ? 20000 : 45000)) {
                                 glToDelete.push(key);
                             }
                         });
@@ -1534,18 +1494,16 @@ const CopyAndFocusScript = `
                             window.GLDrawImageCache.delete(glToDelete[i]);
                         }
                     }
-                    if (!inChatRoom && window.DrawImageCache && window.DrawImageCache.cache && typeof window.DrawImageCache.delete === 'function') {
+                    if (window.DrawImageCache && window.DrawImageCache.cache && typeof window.DrawImageCache.delete === 'function') {
                         const dMap = window.DrawImageCache.cache;
-                        const isBg = Boolean(window._bcIsBackground);
                         const nowTime = typeof window.CommonTime === 'function' ? window.CommonTime() : Date.now();
                         const dToDelete = [];
                         dMap.forEach((img, key) => {
                             if (typeof key !== 'string' || !key.startsWith('Assets/') || key.indexOf('/Preview/') >= 0) return;
                             if (!img || (typeof img.isLoading === 'function' && img.isLoading())) return;
                             if (typeof img.isDoneLoading === 'function' && !img.isDoneLoading()) return;
-                            if (activeAssetUrls && activeAssetUrls.has(key)) return;
                             const age = nowTime - (img.lastUsed || 0);
-                            if (age > (isBg ? 45000 : 90000)) {
+                            if (age > (isBg ? 15000 : 30000)) {
                                 dToDelete.push(key);
                             }
                         });
@@ -1558,23 +1516,20 @@ const CopyAndFocusScript = `
                         const toDelete = [];
                         texCache.forEach((entry, key) => {
                             if (typeof key !== 'string') return;
-                            if (activeAssetUrls && activeAssetUrls.has(key)) return;
-                            if (key.startsWith('Online-') || (!inChatRoom && glImgMap && typeof glImgMap.has === 'function' && !glImgMap.has(key))) {
+                            if (key.startsWith('Online-') || (glImgMap && typeof glImgMap.has === 'function' && !glImgMap.has(key))) {
                                 toDelete.push(key);
                             }
                         });
                         for (let i = 0; i < toDelete.length; i++) {
                             texCache.delete(toDelete[i]);
                         }
-                        const maxTexCount = inChatRoom ? 450 : 200;
-                        const targetTexCount = inChatRoom ? 380 : 160;
+                        const maxTexCount = isBg ? 0 : (window.CurrentScreen === 'Appearance' ? 90 : 30);
+                        const targetTexCount = isBg ? 0 : (window.CurrentScreen === 'Appearance' ? 60 : 20);
                         if (texCache.size > maxTexCount) {
                             const excessKeys = [];
                             texCache.forEach((entry, key) => {
                                 if (texCache.size - excessKeys.length <= targetTexCount) return;
-                                if (!activeAssetUrls || !activeAssetUrls.has(key)) {
-                                    excessKeys.push(key);
-                                }
+                                excessKeys.push(key);
                             });
                             for (let i = 0; i < excessKeys.length; i++) {
                                 texCache.delete(excessKeys[i]);
@@ -1582,25 +1537,24 @@ const CopyAndFocusScript = `
                         }
                     }
                     const maskCache = gl.maskCache;
-                    if (!inChatRoom && maskCache && window._bcIsMinimized && typeof maskCache.clear === 'function') {
-                        maskCache.clear();
-                    }
-                    if (typeof gl.flush === 'function' && !inChatRoom) {
-                        try { gl.flush(); } catch (e) {}
-                    }
-                    const maxMaskCount = inChatRoom ? 120 : 50;
-                    const targetMaskCount = inChatRoom ? 90 : 30;
-                    if (maskCache && maskCache.size > maxMaskCount && typeof maskCache.keys === 'function') {
-                        const mKeys = Array.from(maskCache.keys());
-                        const removeCount = maskCache.size - targetMaskCount;
-                        for (let i = 0; i < removeCount && i < mKeys.length; i++) {
-                            maskCache.delete(mKeys[i]);
+                    if (maskCache && typeof maskCache.clear === 'function') {
+                        if (isBg || window.CurrentScreen !== 'Appearance') {
+                            maskCache.clear();
+                        } else if (maskCache.size > 30 && typeof maskCache.keys === 'function') {
+                            const mKeys = Array.from(maskCache.keys());
+                            const removeCount = maskCache.size - 15;
+                            for (let i = 0; i < removeCount && i < mKeys.length; i++) {
+                                maskCache.delete(mKeys[i]);
+                            }
                         }
                     }
+                    if (typeof gl.flush === 'function') {
+                        try { gl.flush(); } catch (e) {}
+                    }
                 }
-                if (!inChatRoom && window.DrawCacheTextureAlphaMasks && typeof window.DrawCacheTextureAlphaMasks.size === 'number' && window.DrawCacheTextureAlphaMasks.size > 60) {
+                if (window.DrawCacheTextureAlphaMasks && typeof window.DrawCacheTextureAlphaMasks.size === 'number' && window.DrawCacheTextureAlphaMasks.size > 20) {
                     const aKeys = Array.from(window.DrawCacheTextureAlphaMasks.keys());
-                    const removeCount = window.DrawCacheTextureAlphaMasks.size - 30;
+                    const removeCount = window.DrawCacheTextureAlphaMasks.size - 10;
                     for (let i = 0; i < removeCount && i < aKeys.length; i++) {
                         const c = window.DrawCacheTextureAlphaMasks.get(aKeys[i]);
                         if (c) { c.width = 0; c.height = 0; }
@@ -1614,6 +1568,28 @@ const CopyAndFocusScript = `
         window._bcPruneGpuNow = function() {
             protectActiveRoomTextures();
             pruneWebGlGpuTextures(lastActiveAssetUrls);
+        };
+        let _postBuildPruneTimer = null;
+        window._bcSchedulePostBuildPrune = function() {
+            if (_postBuildPruneTimer) clearTimeout(_postBuildPruneTimer);
+            _postBuildPruneTimer = setTimeout(() => {
+                _postBuildPruneTimer = null;
+                if (Array.isArray(window._bcCanvasQueue) && window._bcCanvasQueue.length > 0) {
+                    window._bcSchedulePostBuildPrune();
+                    return;
+                }
+                try {
+                    protectActiveRoomTextures();
+                    pruneWebGlGpuTextures(lastActiveAssetUrls);
+                    if (typeof window.gc === 'function') {
+                        const now = Date.now();
+                        if (!window._bcLastGc || now - window._bcLastGc > 30000) {
+                            window._bcLastGc = now;
+                            try { window.gc(); } catch (e) {}
+                        }
+                    }
+                } catch (e) {}
+            }, 3500);
         };
         function ensureChatVirtualizationCss() {
             if (!document.head || document.getElementById('bc-desktop-chat-virt')) return;
@@ -1697,15 +1673,27 @@ const CopyAndFocusScript = `
                 }
 
                 function attachRoomHooks() {
-                    if (false && typeof window.CommonDrawWarmDrawnAssets === 'function' && !window.__bcWarmAssetsHooked) {
+                    if (typeof window.CommonDrawWarmDrawnAssets === 'function' && !window.__bcWarmAssetsHooked) {
                         window.__bcWarmAssetsHooked = true;
-                        const _origWarm = window.CommonDrawWarmDrawnAssets;
                         window.CommonDrawWarmDrawnAssets = function() {
                             if (window._bcIsBackground || window._bcIsMinimized) return;
                             const now = Date.now();
-                            if (now - (window._bcLastWarmAssets || 0) < 3000) return;
+                            if (now - (window._bcLastWarmAssets || 0) < 5000) return;
                             window._bcLastWarmAssets = now;
-                            return _origWarm.apply(this, arguments);
+                            const glMap = window.GLDrawImageCache && window.GLDrawImageCache.cache;
+                            if (!glMap || typeof glMap.get !== 'function') return;
+                            const tNow = typeof window.CommonTime === 'function' ? window.CommonTime() : now;
+                            const list = Array.isArray(window.DrawLastCharacters) ? window.DrawLastCharacters : [];
+                            for (let i = 0; i < list.length; i++) {
+                                const c = list[i];
+                                const drawn = c && c.DrawnAssets;
+                                if (drawn && typeof drawn.forEach === 'function') {
+                                    drawn.forEach(url => {
+                                        const entry = glMap.get(url);
+                                        if (entry) entry.lastUsed = tNow;
+                                    });
+                                }
+                            }
                         };
                     }
                     if (typeof window.ChatRoomSyncMemberLeave === 'function' && !window.__bcMemberLeaveHooked) {
@@ -1765,7 +1753,7 @@ const CopyAndFocusScript = `
                         window.__bcMsgBurstHooked = true;
                         const _origMsg = window.ChatRoomMessage;
                         window.ChatRoomMessage = function(data) {
-                            if (false && window._bcIsBackground && !window._bcIsMinimized && window._bcRequestBgBurst) {
+                            if (window._bcIsBackground && !window._bcIsMinimized && window._bcRequestBgBurst) {
                                 window._bcRequestBgBurst(2500);
                             }
                             return _origMsg.apply(this, arguments);
@@ -1775,7 +1763,7 @@ const CopyAndFocusScript = `
                         window.__bcSendBurstHooked = true;
                         const _origSend = window.ServerSend;
                         window.ServerSend = function(msg, data) {
-                            if (false && window._bcIsBackground && !window._bcIsMinimized && window._bcRequestBgBurst) {
+                            if (window._bcIsBackground && !window._bcIsMinimized && window._bcRequestBgBurst) {
                                 window._bcRequestBgBurst(2500);
                             }
                             return _origSend.apply(this, arguments);
@@ -1820,12 +1808,10 @@ const CopyAndFocusScript = `
                 lastActiveAssetUrls = activeUrls;
                 for (let i = 0; i < chars.length; i++) {
                     const cObj = chars[i];
-                    const keepWarm = Boolean(cObj);
+                    const keepWarm = Boolean(cObj && (!window._bcIsBackground || cObj === window.Player || (typeof cObj.IsPlayer === 'function' && cObj.IsPlayer()) || cObj === window.CurrentCharacter));
                     const drawn = keepWarm ? cObj.DrawnAssets : null;
                     if (drawn && typeof drawn.forEach === 'function') {
                         drawn.forEach(url => {
-                            const dImg = drawMap && typeof drawMap.get === 'function' ? drawMap.get(url) : null;
-                            if (dImg) dImg.lastUsed = now;
                             const gImg = glMap && typeof glMap.get === 'function' ? glMap.get(url) : null;
                             if (gImg) gImg.lastUsed = now;
                         });
@@ -1890,20 +1876,18 @@ const CopyAndFocusScript = `
             } catch (e) {}
         }
 
-        // 1. Periodically prune expired textures & clean up departed character VRAM (lock active ChatRoom textures to prevent GPU re-uploads)
+        // 1. Periodically prune expired textures & clean up departed character VRAM
         setInterval(() => {
             try {
                 if (window._bcIsMinimized) return;
                 applyPurgeDelay();
                 protectActiveRoomTextures();
 
-                if (window.CurrentScreen !== 'ChatRoom') {
-                    if (typeof window.GLDrawImageCache !== 'undefined' && window.GLDrawImageCache && typeof window.GLDrawImageCache.purge === 'function') {
-                        window.GLDrawImageCache.purge(false);
-                    }
-                    if (typeof window.DrawImageCache !== 'undefined' && window.DrawImageCache && typeof window.DrawImageCache.purge === 'function') {
-                        window.DrawImageCache.purge(false);
-                    }
+                if (typeof window.GLDrawImageCache !== 'undefined' && window.GLDrawImageCache && typeof window.GLDrawImageCache.purge === 'function') {
+                    window.GLDrawImageCache.purge(false);
+                }
+                if (typeof window.DrawImageCache !== 'undefined' && window.DrawImageCache && typeof window.DrawImageCache.purge === 'function') {
+                    window.DrawImageCache.purge(false);
                 }
                 pruneWebGlGpuTextures(lastActiveAssetUrls);
             } catch (e) {}

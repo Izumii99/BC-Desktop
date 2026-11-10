@@ -38,8 +38,10 @@ public partial class MainWindow // NOSONAR
             if (!token.IsCancellationRequested && WindowState != WindowState.Minimized && WebView.CoreWebView2 is { } core)
             {
                 _lastThrottleState = 2;
+                core.MemoryUsageTargetLevel = CoreWebView2MemoryUsageTargetLevel.Low;
                 await core.ExecuteScriptAsync("(()=>{window._bcIsMinimized=false;window._bcIsCloaked=false;window._bcIsBackground=true;})()");
                 await core.ExecuteScriptAsync(ScriptHelpers.CapUnfocusedFpsScript);
+                TrimWorkingSet();
             }
         }
         catch (OperationCanceledException)
