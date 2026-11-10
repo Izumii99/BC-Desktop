@@ -99,14 +99,14 @@ public partial class MainWindow : Window // NOSONAR
             {
                 _lastThrottleState = 3;
                 core.MemoryUsageTargetLevel = CoreWebView2MemoryUsageTargetLevel.Low;
+                _ = core.ExecuteScriptAsync("(()=>{window._bcIsMinimized=true;window._bcIsCloaked=true;window._bcIsBackground=true;})()");
                 _ = core.ExecuteScriptAsync(ScriptHelpers.CapUnfocusedFpsScript);
-                _ = core.ExecuteScriptAsync("(()=>{window._bcIsMinimized=true;window._bcIsBackground=true;})()");
                 NativeMethods.TrimWorkingSet();
             }
             return;
         }
 
-        // 2. Cloaked (Virtual Desktop 2) atau Tab-Out -> State 2 (15 FPS Background, game loop & timer TETAP jalan)
+        // 2. Cloaked (Virtual Desktop 2) atau Tab-Out -> State 2/4 (Smart Frame Pacing, tanpa buang working set RAM/VRAM ke SSD)
         bool isForeground = IsWindowActiveAndVisibleOnCurrentDesktop() && !isCloaked;
 
         if (isForeground)
@@ -121,15 +121,15 @@ public partial class MainWindow : Window // NOSONAR
         }
         else
         {
+            int targetBgState = isCloaked ? 4 : 2;
             if (isCloaked || (_unfocusedStartTime != DateTime.MinValue && (DateTime.UtcNow - _unfocusedStartTime).TotalSeconds >= 1))
             {
-                if (_lastThrottleState != 2)
+                if (_lastThrottleState != targetBgState)
                 {
-                    _lastThrottleState = 2;
-                    core.MemoryUsageTargetLevel = CoreWebView2MemoryUsageTargetLevel.Low;
-                    _ = core.ExecuteScriptAsync("(()=>{window._bcIsMinimized=false;window._bcIsBackground=true;})()");
+                    _lastThrottleState = targetBgState;
+                    string cloakedFlag = isCloaked ? "true" : "false";
+                    _ = core.ExecuteScriptAsync($"(()=>{{window._bcIsMinimized=false;window._bcIsCloaked={cloakedFlag};window._bcIsBackground=true;}})()");
                     _ = core.ExecuteScriptAsync(ScriptHelpers.CapUnfocusedFpsScript);
-                    NativeMethods.TrimWorkingSet();
                 }
             }
             else if (_unfocusedStartTime == DateTime.MinValue)
@@ -368,13 +368,6 @@ public partial class MainWindow : Window // NOSONAR
             if (args.IsSuccess)
             {
                 await core.ExecuteScriptAsync(ScriptHelpers.GetCopyAndOptimizationScript());
-#pragma warning disable CS4014
-                Task.Run(async () =>
-                {
-                    await Task.Delay(5000);
-                    NativeMethods.TrimWorkingSet();
-                });
-#pragma warning restore CS4014
             }
         };
 

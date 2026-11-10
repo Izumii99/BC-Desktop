@@ -185,6 +185,9 @@ public class MainWindowTests
             StringAssert.Contains(code, "__bcBuildCanvasHooked", $"{name} must intercept CharacterAppearanceBuildCanvas.");
             StringAssert.Contains(code, "_bcRequestBgBurst", $"{name} must include smart background burst scheduling.");
             StringAssert.Contains(code, "now-window._bcLastGc>60000", $"{name} must enforce 60s cooldown on window.gc().");
+            StringAssert.Contains(code, "__bcGlLoadImgHooked", $"{name} must track active character textures via GLDrawLoadImage.");
+            StringAssert.Contains(code, "window.CurrentScreen !== 'ChatRoom'", $"{name} must lock active room textures while in ChatRoom.");
+            StringAssert.Contains(code, "window.addEventListener('input', _markActive", $"{name} must treat chat typing as active user input.");
         }
         Assert.IsFalse(csCode.Contains("Object.defineProperty(window,'DrawProcess'"), "Must not define configurable accessor on DrawProcess in document-created script (overwritten by BC function declaration).");
         Assert.IsFalse(csCode.Contains("Object.defineProperty(window,'CharacterAppearanceBuildCanvas'"), "Must not define configurable accessor on CharacterAppearanceBuildCanvas in document-created script.");
@@ -489,7 +492,7 @@ public class MainWindowTests
     [TestMethod]
     public void AppVersionComparison_AccuratelyEvaluatesSemanticVersions()
     {
-        Assert.AreEqual("7.5.6", MainWindow.CurrentAppVersion, "CurrentAppVersion must be 7.5.6.");
+        Assert.AreEqual("7.5.7", MainWindow.CurrentAppVersion, "CurrentAppVersion must be 7.5.7.");
 
         Assert.IsTrue(MainWindow.IsNewerVersion("v7.5", "7.4"), "v7.5 must be newer than 7.4.");
         Assert.IsTrue(MainWindow.IsNewerVersion("7.5", "7.4"), "7.5 must be newer than 7.4.");
