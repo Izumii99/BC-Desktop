@@ -1412,8 +1412,8 @@ const CopyAndFocusScript = `
     // Safe VRAM, Active-Room Texture Protection & Chat Virtualization
     (function setupSafeVramOptimization() {
         window.__bcLifecycleGuardActive = true;
-        const NORMAL_PURGE_DELAY = 60 * 1000;
-        const WARDROBE_PURGE_DELAY = 45 * 1000;
+        const NORMAL_PURGE_DELAY = 180 * 1000;
+        const WARDROBE_PURGE_DELAY = 90 * 1000;
         const trackedRoomCanvases = new Map();
         let lastActiveAssetUrls = new Set();
 
@@ -1502,8 +1502,9 @@ const CopyAndFocusScript = `
                             if (typeof key !== 'string' || !key.startsWith('Assets/') || key.indexOf('/Preview/') >= 0) return;
                             if (!img || (typeof img.isLoading === 'function' && img.isLoading())) return;
                             if (typeof img.isDoneLoading === 'function' && !img.isDoneLoading()) return;
+                            if (activeAssetUrls && activeAssetUrls.has(key)) return;
                             const age = nowTime - (img.lastUsed || 0);
-                            if (age > (isBg ? 15000 : 30000)) {
+                            if (age > (isBg ? 20000 : 45000)) {
                                 dToDelete.push(key);
                             }
                         });
@@ -1516,6 +1517,7 @@ const CopyAndFocusScript = `
                         const toDelete = [];
                         texCache.forEach((entry, key) => {
                             if (typeof key !== 'string') return;
+                            if (activeAssetUrls && activeAssetUrls.has(key)) return;
                             if (key.startsWith('Online-') || (glImgMap && typeof glImgMap.has === 'function' && !glImgMap.has(key))) {
                                 toDelete.push(key);
                             }
@@ -1523,26 +1525,14 @@ const CopyAndFocusScript = `
                         for (let i = 0; i < toDelete.length; i++) {
                             texCache.delete(toDelete[i]);
                         }
-                        const maxTexCount = isBg ? 0 : (window.CurrentScreen === 'Appearance' ? 90 : 30);
-                        const targetTexCount = isBg ? 0 : (window.CurrentScreen === 'Appearance' ? 60 : 20);
-                        if (texCache.size > maxTexCount) {
-                            const excessKeys = [];
-                            texCache.forEach((entry, key) => {
-                                if (texCache.size - excessKeys.length <= targetTexCount) return;
-                                excessKeys.push(key);
-                            });
-                            for (let i = 0; i < excessKeys.length; i++) {
-                                texCache.delete(excessKeys[i]);
-                            }
-                        }
                     }
                     const maskCache = gl.maskCache;
                     if (maskCache && typeof maskCache.clear === 'function') {
-                        if (isBg || window.CurrentScreen !== 'Appearance') {
+                        if (window._bcIsMinimized) {
                             maskCache.clear();
-                        } else if (maskCache.size > 30 && typeof maskCache.keys === 'function') {
+                        } else if (maskCache.size > 60 && typeof maskCache.keys === 'function') {
                             const mKeys = Array.from(maskCache.keys());
-                            const removeCount = maskCache.size - 15;
+                            const removeCount = maskCache.size - 40;
                             for (let i = 0; i < removeCount && i < mKeys.length; i++) {
                                 maskCache.delete(mKeys[i]);
                             }
@@ -1552,9 +1542,9 @@ const CopyAndFocusScript = `
                         try { gl.flush(); } catch (e) {}
                     }
                 }
-                if (window.DrawCacheTextureAlphaMasks && typeof window.DrawCacheTextureAlphaMasks.size === 'number' && window.DrawCacheTextureAlphaMasks.size > 20) {
+                if (window.DrawCacheTextureAlphaMasks && typeof window.DrawCacheTextureAlphaMasks.size === 'number' && window.DrawCacheTextureAlphaMasks.size > 30) {
                     const aKeys = Array.from(window.DrawCacheTextureAlphaMasks.keys());
-                    const removeCount = window.DrawCacheTextureAlphaMasks.size - 10;
+                    const removeCount = window.DrawCacheTextureAlphaMasks.size - 15;
                     for (let i = 0; i < removeCount && i < aKeys.length; i++) {
                         const c = window.DrawCacheTextureAlphaMasks.get(aKeys[i]);
                         if (c) { c.width = 0; c.height = 0; }
@@ -1642,14 +1632,16 @@ const CopyAndFocusScript = `
                             hookGlCacheDelete(gl);
                             if (targetChar.AccountName) gl.textureCache.delete(targetChar.AccountName);
                             if (targetChar.MemberNumber) gl.textureCache.delete('Online-' + targetChar.MemberNumber);
-                            if (targetChar.DrawnAssets && typeof targetChar.DrawnAssets.forEach === 'function') {
-                                targetChar.DrawnAssets.forEach(url => {
-                                    if (!lastActiveAssetUrls.has(url)) {
-                                        gl.textureCache.delete(url);
-                                    }
-                                });
-                                targetChar.DrawnAssets.clear();
-                            }
+                        }
+                        if (targetChar.DrawnAssets && typeof targetChar.DrawnAssets.forEach === 'function') {
+                            targetChar.DrawnAssets.forEach(url => {
+                                if (!lastActiveAssetUrls.has(url)) {
+                                    if (gl && gl.textureCache) gl.textureCache.delete(url);
+                                    if (window.GLDrawImageCache && typeof window.GLDrawImageCache.delete === 'function') window.GLDrawImageCache.delete(url);
+                                    if (window.DrawImageCache && typeof window.DrawImageCache.delete === 'function') window.DrawImageCache.delete(url);
+                                }
+                            });
+                            targetChar.DrawnAssets.clear();
                         }
                         targetChar.MustDraw = false;
                         if (targetChar.Canvas) {
@@ -1681,7 +1673,7 @@ const CopyAndFocusScript = `
                             if (now - (window._bcLastWarmAssets || 0) < 5000) return;
                             window._bcLastWarmAssets = now;
                             const glMap = window.GLDrawImageCache && window.GLDrawImageCache.cache;
-                            if (!glMap || typeof glMap.get !== 'function') return;
+                            const drawMap = window.DrawImageCache && window.DrawImageCache.cache;
                             const tNow = typeof window.CommonTime === 'function' ? window.CommonTime() : now;
                             const list = Array.isArray(window.DrawLastCharacters) ? window.DrawLastCharacters : [];
                             for (let i = 0; i < list.length; i++) {
@@ -1689,11 +1681,76 @@ const CopyAndFocusScript = `
                                 const drawn = c && c.DrawnAssets;
                                 if (drawn && typeof drawn.forEach === 'function') {
                                     drawn.forEach(url => {
-                                        const entry = glMap.get(url);
-                                        if (entry) entry.lastUsed = tNow;
+                                        const gEntry = glMap && typeof glMap.get === 'function' ? glMap.get(url) : null;
+                                        if (gEntry) gEntry.lastUsed = tNow;
+                                        const dEntry = drawMap && typeof drawMap.get === 'function' ? drawMap.get(url) : null;
+                                        if (dEntry) dEntry.lastUsed = tNow;
                                     });
                                 }
                             }
+                        };
+                    }
+                    if (typeof window.GLDrawAppearanceBuild === 'function' && !window.__bcGLBuildHooked) {
+                        window.__bcGLBuildHooked = true;
+                        const _origGLBuild = window.GLDrawAppearanceBuild;
+                        let _backupCanvas = null;
+                        let _backupCtx = null;
+                        window.GLDrawAppearanceBuild = function(C) {
+                            const hadReady = Boolean(C && C._bcCanvasReady && C.Canvas && C.Canvas.width > 0 && C.CanvasBlink && C.CanvasBlink.width > 0);
+                            if (hadReady) {
+                                try {
+                                    if (!_backupCanvas) {
+                                        _backupCanvas = document.createElement('canvas');
+                                        _backupCanvas.width = 1000;
+                                        _backupCanvas.height = C.Canvas.height || 1000;
+                                        _backupCtx = _backupCanvas.getContext('2d');
+                                    }
+                                    if (_backupCtx) {
+                                        if (_backupCanvas.height !== C.Canvas.height) _backupCanvas.height = C.Canvas.height;
+                                        _backupCtx.clearRect(0, 0, 1000, _backupCanvas.height);
+                                        _backupCtx.drawImage(C.Canvas, 0, 0);
+                                        _backupCtx.drawImage(C.CanvasBlink, 500, 0);
+                                    }
+                                } catch (e) {}
+                            }
+                            const prevBuildChar = window._bcActiveBuildChar;
+                            window._bcActiveBuildChar = C;
+                            let res;
+                            try {
+                                res = _origGLBuild.apply(this, arguments);
+                            } finally {
+                                window._bcActiveBuildChar = prevBuildChar;
+                            }
+                            if (C && C.DrawnAssets) {
+                                let anyLoading = false;
+                                const glMap = window.GLDrawImageCache && window.GLDrawImageCache.cache;
+                                const dMap = window.DrawImageCache && window.DrawImageCache.cache;
+                                C.DrawnAssets.forEach(url => {
+                                    const gEntry = glMap && typeof glMap.get === 'function' ? glMap.get(url) : null;
+                                    if (gEntry && typeof gEntry.isLoading === 'function' && gEntry.isLoading()) anyLoading = true;
+                                    const dEntry = dMap && typeof dMap.get === 'function' ? dMap.get(url) : null;
+                                    if (dEntry && typeof dEntry.isLoading === 'function' && dEntry.isLoading()) anyLoading = true;
+                                });
+                                const now = performance.now();
+                                if (anyLoading && hadReady && _backupCtx && (now - (C._bcDeferStart || now) < 800)) {
+                                    if (!C._bcDeferStart) C._bcDeferStart = now;
+                                    try {
+                                        const h = C.Canvas.height;
+                                        const ctx1 = C.Canvas.getContext('2d');
+                                        const ctx2 = C.CanvasBlink.getContext('2d');
+                                        if (ctx1 && ctx2) {
+                                            ctx1.clearRect(0, 0, 500, h);
+                                            ctx1.drawImage(_backupCanvas, 0, 0, 500, h, 0, 0, 500, h);
+                                            ctx2.clearRect(0, 0, 500, h);
+                                            ctx2.drawImage(_backupCanvas, 500, 0, 500, h, 0, 0, 500, h);
+                                        }
+                                    } catch (e) {}
+                                } else if (!anyLoading) {
+                                    C._bcCanvasReady = true;
+                                    C._bcDeferStart = 0;
+                                }
+                            }
+                            return res;
                         };
                     }
                     if (typeof window.ChatRoomSyncMemberLeave === 'function' && !window.__bcMemberLeaveHooked) {
@@ -1720,6 +1777,7 @@ const CopyAndFocusScript = `
                                 return _origRoomLeave.apply(this, arguments);
                             } finally {
                                 trackedRoomCanvases.clear();
+                                if (typeof window._bcSchedulePostBuildPrune === 'function') window._bcSchedulePostBuildPrune();
                             }
                         };
                     }
@@ -1727,6 +1785,10 @@ const CopyAndFocusScript = `
                         window.ImageCache.prototype.__bcFastGetHooked = true;
                         const _origGet = window.ImageCache.prototype.get;
                         window.ImageCache.prototype.get = function(url) {
+                            const buildChar = window._bcActiveBuildChar;
+                            if (buildChar && typeof url === 'string' && url.indexOf('/Preview/') < 0 && buildChar.DrawnAssets && typeof buildChar.DrawnAssets.add === 'function') {
+                                buildChar.DrawnAssets.add(url);
+                            }
                             const image = this.cache && typeof this.cache.get === 'function' ? this.cache.get(url) : null;
                             if (image && ((typeof image.isDoneLoading === 'function' && image.isDoneLoading()) || (typeof image.isLoading === 'function' && image.isLoading()))) {
                                 if (typeof window.CommonTime === 'function') image.lastUsed = window.CommonTime();
@@ -1798,7 +1860,8 @@ const CopyAndFocusScript = `
                     if (!cObj) continue;
                     if (cObj.AccountName) activeUrls.add(cObj.AccountName);
                     if (cObj.MemberNumber) activeUrls.add('Online-' + cObj.MemberNumber);
-                    const drawn = cObj.DrawnAssets;
+                    const keepWarm = Boolean(cObj && (!window._bcIsMinimized || cObj === window.Player));
+                    const drawn = keepWarm ? cObj.DrawnAssets : null;
                     if (drawn && typeof drawn.forEach === 'function') {
                         drawn.forEach(url => {
                             activeUrls.add(url);
@@ -1808,12 +1871,14 @@ const CopyAndFocusScript = `
                 lastActiveAssetUrls = activeUrls;
                 for (let i = 0; i < chars.length; i++) {
                     const cObj = chars[i];
-                    const keepWarm = Boolean(cObj && (!window._bcIsBackground || cObj === window.Player || (typeof cObj.IsPlayer === 'function' && cObj.IsPlayer()) || cObj === window.CurrentCharacter));
+                    const keepWarm = Boolean(cObj && (!window._bcIsMinimized || cObj === window.Player));
                     const drawn = keepWarm ? cObj.DrawnAssets : null;
                     if (drawn && typeof drawn.forEach === 'function') {
                         drawn.forEach(url => {
                             const gImg = glMap && typeof glMap.get === 'function' ? glMap.get(url) : null;
                             if (gImg) gImg.lastUsed = now;
+                            const dImg = drawMap && typeof drawMap.get === 'function' ? drawMap.get(url) : null;
+                            if (dImg) dImg.lastUsed = now;
                         });
                     }
                 }
@@ -1898,6 +1963,7 @@ const CopyAndFocusScript = `
         let screenTimer = null;
         setInterval(() => {
             try {
+                attachRoomHooks();
                 if (window._bcIsBackground) return;
                 applyPurgeDelay();
                 if (typeof window.CurrentScreen !== 'undefined') {
