@@ -15,7 +15,7 @@ public partial class MainWindow // NOSONAR
     private static string _lastKnownGoodUrl = string.Format(BaseGameUrl, 132);
     private static string FallbackUrl => _lastKnownGoodUrl;
 
-    internal const string CurrentAppVersion = "7.5.7";
+    internal const string CurrentAppVersion = "7.5.6";
     internal const string GitHubRepo = "Izumii99/BC-Desktop";
     internal static bool EnableAutoUpdates { get; set; } = true;
     private static string? _newReleaseUrl { get; set; }

@@ -1,5 +1,8 @@
 ### Fixes & Improvements:
 
+- **Fix (Photo Mode & "Take a Picture" Window):** Taking photos in-game now opens a dedicated photo preview window instead of silently failing to appear on both Windows and Linux.
+- **Fix (Screenshot Cleaner & Custom Backgrounds):** Custom room backgrounds and interaction menus no longer disappear when character dialogs or item menus are open while Screenshot Cleaner is active.
+- **Improvement (Smart Search Focus on Touch):** Tapping the search icon in item and wardrobe menus now automatically opens the keyboard so you can search immediately, while general menu navigation and applying restraints keep the keyboard closed.
 - **Improvement (Background & Multi-Monitor Smoothness):** When playing alongside heavy 3D games or keeping the window visible on a secondary monitor, character animations, struggles, and eye blinks now stay smooth at 30 FPS instead of stuttering or dropping down to 1 FPS.
 - **Fix (Typing in Chat & Frame Rate Drops):** Typing messages in the chat box or addon input fields is now correctly recognized as active gameplay, preventing the frame rate from unexpectedly dropping while chatting without moving the mouse.
 - **Improvement (Room Outfit & Texture Caching):** Textures for characters present in your current chat room are now kept in high-speed memory while inside the room, completely eliminating freeze-ups and stutter caused by textures constantly unloading and reloading from disk.
