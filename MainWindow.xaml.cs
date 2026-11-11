@@ -24,6 +24,8 @@ public partial class MainWindow : Window // NOSONAR
     private int _lastThrottleState; // 1: Active, 2: Background, 3: Cloaked/Minimized
     private DateTime _unfocusedStartTime = DateTime.MinValue;
     private string _resolvedUrl = FallbackUrl;
+    private bool _isClosingPromptActive;
+    private bool _forceClose;
 
     public MainWindow() : this(initializeWebView: true)
     {
@@ -173,14 +175,45 @@ public partial class MainWindow : Window // NOSONAR
 
     protected override void OnClosing(System.ComponentModel.CancelEventArgs e)
     {
-        var result = MessageBox.Show(
-            "Leave Bondage Club?\nChanges you made may not be saved.",
-            "Leave site?",
-            MessageBoxButton.OKCancel,
-            MessageBoxImage.Question,
-            MessageBoxResult.Cancel);
+        if (_forceClose)
+        {
+            CancelDeactivation();
+            try
+            {
+                WebView?.Dispose();
+            }
+            catch (Exception)
+            {
+                // Ignored intentionally: WebView2 disposal during window teardown.
+            }
+            base.OnClosing(e);
+            return;
+        }
 
-        if (result != MessageBoxResult.OK)
+        if (_isClosingPromptActive)
+        {
+            e.Cancel = true;
+            PlayPromptAlertAndBringToFront();
+            return;
+        }
+
+        _isClosingPromptActive = true;
+        MessageBoxResult result;
+        try
+        {
+            result = MessageBox.Show(
+                "Leave Bondage Club?\nChanges you made may not be saved.",
+                "Leave site?",
+                MessageBoxButton.OKCancel,
+                MessageBoxImage.Question,
+                MessageBoxResult.Cancel);
+        }
+        finally
+        {
+            _isClosingPromptActive = false;
+        }
+
+        if (result != MessageBoxResult.OK && !_forceClose)
         {
             e.Cancel = true;
             return;

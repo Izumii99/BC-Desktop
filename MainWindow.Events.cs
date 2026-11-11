@@ -318,8 +318,17 @@ public partial class MainWindow // NOSONAR
     private void MaxRestoreBtn_Click(object sender, RoutedEventArgs e) =>
         ToggleMaximize();
 
-    private void CloseBtn_Click(object sender, RoutedEventArgs e) =>
+    private void CloseBtn_Click(object sender, RoutedEventArgs e)
+    {
+        if (_isClosingPromptActive)
+        {
+            _forceClose = true;
+            DismissClosingPrompt();
+            return;
+        }
+
         Close();
+    }
 
     protected override void OnPreviewKeyDown(KeyEventArgs e)
     {
@@ -471,7 +480,159 @@ public partial class MainWindow // NOSONAR
             return HandleNcHitTest(lParam, ref handled);
         }
 
+        if (msg == NativeMethods.WM_MOUSEACTIVATE)
+        {
+            return HandleMouseActivate(ref handled);
+        }
+
         return IntPtr.Zero;
+    }
+
+    private IntPtr HandleMouseActivate(ref bool handled)
+    {
+        if (!_isClosingPromptActive)
+        {
+            return IntPtr.Zero;
+        }
+
+        if (IsCursorOverCloseButton())
+        {
+            _forceClose = true;
+            DismissClosingPrompt();
+            handled = true;
+            return (IntPtr)NativeMethods.MA_NOACTIVATEANDEAT;
+        }
+
+        handled = true;
+        PlayPromptAlertAndBringToFront();
+        return (IntPtr)NativeMethods.MA_NOACTIVATEANDEAT;
+    }
+
+    protected override void OnPreviewMouseDown(MouseButtonEventArgs e)
+    {
+        if (_isClosingPromptActive)
+        {
+            if (IsCursorOverCloseButton())
+            {
+                _forceClose = true;
+                DismissClosingPrompt();
+                e.Handled = true;
+                return;
+            }
+
+            e.Handled = true;
+            PlayPromptAlertAndBringToFront();
+            return;
+        }
+
+        base.OnPreviewMouseDown(e);
+    }
+
+    private bool IsCursorOverCloseButton()
+    {
+        if (CloseBtn == null || !CloseBtn.IsLoaded || !CloseBtn.IsVisible)
+        {
+            return false;
+        }
+
+        try
+        {
+            if (!NativeMethods.GetCursorPos(out NativeMethods.POINT pt))
+            {
+                return false;
+            }
+
+            Point topLeft = CloseBtn.PointToScreen(new Point(0, 0));
+            Point bottomRight = CloseBtn.PointToScreen(new Point(CloseBtn.ActualWidth, CloseBtn.ActualHeight));
+
+            return pt.X >= topLeft.X && pt.X <= bottomRight.X &&
+                   pt.Y >= topLeft.Y && pt.Y <= bottomRight.Y;
+        }
+        catch (Exception)
+        {
+            return false;
+        }
+    }
+
+    private void PlayPromptAlertAndBringToFront()
+    {
+        try
+        {
+            System.Media.SystemSounds.Asterisk.Play();
+        }
+        catch (Exception)
+        {
+            // Ignored intentionally: sound playback failure.
+        }
+
+        IntPtr hwnd = GetClosingPromptHwnd();
+        if (hwnd != IntPtr.Zero)
+        {
+            NativeMethods.SetForegroundWindow(hwnd);
+            NativeMethods.FlashWindow(hwnd, true);
+        }
+    }
+
+    private IntPtr GetClosingPromptHwnd()
+    {
+        IntPtr found = IntPtr.Zero;
+        uint currentThreadId = NativeMethods.GetCurrentThreadId();
+
+        NativeMethods.EnumThreadWindows(currentThreadId, (h, _) =>
+        {
+            int length = NativeMethods.GetWindowTextLength(h);
+            if (length > 0)
+            {
+                var sb = new System.Text.StringBuilder(length + 1);
+                _ = NativeMethods.GetWindowText(h, sb, sb.Capacity);
+                if (sb.ToString() == "Leave site?")
+                {
+                    found = h;
+                    return false;
+                }
+            }
+            return true;
+        }, IntPtr.Zero);
+
+        if (found != IntPtr.Zero)
+        {
+            return found;
+        }
+
+        IntPtr fallback = NativeMethods.FindWindow("#32770", "Leave site?");
+        if (fallback != IntPtr.Zero)
+        {
+            _ = NativeMethods.GetWindowThreadProcessId(fallback, out uint pid);
+            if (pid == (uint)Environment.ProcessId)
+            {
+                return fallback;
+            }
+        }
+
+        return IntPtr.Zero;
+    }
+
+    private void DismissClosingPrompt()
+    {
+        _forceClose = true;
+        IntPtr promptHwnd = GetClosingPromptHwnd();
+        if (promptHwnd != IntPtr.Zero)
+        {
+            NativeMethods.PostMessage(promptHwnd, NativeMethods.WM_COMMAND, (IntPtr)1 /* IDOK */, IntPtr.Zero);
+        }
+        else
+        {
+            try
+            {
+                CancelDeactivation();
+                WebView?.Dispose();
+            }
+            catch (Exception)
+            {
+                // Ignored intentionally: WebView2 disposal during teardown.
+            }
+            Application.Current.Shutdown();
+        }
     }
 
     private void HandleGetMinMaxInfo(IntPtr hwnd, IntPtr lParam, ref bool handled)

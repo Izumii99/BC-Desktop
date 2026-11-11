@@ -140,7 +140,7 @@
                 <Button Style="{StaticResource TitleBtn}" Click="MaxRestoreBtn_Click"
                         x:Name="MaxRestoreBtn"
                         ToolTip="Maximize" Content="&#xE922;"/>
-                <Button Style="{StaticResource CloseTitleBtn}" Click="CloseBtn_Click"
+                <Button x:Name="CloseBtn" Style="{StaticResource CloseTitleBtn}" Click="CloseBtn_Click"
                         ToolTip="Close" Content="&#xE8BB;"/>
             </StackPanel>
         </Grid>

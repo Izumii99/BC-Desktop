@@ -936,6 +936,20 @@ public class MainWindowTests
         StringAssert.Contains(linux, "cancelActivation()", "Linux main.js must cancel pending activation on blur.");
         StringAssert.Contains(linux, "mainWindow.isFocused()", "Linux main.js must check isFocused before executing focus.");
     }
+
+    [TestMethod]
+    public void ClosingPrompt_SafeDismissalAndDoubleExit_IsImplemented()
+    {
+        string cs = MainWindowSourceCode;
+
+        StringAssert.Contains(cs, "_isClosingPromptActive", "MainWindow must track active exit confirmation prompt state.");
+        StringAssert.Contains(cs, "_forceClose", "MainWindow must support force close state on double exit.");
+        StringAssert.Contains(cs, "DismissClosingPrompt", "MainWindow must implement safe dismissal of closing prompt.");
+        StringAssert.Contains(cs, "IsCursorOverCloseButton", "MainWindow must detect clicks targeting close button during active prompt.");
+        StringAssert.Contains(cs, "PlayPromptAlertAndBringToFront", "MainWindow must alert and foreground closing prompt on outside clicks.");
+        StringAssert.Contains(cs, "WM_MOUSEACTIVATE", "MainWindow must intercept WM_MOUSEACTIVATE to block canvas clicks during prompt.");
+        StringAssert.Contains(cs, "WM_COMMAND", "MainWindow must support WM_COMMAND to unblock modal prompt on repeat close click.");
+    }
 }
 
 
