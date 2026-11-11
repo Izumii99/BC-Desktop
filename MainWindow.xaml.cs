@@ -386,6 +386,11 @@ public partial class MainWindow : Window // NOSONAR
         await core.AddScriptToExecuteOnDocumentCreatedAsync(@"
             if(typeof window.pidx==='undefined'){try{Object.defineProperty(window,'pidx',{get:()=>0,set:()=>{},configurable:true});}catch(e){}}
             try{if(localStorage.getItem('GLDraw-antialiasOff')===null)localStorage.setItem('GLDraw-antialiasOff','true');}catch(e){}
+            if(typeof CanvasRenderingContext2D!=='undefined'&&CanvasRenderingContext2D.prototype&&!CanvasRenderingContext2D.prototype.__bcSafeDrawImage){
+                CanvasRenderingContext2D.prototype.__bcSafeDrawImage=true;
+                const _origDI=CanvasRenderingContext2D.prototype.drawImage;
+                CanvasRenderingContext2D.prototype.drawImage=function(img){if(!img||img.width===0||img.height===0)return;_origDI.apply(this,arguments);};
+            }
             if(!document.__bcOrigHasFocus&&typeof document.hasFocus==='function'){
                 document.__bcOrigHasFocus=document.hasFocus;
                 document.hasFocus=function(){if(window._bcIsBackground)return false;return document.__bcOrigHasFocus.apply(this,arguments);};

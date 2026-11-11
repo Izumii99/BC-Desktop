@@ -108,6 +108,15 @@ internal static class ScriptHelpers
                 if (window.__bcCopyScriptInitialized) return;
                 window.__bcCopyScriptInitialized = true;
 
+                if (typeof CanvasRenderingContext2D !== 'undefined' && CanvasRenderingContext2D.prototype && !CanvasRenderingContext2D.prototype.__bcSafeDrawImage) {
+                    CanvasRenderingContext2D.prototype.__bcSafeDrawImage = true;
+                    const _origDI = CanvasRenderingContext2D.prototype.drawImage;
+                    CanvasRenderingContext2D.prototype.drawImage = function(img) {
+                        if (!img || img.width === 0 || img.height === 0) return;
+                        return _origDI.apply(this, arguments);
+                    };
+                }
+
                 const _attachDrawHook = () => {
                     if (!document.__bcOrigHasFocus && typeof document.hasFocus === 'function') {
                         document.__bcOrigHasFocus = document.hasFocus;
@@ -1067,14 +1076,6 @@ internal static class ScriptHelpers
                             if (targetChar.MemberNumber) gl.textureCache.delete('Online-' + targetChar.MemberNumber);
                         }
                         targetChar.MustDraw = false;
-                        if (targetChar.Canvas) {
-                            targetChar.Canvas.width = 0;
-                            targetChar.Canvas.height = 0;
-                        }
-                        if (targetChar.CanvasBlink) {
-                            targetChar.CanvasBlink.width = 0;
-                            targetChar.CanvasBlink.height = 0;
-                        }
                         if (typeof window.AnimationPurge === 'function') {
                             try { window.AnimationPurge(targetChar, true); } catch (e) {}
                         }
@@ -1183,6 +1184,8 @@ internal static class ScriptHelpers
                         const chars = [];
                         if (window.Player) chars.push(window.Player);
                         if (window.CurrentCharacter && window.CurrentCharacter !== window.Player) chars.push(window.CurrentCharacter);
+                        if (window.InformationSheetSelection && !chars.includes(window.InformationSheetSelection)) chars.push(window.InformationSheetSelection);
+                        if (window.InformationSheetCharacter && !chars.includes(window.InformationSheetCharacter)) chars.push(window.InformationSheetCharacter);
                         if (Array.isArray(window.ChatRoomCharacter)) {
                             for (let i = 0; i < window.ChatRoomCharacter.length; i++) {
                                 if (window.ChatRoomCharacter[i]) chars.push(window.ChatRoomCharacter[i]);
@@ -1245,22 +1248,32 @@ internal static class ScriptHelpers
 
                         // Scavenger: remove any orphaned ghost characters in window.Character who are not in the room
                         if (Array.isArray(window.Character)) {
-                            const inChatRoom = (typeof window.ServerPlayerIsInChatRoom === 'function' && window.ServerPlayerIsInChatRoom()) ||
-                                               window.CurrentScreen === 'ChatRoom' ||
-                                               (window.ChatRoomData != null && Array.isArray(window.ChatRoomCharacter) && window.ChatRoomCharacter.length > 0);
+                            const isChatRoomScreen = window.CurrentScreen === 'ChatRoom';
+                            const inChatRoom = isChatRoomScreen && ((typeof window.ServerPlayerIsInChatRoom === 'function' && window.ServerPlayerIsInChatRoom()) ||
+                                               (window.ChatRoomData != null && Array.isArray(window.ChatRoomCharacter) && window.ChatRoomCharacter.length > 0));
 
                             const activeMemberNums = new Set();
                             if (window.Player && window.Player.MemberNumber) activeMemberNums.add(window.Player.MemberNumber);
+                            if (window.CurrentCharacter && window.CurrentCharacter.MemberNumber) activeMemberNums.add(window.CurrentCharacter.MemberNumber);
+                            if (window.InformationSheetSelection && window.InformationSheetSelection.MemberNumber) activeMemberNums.add(window.InformationSheetSelection.MemberNumber);
+                            if (window.InformationSheetCharacter && window.InformationSheetCharacter.MemberNumber) activeMemberNums.add(window.InformationSheetCharacter.MemberNumber);
                             if (Array.isArray(window.ChatRoomCharacter)) {
                                 for (let i = 0; i < window.ChatRoomCharacter.length; i++) {
                                     const m = window.ChatRoomCharacter[i]?.MemberNumber;
                                     if (m) activeMemberNums.add(m);
                                 }
                             }
+                            if (Array.isArray(window.DrawLastCharacters)) {
+                                for (let i = 0; i < window.DrawLastCharacters.length; i++) {
+                                    const m = window.DrawLastCharacters[i]?.MemberNumber;
+                                    if (m) activeMemberNums.add(m);
+                                }
+                            }
 
                             const ghosts = window.Character.filter(c => {
                                 if (!c || c === window.Player || (c.IsPlayer && c.IsPlayer())) return false;
-                                if (c === window.CurrentCharacter) return false;
+                                if (c === window.CurrentCharacter || c === window.InformationSheetSelection || c === window.InformationSheetCharacter) return false;
+                                if (Array.isArray(window.DrawLastCharacters) && window.DrawLastCharacters.includes(c)) return false;
                                 const isOnline = (c.AccountName && c.AccountName.startsWith('Online-')) || (typeof c.MemberNumber === 'number' && c.MemberNumber > 0);
                                 if (!isOnline) return false;
                                 if (inChatRoom) {
