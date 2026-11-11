@@ -949,6 +949,13 @@ public class MainWindowTests
         StringAssert.Contains(cs, "PlayPromptAlertAndBringToFront", "MainWindow must alert and foreground closing prompt on outside clicks.");
         StringAssert.Contains(cs, "WM_MOUSEACTIVATE", "MainWindow must intercept WM_MOUSEACTIVATE to block canvas clicks during prompt.");
         StringAssert.Contains(cs, "WM_COMMAND", "MainWindow must support WM_COMMAND to unblock modal prompt on repeat close click.");
+
+        string linuxPath = Path.Combine(ProjectRoot, "platform", "linux", "main.js");
+        string linux = File.ReadAllText(linuxPath);
+
+        StringAssert.Contains(linux, "isClosingPromptActive", "Linux main.js must track active exit confirmation prompt state.");
+        StringAssert.Contains(linux, "shell.beep()", "Linux main.js must play system sound on outside clicks during prompt.");
+        StringAssert.Contains(linux, "performAppTeardown()", "Linux main.js must perform clean teardown on prompt confirmation.");
     }
 }
 

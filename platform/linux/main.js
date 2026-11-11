@@ -1992,6 +1992,7 @@ let deactivationTimeout = null;
 let recentCrashCount = 0;
 let lastCrashTime = 0;
 let forceQuit = false;
+let isClosingPromptActive = false;
 let scriptsInjectedForCurrentPage = false;
 let mirrorRestoredForCurrentPage = false;
 
@@ -2287,6 +2288,12 @@ function createWindow() {
     });
 
     mainWindow.on("focus", () => {
+        if (isClosingPromptActive) {
+            try {
+                shell.beep();
+            } catch (_) {}
+            return;
+        }
         cancelActivation();
         cancelDeactivation();
         mainWindow.flashFrame(false);
@@ -2393,43 +2400,71 @@ function createWindow() {
         },
     );
 
+    mainWindow.webContents.on("before-input-event", (event) => {
+        if (isClosingPromptActive) {
+            event.preventDefault();
+            try {
+                shell.beep();
+            } catch (_) {}
+        }
+    });
+
+    function performAppTeardown() {
+        cancelDeactivation();
+        try {
+            if (storageMirrorData) {
+                fs.writeFileSync(
+                    storageMirrorFile,
+                    JSON.stringify(storageMirrorData),
+                    "utf8",
+                );
+            }
+        } catch (_) {}
+        try {
+            if (
+                session.defaultSession &&
+                typeof session.defaultSession.flushStorageData === "function"
+            ) {
+                session.defaultSession.flushStorageData();
+            }
+        } catch (_) {}
+    }
+
     // Exit confirmation dialog matching Windows OnClosing
     mainWindow.on("close", (e) => {
         if (forceQuit) return;
 
-        const choice = dialog.showMessageBoxSync(mainWindow, {
-            type: "question",
-            buttons: ["OK", "Cancel"],
-            defaultId: 1,
-            cancelId: 1,
-            title: "Leave site?",
-            message: "Leave Bondage Club?\nChanges you made may not be saved.",
-        });
-
-        if (choice !== 0) {
-            e.preventDefault();
-        } else {
+        if (isClosingPromptActive) {
             forceQuit = true;
-            cancelDeactivation();
-            try {
-                if (storageMirrorData) {
-                    fs.writeFileSync(
-                        storageMirrorFile,
-                        JSON.stringify(storageMirrorData),
-                        "utf8",
-                    );
-                }
-            } catch (_) {}
-            try {
-                if (
-                    session.defaultSession &&
-                    typeof session.defaultSession.flushStorageData ===
-                        "function"
-                ) {
-                    session.defaultSession.flushStorageData();
-                }
-            } catch (_) {}
+            isClosingPromptActive = false;
+            performAppTeardown();
+            mainWindow.destroy();
+            return;
         }
+
+        e.preventDefault();
+        isClosingPromptActive = true;
+
+        dialog
+            .showMessageBox(mainWindow, {
+                type: "question",
+                buttons: ["OK", "Cancel"],
+                defaultId: 1,
+                cancelId: 1,
+                title: "Leave site?",
+                message: "Leave Bondage Club?\nChanges you made may not be saved.",
+            })
+            .then(({ response }) => {
+                isClosingPromptActive = false;
+                if (response === 0) {
+                    forceQuit = true;
+                    performAppTeardown();
+                    mainWindow.close();
+                }
+            })
+            .catch(() => {
+                isClosingPromptActive = false;
+            });
     });
 
     mainWindow.on("closed", () => {
