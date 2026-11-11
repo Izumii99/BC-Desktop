@@ -324,6 +324,14 @@ internal static class ScriptHelpers
                     return;
                 }
 
+                if ((e.key === 'Escape' || e.keyCode === 27) && document.activeElement && document.activeElement.id === 'InputChat') {
+                    window.bcFocusMemory = null;
+                    window.bcUserPrefersGameChat = false;
+                    window.bcCanvasUnfocusedChat = true;
+                    try { document.activeElement.blur(); } catch (err) {}
+                    return;
+                }
+
                 let isEnter = (e.key === 'Enter' || e.keyCode === 13);
                 if (isEnter) {
                     let ic = document.getElementById('InputChat');
@@ -331,6 +339,7 @@ internal static class ScriptHelpers
                     let isInsideInputChat = ic && (active === ic || e.target === ic);
 
                     if (isInsideInputChat) {
+                        window.bcCanvasUnfocusedChat = false;
                         if (e.shiftKey) {
                             window.bcFocusMemory = ic;
                         }
@@ -352,6 +361,8 @@ internal static class ScriptHelpers
                                 }
                             } catch (err) {}
 
+                            window.bcCanvasUnfocusedChat = false;
+                            window.bcUserPrefersGameChat = true;
                             window.bcFocusMemory = ic;
                             origFocus.call(ic);
                             try {
@@ -469,8 +480,9 @@ internal static class ScriptHelpers
                 if (isInteractive(e.target)) {
                     if (isChatArea(e.target)) {
                         let clickedChatRecently = window.bcLastMousedown && isChatArea(window.bcLastMousedown) && (Date.now() - (window.bcLastMousedownTime || 0) < 500);
-                        if (clickedChatRecently || !getActiveAddonInputStrict()) {
+                        if (clickedChatRecently || (!getActiveAddonInputStrict() && !window.bcCanvasUnfocusedChat)) {
                             window.bcUserPrefersGameChat = true;
+                            window.bcCanvasUnfocusedChat = false;
                             window.bcFocusMemory = e.target;
                         }
                     } else {
@@ -500,10 +512,12 @@ internal static class ScriptHelpers
                 
                 if (ic && isChatArea(e.target)) {
                     window.bcUserPrefersGameChat = true;
+                    window.bcCanvasUnfocusedChat = false;
                     window.bcFocusMemory = ic;
                     window.bcForceUnfocusSearch = false;
                 } else if (addonBox) {
                     window.bcUserPrefersGameChat = false;
+                    window.bcCanvasUnfocusedChat = false;
                     window.bcForceUnfocusSearch = false;
                     if (isInteractive(e.target)) {
                         window.bcFocusMemory = e.target;
@@ -517,9 +531,16 @@ internal static class ScriptHelpers
                     window.bcFocusMemory = e.target;
                     window.bcForceUnfocusSearch = false;
                     window.bcUserPrefersGameChat = false;
+                    window.bcCanvasUnfocusedChat = false;
                 } else {
                     window.bcFocusMemory = null;
                     window.bcForceUnfocusSearch = false;
+                    window.bcUserPrefersGameChat = false;
+                    window.bcCanvasUnfocusedChat = true;
+                    let active = document.activeElement;
+                    if (active && isTextInput(active) && typeof active.blur === 'function') {
+                        try { active.blur(); } catch (err) {}
+                    }
                 }
                 
                 if (ic) window.bcInputChatLastValue = ic.value;
@@ -644,9 +665,12 @@ internal static class ScriptHelpers
                     return bestInput;
                 }
 
-                let ic = document.getElementById('InputChat');
-                if (ic && (ic.offsetParent !== null || ic.offsetWidth > 0)) {
-                    return ic;
+                let isMapActive = typeof window.ChatRoomMapViewIsActive === 'function' && window.ChatRoomMapViewIsActive();
+                if (!window.bcCanvasUnfocusedChat && !isMapActive) {
+                    let ic = document.getElementById('InputChat');
+                    if (ic && (ic.offsetParent !== null || ic.offsetWidth > 0)) {
+                        return ic;
+                    }
                 }
 
                 return null;
@@ -674,6 +698,7 @@ internal static class ScriptHelpers
 
                         // STRICT GUARD: Tolak fokus ke InputChat jika user tidak memilih game chat DAN ada addon aktif di atasnya!
                         if (ID === 'InputChat') {
+                            if (window.bcCanvasUnfocusedChat) return;
                             let active = document.activeElement;
                             let isUserInAnotherInput = active && isInteractive(active) && active !== targetEl;
                             if (isUserInAnotherInput) return;
@@ -724,6 +749,7 @@ internal static class ScriptHelpers
                     if (window.getSelection().toString().length > 0) return;
 
                     if (this.id === 'InputChat') {
+                        if (window.bcCanvasUnfocusedChat) return;
                         let active = document.activeElement;
                         let isUserInAnotherInput = active && isInteractive(active) && active !== this;
                         if (isUserInAnotherInput) return;

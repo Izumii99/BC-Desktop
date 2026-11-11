@@ -957,6 +957,21 @@ public class MainWindowTests
         StringAssert.Contains(linux, "shell.beep()", "Linux main.js must play system sound on outside clicks during prompt.");
         StringAssert.Contains(linux, "performAppTeardown()", "Linux main.js must perform clean teardown on prompt confirmation.");
     }
+
+    [TestMethod]
+    public void MapView_AndCanvasUnfocus_ReleasesChatFocus_OnWindowsAndLinux()
+    {
+        string cs = MainWindowSourceCode;
+        StringAssert.Contains(cs, "bcCanvasUnfocusedChat", "Windows script must track canvas click unfocus state.");
+        StringAssert.Contains(cs, "ChatRoomMapViewIsActive", "Windows focus crawler must respect active Map View.");
+        StringAssert.Contains(cs, "active.blur()", "Windows mousedown on canvas must explicitly blur active text input.");
+
+        string linuxPath = Path.Combine(ProjectRoot, "platform", "linux", "main.js");
+        string linux = File.ReadAllText(linuxPath);
+        StringAssert.Contains(linux, "bcCanvasUnfocusedChat", "Linux main.js must track canvas click unfocus state.");
+        StringAssert.Contains(linux, "ChatRoomMapViewIsActive", "Linux focus crawler must respect active Map View.");
+        StringAssert.Contains(linux, "active.blur()", "Linux mousedown on canvas must explicitly blur active text input.");
+    }
 }
 
 

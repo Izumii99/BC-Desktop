@@ -3153,6 +3153,7 @@
                         ic &&
                         (ic.offsetParent !== null || ic.offsetWidth > 0)
                     ) {
+                        window.bcCanvasUnfocusedChat = false;
                         window.bcUserPrefersGameChat = true;
                         window.bcFocusMemory = ic;
                         window.bcLastMousedown = ic;
@@ -3328,7 +3329,14 @@
             }
 
             let chatInput = document.getElementById("InputChat");
-            if (chatInput) chatInput.focus();
+            if (chatInput) {
+                window.bcCanvasUnfocusedChat = false;
+                window.bcUserPrefersGameChat = true;
+                window.bcFocusMemory = chatInput;
+                window.bcLastMousedown = chatInput;
+                window.bcLastMousedownTime = Date.now();
+                chatInput.focus();
+            }
         },
         true,
     );
@@ -3523,6 +3531,7 @@
                     }
                     let ic = document.getElementById("InputChat");
                     if (ic) {
+                        window.bcCanvasUnfocusedChat = false;
                         window.bcUserPrefersGameChat = true;
                         window.bcFocusMemory = ic;
                         window.bcLastMousedown = ic;

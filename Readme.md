@@ -48,6 +48,10 @@ A native desktop client for BC built with **WPF** and **.NET 8**. It uses the sy
 - **Multi-monitor support** with proper DPI scaling bounds
 - **Discreet / stealth mode** support for Task Manager and Taskbar
 
+> [!IMPORTANT]
+> **Windows First-Launch Note (Unblock Binary):** If double-clicking `BC-Windows.exe` does nothing after downloading from a browser, Windows has attached a "Mark of the Web" security attribute. Right-click the `.exe` &rarr; **Properties** &rarr; check **Unblock** at the bottom of the General tab &rarr; click **Apply**.  
+> **Global Server Note:** Bondage Club operates a single global game server for all regions (North America, Europe, and Asia play together in the same lobby and rooms). The client pins a single static CDN origin so your browser `localStorage` and `IndexedDB` addon configurations stay persistent across game updates.
+
 ## Adding Custom / Local Scripts Manually
 
 You can load your own custom scripts or community mods offline without using Tampermonkey or bookmarklets by placing them in a local `Scripts/` directory.
