@@ -87,15 +87,28 @@ public partial class MainWindow // NOSONAR
                         if (window.bcLogDebug) window.bcLogDebug('ACTIVATED');
                         if (window.getSelection && window.getSelection().toString().length > 0) return;
 
+                        window.bcCanvasUnfocusedChat = false;
                         let target = null;
                         if (!window.bcUserPrefersGameChat && window.bcFocusMemory && window.bcFocusMemory.isConnected && window.bcFocusMemory.offsetParent !== null) {
                             target = window.bcFocusMemory;
                         } else if (window.bcRunFocusCrawler) {
                             target = window.bcRunFocusCrawler();
                         }
+                        if (!target) {
+                            let ic = document.getElementById('InputChat');
+                            if (ic && (ic.offsetParent !== null || ic.offsetWidth > 0)) {
+                                target = ic;
+                            }
+                        }
                         if (target) {
                             window.bcFocusMemory = target;
-                            if (target.id !== 'InputChat') window.bcUserPrefersGameChat = false;
+                            if (target.id === 'InputChat') {
+                                window.bcUserPrefersGameChat = true;
+                                window.bcLastMousedown = target;
+                                window.bcLastMousedownTime = Date.now();
+                            } else {
+                                window.bcUserPrefersGameChat = false;
+                            }
                             target.focus();
                         }
                     })();

@@ -317,6 +317,21 @@ internal static class ScriptHelpers
                 return false;
             }
 
+            function isMapViewActive() {
+                if (typeof window.ChatRoomMapViewIsActive === 'function' && window.ChatRoomMapViewIsActive()) return true;
+                let content = document.getElementById('chat-room-content');
+                if (content && content.getAttribute('data-view') === 'Map') return true;
+                return false;
+            }
+
+            function isMapOrTopMenuControl(el) {
+                if (!el || isTextInput(el)) return false;
+                if (el.id === 'MainCanvas' || el.id === 'chat-room-menu-mapview') return true;
+                if (el.closest && el.closest('#chat-room-map-controls, #chat-room-content-resize-bar, #chat-room-menu-mapview')) return true;
+                if (isMapViewActive() && el.closest && el.closest('#chat-room-content') && !el.closest('#chat-room-map-view-dialog-menu')) return true;
+                return false;
+            }
+
             document.addEventListener('keydown', (e) => {
                 if (e.key === 'F11' || e.keyCode === 122) {
                     window.chrome.webview.postMessage('TOGGLE_FULLSCREEN');
@@ -330,6 +345,17 @@ internal static class ScriptHelpers
                     window.bcCanvasUnfocusedChat = true;
                     try { document.activeElement.blur(); } catch (err) {}
                     return;
+                }
+
+                if (isMapViewActive() && (window.bcCanvasUnfocusedChat || !window.bcUserPrefersGameChat)) {
+                    let activeEl = document.activeElement;
+                    if (activeEl && activeEl.id === 'InputChat') {
+                        let code = e.code || '';
+                        if (code === 'KeyW' || code === 'KeyA' || code === 'KeyS' || code === 'KeyD' ||
+                            code === 'ArrowUp' || code === 'ArrowDown' || code === 'ArrowLeft' || code === 'ArrowRight') {
+                            try { activeEl.blur(); } catch (err) {}
+                        }
+                    }
                 }
 
                 let isEnter = (e.key === 'Enter' || e.keyCode === 13);
@@ -364,6 +390,8 @@ internal static class ScriptHelpers
                             window.bcCanvasUnfocusedChat = false;
                             window.bcUserPrefersGameChat = true;
                             window.bcFocusMemory = ic;
+                            window.bcLastMousedown = ic;
+                            window.bcLastMousedownTime = Date.now();
                             origFocus.call(ic);
                             try {
                                 let len = ic.value ? ic.value.length : 0;
@@ -398,8 +426,11 @@ internal static class ScriptHelpers
 
             function isChatArea(el) {
                 if (!el) return false;
-                if (el.id === 'InputChat') return true;
-                if (el.closest && el.closest('#chat-room-bot, #chat-room-div, #chat-room-main')) return true;
+                if (el.id === 'InputChat' || el.id === 'TextAreaChatLog') return true;
+                if (el.closest) {
+                    if (el.closest('#chat-room-top-menu')) return false;
+                    if (el.closest('#chat-room-bot, #chat-room-div, #chat-room-main')) return true;
+                }
                 return false;
             }
 
@@ -408,8 +439,10 @@ internal static class ScriptHelpers
                 let curr = el;
                 while (curr && curr !== document.body && curr !== document.documentElement) {
                     let rawId = curr.id || '';
-                    if (rawId === 'chat-room-bot' || rawId === 'chat-room-div' || rawId === 'chat-room-main' ||
-                        rawId === 'InputChat' || rawId === 'TextAreaChatLog' || rawId === 'MainCanvas' || rawId.startsWith('dialog-')) return null;
+                    if (rawId === 'chat-room-wrapper' || rawId === 'chat-room-content' || rawId === 'chat-room-top-menu' ||
+                        rawId === 'chat-room-bot' || rawId === 'chat-room-div' || rawId === 'chat-room-main' ||
+                        rawId === 'InputChat' || rawId === 'TextAreaChatLog' || rawId === 'MainCanvas' ||
+                        rawId.startsWith('chat-room-map-') || rawId.startsWith('dialog-')) return null;
                     
                     let id = rawId.toLowerCase();
                     let cls = (typeof curr.className === 'string' ? curr.className : '').toLowerCase();
@@ -480,12 +513,12 @@ internal static class ScriptHelpers
                 if (isInteractive(e.target)) {
                     if (isChatArea(e.target)) {
                         let clickedChatRecently = window.bcLastMousedown && isChatArea(window.bcLastMousedown) && (Date.now() - (window.bcLastMousedownTime || 0) < 500);
-                        if (clickedChatRecently || (!getActiveAddonInputStrict() && !window.bcCanvasUnfocusedChat)) {
+                        if (clickedChatRecently || (!getActiveAddonInputStrict() && !window.bcCanvasUnfocusedChat && !isMapViewActive())) {
                             window.bcUserPrefersGameChat = true;
                             window.bcCanvasUnfocusedChat = false;
                             window.bcFocusMemory = e.target;
                         }
-                    } else {
+                    } else if (!isMapOrTopMenuControl(e.target) && e.target.id !== 'chat-room-map-view-panel-editor-search-input') {
                         window.bcFocusMemory = e.target;
                         window.bcUserPrefersGameChat = false;
                         window.bcForceUnfocusSearch = false;
@@ -510,7 +543,16 @@ internal static class ScriptHelpers
                 let ic = document.getElementById('InputChat');
                 let addonBox = getAddonContainer(e.target);
                 
-                if (ic && isChatArea(e.target)) {
+                if (isMapOrTopMenuControl(e.target)) {
+                    window.bcFocusMemory = null;
+                    window.bcForceUnfocusSearch = false;
+                    window.bcUserPrefersGameChat = false;
+                    window.bcCanvasUnfocusedChat = true;
+                    let active = document.activeElement;
+                    if (active && isTextInput(active) && typeof active.blur === 'function') {
+                        try { active.blur(); } catch (err) {}
+                    }
+                } else if (ic && isChatArea(e.target)) {
                     window.bcUserPrefersGameChat = true;
                     window.bcCanvasUnfocusedChat = false;
                     window.bcFocusMemory = ic;
@@ -557,6 +599,12 @@ internal static class ScriptHelpers
                     if (isDraggingSelection || (sel && (!sel.isCollapsed || sel.toString().length > 0))) return;
 
                     let active = document.activeElement;
+                    if (isMapOrTopMenuControl(e.target) || (isMapViewActive() && window.bcCanvasUnfocusedChat)) {
+                        if (active && (active.id === 'InputChat' || active.tagName === 'BUTTON') && typeof active.blur === 'function') {
+                            try { active.blur(); } catch (err) {}
+                        }
+                        return;
+                    }
                     if (active && isInteractive(active)) {
                         window.bcFocusMemory = active;
                         return;
@@ -570,6 +618,9 @@ internal static class ScriptHelpers
                     let target = (window.bcFocusMemory && isElementVisibleAndActive(window.bcFocusMemory)) 
                         ? window.bcFocusMemory 
                         : (window.bcRunFocusCrawler ? window.bcRunFocusCrawler() : null);
+                    if (target && target.id === 'InputChat' && (window.bcCanvasUnfocusedChat || (isMapViewActive() && !window.bcUserPrefersGameChat))) {
+                        target = null;
+                    }
                     if (target && document.activeElement !== target) {
                         origFocus.call(target);
                     }
@@ -590,6 +641,9 @@ internal static class ScriptHelpers
                     let target = (window.bcFocusMemory && isElementVisibleAndActive(window.bcFocusMemory)) 
                         ? window.bcFocusMemory 
                         : (window.bcRunFocusCrawler ? window.bcRunFocusCrawler() : null);
+                    if (target && target.id === 'InputChat' && (window.bcCanvasUnfocusedChat || (isMapViewActive() && !window.bcUserPrefersGameChat))) {
+                        target = null;
+                    }
                     if (target && document.activeElement !== target) {
                         origFocus.call(target);
                     }
@@ -641,6 +695,7 @@ internal static class ScriptHelpers
                     let el = inputs[i];
                     if (el.disabled || el.readOnly) continue;
                     if (!isTextInput(el)) continue;
+                    if (el.id === 'chat-room-map-view-panel-editor-search-input' || (el.closest && el.closest('#chat-room-map-view-panel'))) continue;
                     
                     if (el.offsetWidth === 0 && el.offsetHeight === 0) {
                         let rect = el.getBoundingClientRect();
@@ -665,8 +720,7 @@ internal static class ScriptHelpers
                     return bestInput;
                 }
 
-                let isMapActive = typeof window.ChatRoomMapViewIsActive === 'function' && window.ChatRoomMapViewIsActive();
-                if (!window.bcCanvasUnfocusedChat && !isMapActive) {
+                if (!window.bcCanvasUnfocusedChat && !isMapViewActive()) {
                     let ic = document.getElementById('InputChat');
                     if (ic && (ic.offsetParent !== null || ic.offsetWidth > 0)) {
                         return ic;
@@ -676,7 +730,51 @@ internal static class ScriptHelpers
                 return null;
             };
 
+            let wasMapActive = false;
             let patchInterval = setInterval(() => {
+                let nowMapActive = isMapViewActive();
+                if (nowMapActive && !wasMapActive) {
+                    window.bcFocusMemory = null;
+                    window.bcUserPrefersGameChat = false;
+                    window.bcCanvasUnfocusedChat = true;
+                    let ic = document.getElementById('InputChat');
+                    if (ic && document.activeElement === ic) {
+                        try { ic.blur(); } catch (err) {}
+                    }
+                }
+                wasMapActive = nowMapActive;
+
+                if (typeof window.ChatRoomActivateView === 'function' && !window.ChatRoomActivateView._isHooked) {
+                    let origActivateView = window.ChatRoomActivateView;
+                    window.ChatRoomActivateView = function(viewName) {
+                        let res = origActivateView.apply(this, arguments);
+                        if (viewName === 'Map') {
+                            window.bcFocusMemory = null;
+                            window.bcUserPrefersGameChat = false;
+                            window.bcCanvasUnfocusedChat = true;
+                            let ic = document.getElementById('InputChat');
+                            if (ic && document.activeElement === ic) {
+                                try { ic.blur(); } catch (err) {}
+                            }
+                        } else if (viewName === 'Character') {
+                            window.bcCanvasUnfocusedChat = false;
+                        }
+                        return res;
+                    };
+                    window.ChatRoomActivateView._isHooked = true;
+                }
+
+                if (window.CommonKey && typeof window.CommonKey.InputKeyDown === 'function' && !window.CommonKey.InputKeyDown._isHooked) {
+                    let origInputKeyDown = window.CommonKey.InputKeyDown;
+                    window.CommonKey.InputKeyDown = function(inputElem, ev, options) {
+                        if (inputElem && inputElem.id === 'InputChat' && (window.bcCanvasUnfocusedChat || isMapViewActive())) {
+                            return false;
+                        }
+                        return origInputKeyDown.apply(this, arguments);
+                    };
+                    window.CommonKey.InputKeyDown._isHooked = true;
+                }
+
                 if (typeof window.ElementFocus === 'function' && !window.ElementFocus._isHooked) {
                     let origElementFocus = window.ElementFocus;
                     window.ElementFocus = function(ID) {
@@ -698,7 +796,7 @@ internal static class ScriptHelpers
 
                         // STRICT GUARD: Tolak fokus ke InputChat jika user tidak memilih game chat DAN ada addon aktif di atasnya!
                         if (ID === 'InputChat') {
-                            if (window.bcCanvasUnfocusedChat) return;
+                            if (window.bcCanvasUnfocusedChat || (isMapViewActive() && !window.bcUserPrefersGameChat)) return;
                             let active = document.activeElement;
                             let isUserInAnotherInput = active && isInteractive(active) && active !== targetEl;
                             if (isUserInAnotherInput) return;
@@ -722,7 +820,6 @@ internal static class ScriptHelpers
                         origElementFocus(ID);
                     };
                     window.ElementFocus._isHooked = true;
-                    clearInterval(patchInterval);
                 }
             }, 200);
 
@@ -749,7 +846,7 @@ internal static class ScriptHelpers
                     if (window.getSelection().toString().length > 0) return;
 
                     if (this.id === 'InputChat') {
-                        if (window.bcCanvasUnfocusedChat) return;
+                        if (window.bcCanvasUnfocusedChat || (isMapViewActive() && !window.bcUserPrefersGameChat)) return;
                         let active = document.activeElement;
                         let isUserInAnotherInput = active && isInteractive(active) && active !== this;
                         if (isUserInAnotherInput) return;
