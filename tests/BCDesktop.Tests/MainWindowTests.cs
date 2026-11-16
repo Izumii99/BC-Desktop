@@ -492,7 +492,7 @@ public class MainWindowTests
     [TestMethod]
     public void AppVersionComparison_AccuratelyEvaluatesSemanticVersions()
     {
-        Assert.AreEqual("7.5.6", MainWindow.CurrentAppVersion, "CurrentAppVersion must be 7.5.6.");
+        Assert.AreEqual("7.6.0", MainWindow.CurrentAppVersion, "CurrentAppVersion must be 7.6.0.");
 
         Assert.IsTrue(MainWindow.IsNewerVersion("v7.5", "7.4"), "v7.5 must be newer than 7.4.");
         Assert.IsTrue(MainWindow.IsNewerVersion("7.5", "7.4"), "7.5 must be newer than 7.4.");
@@ -802,8 +802,48 @@ public class MainWindowTests
         // Verify Hybrid architecture methods and ElementFX lock are present
         StringAssert.Contains(csContent, "GetCalculatedCalendarVersion", "MainWindow must define GetCalculatedCalendarVersion.");
         StringAssert.Contains(csContent, "FetchOfficialVersionNumberAsync", "MainWindow must define FetchOfficialVersionNumberAsync.");
+        StringAssert.Contains(csContent, "ParseGameVersionFromScript", "MainWindow must define ParseGameVersionFromScript.");
+        StringAssert.Contains(csContent, "ResolveLiveVersionAsync", "MainWindow must define ResolveLiveVersionAsync.");
         StringAssert.Contains(csContent, "BaseGameUrl", "MainWindow must define BaseGameUrl.");
         StringAssert.Contains(csContent, "rawContent.EndsWith(\":lock\"", "Must support version lock syntax in version.txt.");
+
+        // Unit test GitGud Game.js version parsing (Alpha/Beta pre-release vs live release)
+        Assert.AreEqual(133, MainWindow.ParseGameVersionFromScript("var GameVersion = \"R134Beta3\";"));
+        Assert.AreEqual(133, MainWindow.ParseGameVersionFromScript("var GameVersion = \"R134Alpha1\";"));
+        Assert.AreEqual(133, MainWindow.ParseGameVersionFromScript("var GameVersion = \"R133\";"));
+        Assert.AreEqual(134, MainWindow.ParseGameVersionFromScript("var GameVersion = \"R134\";"));
+        Assert.IsNull(MainWindow.ParseGameVersionFromScript("invalid script"));
+
+        // Unit test live server status and fallback when next release is still 404
+        using var mockClient = new HttpClient(new SimpleMockHttpHandler(req =>
+        {
+            string uri = req.RequestUri?.ToString() ?? "";
+            if (uri.Contains("/R134/"))
+            {
+                return new HttpResponseMessage(System.Net.HttpStatusCode.NotFound);
+            }
+            if (uri.Contains("/R133/"))
+            {
+                return new HttpResponseMessage(System.Net.HttpStatusCode.OK)
+                {
+                    Content = new StringContent("<html><head><title>Bondage Club</title></head><body><canvas id=\"MainCanvas\"></canvas></body></html>")
+                };
+            }
+            if (uri.Contains("/R132/"))
+            {
+                return new HttpResponseMessage(System.Net.HttpStatusCode.OK)
+                {
+                    Content = new StringContent("<html><head><title>Bondage College - Outdated Version</title><meta http-equiv=\"refresh\" content=\"2; URL=../R133/\"></head></html>")
+                };
+            }
+            return new HttpResponseMessage(System.Net.HttpStatusCode.NotFound);
+        }));
+
+        int resolvedFrom404 = MainWindow.ResolveLiveVersionAsync(mockClient, 134, 132).GetAwaiter().GetResult();
+        Assert.AreEqual(133, resolvedFrom404, "Must step back from 404 R134 to active R133.");
+
+        int resolvedFromRedirect = MainWindow.ResolveLiveVersionAsync(mockClient, 132, 132).GetAwaiter().GetResult();
+        Assert.AreEqual(133, resolvedFromRedirect, "Must follow Outdated redirect from R132 to active R133.");
 
         // Unit test Dynilath calendar version calculation formula across boundary dates
         Assert.AreEqual(111, MainWindow.GetCalculatedCalendarVersion(new DateTime(2025, 1, 1, 0, 0, 0, DateTimeKind.Utc)));

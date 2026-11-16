@@ -12,10 +12,11 @@ namespace BCDesktop;
 public partial class MainWindow // NOSONAR
 {
     internal const string BaseGameUrl = "https://www.bondage-asia.com/club/R{0}/";
+    internal const string OfficialGameScriptUrl = "https://gitgud.io/BondageProjects/Bondage-College/-/raw/master/BondageClub/Scripts/Game.js";
     private static string _lastKnownGoodUrl = string.Format(BaseGameUrl, 132);
     private static string FallbackUrl => _lastKnownGoodUrl;
 
-    internal const string CurrentAppVersion = "7.5.6";
+    internal const string CurrentAppVersion = "7.6.0";
     internal const string GitHubRepo = "Izumii99/BC-Desktop";
     internal static bool EnableAutoUpdates { get; set; } = true;
     private static string? _newReleaseUrl { get; set; }
@@ -25,12 +26,14 @@ public partial class MainWindow // NOSONAR
     internal static bool _isUpdating { get; set; }
 
     internal const string CurrentReleaseNotes =
-        "• GPU Canvas Acceleration & 60 FPS Pacing: Hardware-accelerated 2D canvas rasterization and active 60 FPS pacing slash in-focus CPU usage on high-refresh displays (144Hz+).\n\n" +
-        "• Room Texture Protection: Protected active character textures from flickering during maintenance, and immediately reclaim GPU canvas buffers on departure.\n\n" +
-        "• Chat Log Virtualization: Modern CSS content-visibility virtualization renders only visible messages, eliminating scroll lag and GPU overhead.\n\n" +
-        "• High-Polling Mouse Optimization: Passive pointer listeners deliver smooth responsiveness with 1000Hz+ gaming mice.\n\n" +
-        "• Addon Memory & Rendering: Reclaimed temporary canvas allocations in petsuit animations and eliminated heavy text blur layers.\n\n" +
-        "• Post-Update Changelog Window: Interactive changelog window now automatically introduces newly released features after each update.";
+        "• Fix (Game Server Version Detection): Fixed an issue where the app could attempt to open a new monthly game release before it was officially live on the server, resulting in a 404 Not Found screen.";
+
+    internal enum VersionStatus
+    {
+        NotFound,
+        Active,
+        Outdated
+    }
 
     // Dynilath UTC calendar version formula (auto-increments every 16th of the month at UTC)
     internal static int GetCalculatedCalendarVersion(DateTime? utcNow = null)
@@ -39,8 +42,81 @@ public partial class MainWindow // NOSONAR
         return ((dt.Year - 2025) * 12 + dt.Month) + 110 + (dt.Day >= 16 ? 1 : 0);
     }
 
-    // Scrape active official release version number from portal, enforced to bondage-asia
-    internal static async Task<int?> FetchOfficialVersionNumberAsync(HttpClient client)
+    // Parse active stable release version from official GitGud BondageClub/Scripts/Game.js
+    // When GameVersion is in Alpha/Beta (e.g. "R134Beta3"), the live release is R133 (vNum - 1).
+    internal static int? ParseGameVersionFromScript(string? scriptContent)
+    {
+        if (string.IsNullOrWhiteSpace(scriptContent))
+        {
+            return null;
+        }
+
+        var match = Regex.Match(
+            scriptContent,
+            @"\bGameVersion\s*=\s*[""']R(\d+)(?:(Alpha|Beta)\d*)?[""']",
+            RegexOptions.IgnoreCase,
+            TimeSpan.FromSeconds(1));
+
+        if (!match.Success || !int.TryParse(match.Groups[1].Value, out int vNum))
+        {
+            return null;
+        }
+
+        bool isPreRelease = match.Groups[2].Success && !string.IsNullOrEmpty(match.Groups[2].Value);
+        return isPreRelease ? vNum - 1 : vNum;
+    }
+
+    internal static (VersionStatus Status, int? NextVersion) ParseVersionStatusFromHtml(string? html, int version)
+    {
+        if (string.IsNullOrWhiteSpace(html))
+        {
+            return (VersionStatus.NotFound, null);
+        }
+
+        var refreshMatch = Regex.Match(
+            html,
+            @"URL=(?:\.\./)?R(\d+)/",
+            RegexOptions.IgnoreCase,
+            TimeSpan.FromSeconds(1));
+
+        if (refreshMatch.Success && int.TryParse(refreshMatch.Groups[1].Value, out int nextVer))
+        {
+            return (VersionStatus.Outdated, nextVer);
+        }
+
+        if (html.Contains("Outdated Version", StringComparison.OrdinalIgnoreCase))
+        {
+            return (VersionStatus.Outdated, version + 1);
+        }
+
+        return (VersionStatus.Active, null);
+    }
+
+    private static async Task<int?> FetchGitGudVersionNumberAsync(HttpClient client)
+    {
+        try
+        {
+            using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(4));
+            using var req = new HttpRequestMessage(HttpMethod.Get, OfficialGameScriptUrl);
+            req.Headers.CacheControl = new System.Net.Http.Headers.CacheControlHeaderValue { NoCache = true, NoStore = true };
+
+            using var res = await client.SendAsync(req, cts.Token);
+            if (!res.IsSuccessStatusCode)
+            {
+                return null;
+            }
+
+            string script = await res.Content.ReadAsStringAsync(cts.Token);
+            return ParseGameVersionFromScript(script);
+        }
+        catch (Exception)
+        {
+            // Ignored intentionally: return null on failure/timeout to proceed with portal/calendar fallback.
+            return null;
+        }
+    }
+
+    private static async Task<int?> FetchPortalVersionNumberAsync(HttpClient client)
     {
         try
         {
@@ -63,11 +139,70 @@ public partial class MainWindow // NOSONAR
                 return vNum;
             }
         }
-        catch
+        catch (Exception)
         {
-            // Return null on failure/timeout to proceed with calendar formula fallback
+            // Ignored intentionally: return null on failure/timeout to proceed with calendar formula fallback.
         }
         return null;
+    }
+
+    // Fetch active official release version from GitGud Game.js first, falling back to official portal
+    internal static async Task<int?> FetchOfficialVersionNumberAsync(HttpClient client)
+    {
+        int? gitGudVer = await FetchGitGudVersionNumberAsync(client);
+        if (gitGudVer.HasValue && gitGudVer.Value >= 132 && gitGudVer.Value < 500)
+        {
+            return gitGudVer.Value;
+        }
+
+        return await FetchPortalVersionNumberAsync(client);
+    }
+
+    internal static async Task<(VersionStatus Status, int? NextVersion)> CheckVersionStatusAsync(HttpClient client, int version)
+    {
+        try
+        {
+            using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(4));
+            using var req = new HttpRequestMessage(HttpMethod.Get, string.Format(BaseGameUrl, version));
+            req.Headers.CacheControl = new System.Net.Http.Headers.CacheControlHeaderValue { NoCache = true, NoStore = true };
+
+            using var res = await client.SendAsync(req, cts.Token);
+            if (!res.IsSuccessStatusCode)
+            {
+                return (VersionStatus.NotFound, null);
+            }
+
+            string html = await res.Content.ReadAsStringAsync(cts.Token);
+            return ParseVersionStatusFromHtml(html, version);
+        }
+        catch (Exception)
+        {
+            // Ignored intentionally: return NotFound when probing candidate version fails or times out.
+            return (VersionStatus.NotFound, null);
+        }
+    }
+
+    internal static async Task<int> ResolveLiveVersionAsync(HttpClient client, int candidateVersion, int fallbackVersion = 132)
+    {
+        int probe = candidateVersion;
+        for (int step = 0; step < 6 && probe >= 132 && probe < 500; step++)
+        {
+            var (status, nextVer) = await CheckVersionStatusAsync(client, probe);
+            if (status == VersionStatus.Active)
+            {
+                return probe;
+            }
+
+            if (status == VersionStatus.Outdated && nextVer.HasValue && nextVer.Value > probe)
+            {
+                var (nextStatus, _) = await CheckVersionStatusAsync(client, nextVer.Value);
+                return nextStatus == VersionStatus.Active ? nextVer.Value : probe;
+            }
+
+            probe--;
+        }
+
+        return fallbackVersion >= 132 && fallbackVersion < 500 ? fallbackVersion : 132;
     }
 
     private static async Task<string> DetectLatestUrlAsync()
@@ -107,19 +242,22 @@ public partial class MainWindow // NOSONAR
             http.DefaultRequestHeaders.UserAgent.ParseAdd(
                 "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36");
 
+            int candidateVersion = activeVersion;
             int? officialVer = await FetchOfficialVersionNumberAsync(http);
             if (officialVer.HasValue && officialVer.Value >= 132 && officialVer.Value < 500)
             {
-                activeVersion = officialVer.Value;
+                candidateVersion = officialVer.Value;
             }
             else
             {
                 int calVer = GetCalculatedCalendarVersion();
                 if (calVer >= 132 && calVer < 500)
                 {
-                    activeVersion = calVer;
+                    candidateVersion = calVer;
                 }
             }
+
+            activeVersion = await ResolveLiveVersionAsync(http, candidateVersion, activeVersion);
 
             try
             {
@@ -131,7 +269,7 @@ public partial class MainWindow // NOSONAR
                 // Ignored intentionally: saving active version to local version.txt failed.
             }
         }
-        catch
+        catch (Exception)
         {
             if (activeVersion < 132)
             {

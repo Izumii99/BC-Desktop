@@ -171,12 +171,7 @@ async function checkForAppUpdates() {
 }
 
 const FALLBACK_LINUX_RELEASE_NOTES =
-    "• GPU Canvas Acceleration & 60 FPS Pacing: Hardware-accelerated 2D canvas rasterization and active 60 FPS pacing slash in-focus CPU usage on high-refresh displays (144Hz+).\n\n" +
-    "• Room Texture Protection: Protected active character textures from flickering during maintenance, and immediately reclaim GPU canvas buffers on departure.\n\n" +
-    "• Chat Log Virtualization: Modern CSS content-visibility virtualization renders only visible messages, eliminating scroll lag and GPU overhead.\n\n" +
-    "• High-Polling Mouse Optimization: Passive pointer listeners deliver smooth responsiveness with 1000Hz+ gaming mice.\n\n" +
-    "• Addon Memory & Rendering: Reclaimed temporary canvas allocations in petsuit animations and eliminated heavy text blur layers.\n\n" +
-    "• Post-Update Changelog Window: Interactive changelog window now automatically introduces newly released features after each update.";
+    "• Fix (Game Server Version Detection): Fixed an issue where the app could attempt to open a new monthly game release before it was officially live on the server, resulting in a 404 Not Found screen.";
 
 async function fetchLatestReleaseNotesLinux() {
     try {
@@ -2035,38 +2030,126 @@ function getCalendarVersionNumber() {
     );
 }
 
-async function getLatestAsiaUrl() {
-    let versionNum = null;
+function parseGameVersionFromScript(scriptContent) {
+    if (!scriptContent || typeof scriptContent !== "string") return null;
+    const match = scriptContent.match(
+        /\bGameVersion\s*=\s*["']R(\d+)(?:(Alpha|Beta)\d*)?["']/i,
+    );
+    if (!match || !match[1]) return null;
+    const vNum = parseInt(match[1], 10);
+    if (isNaN(vNum)) return null;
+    return match[2] ? vNum - 1 : vNum;
+}
 
+async function checkVersionStatusLinux(version) {
     try {
         const controller = new AbortController();
         const timeout = setTimeout(() => controller.abort(), 4000);
-
-        const res = await fetch("https://bondageprojects.com/club_game/", {
-            cache: "no-store",
-            signal: controller.signal,
-        });
+        const res = await fetch(
+            `https://www.bondage-asia.com/club/R${version}/`,
+            {
+                cache: "no-store",
+                signal: controller.signal,
+            },
+        );
         clearTimeout(timeout);
+        if (!res.ok) return { status: "NotFound", nextVer: null };
+        const html = await res.text();
+        const refreshMatch = html.match(/URL=(?:\.\.\/)?R(\d+)\//i);
+        if (refreshMatch && refreshMatch[1]) {
+            return {
+                status: "Outdated",
+                nextVer: parseInt(refreshMatch[1], 10),
+            };
+        }
+        if (/Outdated Version/i.test(html)) {
+            return { status: "Outdated", nextVer: version + 1 };
+        }
+        return { status: "Active", nextVer: null };
+    } catch (_) {
+        return { status: "NotFound", nextVer: null };
+    }
+}
 
+async function resolveLiveVersionLinux(candidateVersion, fallbackVersion = 132) {
+    let probe = candidateVersion;
+    for (let step = 0; step < 6 && probe >= 132 && probe < 500; step++) {
+        const { status, nextVer } = await checkVersionStatusLinux(probe);
+        if (status === "Active") return probe;
+        if (status === "Outdated" && nextVer && nextVer > probe) {
+            const nextCheck = await checkVersionStatusLinux(nextVer);
+            return nextCheck.status === "Active" ? nextVer : probe;
+        }
+        probe--;
+    }
+    return fallbackVersion >= 132 && fallbackVersion < 500
+        ? fallbackVersion
+        : 132;
+}
+
+async function getLatestAsiaUrl(fallbackVersion = 132) {
+    let versionNum = null;
+
+    // 1. Primary: Official GitGud BondageClub/Scripts/Game.js
+    try {
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 4000);
+        const res = await fetch(
+            "https://gitgud.io/BondageProjects/Bondage-College/-/raw/master/BondageClub/Scripts/Game.js",
+            {
+                cache: "no-store",
+                signal: controller.signal,
+            },
+        );
+        clearTimeout(timeout);
         if (res.ok) {
-            const html = await res.text();
-            const match = html.match(
-                /onclick="window\.location='https:\/\/www\.bondage[^']+\/R(\d+)\/[^']*'"/i,
-            );
-            if (match && match[1]) {
-                versionNum = parseInt(match[1], 10);
+            const script = await res.text();
+            const parsed = parseGameVersionFromScript(script);
+            if (parsed && parsed >= 132 && parsed < 500) {
+                versionNum = parsed;
             }
         }
-    } catch (_) {
-        // Ignore network errors and fall back to calendar formula
+    } catch (_) {}
+
+    // 2. Secondary: Official Portal
+    if (!versionNum) {
+        try {
+            const controller = new AbortController();
+            const timeout = setTimeout(() => controller.abort(), 4000);
+
+            const res = await fetch("https://bondageprojects.com/club_game/", {
+                cache: "no-store",
+                signal: controller.signal,
+            });
+            clearTimeout(timeout);
+
+            if (res.ok) {
+                const html = await res.text();
+                const match = html.match(
+                    /onclick="window\.location='https:\/\/www\.bondage[^']+\/R(\d+)\/[^']*'"/i,
+                );
+                if (match && match[1]) {
+                    versionNum = parseInt(match[1], 10);
+                }
+            }
+        } catch (_) {
+            // Ignore network errors and fall back to calendar formula
+        }
     }
 
+    // 3. Tertiary: Calendar formula
     if (!versionNum) {
         versionNum = getCalendarVersionNumber();
     }
 
+    // 4. Verify live availability on bondage-asia.com
+    const liveVersion = await resolveLiveVersionLinux(
+        versionNum,
+        fallbackVersion,
+    );
+
     // Enforce bondage-asia.com base URL for stable LocalStorage and addon persistence
-    return `https://www.bondage-asia.com/club/R${versionNum}/`;
+    return `https://www.bondage-asia.com/club/R${liveVersion}/`;
 }
 
 // Backward compatibility alias
@@ -2105,7 +2188,7 @@ async function resolveGameUrl() {
     }
 
     try {
-        const url = await getLatestAsiaUrl();
+        const url = await getLatestAsiaUrl(activeVersion);
         const match = url.match(/\/R(\d+)\//);
         if (match && match[1]) {
             activeVersion = parseInt(match[1], 10);
@@ -2530,8 +2613,20 @@ function createWindow() {
     mainWindow.webContents.on(
         "did-navigate",
         (event, url, httpResponseCode) => {
-            if (httpResponseCode === 404 && url !== lastKnownGoodUrl) {
-                mainWindow.loadURL(lastKnownGoodUrl).catch(() => {});
+            if (httpResponseCode === 404) {
+                const verMatch = (url || "").match(/\/R(\d+)\//i);
+                if (verMatch && verMatch[1]) {
+                    const curVer = parseInt(verMatch[1], 10);
+                    if (curVer > 132) {
+                        const prevUrl = `https://www.bondage-asia.com/club/R${curVer - 1}/`;
+                        lastKnownGoodUrl = prevUrl;
+                        mainWindow.loadURL(prevUrl).catch(() => {});
+                        return;
+                    }
+                }
+                if (url !== lastKnownGoodUrl) {
+                    mainWindow.loadURL(lastKnownGoodUrl).catch(() => {});
+                }
             }
         },
     );

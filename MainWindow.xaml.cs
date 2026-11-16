@@ -394,10 +394,20 @@ public partial class MainWindow : Window // NOSONAR
 
         core.NavigationCompleted += async (_, args) =>
         {
-            if (args.HttpStatusCode == 404 && core.Source != FallbackUrl)
+            if (args.HttpStatusCode == 404)
             {
-                core.Navigate(FallbackUrl);
-                return;
+                var verMatch = System.Text.RegularExpressions.Regex.Match(core.Source ?? "", @"/R(\d+)/", System.Text.RegularExpressions.RegexOptions.IgnoreCase, TimeSpan.FromSeconds(1));
+                if (verMatch.Success && int.TryParse(verMatch.Groups[1].Value, out int curVer) && curVer > 132)
+                {
+                    string prevUrl = string.Format(BaseGameUrl, curVer - 1);
+                    core.Navigate(prevUrl);
+                    return;
+                }
+                if (core.Source != FallbackUrl)
+                {
+                    core.Navigate(FallbackUrl);
+                    return;
+                }
             }
 
             if (args.IsSuccess)
