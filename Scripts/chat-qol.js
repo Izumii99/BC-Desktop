@@ -1374,21 +1374,50 @@
         }
     }
 
-    // Room Customization (Gear Button) Persistence by Room Name
-    function getSavedCustomizedRooms() {
-        try {
-            const raw = localStorage.getItem(
-                "BCDesktop_ChatQoL_RoomCustomization",
-            );
-            return raw ? JSON.parse(raw) : {};
-        } catch (e) {
-            return {};
+    const MAX_SAVED_ROOM_ENTRIES = 100;
+    const roomStorageCache = {
+        BCDesktop_ChatQoL_RoomCustomization: null,
+        BCDesktop_ChatQoL_RoomMapView: null,
+    };
+
+    function getCachedRoomMap(storageKey) {
+        if (roomStorageCache[storageKey] === null) {
+            try {
+                const raw = localStorage.getItem(storageKey);
+                const parsed = raw ? JSON.parse(raw) : {};
+                roomStorageCache[storageKey] =
+                    parsed &&
+                    typeof parsed === "object" &&
+                    !Array.isArray(parsed)
+                        ? parsed
+                        : {};
+            } catch (e) {
+                roomStorageCache[storageKey] = {};
+            }
         }
+        return roomStorageCache[storageKey];
     }
 
+    function writeCachedRoomMap(storageKey, rooms, keepKey) {
+        const keys = Object.keys(rooms);
+        if (keys.length > MAX_SAVED_ROOM_ENTRIES) {
+            let count = keys.length;
+            for (const k of keys) {
+                if (k === keepKey) continue;
+                delete rooms[k];
+                count--;
+                if (count <= MAX_SAVED_ROOM_ENTRIES) break;
+            }
+        }
+        try {
+            localStorage.setItem(storageKey, JSON.stringify(rooms));
+        } catch (e) {}
+    }
+
+    // Room Customization (Gear Button) Persistence by Room Name
     function getRoomCustomizationSavedState(roomName) {
         if (!roomName) return null;
-        const rooms = getSavedCustomizedRooms();
+        const rooms = getCachedRoomMap("BCDesktop_ChatQoL_RoomCustomization");
         if (
             Object.prototype.hasOwnProperty.call(rooms, roomName) &&
             typeof rooms[roomName] === "boolean"
@@ -1400,14 +1429,21 @@
 
     function setRoomCustomizationSaved(roomName, enabled) {
         if (!roomName) return;
-        try {
-            const rooms = getSavedCustomizedRooms();
-            rooms[roomName] = Boolean(enabled);
-            localStorage.setItem(
-                "BCDesktop_ChatQoL_RoomCustomization",
-                JSON.stringify(rooms),
-            );
-        } catch (e) {}
+        const val = Boolean(enabled);
+        const rooms = getCachedRoomMap("BCDesktop_ChatQoL_RoomCustomization");
+        if (
+            Object.prototype.hasOwnProperty.call(rooms, roomName) &&
+            rooms[roomName] === val
+        ) {
+            return;
+        }
+        delete rooms[roomName];
+        rooms[roomName] = val;
+        writeCachedRoomMap(
+            "BCDesktop_ChatQoL_RoomCustomization",
+            rooms,
+            roomName,
+        );
     }
 
     let lastRoomCustomizationClickTime = 0;
@@ -1468,35 +1504,24 @@
     }
 
     // Map View Persistence by Room Name
-    function getSavedMapViewRooms() {
-        try {
-            const raw = localStorage.getItem("BCDesktop_ChatQoL_RoomMapView");
-            return raw ? JSON.parse(raw) : {};
-        } catch (e) {
-            return {};
-        }
-    }
-
     function isRoomMapViewSaved(roomName) {
         if (!roomName) return false;
-        const rooms = getSavedMapViewRooms();
+        const rooms = getCachedRoomMap("BCDesktop_ChatQoL_RoomMapView");
         return Boolean(rooms[roomName]);
     }
 
     function setRoomMapViewSaved(roomName, enabled) {
         if (!roomName) return;
-        try {
-            const rooms = getSavedMapViewRooms();
-            if (enabled) {
-                rooms[roomName] = true;
-            } else {
-                delete rooms[roomName];
-            }
-            localStorage.setItem(
-                "BCDesktop_ChatQoL_RoomMapView",
-                JSON.stringify(rooms),
-            );
-        } catch (e) {}
+        const nextVal = Boolean(enabled);
+        const rooms = getCachedRoomMap("BCDesktop_ChatQoL_RoomMapView");
+        const prevVal = Boolean(rooms[roomName]);
+        if (nextVal === prevVal) return;
+
+        delete rooms[roomName];
+        if (nextVal) {
+            rooms[roomName] = true;
+        }
+        writeCachedRoomMap("BCDesktop_ChatQoL_RoomMapView", rooms, roomName);
     }
 
     let lastRoomMapViewClickTime = 0;
@@ -1617,6 +1642,226 @@
         true,
     );
 
+    let allRoomLifecycleHooksInstalled = false;
+
+    function installRoomLifecycleHooks() {
+        if (allRoomLifecycleHooksInstalled) return;
+        if (
+            typeof window.ChatRoomRefreshActiveView === "function" &&
+            !window._chatQol_ChatRoomRefreshActiveViewHooked &&
+            !window.ChatRoomRefreshActiveView.hasQolHook
+        ) {
+            window._chatQol_ChatRoomRefreshActiveViewHooked = true;
+            const origRefreshActiveView = window.ChatRoomRefreshActiveView;
+            window.ChatRoomRefreshActiveView = function () {
+                internalViewTransitionDepth++;
+                try {
+                    return origRefreshActiveView.apply(this, arguments);
+                } finally {
+                    internalViewTransitionDepth--;
+                }
+            };
+            window.ChatRoomRefreshActiveView.hasQolHook = true;
+        }
+
+        if (
+            typeof window.ChatRoomActivateView === "function" &&
+            !window._chatQol_ChatRoomActivateViewHooked &&
+            !window.ChatRoomActivateView.hasQolHook
+        ) {
+            window._chatQol_ChatRoomActivateViewHooked = true;
+            const origActivateView = window.ChatRoomActivateView;
+            window.ChatRoomActivateView = function (viewName) {
+                const res = origActivateView.apply(this, arguments);
+                try {
+                    if (
+                        internalViewTransitionDepth === 0 &&
+                        !isRestoringMapView &&
+                        (typeof CurrentScreen === "undefined" ||
+                            CurrentScreen === "ChatRoom") &&
+                        window.ChatRoomData?.Name &&
+                        window.ChatRoomData?.MapData?.Type === "Hybrid"
+                    ) {
+                        if (viewName === "Map") {
+                            setRoomMapViewSaved(
+                                window.ChatRoomData.Name,
+                                true,
+                            );
+                        } else if (viewName === "Character") {
+                            setRoomMapViewSaved(
+                                window.ChatRoomData.Name,
+                                false,
+                            );
+                        }
+                    }
+                } catch (e) {}
+                return res;
+            };
+            window.ChatRoomActivateView.hasQolHook = true;
+        }
+
+        if (
+            typeof window.ChatRoomUnload === "function" &&
+            !window._chatQol_ChatRoomUnloadHooked &&
+            !window.ChatRoomUnload.hasQolHook
+        ) {
+            window._chatQol_ChatRoomUnloadHooked = true;
+            const origChatRoomUnload = window.ChatRoomUnload;
+            window.ChatRoomUnload = function () {
+                try {
+                    const roomName = window.ChatRoomData?.Name;
+                    if (
+                        roomName &&
+                        window.ChatRoomData?.MapData?.Type === "Hybrid" &&
+                        window.ChatRoomActiveView != null &&
+                        typeof window.ChatRoomMapViewIsActive === "function" &&
+                        window.ChatRoomMapViewIsActive()
+                    ) {
+                        setRoomMapViewSaved(roomName, true);
+                    }
+                } catch (e) {}
+                internalViewTransitionDepth++;
+                try {
+                    return origChatRoomUnload.apply(this, arguments);
+                } finally {
+                    internalViewTransitionDepth--;
+                }
+            };
+            window.ChatRoomUnload.hasQolHook = true;
+        }
+
+        if (
+            typeof window.ChatRoomLoad === "function" &&
+            !window._chatQol_ChatRoomLoadHooked &&
+            !window.ChatRoomLoad.hasQolHook
+        ) {
+            window._chatQol_ChatRoomLoadHooked = true;
+            const origChatRoomLoad = window.ChatRoomLoad;
+            window.ChatRoomLoad = function () {
+                let ret;
+                internalViewTransitionDepth++;
+                try {
+                    ret = origChatRoomLoad.apply(this, arguments);
+                } finally {
+                    internalViewTransitionDepth--;
+                }
+                const onDone = () => {
+                    lastRoomMapViewClickTime = 0;
+                    restoreRoomCustomizationIfSaved();
+                    restoreRoomMapViewIfSaved();
+                    if (
+                        qolConfig.persistIconState &&
+                        !window._chatQol_IconStateAppliedThisLogin &&
+                        typeof window.ChatRoomHideIconState !== "undefined"
+                    ) {
+                        window.ChatRoomHideIconState = 1;
+                        window._chatQol_IconStateAppliedThisLogin = true;
+                    }
+                };
+                if (ret && typeof ret.then === "function") {
+                    return ret.then((val) => {
+                        onDone();
+                        return val;
+                    });
+                }
+                onDone();
+                return ret;
+            };
+            window.ChatRoomLoad.hasQolHook = true;
+        }
+
+        if (
+            typeof window.ChatRoomSync === "function" &&
+            !window._chatQol_ChatRoomSyncHooked &&
+            !window.ChatRoomSync.hasQolHook
+        ) {
+            window._chatQol_ChatRoomSyncHooked = true;
+            const origChatRoomSync = window.ChatRoomSync;
+            window.ChatRoomSync = function () {
+                const ret = origChatRoomSync.apply(this, arguments);
+                const onDone = () => {
+                    lastRoomMapViewClickTime = 0;
+                    restoreRoomCustomizationIfSaved();
+                    restoreRoomMapViewIfSaved();
+                };
+                if (ret && typeof ret.then === "function") {
+                    return ret.then((val) => {
+                        onDone();
+                        return val;
+                    });
+                }
+                onDone();
+                return ret;
+            };
+            window.ChatRoomSync.hasQolHook = true;
+        }
+
+        if (
+            typeof window.ChatRoomSyncRoomProperties === "function" &&
+            !window._chatQol_ChatRoomSyncRoomPropertiesHooked &&
+            !window.ChatRoomSyncRoomProperties.hasQolHook
+        ) {
+            window._chatQol_ChatRoomSyncRoomPropertiesHooked = true;
+            const origSyncRoomProps = window.ChatRoomSyncRoomProperties;
+            window.ChatRoomSyncRoomProperties = function () {
+                const ret = origSyncRoomProps.apply(this, arguments);
+                lastRoomMapViewClickTime = 0;
+                restoreRoomCustomizationIfSaved();
+                restoreRoomMapViewIfSaved();
+                return ret;
+            };
+            window.ChatRoomSyncRoomProperties.hasQolHook = true;
+        }
+
+        if (
+            typeof window.ChatRoomLeave === "function" &&
+            !window._chatQol_ChatRoomLeaveHooked &&
+            !window.ChatRoomLeave.hasQolHook
+        ) {
+            window._chatQol_ChatRoomLeaveHooked = true;
+            const origChatRoomLeave = window.ChatRoomLeave;
+            window.ChatRoomLeave = function () {
+                try {
+                    const leavingRoom = window.ChatRoomData?.Name;
+                    if (leavingRoom) {
+                        if (
+                            window.ChatRoomData?.Custom &&
+                            typeof window.ChatRoomCustomized === "boolean"
+                        ) {
+                            setRoomCustomizationSaved(
+                                leavingRoom,
+                                Boolean(window.ChatRoomCustomized),
+                            );
+                        }
+                        if (
+                            window.ChatRoomData?.MapData?.Type === "Hybrid" &&
+                            isCurrentlyInMapView()
+                        ) {
+                            setRoomMapViewSaved(leavingRoom, true);
+                        }
+                    }
+                } catch (e) {}
+                internalViewTransitionDepth++;
+                try {
+                    return origChatRoomLeave.apply(this, arguments);
+                } finally {
+                    internalViewTransitionDepth--;
+                }
+            };
+            window.ChatRoomLeave.hasQolHook = true;
+        }
+
+        allRoomLifecycleHooksInstalled =
+            Boolean(window._chatQol_ChatRoomRefreshActiveViewHooked) &&
+            Boolean(window._chatQol_ChatRoomActivateViewHooked) &&
+            Boolean(window._chatQol_ChatRoomUnloadHooked) &&
+            Boolean(window._chatQol_ChatRoomLoadHooked) &&
+            Boolean(window._chatQol_ChatRoomSyncHooked) &&
+            Boolean(window._chatQol_ChatRoomSyncRoomPropertiesHooked) &&
+            Boolean(window._chatQol_ChatRoomLeaveHooked);
+    }
+    installRoomLifecycleHooks();
+
     setInterval(() => {
         try {
             if (window._bcIsMinimized) return;
@@ -1661,232 +1906,9 @@
                     window._chatQol_IconStateAppliedThisLogin = true;
                 }
 
-                function installRoomLifecycleHooks() {
-                    if (
-                        typeof window.ChatRoomRefreshActiveView ===
-                            "function" &&
-                        !window._chatQol_ChatRoomRefreshActiveViewHooked &&
-                        !window.ChatRoomRefreshActiveView.hasQolHook
-                    ) {
-                        window._chatQol_ChatRoomRefreshActiveViewHooked = true;
-                        const origRefreshActiveView =
-                            window.ChatRoomRefreshActiveView;
-                        window.ChatRoomRefreshActiveView = function () {
-                            internalViewTransitionDepth++;
-                            try {
-                                return origRefreshActiveView.apply(
-                                    this,
-                                    arguments,
-                                );
-                            } finally {
-                                internalViewTransitionDepth--;
-                            }
-                        };
-                        window.ChatRoomRefreshActiveView.hasQolHook = true;
-                    }
-
-                    if (
-                        typeof window.ChatRoomActivateView === "function" &&
-                        !window._chatQol_ChatRoomActivateViewHooked &&
-                        !window.ChatRoomActivateView.hasQolHook
-                    ) {
-                        window._chatQol_ChatRoomActivateViewHooked = true;
-                        const origActivateView = window.ChatRoomActivateView;
-                        window.ChatRoomActivateView = function (viewName) {
-                            const res = origActivateView.apply(this, arguments);
-                            try {
-                                if (
-                                    internalViewTransitionDepth === 0 &&
-                                    !isRestoringMapView &&
-                                    (typeof CurrentScreen === "undefined" ||
-                                        CurrentScreen === "ChatRoom") &&
-                                    window.ChatRoomData?.Name &&
-                                    window.ChatRoomData?.MapData?.Type ===
-                                        "Hybrid"
-                                ) {
-                                    if (viewName === "Map") {
-                                        setRoomMapViewSaved(
-                                            window.ChatRoomData.Name,
-                                            true,
-                                        );
-                                    } else if (viewName === "Character") {
-                                        setRoomMapViewSaved(
-                                            window.ChatRoomData.Name,
-                                            false,
-                                        );
-                                    }
-                                }
-                            } catch (e) {}
-                            return res;
-                        };
-                        window.ChatRoomActivateView.hasQolHook = true;
-                    }
-
-                    if (
-                        typeof window.ChatRoomUnload === "function" &&
-                        !window._chatQol_ChatRoomUnloadHooked &&
-                        !window.ChatRoomUnload.hasQolHook
-                    ) {
-                        window._chatQol_ChatRoomUnloadHooked = true;
-                        const origChatRoomUnload = window.ChatRoomUnload;
-                        window.ChatRoomUnload = function () {
-                            try {
-                                const roomName = window.ChatRoomData?.Name;
-                                if (
-                                    roomName &&
-                                    window.ChatRoomData?.MapData?.Type ===
-                                        "Hybrid" &&
-                                    window.ChatRoomActiveView != null &&
-                                    typeof window.ChatRoomMapViewIsActive ===
-                                        "function" &&
-                                    window.ChatRoomMapViewIsActive()
-                                ) {
-                                    setRoomMapViewSaved(roomName, true);
-                                }
-                            } catch (e) {}
-                            internalViewTransitionDepth++;
-                            try {
-                                return origChatRoomUnload.apply(
-                                    this,
-                                    arguments,
-                                );
-                            } finally {
-                                internalViewTransitionDepth--;
-                            }
-                        };
-                        window.ChatRoomUnload.hasQolHook = true;
-                    }
-
-                    if (
-                        typeof window.ChatRoomLoad === "function" &&
-                        !window._chatQol_ChatRoomLoadHooked &&
-                        !window.ChatRoomLoad.hasQolHook
-                    ) {
-                        window._chatQol_ChatRoomLoadHooked = true;
-                        const origChatRoomLoad = window.ChatRoomLoad;
-                        window.ChatRoomLoad = function () {
-                            let ret;
-                            internalViewTransitionDepth++;
-                            try {
-                                ret = origChatRoomLoad.apply(this, arguments);
-                            } finally {
-                                internalViewTransitionDepth--;
-                            }
-                            const onDone = () => {
-                                lastRoomMapViewClickTime = 0;
-                                restoreRoomCustomizationIfSaved();
-                                restoreRoomMapViewIfSaved();
-                                if (
-                                    qolConfig.persistIconState &&
-                                    !window._chatQol_IconStateAppliedThisLogin &&
-                                    typeof window.ChatRoomHideIconState !==
-                                        "undefined"
-                                ) {
-                                    window.ChatRoomHideIconState = 1;
-                                    window._chatQol_IconStateAppliedThisLogin = true;
-                                }
-                            };
-                            if (ret && typeof ret.then === "function") {
-                                return ret.then((val) => {
-                                    onDone();
-                                    return val;
-                                });
-                            }
-                            onDone();
-                            return ret;
-                        };
-                        window.ChatRoomLoad.hasQolHook = true;
-                    }
-
-                    if (
-                        typeof window.ChatRoomSync === "function" &&
-                        !window._chatQol_ChatRoomSyncHooked &&
-                        !window.ChatRoomSync.hasQolHook
-                    ) {
-                        window._chatQol_ChatRoomSyncHooked = true;
-                        const origChatRoomSync = window.ChatRoomSync;
-                        window.ChatRoomSync = function () {
-                            const ret = origChatRoomSync.apply(this, arguments);
-                            const onDone = () => {
-                                lastRoomMapViewClickTime = 0;
-                                restoreRoomCustomizationIfSaved();
-                                restoreRoomMapViewIfSaved();
-                            };
-                            if (ret && typeof ret.then === "function") {
-                                return ret.then((val) => {
-                                    onDone();
-                                    return val;
-                                });
-                            }
-                            onDone();
-                            return ret;
-                        };
-                        window.ChatRoomSync.hasQolHook = true;
-                    }
-
-                    if (
-                        typeof window.ChatRoomSyncRoomProperties ===
-                            "function" &&
-                        !window._chatQol_ChatRoomSyncRoomPropertiesHooked &&
-                        !window.ChatRoomSyncRoomProperties.hasQolHook
-                    ) {
-                        window._chatQol_ChatRoomSyncRoomPropertiesHooked = true;
-                        const origSyncRoomProps =
-                            window.ChatRoomSyncRoomProperties;
-                        window.ChatRoomSyncRoomProperties = function () {
-                            const ret = origSyncRoomProps.apply(
-                                this,
-                                arguments,
-                            );
-                            lastRoomMapViewClickTime = 0;
-                            restoreRoomCustomizationIfSaved();
-                            restoreRoomMapViewIfSaved();
-                            return ret;
-                        };
-                        window.ChatRoomSyncRoomProperties.hasQolHook = true;
-                    }
-
-                    if (
-                        typeof window.ChatRoomLeave === "function" &&
-                        !window._chatQol_ChatRoomLeaveHooked &&
-                        !window.ChatRoomLeave.hasQolHook
-                    ) {
-                        window._chatQol_ChatRoomLeaveHooked = true;
-                        const origChatRoomLeave = window.ChatRoomLeave;
-                        window.ChatRoomLeave = function () {
-                            try {
-                                const leavingRoom = window.ChatRoomData?.Name;
-                                if (leavingRoom) {
-                                    if (
-                                        window.ChatRoomData?.Custom &&
-                                        typeof window.ChatRoomCustomized ===
-                                            "boolean"
-                                    ) {
-                                        setRoomCustomizationSaved(
-                                            leavingRoom,
-                                            Boolean(window.ChatRoomCustomized),
-                                        );
-                                    }
-                                    if (
-                                        window.ChatRoomData?.MapData?.Type ===
-                                            "Hybrid" &&
-                                        isCurrentlyInMapView()
-                                    ) {
-                                        setRoomMapViewSaved(leavingRoom, true);
-                                    }
-                                }
-                            } catch (e) {}
-                            internalViewTransitionDepth++;
-                            try {
-                                return origChatRoomLeave.apply(this, arguments);
-                            } finally {
-                                internalViewTransitionDepth--;
-                            }
-                        };
-                        window.ChatRoomLeave.hasQolHook = true;
-                    }
+                if (!allRoomLifecycleHooksInstalled) {
+                    installRoomLifecycleHooks();
                 }
-                installRoomLifecycleHooks();
 
                 if (
                     !window._chatQol_AnimalReceiverHooked &&
