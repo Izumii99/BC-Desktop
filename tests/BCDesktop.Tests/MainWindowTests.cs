@@ -492,7 +492,7 @@ public class MainWindowTests
     [TestMethod]
     public void AppVersionComparison_AccuratelyEvaluatesSemanticVersions()
     {
-        Assert.AreEqual("7.6.0", MainWindow.CurrentAppVersion, "CurrentAppVersion must be 7.6.0.");
+        Assert.AreEqual("7.6.1", MainWindow.CurrentAppVersion, "CurrentAppVersion must be 7.6.1.");
 
         Assert.IsTrue(MainWindow.IsNewerVersion("v7.5", "7.4"), "v7.5 must be newer than 7.4.");
         Assert.IsTrue(MainWindow.IsNewerVersion("7.5", "7.4"), "7.5 must be newer than 7.4.");
@@ -1006,6 +1006,8 @@ public class MainWindowTests
         StringAssert.Contains(cs, "chat-room-menu-CharacterView", "Windows focus script must verify active Map View via top menu CharacterView toggle.");
         StringAssert.Contains(cs, "chat-room-menu-MapView", "Windows focus script must verify Character View via top menu MapView toggle.");
         StringAssert.Contains(cs, "ChatRoomMapViewIsActive", "Windows focus crawler must respect active Map View.");
+        StringAssert.Contains(cs, "isChatClickTarget", "Windows focus logic must allow chat-area and right-side clicks in Map View.");
+        StringAssert.Contains(cs, "isChatArea(scrollBoxEl)", "Windows mouseup must not suppress chat log focus inside Map View.");
         StringAssert.Contains(cs, "active.blur()", "Windows mousedown on canvas must explicitly blur active text input in Map View.");
 
         string linuxPath = Path.Combine(ProjectRoot, "platform", "linux", "main.js");
@@ -1014,7 +1016,15 @@ public class MainWindowTests
         StringAssert.Contains(linux, "chat-room-menu-CharacterView", "Linux main.js must verify active Map View via top menu CharacterView toggle.");
         StringAssert.Contains(linux, "chat-room-menu-MapView", "Linux main.js must verify Character View via top menu MapView toggle.");
         StringAssert.Contains(linux, "ChatRoomMapViewIsActive", "Linux focus crawler must respect active Map View.");
+        StringAssert.Contains(linux, "isChatClickTarget", "Linux main.js must allow chat-area and right-side clicks in Map View.");
+        StringAssert.Contains(linux, "isChatArea(scrollBoxEl)", "Linux main.js must not suppress chat log focus inside Map View.");
         StringAssert.Contains(linux, "active.blur()", "Linux mousedown on canvas must explicitly blur active text input in Map View.");
+
+        string qolPath = Path.Combine(ProjectRoot, "Scripts", "chat-qol.js");
+        string qol = File.ReadAllText(qolPath);
+        StringAssert.Contains(qol, "isCurrentlyInMapView", "chat-qol.js must check authoritative Map View state cleanly.");
+        StringAssert.Contains(qol, "ChatRoomSyncRoomProperties", "chat-qol.js must restore Map View after room property updates and relog.");
+        StringAssert.Contains(qol, "ChatRoomRefreshActiveView", "chat-qol.js must guard internal view refreshes from overwriting saved Map View.");
     }
 }
 

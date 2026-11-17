@@ -1,6 +1,7 @@
 ### Fixes & Improvements:
 
-- **Fix (Game Server Version Detection):** Fixed an issue where the app could attempt to open a new monthly game release before it was officially live on the server, resulting in a 404 Not Found screen.
+- **Fix (Map View Persistence):** Map View now stays active reliably after reconnecting, relogging, or leaving and rejoining a room when you previously left it turned on.
+- **Fix (Chat Input Focus in Map View):** Clicking inside the chat box or anywhere in the right-hand chat panel while in Map View now focuses the chat input normally again, while clicking on the left map canvas keeps movement keys free.
 
 ### Downloads:
 

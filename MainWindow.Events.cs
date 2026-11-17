@@ -87,14 +87,17 @@ public partial class MainWindow // NOSONAR
                         if (window.bcLogDebug) window.bcLogDebug('ACTIVATED');
                         if (window.getSelection && window.getSelection().toString().length > 0) return;
 
-                        window.bcCanvasUnfocusedChat = false;
+                        let mapModeUnfocused = (typeof window._bcIsMapViewActive === 'function' && window._bcIsMapViewActive() && !window.bcUserPrefersGameChat);
+                        if (!mapModeUnfocused) {
+                            window.bcCanvasUnfocusedChat = false;
+                        }
                         let target = null;
                         if (!window.bcUserPrefersGameChat && window.bcFocusMemory && window.bcFocusMemory.isConnected && window.bcFocusMemory.offsetParent !== null) {
                             target = window.bcFocusMemory;
                         } else if (window.bcRunFocusCrawler) {
                             target = window.bcRunFocusCrawler();
                         }
-                        if (!target) {
+                        if (!target && !mapModeUnfocused) {
                             let ic = document.getElementById('InputChat');
                             if (ic && (ic.offsetParent !== null || ic.offsetWidth > 0)) {
                                 target = ic;
