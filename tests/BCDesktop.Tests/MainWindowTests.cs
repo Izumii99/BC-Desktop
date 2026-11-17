@@ -1003,14 +1003,18 @@ public class MainWindowTests
     {
         string cs = MainWindowSourceCode;
         StringAssert.Contains(cs, "bcCanvasUnfocusedChat", "Windows script must track canvas click unfocus state.");
+        StringAssert.Contains(cs, "chat-room-menu-CharacterView", "Windows focus script must verify active Map View via top menu CharacterView toggle.");
+        StringAssert.Contains(cs, "chat-room-menu-MapView", "Windows focus script must verify Character View via top menu MapView toggle.");
         StringAssert.Contains(cs, "ChatRoomMapViewIsActive", "Windows focus crawler must respect active Map View.");
-        StringAssert.Contains(cs, "active.blur()", "Windows mousedown on canvas must explicitly blur active text input.");
+        StringAssert.Contains(cs, "active.blur()", "Windows mousedown on canvas must explicitly blur active text input in Map View.");
 
         string linuxPath = Path.Combine(ProjectRoot, "platform", "linux", "main.js");
         string linux = File.ReadAllText(linuxPath);
         StringAssert.Contains(linux, "bcCanvasUnfocusedChat", "Linux main.js must track canvas click unfocus state.");
+        StringAssert.Contains(linux, "chat-room-menu-CharacterView", "Linux main.js must verify active Map View via top menu CharacterView toggle.");
+        StringAssert.Contains(linux, "chat-room-menu-MapView", "Linux main.js must verify Character View via top menu MapView toggle.");
         StringAssert.Contains(linux, "ChatRoomMapViewIsActive", "Linux focus crawler must respect active Map View.");
-        StringAssert.Contains(linux, "active.blur()", "Linux mousedown on canvas must explicitly blur active text input.");
+        StringAssert.Contains(linux, "active.blur()", "Linux mousedown on canvas must explicitly blur active text input in Map View.");
     }
 }
 

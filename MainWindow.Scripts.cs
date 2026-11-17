@@ -318,17 +318,26 @@ internal static class ScriptHelpers
             }
 
             function isMapViewActive() {
-                if (typeof window.ChatRoomMapViewIsActive === 'function' && window.ChatRoomMapViewIsActive()) return true;
-                let content = document.getElementById('chat-room-content');
-                if (content && content.getAttribute('data-view') === 'Map') return true;
+                if (window.CurrentScreen !== 'ChatRoom') return false;
+                let mapBtn = document.getElementById('chat-room-menu-MapView') || document.getElementById('chat-room-menu-mapview');
+                if (mapBtn && !mapBtn.hasAttribute('hidden')) return false;
+                let charBtn = document.getElementById('chat-room-menu-CharacterView') || document.getElementById('chat-room-menu-characterview');
+                if (charBtn && !charBtn.hasAttribute('hidden')) return true;
+                if (window.ChatRoomData && window.ChatRoomData.MapData && window.ChatRoomData.MapData.Type === 'Always' &&
+                    typeof window.ChatRoomMapViewIsActive === 'function' && window.ChatRoomMapViewIsActive()) {
+                    return true;
+                }
                 return false;
             }
 
             function isMapOrTopMenuControl(el) {
                 if (!el || isTextInput(el)) return false;
-                if (el.id === 'MainCanvas' || el.id === 'chat-room-menu-mapview') return true;
-                if (el.closest && el.closest('#chat-room-map-controls, #chat-room-content-resize-bar, #chat-room-menu-mapview')) return true;
-                if (isMapViewActive() && el.closest && el.closest('#chat-room-content') && !el.closest('#chat-room-map-view-dialog-menu')) return true;
+                if (el.id === 'chat-room-menu-MapView' || el.id === 'chat-room-menu-mapview') return true;
+                if (el.closest && el.closest('#chat-room-map-controls, #chat-room-content-resize-bar, #chat-room-menu-MapView, #chat-room-menu-mapview')) return true;
+                if (isMapViewActive()) {
+                    if (el.id === 'MainCanvas') return true;
+                    if (el.closest && el.closest('#chat-room-content') && !el.closest('#chat-room-map-view-dialog-menu')) return true;
+                }
                 return false;
             }
 
@@ -574,7 +583,7 @@ internal static class ScriptHelpers
                     window.bcForceUnfocusSearch = false;
                     window.bcUserPrefersGameChat = false;
                     window.bcCanvasUnfocusedChat = false;
-                } else {
+                } else if (isMapViewActive()) {
                     window.bcFocusMemory = null;
                     window.bcForceUnfocusSearch = false;
                     window.bcUserPrefersGameChat = false;
@@ -583,6 +592,9 @@ internal static class ScriptHelpers
                     if (active && isTextInput(active) && typeof active.blur === 'function') {
                         try { active.blur(); } catch (err) {}
                     }
+                } else {
+                    window.bcForceUnfocusSearch = false;
+                    window.bcCanvasUnfocusedChat = false;
                 }
                 
                 if (ic) window.bcInputChatLastValue = ic.value;
