@@ -171,7 +171,7 @@ jobs:
           $ver = if ($inputVer.Length -gt 0) { $inputVer } elseif ($refTag.Length -gt 0) { $refTag } else { "7.6.1" }
 
           $inputTitle = if ($env:INPUT_TITLE) { $env:INPUT_TITLE.Trim() } else { "" }
-          $title = if ($inputTitle.Length -gt 0) { $inputTitle } else { "Map View Persistence & Chat Input Focus Fix" }
+          $title = if ($inputTitle.Length -gt 0) { $inputTitle } else { "R134 Stability, Bookmarklet Runner & Update Notes Fix" }
           $releaseTitle = if ($title.Length -gt 0) { "v$ver - $title" } else { "v$ver" }
 
           $releaseAssets = @(

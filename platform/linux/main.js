@@ -173,8 +173,8 @@ async function checkForAppUpdates() {
 const FALLBACK_LINUX_RELEASE_NOTES =
     "• Feature (Addon Manager Bookmarklet & History Runner): Added a bookmarklet and custom script input bar in Addon Manager with saved history cache, one-click execution from history, optional startup auto-run, and a pop-up showing whether the script ran or failed.\n\n" +
     "• Fix (R134 Tab-Out & Restraint Menu Display): Fixed an issue in R134 where returning to the app after tabbing out could cause the character dialog or top-right restraint menu icons (such as activities and search) to turn blank black.\n\n" +
-    "• Fix (Map View Persistence): Map View now stays active reliably after reconnecting, relogging, or leaving and rejoining a room when you previously left it turned on.\n\n" +
-    "• Fix (Chat Input Focus in Map View): Clicking inside the chat box or anywhere in the right-hand chat panel while in Map View now focuses the chat input normally again, while clicking on the left map canvas keeps movement keys free.";
+    "• Fix (R134 Profile Screen Addon Crash Protection): Fixed an issue in R134 where opening a player's profile or information sheet could trigger an unhandled error in third-party addons and freeze the game screen.\n\n" +
+    "• Fix (Update Notification & Release Notes): Fixed update notifications and changelog previews so they always display clean, up-to-date release notes without raw markdown formatting.";
 
 async function fetchLatestReleaseNotesLinux() {
     const urls = [
@@ -607,7 +607,7 @@ const CapUnfocusedFpsScript =
     "})()";
 
 const RestoreUnfocusedFpsScript =
-    "(()=>{window._bcIsBackground=false;window._bcIsMinimized=false;window._bcIsCloaked=false;window._bcLastCanvasInputTime=performance.now();const g=window.bcFpsCap;if(g){if(g.MaxUnfocusedFPS===15||g.MaxUnfocusedFPS===30)g.MaxUnfocusedFPS=0;window.bcFpsCap=null;}if(typeof window.GameRun==='function'&&window.GameAnimationFrameId==null){window.GameAnimationFrameId=window.requestAnimationFrame(window.GameRun);}const now=typeof window.CurrentTime==='number'?window.CurrentTime:0;if(window.DrawImageCache)window.DrawImageCache.lastPurge=now;if(window.GLDrawImageCache)window.GLDrawImageCache.lastPurge=now;const chars=(Array.isArray(window.ChatRoomCharacter)?window.ChatRoomCharacter.slice():[]);if(window.Player&&!chars.includes(window.Player))chars.push(window.Player);if(window.CurrentCharacter&&!chars.includes(window.CurrentCharacter))chars.push(window.CurrentCharacter);for(let i=0;i<chars.length;i++){const c=chars[i];if(c&&(c._bcPendingCanvasBuild||c===window.CurrentCharacter)){delete c._bcPendingCanvasBuild;c.MustDraw=true;if(typeof window.CharacterLoadCanvas==='function'){try{window.CharacterLoadCanvas(c);}catch(e){}}else if(typeof window.CharacterAppearanceBuildCanvas==='function'){try{window.CharacterAppearanceBuildCanvas(c);}catch(e){}}}}})()";
+    "(()=>{window._bcIsBackground=false;window._bcIsMinimized=false;window._bcIsCloaked=false;window._bcLastCanvasInputTime=performance.now();const g=window.bcFpsCap;if(g){if(g.MaxUnfocusedFPS===15||g.MaxUnfocusedFPS===30)g.MaxUnfocusedFPS=0;window.bcFpsCap=null;}if(typeof window.GameRun==='function'&&window.GameAnimationFrameId==null){window.GameAnimationFrameId=window.requestAnimationFrame(window.GameRun);}if(window.GameWorker==null&&typeof Worker==='function'&&typeof window.GameFallbackTimer==='function'){try{window.GameWorker=new Worker('Scripts/GameWorker.js');window.GameWorker.onmessage=window.GameFallbackTimer;}catch(e){}}const now=typeof window.CurrentTime==='number'?window.CurrentTime:0;if(window.DrawImageCache)window.DrawImageCache.lastPurge=now;if(window.GLDrawImageCache)window.GLDrawImageCache.lastPurge=now;const chars=(Array.isArray(window.ChatRoomCharacter)?window.ChatRoomCharacter.slice():[]);if(window.Player&&!chars.includes(window.Player))chars.push(window.Player);if(window.CurrentCharacter&&!chars.includes(window.CurrentCharacter))chars.push(window.CurrentCharacter);for(let i=0;i<chars.length;i++){const c=chars[i];if(c&&(c._bcPendingCanvasBuild||c===window.CurrentCharacter)){delete c._bcPendingCanvasBuild;c.MustDraw=true;if(typeof window.CharacterLoadCanvas==='function'){try{window.CharacterLoadCanvas(c);}catch(e){}}else if(typeof window.CharacterAppearanceBuildCanvas==='function'){try{window.CharacterAppearanceBuildCanvas(c);}catch(e){}}}}})()";
 
 const SmartFocusRestoreScript = `
     (function() {
@@ -731,7 +731,7 @@ const CopyAndFocusScript = `
                     }
                     return now < (window._bcBgBurstUntil || 0) ? 40 : 66;
                 }
-                if (window.CurrentScreen === 'Login' || window.CurrentScreen === 'Relog' || window.ScreenIsLoading || window.CurrentModule === 'MiniGame' || window.CurrentScreen === 'KinkyDungeon' || (typeof window.StruggleProgress === 'number' && window.StruggleProgress >= 0)) return 25;
+                if (window.CurrentScreen === 'Login' || window.CurrentScreen === 'Relog' || window.ScreenIsLoading || window.CurrentModule === 'MiniGame' || window.CurrentScreen === 'KinkyDungeon' || (typeof window.StruggleMinigameIsRunning === 'function' && window.StruggleMinigameIsRunning()) || (typeof StruggleProgress === 'number' && StruggleProgress >= 0) || (typeof window.StruggleProgress === 'number' && window.StruggleProgress >= 0)) return 25;
                 const idleMs = now - (window._bcLastCanvasInputTime || 0);
                 if (idleMs < 4000) return 33;
                 if (idleMs < 10000 || window.CurrentCharacter != null) return 48;
@@ -1658,7 +1658,7 @@ const CopyAndFocusScript = `
                         const nowTime = typeof window.CommonTime === 'function' ? window.CommonTime() : Date.now();
                         const glToDelete = [];
                         glImgMap.forEach((img, key) => {
-                            if (typeof key !== 'string' || !key.startsWith('Assets/') || key.indexOf('/Preview/') >= 0) return;
+                            if (typeof key !== 'string' || !key.startsWith('Assets/')) return;
                             if (!img || (typeof img.isLoading === 'function' && img.isLoading())) return;
                             if (typeof img.isDoneLoading === 'function' && !img.isDoneLoading()) return;
                             if (activeAssetUrls && activeAssetUrls.has(key)) return;
@@ -1676,7 +1676,7 @@ const CopyAndFocusScript = `
                         const nowTime = typeof window.CommonTime === 'function' ? window.CommonTime() : Date.now();
                         const dToDelete = [];
                         dMap.forEach((img, key) => {
-                            if (typeof key !== 'string' || !key.startsWith('Assets/') || key.indexOf('/Preview/') >= 0) return;
+                            if (typeof key !== 'string' || !key.startsWith('Assets/')) return;
                             if (!img || (typeof img.isLoading === 'function' && img.isLoading())) return;
                             if (typeof img.isDoneLoading === 'function' && !img.isDoneLoading()) return;
                             if (activeAssetUrls && activeAssetUrls.has(key)) return;
@@ -1730,13 +1730,14 @@ const CopyAndFocusScript = `
                         }
                     }
                 }
-                if (window.DrawCacheTextureAlphaMasks && typeof window.DrawCacheTextureAlphaMasks.size === 'number' && window.DrawCacheTextureAlphaMasks.size > 30) {
-                    const aKeys = Array.from(window.DrawCacheTextureAlphaMasks.keys());
-                    const removeCount = window.DrawCacheTextureAlphaMasks.size - 15;
+                const alphaMasks = window.DrawCacheTextureAlphaMasks || (typeof DrawCacheTextureAlphaMasks !== 'undefined' ? DrawCacheTextureAlphaMasks : null);
+                if (alphaMasks && typeof alphaMasks.size === 'number' && alphaMasks.size > 30) {
+                    const aKeys = Array.from(alphaMasks.keys());
+                    const removeCount = alphaMasks.size - 15;
                     for (let i = 0; i < removeCount && i < aKeys.length; i++) {
-                        const c = window.DrawCacheTextureAlphaMasks.get(aKeys[i]);
+                        const c = alphaMasks.get(aKeys[i]);
                         if (c) { c.width = 0; c.height = 0; }
-                        window.DrawCacheTextureAlphaMasks.delete(aKeys[i]);
+                        alphaMasks.delete(aKeys[i]);
                     }
                 }
             } catch (e) {}
@@ -1851,18 +1852,45 @@ const CopyAndFocusScript = `
                     }
                 };
             }
+            if (typeof window.InformationSheetSecondScreen === 'undefined') {
+                window.InformationSheetSecondScreen = false;
+            }
             if (typeof window.GameHandleError === 'function' && !window.__bcGameErrorHooked) {
                 window.__bcGameErrorHooked = true;
+                const _origHandleError = window.GameHandleError;
+                let _lastErrorTime = 0;
+                let _errorBurstCount = 0;
                 window.GameHandleError = function() {
-                    if (!window._bcIsMinimized && typeof window.GameRun === 'function' && window.GameAnimationFrameId == null) {
-                        window.GameAnimationFrameId = window.requestAnimationFrame(window.GameRun);
+                    const now = performance.now();
+                    if (now - _lastErrorTime < 1000) {
+                        _errorBurstCount++;
+                    } else {
+                        _errorBurstCount = 1;
                     }
+                    _lastErrorTime = now;
+                    _origHandleError.apply(this, arguments);
+                    const delay = _errorBurstCount > 3 ? 2000 : (_errorBurstCount > 1 ? 500 : 50);
+                    setTimeout(() => {
+                        if (!window._bcIsMinimized && typeof window.GameRun === 'function' && window.GameAnimationFrameId == null) {
+                            window.GameAnimationFrameId = window.requestAnimationFrame(window.GameRun);
+                        }
+                        if (window.GameWorker == null && typeof Worker === 'function' && typeof window.GameFallbackTimer === 'function') {
+                            try {
+                                window.GameWorker = new Worker('Scripts/GameWorker.js');
+                                window.GameWorker.onmessage = window.GameFallbackTimer;
+                            } catch (e) {}
+                        }
+                    }, delay);
                 };
             }
-            if (typeof window.ImageCache === 'function' && window.ImageCache.prototype && !window.ImageCache.prototype.__bcFastGetHooked) {
-                window.ImageCache.prototype.__bcFastGetHooked = true;
-                const _origGet = window.ImageCache.prototype.get;
-                window.ImageCache.prototype.get = function(url) {
+            const _icProto = (typeof window.ImageCache === 'function' && window.ImageCache.prototype) ||
+                (typeof window.ImageCacheClass === 'function' && window.ImageCacheClass.prototype) ||
+                (typeof ImageCache === 'function' && ImageCache.prototype) ||
+                (window.DrawImageCache && Object.getPrototypeOf(window.DrawImageCache));
+            if (_icProto && !_icProto.__bcFastGetHooked) {
+                _icProto.__bcFastGetHooked = true;
+                const _origGet = _icProto.get;
+                _icProto.get = function(url) {
                     const image = this.cache && typeof this.cache.get === 'function' ? this.cache.get(url) : null;
                     if (image) {
                         const isReady = typeof image.isLoaded === 'function'
@@ -1873,7 +1901,15 @@ const CopyAndFocusScript = `
                             return image;
                         }
                         if (image.state === 'failed') {
-                            image.state = 'uncached';
+                            const now = typeof window.CommonTime === 'function' ? window.CommonTime() : Date.now();
+                            if ((image._bcRetryCount || 0) < 2 && now - (image._bcLastRetry || 0) > 15000) {
+                                image._bcRetryCount = (image._bcRetryCount || 0) + 1;
+                                image._bcLastRetry = now;
+                                image.state = 'uncached';
+                            } else {
+                                if (typeof window.CommonTime === 'function') image.lastUsed = window.CommonTime();
+                                return image;
+                            }
                         }
                     }
                     return _origGet.apply(this, arguments);
@@ -1936,8 +1972,8 @@ const CopyAndFocusScript = `
                 const now = typeof window.CommonTime === 'function' ? window.CommonTime() : Date.now();
                 const drawMap = window.DrawImageCache && window.DrawImageCache.cache;
                 const glMap = window.GLDrawImageCache && window.GLDrawImageCache.cache;
-                if (drawMap && typeof drawMap.forEach === 'function') { drawMap.forEach((dImg, url) => { if (dImg && typeof url === 'string' && (!url.startsWith('Assets/') || url.indexOf('/Preview/') >= 0)) dImg.lastUsed = now; }); }
-                if (glMap && typeof glMap.forEach === 'function') { glMap.forEach((gImg, url) => { if (gImg && typeof url === 'string' && (!url.startsWith('Assets/') || url.indexOf('/Preview/') >= 0)) gImg.lastUsed = now; }); }
+                if (drawMap && typeof drawMap.forEach === 'function') { drawMap.forEach((dImg, url) => { if (dImg && typeof url === 'string' && !url.startsWith('Assets/')) dImg.lastUsed = now; }); }
+                if (glMap && typeof glMap.forEach === 'function') { glMap.forEach((gImg, url) => { if (gImg && typeof url === 'string' && !url.startsWith('Assets/')) gImg.lastUsed = now; }); }
                 if (!window._bcIsMinimized && typeof window.GameRun === 'function' && window.GameAnimationFrameId == null) {
                     window.GameAnimationFrameId = window.requestAnimationFrame(window.GameRun);
                 }

@@ -26,6 +26,7 @@
             desc: "Instantly sets struggle progress to max.",
             action: () => {
                 if (typeof StruggleProgress !== 'undefined') {
+                    try { StruggleProgress = 1000; } catch (e) {}
                     window.StruggleProgress = 1000;
                     console.log("Cheat applied: Struggle progress maxed.");
                 } else {
