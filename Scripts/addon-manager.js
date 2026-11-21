@@ -86,6 +86,8 @@
     let SCRIPT_BASE_URL =
         "https://izumii99.github.io/BC-Desktop/Scripts/";
     const STORAGE_KEY = "BCDesktop_Addons_Config";
+    const BOOKMARKLET_STORAGE_KEY = "BCDesktop_Addons_Bookmarklets";
+    const MAX_BOOKMARKLET_HISTORY = 25;
 
     if (window.bcLocalScripts) {
         SCRIPT_BASE_URL = "http://bc-desktop.local/";
@@ -155,6 +157,269 @@
         try {
             localStorage.setItem(STORAGE_KEY, JSON.stringify(userConfig));
         } catch (e) {}
+    }
+
+    let bookmarkletHistory = [];
+    const bookmarkletRuntimeStatus = {};
+
+    try {
+        const savedBm = localStorage.getItem(BOOKMARKLET_STORAGE_KEY);
+        if (savedBm) {
+            const parsedBm = JSON.parse(savedBm);
+            if (Array.isArray(parsedBm)) {
+                bookmarkletHistory = parsedBm
+                    .filter((item) => item && typeof item.code === "string" && item.code.trim().length > 0)
+                    .slice(0, MAX_BOOKMARKLET_HISTORY);
+            }
+        }
+    } catch (e) {
+        console.error("BC Desktop: Failed to read Bookmarklet History", e);
+    }
+
+    function saveBookmarkletHistory() {
+        try {
+            localStorage.setItem(
+                BOOKMARKLET_STORAGE_KEY,
+                JSON.stringify(bookmarkletHistory.slice(0, MAX_BOOKMARKLET_HISTORY)),
+            );
+        } catch (e) {}
+    }
+
+    function escapeHtml(str) {
+        return String(str || "")
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;")
+            .replace(/'/g, "&#39;");
+    }
+
+    function normalizeBookmarkletInput(rawInput) {
+        let code = String(rawInput || "").trim();
+        if (!code) return "";
+        if (/^javascript:/i.test(code)) {
+            code = code.replace(/^javascript:\s*/i, "").trim();
+        }
+        if (/%[0-9A-Fa-f]{2}/.test(code) && !/\s/.test(code)) {
+            try {
+                code = decodeURIComponent(code).trim();
+            } catch (e) {}
+        } else if (code.includes("%20") || code.includes("%28") || code.includes("%7B")) {
+            try {
+                code = decodeURIComponent(code).trim();
+            } catch (e) {}
+        }
+        return code;
+    }
+
+    function deriveBookmarkletName(rawCode) {
+        const clean = normalizeBookmarkletInput(rawCode);
+        const urlMatch = clean.match(/https?:\/\/[^\s"'`<>)]+/i);
+        if (urlMatch) {
+            try {
+                const u = new URL(urlMatch[0]);
+                const parts = u.pathname.split("/").filter(Boolean);
+                const last = parts[parts.length - 1] || u.hostname;
+                const cleanFile = last.replace(/\.(user|main|min)\.js$/i, "").replace(/\.js$/i, "");
+                if (cleanFile && cleanFile.length >= 2) {
+                    return cleanFile + " (" + u.hostname.replace(/^www\./, "") + ")";
+                }
+                return u.hostname;
+            } catch (e) {}
+        }
+        const compact = clean.replace(/\s+/g, " ");
+        return compact.length > 32 ? compact.slice(0, 32) + "..." : (compact || "Custom Script");
+    }
+
+    function showBookmarkletStatusPopup(name, isSuccess, detailMsg) {
+        const badgeColor = isSuccess ? "#4caf50" : "#f44336";
+        const badgeBg = isSuccess ? "rgba(76, 175, 80, 0.14)" : "rgba(244, 67, 54, 0.14)";
+        const badgeBorder = isSuccess ? "rgba(76, 175, 80, 0.4)" : "rgba(244, 67, 54, 0.4)";
+        const statusHeading = isSuccess ? "Script Executed Successfully" : "Script Execution Failed";
+        const statusIcon = isSuccess ? "✔" : "✖";
+
+        showFeaturePopup(
+            "Bookmarklet Status",
+            `<div style="display:flex; flex-direction:column; gap:10px;">
+                <div style="display:flex; align-items:center; gap:10px; padding:10px 12px; border-radius:8px; background:${badgeBg}; border:1px solid ${badgeBorder};">
+                    <span style="font-size:16px; font-weight:bold; color:${badgeColor};">${statusIcon}</span>
+                    <div style="display:flex; flex-direction:column;">
+                        <span style="font-weight:bold; color:${badgeColor}; font-size:13px;">${statusHeading}</span>
+                        <span style="font-size:11px; color:#d1cddd;">${escapeHtml(name)}</span>
+                    </div>
+                </div>
+                <div style="font-size:12px; color:#bfbad0; background:#14111d; padding:10px 12px; border-radius:8px; border:1px solid #2e2640; word-break:break-word;">
+                    ${escapeHtml(detailMsg)}
+                </div>
+            </div>`
+        );
+    }
+
+    function upsertBookmarkletHistory(rawInput) {
+        const rawTrimmed = String(rawInput || "").trim();
+        const normalized = normalizeBookmarkletInput(rawTrimmed);
+        if (!normalized) return null;
+
+        const existingIdx = bookmarkletHistory.findIndex(
+            (item) => normalizeBookmarkletInput(item.code) === normalized,
+        );
+        const now = Date.now();
+        let entry;
+        if (existingIdx !== -1) {
+            entry = bookmarkletHistory.splice(existingIdx, 1)[0];
+            entry.code = rawTrimmed;
+            entry.updatedAt = now;
+            if (!entry.name) {
+                entry.name = deriveBookmarkletName(rawTrimmed);
+            }
+        } else {
+            entry = {
+                id: "bm_" + now + "_" + Math.random().toString(36).slice(2, 7),
+                name: deriveBookmarkletName(rawTrimmed),
+                code: rawTrimmed,
+                autoRun: false,
+                updatedAt: now,
+            };
+        }
+        bookmarkletHistory.unshift(entry);
+        if (bookmarkletHistory.length > MAX_BOOKMARKLET_HISTORY) {
+            bookmarkletHistory = bookmarkletHistory.slice(0, MAX_BOOKMARKLET_HISTORY);
+        }
+        saveBookmarkletHistory();
+        return entry;
+    }
+
+    function runBookmarkletEntry(entry, showPopup) {
+        if (!entry || !entry.code) return;
+        const cleanCode = normalizeBookmarkletInput(entry.code);
+        if (!cleanCode) {
+            if (showPopup) {
+                showBookmarkletStatusPopup("Invalid Bookmarklet", false, "Bookmarklet code is empty.");
+            }
+            return;
+        }
+
+        const label = entry.name || deriveBookmarkletName(entry.code);
+        bookmarkletRuntimeStatus[entry.id] = "loading";
+        if (isModalOpen) renderList();
+
+        const target = document.head || document.documentElement || document.body;
+
+        // Direct script URL (https://.../script.js)
+        if (/^https?:\/\/[^\s"'`<>]+$/i.test(cleanCode)) {
+            const script = document.createElement("script");
+            script.src = cleanCode + (cleanCode.includes("?") ? "&" : "?") + "_bc=" + Date.now();
+            script.async = false;
+            script.onload = () => {
+                bookmarkletRuntimeStatus[entry.id] = "loaded";
+                if (isModalOpen) renderList();
+                if (showPopup) {
+                    showBookmarkletStatusPopup(label, true, "External script loaded and executed successfully.");
+                }
+            };
+            script.onerror = () => {
+                bookmarkletRuntimeStatus[entry.id] = "failed";
+                if (isModalOpen) renderList();
+                if (showPopup) {
+                    showBookmarkletStatusPopup(label, false, "Failed to load script from URL: " + cleanCode);
+                }
+            };
+            if (target) {
+                target.appendChild(script);
+            }
+            return;
+        }
+
+        // JavaScript bookmarklet code: track any dynamically injected <script src="..."> tags
+        const injectedScripts = [];
+        const origAppendChild = Node.prototype.appendChild;
+        Node.prototype.appendChild = function (child) {
+            if (child && child.tagName === "SCRIPT" && child.src) {
+                injectedScripts.push(child);
+            }
+            return origAppendChild.apply(this, arguments);
+        };
+
+        let execResult;
+        try {
+            const runner = new window.Function(cleanCode);
+            execResult = runner();
+        } catch (err) {
+            Node.prototype.appendChild = origAppendChild;
+            bookmarkletRuntimeStatus[entry.id] = "failed";
+            if (isModalOpen) renderList();
+            if (showPopup) {
+                showBookmarkletStatusPopup(
+                    label,
+                    false,
+                    err && err.message ? err.message : String(err),
+                );
+            }
+            return;
+        }
+        Node.prototype.appendChild = origAppendChild;
+
+        if (injectedScripts.length > 0) {
+            const tracked = injectedScripts[injectedScripts.length - 1];
+            let settled = false;
+            const finish = (ok, msg) => {
+                if (settled) return;
+                settled = true;
+                bookmarkletRuntimeStatus[entry.id] = ok ? "loaded" : "failed";
+                if (isModalOpen) renderList();
+                if (showPopup) {
+                    showBookmarkletStatusPopup(label, ok, msg);
+                }
+            };
+            tracked.addEventListener("load", () => {
+                finish(true, "Bookmarklet injected and loaded remote script: " + tracked.src);
+            });
+            tracked.addEventListener("error", () => {
+                finish(false, "Bookmarklet ran, but remote script failed to load: " + tracked.src);
+            });
+            setTimeout(() => {
+                finish(true, "Bookmarklet executed and dispatched remote script: " + tracked.src);
+            }, 8000);
+            return;
+        }
+
+        if (execResult && typeof execResult.then === "function") {
+            execResult.then(
+                () => {
+                    bookmarkletRuntimeStatus[entry.id] = "loaded";
+                    if (isModalOpen) renderList();
+                    if (showPopup) {
+                        showBookmarkletStatusPopup(label, true, "Async bookmarklet finished executing successfully.");
+                    }
+                },
+                (err) => {
+                    bookmarkletRuntimeStatus[entry.id] = "failed";
+                    if (isModalOpen) renderList();
+                    if (showPopup) {
+                        showBookmarkletStatusPopup(
+                            label,
+                            false,
+                            err && err.message ? err.message : String(err),
+                        );
+                    }
+                },
+            );
+            return;
+        }
+
+        bookmarkletRuntimeStatus[entry.id] = "loaded";
+        if (isModalOpen) renderList();
+        if (showPopup) {
+            showBookmarkletStatusPopup(label, true, "Bookmarklet executed successfully in game context.");
+        }
+    }
+
+    function runAutoBookmarklets() {
+        bookmarkletHistory.forEach((entry) => {
+            if (entry && entry.autoRun) {
+                runBookmarkletEntry(entry, false);
+            }
+        });
     }
 
     const DEFAULT_ENABLED_SCRIPTS = [
@@ -322,8 +587,292 @@
     function renderList() {
         modalBody.innerHTML = "";
 
+        // --- Render Bookmarklet Input Bar & Cached History ---
+        const bmBox = document.createElement("div");
+        Object.assign(bmBox.style, {
+            backgroundColor: "#211c2e",
+            padding: "14px",
+            borderRadius: "12px",
+            border: "1px solid #352d4d",
+            display: "flex",
+            flexDirection: "column",
+            gap: "10px",
+            flexShrink: "0",
+        });
+
+        const bmHeader = document.createElement("div");
+        Object.assign(bmHeader.style, {
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+        });
+        bmHeader.innerHTML = `<span style="font-weight:bold; font-size:13px; color:#e2dcf0;">⚡ Bookmarklet &amp; Custom Script</span><span style="font-size:10px; color:#8a81a8;">Cached in memory</span>`;
+        bmBox.appendChild(bmHeader);
+
+        const bmInputRow = document.createElement("div");
+        Object.assign(bmInputRow.style, {
+            display: "flex",
+            gap: "8px",
+            alignItems: "center",
+        });
+
+        const bmInput = document.createElement("input");
+        bmInput.id = "bc-addon-bookmarklet-input";
+        bmInput.type = "text";
+        bmInput.autocomplete = "off";
+        bmInput.placeholder = "Paste javascript:(...) bookmarklet or script URL...";
+        Object.assign(bmInput.style, {
+            flexGrow: "1",
+            minWidth: "0",
+            padding: "8px 11px",
+            borderRadius: "8px",
+            border: "1px solid #3d3554",
+            backgroundColor: "#14111d",
+            color: "#f5f5f5",
+            fontSize: "12px",
+            outline: "none",
+        });
+
+        const bmRunBtn = document.createElement("button");
+        bmRunBtn.innerText = "▶ Run";
+        Object.assign(bmRunBtn.style, {
+            padding: "8px 14px",
+            borderRadius: "8px",
+            border: "none",
+            backgroundColor: "#7c3aed",
+            color: "#ffffff",
+            fontWeight: "bold",
+            fontSize: "12px",
+            cursor: "pointer",
+            flexShrink: "0",
+            transition: "background-color 0.2s",
+        });
+        bmRunBtn.onmouseenter = () => (bmRunBtn.style.backgroundColor = "#6d28d9");
+        bmRunBtn.onmouseleave = () => (bmRunBtn.style.backgroundColor = "#7c3aed");
+
+        const triggerInputBookmarklet = () => {
+            const val = bmInput.value.trim();
+            if (!val) {
+                showBookmarkletStatusPopup(
+                    "Empty Input",
+                    false,
+                    "Please paste a bookmarklet (javascript:...) or script URL first.",
+                );
+                return;
+            }
+            const entry = upsertBookmarkletHistory(val);
+            bmInput.value = "";
+            if (entry) {
+                runBookmarkletEntry(entry, true);
+            }
+        };
+
+        bmRunBtn.onclick = triggerInputBookmarklet;
+        bmInput.addEventListener("keydown", (e) => {
+            e.stopPropagation();
+            if (e.key === "Enter") {
+                e.preventDefault();
+                triggerInputBookmarklet();
+            }
+        });
+
+        bmInputRow.appendChild(bmInput);
+        bmInputRow.appendChild(bmRunBtn);
+        bmBox.appendChild(bmInputRow);
+
+        if (bookmarkletHistory.length > 0) {
+            const histTitleRow = document.createElement("div");
+            Object.assign(histTitleRow.style, {
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                marginTop: "2px",
+            });
+            const histLabel = document.createElement("span");
+            histLabel.innerText = "Saved Bookmarklet History (Tap to run):";
+            Object.assign(histLabel.style, {
+                fontSize: "11px",
+                color: "#a59fb5",
+                fontWeight: "bold",
+            });
+            histTitleRow.appendChild(histLabel);
+
+            const clearAllBtn = document.createElement("span");
+            clearAllBtn.innerText = "Clear All";
+            Object.assign(clearAllBtn.style, {
+                fontSize: "10px",
+                color: "#8a81a8",
+                cursor: "pointer",
+                textDecoration: "underline",
+            });
+            clearAllBtn.onclick = () => {
+                bookmarkletHistory = [];
+                saveBookmarkletHistory();
+                renderList();
+            };
+            histTitleRow.appendChild(clearAllBtn);
+            bmBox.appendChild(histTitleRow);
+
+            const histList = document.createElement("div");
+            Object.assign(histList.style, {
+                display: "flex",
+                flexDirection: "column",
+                gap: "6px",
+                maxHeight: "145px",
+                overflowY: "auto",
+                paddingRight: "2px",
+            });
+
+            bookmarkletHistory.forEach((entry) => {
+                const hRow = document.createElement("div");
+                Object.assign(hRow.style, {
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    gap: "8px",
+                    padding: "7px 10px",
+                    borderRadius: "8px",
+                    backgroundColor: "#161220",
+                    border: "1px solid #2e2640",
+                    cursor: "pointer",
+                    transition: "border-color 0.2s, background-color 0.2s",
+                });
+                hRow.onmouseenter = () => {
+                    hRow.style.borderColor = "#5e4b8b";
+                    hRow.style.backgroundColor = "#1d182b";
+                };
+                hRow.onmouseleave = () => {
+                    hRow.style.borderColor = "#2e2640";
+                    hRow.style.backgroundColor = "#161220";
+                };
+
+                const hLeft = document.createElement("div");
+                Object.assign(hLeft.style, {
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "8px",
+                    minWidth: "0",
+                    flexGrow: "1",
+                });
+
+                const hDot = document.createElement("span");
+                const st = bookmarkletRuntimeStatus[entry.id] || "idle";
+                Object.assign(hDot.style, {
+                    width: "8px",
+                    height: "8px",
+                    borderRadius: "50%",
+                    flexShrink: "0",
+                    backgroundColor:
+                        st === "loaded"
+                            ? "#4caf50"
+                            : st === "failed"
+                              ? "#f44336"
+                              : st === "loading"
+                                ? "#ffeb3b"
+                                : "#7b7194",
+                });
+
+                const hTextWrap = document.createElement("div");
+                Object.assign(hTextWrap.style, {
+                    display: "flex",
+                    flexDirection: "column",
+                    minWidth: "0",
+                    flexGrow: "1",
+                });
+
+                const hTitle = document.createElement("div");
+                hTitle.innerText = entry.name || deriveBookmarkletName(entry.code);
+                Object.assign(hTitle.style, {
+                    fontSize: "12px",
+                    fontWeight: "bold",
+                    color: "#f5f5f5",
+                    whiteSpace: "nowrap",
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                });
+
+                const hCodePreview = document.createElement("div");
+                hCodePreview.innerText = entry.code;
+                Object.assign(hCodePreview.style, {
+                    fontSize: "10px",
+                    color: "#8a81a8",
+                    whiteSpace: "nowrap",
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                });
+
+                hTextWrap.appendChild(hTitle);
+                hTextWrap.appendChild(hCodePreview);
+                hLeft.appendChild(hDot);
+                hLeft.appendChild(hTextWrap);
+                hLeft.onclick = () => runBookmarkletEntry(entry, true);
+
+                const hActions = document.createElement("div");
+                Object.assign(hActions.style, {
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "6px",
+                    flexShrink: "0",
+                });
+
+                const autoBtn = document.createElement("span");
+                autoBtn.innerText = entry.autoRun ? "Auto: ON" : "Auto: OFF";
+                autoBtn.title = "Automatically run this bookmarklet on game startup";
+                Object.assign(autoBtn.style, {
+                    fontSize: "10px",
+                    fontWeight: "bold",
+                    padding: "3px 7px",
+                    borderRadius: "10px",
+                    backgroundColor: entry.autoRun ? "#7c3aed" : "#282238",
+                    color: entry.autoRun ? "#ffffff" : "#a59fb5",
+                    border: "1px solid #3d3554",
+                    cursor: "pointer",
+                    userSelect: "none",
+                });
+                autoBtn.onclick = (e) => {
+                    e.stopPropagation();
+                    entry.autoRun = !entry.autoRun;
+                    saveBookmarkletHistory();
+                    renderList();
+                };
+
+                const delBtn = document.createElement("span");
+                delBtn.innerText = "✕";
+                delBtn.title = "Remove from saved history";
+                Object.assign(delBtn.style, {
+                    fontSize: "11px",
+                    color: "#a59fb5",
+                    padding: "2px 6px",
+                    borderRadius: "6px",
+                    cursor: "pointer",
+                });
+                delBtn.onmouseenter = () => (delBtn.style.color = "#f44336");
+                delBtn.onmouseleave = () => (delBtn.style.color = "#a59fb5");
+                delBtn.onclick = (e) => {
+                    e.stopPropagation();
+                    bookmarkletHistory = bookmarkletHistory.filter((item) => item.id !== entry.id);
+                    saveBookmarkletHistory();
+                    renderList();
+                };
+
+                hActions.appendChild(autoBtn);
+                hActions.appendChild(delBtn);
+
+                hRow.appendChild(hLeft);
+                hRow.appendChild(hActions);
+                histList.appendChild(hRow);
+            });
+
+            bmBox.appendChild(histList);
+        }
+
+        modalBody.appendChild(bmBox);
+
         if (scriptsList.length === 0) {
-            modalBody.innerHTML = `<div style="text-align: center; color: #a59fb5;">No scripts found or still loading...</div>`;
+            const emptyMsg = document.createElement("div");
+            emptyMsg.style.cssText = "text-align: center; color: #a59fb5;";
+            emptyMsg.innerText = "No scripts found or still loading...";
+            modalBody.appendChild(emptyMsg);
             return;
         }
 
@@ -606,6 +1155,8 @@
 
             target.appendChild(script);
         });
+
+        runAutoBookmarklets();
     }
 
     if (window.bcLocalScripts) {

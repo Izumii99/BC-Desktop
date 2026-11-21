@@ -1025,6 +1025,11 @@ public class MainWindowTests
         StringAssert.Contains(qol, "isCurrentlyInMapView", "chat-qol.js must check authoritative Map View state cleanly.");
         StringAssert.Contains(qol, "ChatRoomSyncRoomProperties", "chat-qol.js must restore Map View after room property updates and relog.");
         StringAssert.Contains(qol, "ChatRoomRefreshActiveView", "chat-qol.js must guard internal view refreshes from overwriting saved Map View.");
+
+        string addonMgrPath = Path.Combine(ProjectRoot, "Scripts", "addon-manager.js");
+        string addonMgr = File.ReadAllText(addonMgrPath);
+        StringAssert.Contains(addonMgr, "BCDesktop_Addons_Bookmarklets", "addon-manager.js must persist bookmarklet history in localStorage.");
+        StringAssert.Contains(addonMgr, "showBookmarkletStatusPopup", "addon-manager.js must display execution status pop-up for bookmarklets.");
     }
 }
 

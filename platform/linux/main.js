@@ -171,6 +171,8 @@ async function checkForAppUpdates() {
 }
 
 const FALLBACK_LINUX_RELEASE_NOTES =
+    "• Feature (Addon Manager Bookmarklet & History Runner): Added a bookmarklet and custom script input bar in Addon Manager with saved history cache, one-click execution from history, optional startup auto-run, and a pop-up showing whether the script ran or failed.\n\n" +
+    "• Fix (R134 Tab-Out & Restraint Menu Display): Fixed an issue in R134 where returning to the app after tabbing out could cause the character dialog or top-right restraint menu icons (such as activities and search) to turn blank black.\n\n" +
     "• Fix (Map View Persistence): Map View now stays active reliably after reconnecting, relogging, or leaving and rejoining a room when you previously left it turned on.\n\n" +
     "• Fix (Chat Input Focus in Map View): Clicking inside the chat box or anywhere in the right-hand chat panel while in Map View now focuses the chat input normally again, while clicking on the left map canvas keeps movement keys free.";
 
@@ -596,7 +598,7 @@ const CapUnfocusedFpsScript =
     "})()";
 
 const RestoreUnfocusedFpsScript =
-    "(()=>{window._bcIsBackground=false;window._bcIsMinimized=false;window._bcIsCloaked=false;window._bcLastCanvasInputTime=performance.now();const g=window.bcFpsCap;if(g){if(g.MaxUnfocusedFPS===15||g.MaxUnfocusedFPS===30)g.MaxUnfocusedFPS=0;window.bcFpsCap=null;}const now=typeof window.CurrentTime==='number'?window.CurrentTime:0;if(window.DrawImageCache)window.DrawImageCache.lastPurge=now;if(window.GLDrawImageCache)window.GLDrawImageCache.lastPurge=now;const chars=(Array.isArray(window.ChatRoomCharacter)?window.ChatRoomCharacter.slice():[]);if(window.Player&&!chars.includes(window.Player))chars.push(window.Player);for(let i=0;i<chars.length;i++){const c=chars[i];if(c&&c._bcPendingCanvasBuild){delete c._bcPendingCanvasBuild;if(typeof window.CharacterLoadCanvas==='function'){try{window.CharacterLoadCanvas(c);}catch(e){}}else if(typeof window.CharacterAppearanceBuildCanvas==='function'){try{window.CharacterAppearanceBuildCanvas(c);}catch(e){}}}}})()";
+    "(()=>{window._bcIsBackground=false;window._bcIsMinimized=false;window._bcIsCloaked=false;window._bcLastCanvasInputTime=performance.now();const g=window.bcFpsCap;if(g){if(g.MaxUnfocusedFPS===15||g.MaxUnfocusedFPS===30)g.MaxUnfocusedFPS=0;window.bcFpsCap=null;}if(typeof window.GameRun==='function'&&window.GameAnimationFrameId==null){window.GameAnimationFrameId=window.requestAnimationFrame(window.GameRun);}const now=typeof window.CurrentTime==='number'?window.CurrentTime:0;if(window.DrawImageCache)window.DrawImageCache.lastPurge=now;if(window.GLDrawImageCache)window.GLDrawImageCache.lastPurge=now;const chars=(Array.isArray(window.ChatRoomCharacter)?window.ChatRoomCharacter.slice():[]);if(window.Player&&!chars.includes(window.Player))chars.push(window.Player);if(window.CurrentCharacter&&!chars.includes(window.CurrentCharacter))chars.push(window.CurrentCharacter);for(let i=0;i<chars.length;i++){const c=chars[i];if(c&&(c._bcPendingCanvasBuild||c===window.CurrentCharacter)){delete c._bcPendingCanvasBuild;c.MustDraw=true;if(typeof window.CharacterLoadCanvas==='function'){try{window.CharacterLoadCanvas(c);}catch(e){}}else if(typeof window.CharacterAppearanceBuildCanvas==='function'){try{window.CharacterAppearanceBuildCanvas(c);}catch(e){}}}}})()";
 
 const SmartFocusRestoreScript = `
     (function() {
@@ -1643,7 +1645,7 @@ const CopyAndFocusScript = `
                 if (gl) {
                     hookGlCacheDelete(gl);
                     const glImgMap = window.GLDrawImageCache && window.GLDrawImageCache.cache;
-                    if (glImgMap && typeof glImgMap.forEach === 'function' && typeof window.GLDrawImageCache.delete === 'function') {
+                    if (!isBg && glImgMap && typeof glImgMap.forEach === 'function' && typeof window.GLDrawImageCache.delete === 'function') {
                         const nowTime = typeof window.CommonTime === 'function' ? window.CommonTime() : Date.now();
                         const glToDelete = [];
                         glImgMap.forEach((img, key) => {
@@ -1652,7 +1654,7 @@ const CopyAndFocusScript = `
                             if (typeof img.isDoneLoading === 'function' && !img.isDoneLoading()) return;
                             if (activeAssetUrls && activeAssetUrls.has(key)) return;
                             const age = nowTime - (img.lastUsed || 0);
-                            if (age > (isBg ? 15000 : 45000)) {
+                            if (age > 120000) {
                                 glToDelete.push(key);
                             }
                         });
@@ -1660,7 +1662,7 @@ const CopyAndFocusScript = `
                             window.GLDrawImageCache.delete(glToDelete[i]);
                         }
                     }
-                    if (window.DrawImageCache && window.DrawImageCache.cache && typeof window.DrawImageCache.delete === 'function') {
+                    if (!isBg && window.DrawImageCache && window.DrawImageCache.cache && typeof window.DrawImageCache.delete === 'function') {
                         const dMap = window.DrawImageCache.cache;
                         const nowTime = typeof window.CommonTime === 'function' ? window.CommonTime() : Date.now();
                         const dToDelete = [];
@@ -1670,7 +1672,7 @@ const CopyAndFocusScript = `
                             if (typeof img.isDoneLoading === 'function' && !img.isDoneLoading()) return;
                             if (activeAssetUrls && activeAssetUrls.has(key)) return;
                             const age = nowTime - (img.lastUsed || 0);
-                            if (age > (isBg ? 15000 : 45000)) {
+                            if (age > 120000) {
                                 dToDelete.push(key);
                             }
                         });
@@ -1740,7 +1742,7 @@ const CopyAndFocusScript = `
             if (!document.head || document.getElementById('bc-desktop-chat-virt')) return;
             const st = document.createElement('style');
             st.id = 'bc-desktop-chat-virt';
-            st.textContent = '#TextAreaChatLog > .ChatMessage, #TextAreaChatLog > div { content-visibility: auto; contain-intrinsic-size: auto 42px; contain: layout style paint; } .dialog-grid, .dialog-root { contain: layout style; }';
+            st.textContent = '#TextAreaChatLog > .ChatMessage, #TextAreaChatLog > div { content-visibility: auto; contain-intrinsic-size: auto 42px; contain: layout style paint; }';
             document.head.appendChild(st);
         }
         ensureChatVirtualizationCss();
@@ -1840,14 +1842,30 @@ const CopyAndFocusScript = `
                     }
                 };
             }
+            if (typeof window.GameHandleError === 'function' && !window.__bcGameErrorHooked) {
+                window.__bcGameErrorHooked = true;
+                window.GameHandleError = function() {
+                    if (!window._bcIsMinimized && typeof window.GameRun === 'function' && window.GameAnimationFrameId == null) {
+                        window.GameAnimationFrameId = window.requestAnimationFrame(window.GameRun);
+                    }
+                };
+            }
             if (typeof window.ImageCache === 'function' && window.ImageCache.prototype && !window.ImageCache.prototype.__bcFastGetHooked) {
                 window.ImageCache.prototype.__bcFastGetHooked = true;
                 const _origGet = window.ImageCache.prototype.get;
                 window.ImageCache.prototype.get = function(url) {
                     const image = this.cache && typeof this.cache.get === 'function' ? this.cache.get(url) : null;
-                    if (image && ((typeof image.isDoneLoading === 'function' && image.isDoneLoading()) || (typeof image.isLoading === 'function' && image.isLoading()))) {
-                        if (typeof window.CommonTime === 'function') image.lastUsed = window.CommonTime();
-                        return image;
+                    if (image) {
+                        const isReady = typeof image.isLoaded === 'function'
+                            ? (image.isLoaded() && image.data && image.data.width > 0)
+                            : (typeof image.isDoneLoading === 'function' && image.isDoneLoading() && (!image.state || image.state === 'loaded'));
+                        if (isReady || (typeof image.isLoading === 'function' && image.isLoading())) {
+                            if (typeof window.CommonTime === 'function') image.lastUsed = window.CommonTime();
+                            return image;
+                        }
+                        if (image.state === 'failed') {
+                            image.state = 'uncached';
+                        }
                     }
                     return _origGet.apply(this, arguments);
                 };
@@ -1909,7 +1927,11 @@ const CopyAndFocusScript = `
                 const now = typeof window.CommonTime === 'function' ? window.CommonTime() : Date.now();
                 const drawMap = window.DrawImageCache && window.DrawImageCache.cache;
                 const glMap = window.GLDrawImageCache && window.GLDrawImageCache.cache;
-                if (drawMap && typeof drawMap.forEach === 'function') { drawMap.forEach((dImg, url) => { if (dImg && typeof url === 'string' && !url.startsWith('Assets/')) dImg.lastUsed = now; }); }
+                if (drawMap && typeof drawMap.forEach === 'function') { drawMap.forEach((dImg, url) => { if (dImg && typeof url === 'string' && (!url.startsWith('Assets/') || url.indexOf('/Preview/') >= 0)) dImg.lastUsed = now; }); }
+                if (glMap && typeof glMap.forEach === 'function') { glMap.forEach((gImg, url) => { if (gImg && typeof url === 'string' && (!url.startsWith('Assets/') || url.indexOf('/Preview/') >= 0)) gImg.lastUsed = now; }); }
+                if (!window._bcIsMinimized && typeof window.GameRun === 'function' && window.GameAnimationFrameId == null) {
+                    window.GameAnimationFrameId = window.requestAnimationFrame(window.GameRun);
+                }
                 if (Array.isArray(window.DrawLastCharacters)) { for (let i = 0; i < window.DrawLastCharacters.length; i++) { const dc = window.DrawLastCharacters[i]; if (dc && !chars.includes(dc)) chars.push(dc); } }
                 const activeUrls = new Set();
                 for (let i = 0; i < chars.length; i++) {

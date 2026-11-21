@@ -1,5 +1,7 @@
 ### Fixes & Improvements:
 
+- **Feature (Addon Manager Bookmarklet & History Runner):** Added a bookmarklet and custom script input bar in Addon Manager with saved history cache, one-click execution from history, optional startup auto-run, and a pop-up showing whether the script ran or failed.
+- **Fix (R134 Tab-Out & Restraint Menu Display):** Fixed an issue in R134 where returning to the app after tabbing out could cause the character dialog or top-right restraint menu icons (such as activities and search) to turn blank black.
 - **Fix (Map View Persistence):** Map View now stays active reliably after reconnecting, relogging, or leaving and rejoining a room when you previously left it turned on.
 - **Fix (Chat Input Focus in Map View):** Clicking inside the chat box or anywhere in the right-hand chat panel while in Map View now focuses the chat input normally again, while clicking on the left map canvas keeps movement keys free.
 
