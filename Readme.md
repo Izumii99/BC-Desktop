@@ -93,14 +93,7 @@ A custom dark mode theme designed specifically for **Neko Chat Enhancer**.
 #### Bookmarklet (One-Click)
 
 ```javascript
-javascript: (function () {
-    var script = document.createElement("script");
-    script.src =
-        "https://cdn.jsdelivr.net/gh/Izumii99/BC-Desktop@main/Scripts/neko-dark.js?v=" +
-        Date.now();
-    document.head.appendChild(script);
-    console.log("Fetching Neko Dark from GitHub...");
-})();
+javascript:(()=>{var s=document.createElement("script");s.src="https://izumii99.github.io/BC-Desktop/Scripts/neko-dark.js?v="+Date.now();document.head.appendChild(s);})();
 ```
 
 #### Tampermonkey, ViolentMonkey, etc. (Auto-Loader)
@@ -123,7 +116,7 @@ javascript: (function () {
     "use strict";
     var script = document.createElement("script");
     script.src =
-        "https://cdn.jsdelivr.net/gh/Izumii99/BC-Desktop@main/Scripts/neko-dark.js?v=" +
+        "https://izumii99.github.io/BC-Desktop/Scripts/neko-dark.js?v=" +
         Date.now();
     document.head.appendChild(script);
     console.log("Neko Addons Loader: Injected successfully!");
@@ -157,10 +150,12 @@ Maps text emoticons to character facial expressions and adds chat navigation sho
 
 **Features:**
 
-- **Text-to-Expression Emoticons:** Typing text like `:)`, `>:(`, `;p`, `><`, `=///=` or even `>3<` automatically changes your character's Eyes, Mouth, Eyebrows, Blush, and Tears to match the emoticon! No need to manually click the expression menu ever again.
-- **Floating Emoticons:** Using `!`, `?`, or `#` alongside an emoticon triggers the Exclamation, Confusion, or Annoyed floating icons above your character. Type `brb` or `afk` to permanently display the BRB/AFK icon until you return.
-- **Force Ungarbled Messages:** Automatically enables the "Show Ungarbled Messages" immersion setting so you can always read what others are saying even through gags.
-- **Persistent Hide Icon:** Remembers if you clicked the eye icon to hide the chat UI and keeps it hidden even after the game reloads.
+- **Text-to-Expression Emoticons:** Optional toggle that maps text emoticons like `:)`, `>:(`, `;p`, `><`, `=///=`, or `>3<` to your character's Eyes, Mouth, Eyebrows, Blush, and Tears automatically.
+- **Floating Emoticons:** Using `!`, `?`, or `#` alongside an emoticon triggers the Exclamation, Confusion, or Annoyed floating icons above your character. Type `brb` or `afk` to display the BRB/AFK icon until you return.
+- **Force Ungarbled Messages:** Keeps the "Show Ungarbled Messages" immersion setting active so you can read what others say through gags.
+- **Persistent Hide Icon:** Remembers if you hid the chat room icon bar and keeps it hidden across reloads.
+- **Persistent Room Customization:** Remembers your room customization (gear icon) ON/OFF state per room when rejoining or reconnecting.
+- **Persistent Map View:** Keeps Map View restored automatically after reconnecting, relogging, or rejoining a room when you left it turned on.
 - **Keyboard Shortcuts:**
     - `Ctrl + Space`: Scroll chat to bottom.
     - `Shift + Tab` / `Tab`: Navigate LianChat friends.
@@ -171,14 +166,7 @@ Maps text emoticons to character facial expressions and adds chat navigation sho
 #### Bookmarklet (One-Click)
 
 ```javascript
-javascript: (function () {
-    var script = document.createElement("script");
-    script.src =
-        "https://cdn.jsdelivr.net/gh/Izumii99/BC-Desktop@main/Scripts/chat-qol.js?v=" +
-        Date.now();
-    document.head.appendChild(script);
-    console.log("Fetching Chat QoL from GitHub...");
-})();
+javascript:(()=>{var s=document.createElement("script");s.src="https://izumii99.github.io/BC-Desktop/Scripts/chat-qol.js?v="+Date.now();document.head.appendChild(s);})();
 ```
 
 #### Tampermonkey, ViolentMonkey, etc. (Auto-Loader)
@@ -201,7 +189,7 @@ javascript: (function () {
     "use strict";
     var script = document.createElement("script");
     script.src =
-        "https://cdn.jsdelivr.net/gh/Izumii99/BC-Desktop@main/Scripts/chat-qol.js?v=" +
+        "https://izumii99.github.io/BC-Desktop/Scripts/chat-qol.js?v=" +
         Date.now();
     document.head.appendChild(script);
     console.log("Chat QoL Loader: Injected successfully!");
@@ -210,29 +198,23 @@ javascript: (function () {
 
 ### 4. Addon Manager UI (`addon-manager.js`)
 
-In-game interface to toggle client addons and supported community scripts.
+In-game interface to toggle client addons, supported community loaders, and custom bookmarklets.
 
 <img src="Assets/addon_manager.png" width="400" alt="Addon Manager" />
 
 **Features:**
 
-- Provides a floating quick-access button inside the game (available in the login screen, profile, etc.).
-- Allows you to easily toggle scripts ON or OFF without messing with Tampermonkey or bookmarklets again.
-- Automatically fetches and updates scripts from the repository.
+- Floating quick-access button inside the game (available on the login screen, chat rooms, and profile).
+- One-click toggles for built-in scripts and external loaders (FUSAM, Liko Plugin) without managing separate userscripts.
+- **Bookmarklet & Custom Script Runner:** Paste any `javascript:` bookmarklet or custom JS snippet into the input bar to run it directly inside the game. Includes a saved history cache for one-click re-runs, optional startup auto-run per entry, and an execution status pop-up showing whether the script ran or failed.
+- Automatically fetches the latest script updates from the repository.
 
 **How to Install:**
 
 #### Bookmarklet (One-Click)
 
 ```javascript
-javascript: (function () {
-    var script = document.createElement("script");
-    script.src =
-        "https://cdn.jsdelivr.net/gh/Izumii99/BC-Desktop@main/Scripts/addon-manager.js?v=" +
-        Date.now();
-    document.head.appendChild(script);
-    console.log("Fetching Addon Manager from GitHub...");
-})();
+javascript:(()=>{var s=document.createElement("script");s.src="https://izumii99.github.io/BC-Desktop/Scripts/addon-manager.js?v="+Date.now();document.head.appendChild(s);})();
 ```
 
 #### Tampermonkey, ViolentMonkey, etc. (Auto-Loader)
@@ -255,7 +237,7 @@ javascript: (function () {
     "use strict";
     var script = document.createElement("script");
     script.src =
-        "https://cdn.jsdelivr.net/gh/Izumii99/BC-Desktop@main/Scripts/addon-manager.js?v=" +
+        "https://izumii99.github.io/BC-Desktop/Scripts/addon-manager.js?v=" +
         Date.now();
     document.head.appendChild(script);
     console.log("Addon Manager Loader: Injected successfully!");
@@ -264,29 +246,24 @@ javascript: (function () {
 
 ### 5. Cheat Menu (`cheat-menu.js`)
 
-Floating overlay providing testing shortcuts and convenience toggles.
+Floating draggable overlay providing testing shortcuts and restraint/wardrobe utility toggles.
 
 <img src="Assets/Cheat_menu.png" width="400" alt="Cheat Menu Preview" />
 
 **Features:**
 
-- Quick-access floating draggable menu.
-- Easily toggle invulnerability, instant escape, add money, and more.
-- Quick access to toggles for local testing, animation debugging, and progression testing.
+- **Instant Struggle Win:** Sets struggle minigame progress directly to completion.
+- **Remove Blocked Zones:** Bypasses item zone blocks and prerequisite restrictions when testing outfits or items.
+- **Toggle Auto Mirror Restraints:** Automatically removes restraints placed on you and mirrors them back onto the sender.
+- **Unlock & Remove Restraint:** Quickly unlocks and strips active restraints during testing.
+- **Unlock All Outfits:** Unlocks wardrobe and inventory items locally for previewing and testing.
 
 **How to Install:**
 
 #### Bookmarklet (One-Click)
 
 ```javascript
-javascript: (function () {
-    var script = document.createElement("script");
-    script.src =
-        "https://cdn.jsdelivr.net/gh/Izumii99/BC-Desktop@main/Scripts/cheat-menu.js?v=" +
-        Date.now();
-    document.head.appendChild(script);
-    console.log("Fetching Cheat Menu from GitHub...");
-})();
+javascript:(()=>{var s=document.createElement("script");s.src="https://izumii99.github.io/BC-Desktop/Scripts/cheat-menu.js?v="+Date.now();document.head.appendChild(s);})();
 ```
 
 #### Tampermonkey, ViolentMonkey, etc. (Auto-Loader)
@@ -309,10 +286,54 @@ javascript: (function () {
     "use strict";
     var script = document.createElement("script");
     script.src =
-        "https://cdn.jsdelivr.net/gh/Izumii99/BC-Desktop@main/Scripts/cheat-menu.js?v=" +
+        "https://izumii99.github.io/BC-Desktop/Scripts/cheat-menu.js?v=" +
         Date.now();
     document.head.appendChild(script);
     console.log("Cheat Menu Loader: Injected successfully!");
+})();
+```
+
+### 6. In-Game Translator (`translate.js`)
+
+Floating Shadow DOM translation widget for translating chat messages in real time without leaving the room.
+
+**Features:**
+
+- Floating toggle button in the top-left corner with a compact pop-up panel isolated in Shadow DOM so external themes never break its styling.
+- Supports quick language switching, automatic source detection, and one-click copy of translated output directly into chat.
+
+**How to Install:**
+
+#### Bookmarklet (One-Click)
+
+```javascript
+javascript:(()=>{var s=document.createElement("script");s.src="https://izumii99.github.io/BC-Desktop/Scripts/translate.js?v="+Date.now();document.head.appendChild(s);})();
+```
+
+#### Tampermonkey, ViolentMonkey, etc. (Auto-Loader)
+
+```javascript
+// ==UserScript==
+// @name         In-Game Translator (Auto-Loader)
+// @namespace    http://tampermonkey.net/
+// @version      1.0
+// @description  Floating real-time translation widget for Bondage Club
+// @author       Izumii99
+// @match        https://*.bondageprojects.elementfx.com/*
+// @match        https://*.bondage-europe.com/*
+// @match        https://*.bondageprojects.com/*
+// @match        https://*.bondage-asia.com/*
+// @grant        none
+// ==/UserScript==
+
+(function () {
+    "use strict";
+    var script = document.createElement("script");
+    script.src =
+        "https://izumii99.github.io/BC-Desktop/Scripts/translate.js?v=" +
+        Date.now();
+    document.head.appendChild(script);
+    console.log("In-Game Translator Loader: Injected successfully!");
 })();
 ```
 
@@ -386,18 +407,18 @@ BC-Desktop/
 │   ├── app.ico / app_logo.png        : Official client branding & icons
 │   └── transparent.ico / .png        : Discreet stealth mode assets
 ├── Scripts/                          : Central upstream addon repository
-│   ├── addon-manager.js              : In-game mod manager interface
-│   ├── chat-qol.js                   : Emoticons, auto-expand, & chat enhancements
-│   ├── cheat-menu.js                 : Testing shortcuts & debug utility
-│   ├── neko-dark.js                  : Sleek dark theme stylesheet & assets
-│   └── translate.js                  : Real-time language translation widget
+│   ├── addon-manager.js              : In-game mod manager & bookmarklet runner
+│   ├── chat-qol.js                   : Emoticons, Map View/gear persistence & shortcuts
+│   ├── cheat-menu.js                 : Struggle, restraint & wardrobe testing utilities
+│   ├── neko-dark.js                  : Dark purple theme stylesheet & assets
+│   └── translate.js                  : Real-time floating translation widget
 ├── platform/linux/                   : Linux portable wrapper (Electron)
 │   ├── main.js                       : Window lifecycle & auto-recovery engine
 │   ├── build.js                      : AppImage & tarball builder
 │   └── package.json                  : Linux dependencies & metadata
 ├── tests/
-│   └── BCDesktop.Tests/              : Automated MSTest suite (29+ unit tests)
-│       └── MainWindowTests.cs        : Aspect ratio, SemVer & memory tests
+│   └── BCDesktop.Tests/              : Automated MSTest suite (35 unit tests)
+│       └── MainWindowTests.cs        : Aspect ratio, SemVer, R134 & memory tests
 ├── tools/                            : PowerShell build toolchain
 │   ├── build_all.ps1                 : Unified multi-platform release builder
 │   ├── local_window.ps1              : Local Windows compilation
@@ -407,7 +428,11 @@ BC-Desktop/
 ├── BC-Desktop.csproj                 : .NET 8 WPF project configuration & metadata
 ├── BC-Desktop.sln                    : Visual Studio solution file
 ├── MainWindow.xaml                   : Borderless custom window & title bar UI
-├── MainWindow.xaml.cs                : Core WebView2 runtime, updater & memory manager
+├── MainWindow.xaml.cs                : Core WebView2 bootstrap & window host
+├── MainWindow.Events.cs              : Window focus, minimize & input lifecycle
+├── MainWindow.Interop.cs             : Win32 DPI, borderless maximize & taskbar P/Invoke
+├── MainWindow.Scripts.cs             : Injected focus, VRAM & R134 stability hooks
+├── MainWindow.Updates.cs             : Live version detector, instant updater & changelog
 ├── loader.user.js                    : Standalone userscript & embedded offline loader
 └── RELEASE_NOTES.md                  : User-facing changelog & release details
 ```
