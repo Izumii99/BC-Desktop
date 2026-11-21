@@ -177,38 +177,47 @@ const FALLBACK_LINUX_RELEASE_NOTES =
     "• Fix (Chat Input Focus in Map View): Clicking inside the chat box or anywhere in the right-hand chat panel while in Map View now focuses the chat input normally again, while clicking on the left map canvas keeps movement keys free.";
 
 async function fetchLatestReleaseNotesLinux() {
-    try {
-        const controller = new AbortController();
-        const timeout = setTimeout(() => controller.abort(), 3000);
-        const res = await fetch(
-            "https://cdn.jsdelivr.net/gh/Izumii99/BC-Desktop@main/RELEASE_NOTES.md",
-            {
+    const urls = [
+        "https://raw.githubusercontent.com/Izumii99/BC-Desktop/main/RELEASE_NOTES.md",
+        "https://cdn.jsdelivr.net/gh/Izumii99/BC-Desktop@main/RELEASE_NOTES.md",
+    ];
+    for (const url of urls) {
+        try {
+            const controller = new AbortController();
+            const timeout = setTimeout(() => controller.abort(), 3000);
+            const res = await fetch(url, {
                 signal: controller.signal,
-                headers: { "User-Agent": "BC-Desktop-Linux" },
-            },
-        );
-        clearTimeout(timeout);
-        if (res.ok) {
-            let text = await res.text();
-            if (text && text.trim()) {
-                let fixesIdx = text.indexOf("### Fixes & Improvements:");
-                if (fixesIdx >= 0)
-                    text = text.substring(
-                        fixesIdx + "### Fixes & Improvements:".length,
-                    );
-                let dlIdx = text.indexOf("### Downloads:");
-                if (dlIdx >= 0) text = text.substring(0, dlIdx);
-                text = text
-                    .replace(
-                        /^\s*-\s*\*\*([^*:]+?)(?:\*\*:|:\*\*|\*?:)\s*/gm,
-                        "• $1: ",
-                    )
-                    .replace(/^\s*-\s*/gm, "• ")
-                    .replace(/`/g, "");
-                return text.trim();
+                headers: {
+                    "User-Agent": "BC-Desktop-Linux",
+                    "Cache-Control": "no-cache",
+                },
+            });
+            clearTimeout(timeout);
+            if (res.ok) {
+                let text = await res.text();
+                if (text && text.trim()) {
+                    let fixesIdx = text.indexOf("### Fixes & Improvements:");
+                    if (fixesIdx >= 0)
+                        text = text.substring(
+                            fixesIdx + "### Fixes & Improvements:".length,
+                        );
+                    let howToIdx = text.indexOf("### How to");
+                    if (howToIdx >= 0) text = text.substring(0, howToIdx);
+                    let dlIdx = text.indexOf("### Downloads:");
+                    if (dlIdx >= 0) text = text.substring(0, dlIdx);
+                    text = text
+                        .replace(
+                            /^\s*-\s*\*\*([^*:]+?)(?:\*\*:|:\*\*|\*?:)\s*/gm,
+                            "• $1: ",
+                        )
+                        .replace(/^\s*-\s*/gm, "• ")
+                        .replace(/\*\*/g, "")
+                        .replace(/`/g, "");
+                    return text.trim();
+                }
             }
-        }
-    } catch (_) {}
+        } catch (_) {}
+    }
     return FALLBACK_LINUX_RELEASE_NOTES;
 }
 

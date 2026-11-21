@@ -363,6 +363,12 @@ public partial class MainWindow // NOSONAR
             text = text.Substring(fixesIdx + "### Fixes & Improvements:".Length);
         }
 
+        int howToIdx = text.IndexOf("### How to", StringComparison.OrdinalIgnoreCase);
+        if (howToIdx >= 0)
+        {
+            text = text.Substring(0, howToIdx);
+        }
+
         int downloadsIdx = text.IndexOf("### Downloads:", StringComparison.OrdinalIgnoreCase);
         if (downloadsIdx >= 0)
         {
@@ -371,7 +377,7 @@ public partial class MainWindow // NOSONAR
 
         text = Regex.Replace(text, @"^\s*-\s*\*\*([^*:]+?)(?:\*\*:|:\*\*|\*?:)\s*", "• $1: ", RegexOptions.Multiline, TimeSpan.FromSeconds(1));
         text = Regex.Replace(text, @"^\s*-\s*", "• ", RegexOptions.Multiline, TimeSpan.FromSeconds(1));
-        text = text.Replace("`", "");
+        text = text.Replace("**", "").Replace("`", "");
 
         return text.Trim();
     }
@@ -387,14 +393,29 @@ public partial class MainWindow // NOSONAR
                 client.DefaultRequestHeaders.UserAgent.ParseAdd("BC-Desktop-Client");
             }
 
-            string cdnUrl = $"https://cdn.jsdelivr.net/gh/{GitHubRepo}@main/RELEASE_NOTES.md";
-            var res = await client.GetAsync(cdnUrl);
-            if (res.IsSuccessStatusCode)
+            string[] urls =
+            [
+                $"https://raw.githubusercontent.com/{GitHubRepo}/main/RELEASE_NOTES.md",
+                $"https://cdn.jsdelivr.net/gh/{GitHubRepo}@main/RELEASE_NOTES.md"
+            ];
+
+            foreach (string url in urls)
             {
-                string raw = await res.Content.ReadAsStringAsync();
-                if (!string.IsNullOrWhiteSpace(raw))
+                try
                 {
-                    return FormatReleaseNotesForDisplay(raw);
+                    using var res = await client.GetAsync(url);
+                    if (res.IsSuccessStatusCode)
+                    {
+                        string raw = await res.Content.ReadAsStringAsync();
+                        if (!string.IsNullOrWhiteSpace(raw))
+                        {
+                            return FormatReleaseNotesForDisplay(raw);
+                        }
+                    }
+                }
+                catch (Exception)
+                {
+                    // Ignored intentionally: try next mirror or fallback to CurrentReleaseNotes.
                 }
             }
         }
@@ -629,7 +650,10 @@ public partial class MainWindow // NOSONAR
         _ = Task.Run(async () =>
         {
             string notes = await FetchLatestReleaseNotesAsync();
-            await Dispatcher.InvokeAsync(() => ShowChangelogWindow(CurrentAppVersion, notes));
+            string targetVersion = !string.IsNullOrWhiteSpace(_newReleaseTag)
+                ? _newReleaseTag.TrimStart('v', 'V')
+                : CurrentAppVersion;
+            await Dispatcher.InvokeAsync(() => ShowChangelogWindow(targetVersion, notes));
         });
     }
 
